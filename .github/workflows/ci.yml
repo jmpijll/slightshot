@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and lint
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          swift --version
+          xcodebuild -version
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: spm-${{ runner.os }}-${{ hashFiles('Package.swift') }}
+          restore-keys: spm-${{ runner.os }}-
+
+      - name: Build
+        run: swift build -c release
+
+      - name: Assemble app bundle (ad-hoc signed)
+        run: VERSION=0.0.0-ci BUILD=${{ github.run_number }} ./Scripts/bundle.sh
+
+      - name: Verify bundle
+        run: |
+          codesign --verify --deep --strict --verbose=2 build/Slightshot.app
+          plutil -lint build/Slightshot.app/Contents/Info.plist
+
+      - name: SwiftLint
+        run: |
+          brew install swiftlint
+          swiftlint --strict --quiet

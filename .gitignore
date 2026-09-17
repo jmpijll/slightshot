@@ -1,0 +1,10 @@
+.build/
+build/
+.swiftpm/
+*.xcodeproj
+*.xcworkspace
+.DS_Store
+Package.resolved
+.sparkle-public-key
+*.dmg
+*.zip

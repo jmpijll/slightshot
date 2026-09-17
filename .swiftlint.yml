@@ -1,0 +1,45 @@
+included:
+  - Sources
+excluded:
+  - .build
+  - build
+
+disabled_rules:
+  - todo
+  - trailing_whitespace
+  # Trailing commas keep multi-line literals diff-friendly.
+  - trailing_comma
+
+opt_in_rules:
+  - empty_count
+  - closure_spacing
+  - contains_over_first_not_nil
+  - explicit_init
+  - first_where
+  - redundant_nil_coalescing
+  - toggle_bool
+
+line_length:
+  warning: 120
+  error: 160
+  ignores_comments: true
+
+type_body_length:
+  warning: 400
+  error: 600
+
+file_length:
+  warning: 600
+  error: 900
+
+function_body_length:
+  warning: 80
+  error: 140
+
+cyclomatic_complexity:
+  warning: 15
+  error: 25
+
+identifier_name:
+  min_length: 1
+  excluded: [id, x, y, a, b, r, g, s]
