@@ -101,15 +101,18 @@ plutil -lint "$PLIST" > /dev/null
 if [[ -z "$SIGN_IDENTITY" ]]; then
   echo "==> No Developer ID found; ad-hoc signing"
   SIGN_IDENTITY="-"
-  TIMESTAMP=()
 else
   echo "==> Signing as: $SIGN_IDENTITY"
-  TIMESTAMP=(--timestamp)
 fi
 
+# No arrays here on purpose: expanding an empty one under `set -u` is an error
+# in bash 3.2, which is what /bin/bash still is on macOS and on CI runners.
 sign() {
-  codesign --force --options runtime "${TIMESTAMP[@]}" \
-    --sign "$SIGN_IDENTITY" "$@"
+  if [[ "$SIGN_IDENTITY" == "-" ]]; then
+    codesign --force --options runtime --sign - "$@"
+  else
+    codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$@"
+  fi
 }
 
 SPARKLE="$APP/Contents/Frameworks/Sparkle.framework"
