@@ -3,6 +3,14 @@
     <channel>
         <title>Slightshot</title>
         <item>
+            <title>1.0.1</title>
+            <pubDate>Thu, 17 Sep 2026 23:44:00 +0200</pubDate>
+            <sparkle:version>2</sparkle:version>
+            <sparkle:shortVersionString>1.0.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>27.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/jmpijll/slightshot/releases/download/v1.0.1/Slightshot-1.0.1.dmg" length="1500713" type="application/octet-stream" sparkle:edSignature="Y/IFJg1GDzKL8aF4LnCMOxEHgWdfajnqpllPr0S4Q8HkSAwVCPBO2vHCJtcwphITBSahiZyHJe9uz9c1ytTWAA=="/>
+        </item>
+        <item>
             <title>1.0.0</title>
             <pubDate>Thu, 17 Sep 2026 23:42:22 +0200</pubDate>
             <sparkle:version>1</sparkle:version>
