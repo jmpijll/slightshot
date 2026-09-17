@@ -43,8 +43,8 @@ Each display has its own capture overlay.
 ## Get started
 
 Download a `.dmg` from [Releases](https://github.com/jmpijll/slightshot/releases),
-move Slightshot to Applications, then open it. See the release notes for the
-signing and notarisation status of that build.
+move Slightshot to Applications, then open it. Version 1.0.2 is signed with
+Developer ID and notarised by Apple.
 
 You can also install it with Homebrew:
 

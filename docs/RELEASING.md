@@ -2,11 +2,13 @@
 
 ## Current status
 
-Versions 1.0.0 and 1.0.1 are signed pre-releases without notarisation. The local
-Developer ID certificate and Sparkle keys are available. Apple notarisation
-credentials and the GitHub signing credentials still need to be configured.
-Do not mark a release as notarised until Apple accepts it and ticket validation
-and Gatekeeper assessment pass.
+Version 1.0.2 is signed and notarised by Apple. Versions 1.0.0 and 1.0.1 remain
+unnotarised pre-releases. The local Developer ID certificate, Sparkle keys and
+`slightshot` notarisation profile are configured.
+
+Local releases work. Automated GitHub releases still need the Developer ID
+certificate and Apple credentials in repository secrets. The local Keychain
+profile is not available to GitHub-hosted runners.
 
 ## Set up Apple notarisation locally
 
