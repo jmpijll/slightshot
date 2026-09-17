@@ -250,6 +250,7 @@ final class OverlayView: NSView {
         }
         drag = .none
         copyOnRelease = false
+        if selection != nil { hideMagnifier() }
         layoutToolbars()
         if selection != nil { toolbars.restoreRememberedTool() }
         updateCursor(at: location(of: event))
@@ -406,7 +407,7 @@ final class OverlayView: NSView {
         let shift = event.modifierFlags.contains(.shift)
 
         if event.keyCode == 53 {  // Escape
-            delegate?.overlayDidCancel(self)
+            cancel()
             return
         }
 
@@ -417,7 +418,7 @@ final class OverlayView: NSView {
             case "s": perform(shift ? .saveAs : .save); return
             case "p": perform(.print); return
             case "z": undo(); return
-            case "x": delegate?.overlayDidCancel(self); return
+            case "x": cancel(); return
             default: break
             }
         }
@@ -432,6 +433,18 @@ final class OverlayView: NSView {
         default:
             break
         }
+    }
+
+    /// AppKit can deliver Escape as a cancel *command* rather than a raw key,
+    /// for example while an input method is active. Handling both means Esc
+    /// always closes the overlay.
+    override func cancelOperation(_ sender: Any?) {
+        cancel()
+    }
+
+    private func cancel() {
+        if textEntry != nil { commitTextEntry(); return }
+        delegate?.overlayDidCancel(self)
     }
 
     private func nudge(dx: CGFloat, dy: CGFloat) {

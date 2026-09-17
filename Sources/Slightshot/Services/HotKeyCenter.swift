@@ -49,6 +49,7 @@ final class HotKeyCenter {
         }
         actions[id] = action
         refs[id] = ref
+        Log.debug("Registered \(combo.displayString)", Log.hotkeys)
         return true
     }
 

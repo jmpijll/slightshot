@@ -89,7 +89,7 @@ final class CanvasView: NSView {
         let string = NSAttributedString(string: hintText, attributes: attributes)
         let textSize = string.size()
         let badge = CGRect(x: (bounds.width - textSize.width) / 2 - 14,
-                           y: bounds.height * 0.5 - textSize.height / 2 - 8,
+                           y: bounds.height * 0.14 - textSize.height / 2 - 8,
                            width: textSize.width + 28, height: textSize.height + 16)
         NSColor.black.withAlphaComponent(0.6).setFill()
         NSBezierPath(roundedRect: badge, xRadius: 9, yRadius: 9).fill()

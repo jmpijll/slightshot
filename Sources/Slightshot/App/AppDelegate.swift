@@ -1,8 +1,29 @@
 import AppKit
 import UserNotifications
 
+/// Actions Slightshot can be asked to run straight from the command line,
+/// which is what makes it scriptable from Shortcuts, Alfred or Raycast:
+///
+///     open -a Slightshot --args --capture-area
+nonisolated enum LaunchCommand: String {
+    case captureArea = "--capture-area"
+    case saveFullScreen = "--capture-full"
+    case copyFullScreen = "--copy-full"
+
+    init?(arguments: [String]) {
+        guard let match = arguments.dropFirst().compactMap({ LaunchCommand(rawValue: $0) }).first else { return nil }
+        self = match
+    }
+}
+
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: StatusItemController?
+    private let launchCommand: LaunchCommand?
+
+    init(launchCommand: LaunchCommand?) {
+        self.launchCommand = launchCommand
+        super.init()
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Log.app.info("Slightshot \(AppInfo.versionString, privacy: .public) launched")
@@ -19,6 +40,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         UpdaterController.shared.start()
         requestNotificationAuthorizationIfNeeded()
         checkScreenRecordingPermissionOnFirstRun()
+
+        if let launchCommand { run(launchCommand) }
+    }
+
+    private func run(_ command: LaunchCommand) {
+        switch command {
+        case .captureArea: OverlayCoordinator.shared.beginRegionCapture()
+        case .saveFullScreen: OverlayCoordinator.shared.captureFullScreen(.save)
+        case .copyFullScreen: OverlayCoordinator.shared.captureFullScreen(.copy)
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {

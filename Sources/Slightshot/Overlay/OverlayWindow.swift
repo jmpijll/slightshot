@@ -6,7 +6,9 @@ final class OverlayWindow: NSWindow {
     init(screen: NSScreen) {
         super.init(contentRect: screen.frame, styleMask: .borderless, backing: .buffered, defer: false)
 
-        level = NSWindow.Level(Int(CGShieldingWindowLevel()))
+        // .screenSaver clears the menu bar and the Dock while staying below the
+        // shielding range, where windows are not eligible to become key.
+        level = .screenSaver
         collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         isOpaque = false
         backgroundColor = .clear
@@ -15,8 +17,6 @@ final class OverlayWindow: NSWindow {
         isReleasedWhenClosed = false
         acceptsMouseMovedEvents = true
         ignoresMouseEvents = false
-        // Keep the capture out of Mission Control, window lists and screenshots.
-        sharingType = .none
         setFrame(screen.frame, display: false)
     }
 

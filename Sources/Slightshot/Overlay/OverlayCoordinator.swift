@@ -8,6 +8,8 @@ final class OverlayCoordinator: OverlayViewDelegate {
     private var windows: [OverlayWindow] = []
     private var views: [OverlayView] = []
     private var isCapturing = false
+    /// Set when we had to escalate to `.regular` to win activation.
+    private var didEscalateActivationPolicy = false
 
     private init() {}
 
@@ -16,17 +18,24 @@ final class OverlayCoordinator: OverlayViewDelegate {
     // MARK: - Region capture
 
     func beginRegionCapture() {
-        guard !isActive, !isCapturing else { return }
+        guard !isActive, !isCapturing else {
+            Log.debug("Region capture ignored (active: \(isActive), capturing: \(isCapturing))", Log.overlay)
+            return
+        }
         isCapturing = true
+        Log.debug("Region capture starting", Log.overlay)
         Task {
             defer { isCapturing = false }
             do {
                 let displays = try await ScreenCapture.captureAllDisplays()
+                Log.debug("Captured \(displays.count) display(s)", Log.overlay)
                 present(displays)
             } catch CaptureError.permissionDenied {
+                Log.debug("Screen Recording permission denied", Log.overlay)
                 ScreenRecordingPermission.request()
                 ScreenRecordingPermission.presentDeniedAlert()
             } catch {
+                Log.debug("Region capture failed: \(error)", Log.overlay)
                 OutputService.presentError(error.localizedDescription)
             }
         }
@@ -35,6 +44,12 @@ final class OverlayCoordinator: OverlayViewDelegate {
     private func present(_ displays: [CapturedDisplay]) {
         let mouse = NSEvent.mouseLocation
 
+        // Activate *before* ordering windows in. A menu-bar-only app triggered by
+        // a global hotkey is not frontmost, and a window that is merely ordered
+        // front in an inactive app receives mouse events but no key events — the
+        // exact failure mode where Esc and ⌘C silently do nothing.
+        activateForCapture()
+
         for captured in displays {
             let window = OverlayWindow(screen: captured.screen)
             let view = OverlayView(display: captured)
@@ -42,20 +57,37 @@ final class OverlayCoordinator: OverlayViewDelegate {
             window.contentView = view
             windows.append(window)
             views.append(view)
-
             window.orderFrontRegardless()
             view.prepare(isUnderMouse: captured.frame.contains(mouse))
         }
 
         // Key focus goes to the display the pointer is on, so ⌘C/⌘S land there.
-        NSApp.activate(ignoringOtherApps: true)
-        if let index = displays.firstIndex(where: { $0.frame.contains(mouse) }) {
+        let index = displays.firstIndex { $0.frame.contains(mouse) } ?? 0
+        if windows.indices.contains(index) {
             windows[index].makeKeyAndOrderFront(nil)
             windows[index].makeFirstResponder(views[index])
-        } else {
-            windows.first?.makeKeyAndOrderFront(nil)
         }
         NSCursor.crosshair.set()
+
+        Log.debug("Overlay presented on \(windows.count) window(s); "
+                  + "active: \(NSApp.isActive), key: \(windows[safe: index]?.isKeyWindow ?? false)", Log.overlay)
+
+        // If cooperative activation refused us, escalate: a .regular app is
+        // always allowed to come forward. Restored on dismiss.
+        if !NSApp.isActive {
+            Log.debug("Activation refused; escalating to .regular", Log.overlay)
+            didEscalateActivationPolicy = true
+            NSApp.setActivationPolicy(.regular)
+            activateForCapture()
+            if windows.indices.contains(index) {
+                windows[index].makeKeyAndOrderFront(nil)
+                windows[index].makeFirstResponder(views[index])
+            }
+        }
+    }
+
+    private func activateForCapture() {
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     func dismiss() {
@@ -67,6 +99,10 @@ final class OverlayCoordinator: OverlayViewDelegate {
         windows.removeAll()
         views.removeAll()
         NSCursor.arrow.set()
+        if didEscalateActivationPolicy {
+            didEscalateActivationPolicy = false
+            NSApp.setActivationPolicy(.accessory)
+        }
         NSApp.hide(nil)
     }
 

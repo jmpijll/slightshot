@@ -40,6 +40,10 @@ loupe follows the crosshair, and you drag out the area you want.
 Once you let go, two toolbars appear around the selection — tools on the right,
 actions underneath — exactly where Lightshot puts them.
 
+<div align="center">
+<img src="docs/screenshot.png" width="760" alt="Slightshot capture overlay with the tool and action bars around a selection">
+</div>
+
 | Tools | Actions |
 | --- | --- |
 | Pen · Line · Arrow · Rectangle · Marker · Text | Print · Copy · Save · Close |
@@ -105,6 +109,17 @@ All three are remappable in Settings.
 These mirror Lightshot's own Mac shortcuts, so existing muscle memory carries
 over unchanged.
 
+## Scripting
+
+Every capture mode is reachable from the command line, so Shortcuts, Alfred,
+Raycast or a Stream Deck can drive it:
+
+```bash
+open -a Slightshot --args --capture-area
+open -a Slightshot --args --capture-full
+open -a Slightshot --args --copy-full
+```
+
 ## Building from source
 
 Requires macOS 27 and the Xcode 27 command line tools.
@@ -126,6 +141,13 @@ with whatever Developer ID it finds (falling back to ad-hoc), and launches it.
 | `make release` | App, disk image, notarise and staple |
 | `make icon` | Regenerate the icon from `Scripts/make_icon.swift` |
 | `make lint` | SwiftLint |
+
+Set `SLIGHTSHOT_DEBUG=1` to mirror the internal log to stderr, which is much
+easier to follow than Console.app while working on the capture path:
+
+```bash
+SLIGHTSHOT_DEBUG=1 ./build/Slightshot.app/Contents/MacOS/Slightshot
+```
 
 Release and notarisation details live in [docs/RELEASING.md](docs/RELEASING.md).
 

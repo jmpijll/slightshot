@@ -13,8 +13,8 @@ struct PreferencesView: View {
             AppearanceTab()
                 .tabItem { Label("Capture", systemImage: "viewfinder") }
         }
-        .frame(width: 480)
-        .scenePadding()
+        .padding(.top, 8)
+        .frame(width: 540, height: 580)
     }
 }
 

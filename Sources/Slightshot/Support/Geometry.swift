@@ -25,3 +25,11 @@ nonisolated extension CGPoint {
     func offsetBy(dx: CGFloat, dy: CGFloat) -> CGPoint { CGPoint(x: x + dx, y: y + dy) }
     func distance(to other: CGPoint) -> CGFloat { hypot(x - other.x, y - other.y) }
 }
+
+nonisolated extension Array {
+    /// Bounds-checked subscript, for the handful of places where an index is
+    /// derived from display geometry that can change mid-capture.
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
+}
