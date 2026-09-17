@@ -63,9 +63,13 @@ Plus the details that make it feel right:
 
 ### Download
 
-Grab the latest signed, notarised `.dmg` from
-[Releases](https://github.com/jmpijll/slightshot/releases/latest), drag
-Slightshot to Applications, and launch it.
+Grab the latest `.dmg` from
+[Releases](https://github.com/jmpijll/slightshot/releases), drag Slightshot to
+Applications, and launch it.
+
+> Current builds are signed with a Developer ID but are **not notarised yet**,
+> so Gatekeeper asks for confirmation on first launch: right-click the app and
+> choose *Open*. They are published as pre-releases until that is sorted.
 
 ### Homebrew
 

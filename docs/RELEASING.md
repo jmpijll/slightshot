@@ -2,6 +2,20 @@
 
 Everything below is a one-time setup except the last section.
 
+## Status
+
+| Piece | State |
+| --- | --- |
+| Sparkle EdDSA keys | **Done** — private key in the login keychain, public key in `.sparkle-public-key` and the `SPARKLE_PUBLIC_KEY` secret |
+| `SPARKLE_PRIVATE_KEY` secret | **Done** |
+| GitHub Pages feed | **Done** — <https://jmpijll.github.io/slightshot/appcast.xml> |
+| Developer ID signing (local) | **Done** — cert already in the login keychain |
+| `MACOS_CERTIFICATE` secret | **Todo** — needs a Keychain Access `.p12` export |
+| Notarisation credentials | **Todo** — needs an app-specific password |
+
+Until the last two rows are done, releases are cut locally and published as
+pre-releases, because an un-notarised build trips Gatekeeper on first launch.
+
 ## 1. Sparkle signing keys
 
 Sparkle verifies every update with an EdDSA signature. Generate the key pair

@@ -1,6 +1,6 @@
 cask "slightshot" do
-  version "1.0.0"
-  sha256 :no_check
+  version "1.0.1"
+  sha256 "a00cbe46a0cbc56fa95fc97b7b6e43fc5b5f823963baf5461e9286be6bf65402"
 
   url "https://github.com/jmpijll/slightshot/releases/download/v#{version}/Slightshot-#{version}.dmg",
       verified: "github.com/jmpijll/slightshot/"
@@ -13,6 +13,8 @@ cask "slightshot" do
     strategy :github_latest
   end
 
+  # The app itself requires macOS 27 via LSMinimumSystemVersion; :tahoe is
+  # the newest symbol Homebrew knows, so it acts as the cask-level floor.
   depends_on macos: ">= :tahoe"
 
   app "Slightshot.app"
