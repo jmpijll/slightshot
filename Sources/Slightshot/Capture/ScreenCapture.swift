@@ -107,10 +107,49 @@ enum ScreenCapture {
     }
 
     /// Captures only the display currently under the mouse pointer.
+    ///
+    /// Deliberately not `captureAllDisplays().first(where:)` — on a multi-display
+    /// desk that grabs several full-resolution screenshots and discards all but
+    /// one, which is both slow and a lot of memory for a ⌘⇧8.
     static func captureActiveDisplay() async throws -> CapturedDisplay {
-        let all = try await captureAllDisplays()
+        guard ScreenRecordingPermission.isGranted else { throw CaptureError.permissionDenied }
+
+        let content: SCShareableContent
+        do {
+            content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        } catch {
+            throw CaptureError.failed(error.localizedDescription)
+        }
+
         let mouse = NSEvent.mouseLocation
-        return all.first { $0.frame.contains(mouse) } ?? all[0]
+        let target = content.displays.first {
+            NSScreen.screen(for: $0.displayID)?.frame.contains(mouse) ?? false
+        } ?? content.displays.first
+
+        guard let display = target, let screen = NSScreen.screen(for: display.displayID) else {
+            throw CaptureError.noDisplays
+        }
+
+        let ownBundleID = Bundle.main.bundleIdentifier
+        let ownApps = content.applications.filter { $0.bundleIdentifier == ownBundleID }
+        let scale = Settings.shared.retinaScale ? screen.backingScaleFactor : 1
+
+        let filter = SCContentFilter(display: display, excludingApplications: ownApps, exceptingWindows: [])
+        let config = SCStreamConfiguration()
+        config.width = Int((CGFloat(display.width) * scale).rounded())
+        config.height = Int((CGFloat(display.height) * scale).rounded())
+        config.showsCursor = Settings.shared.captureCursor
+        config.captureResolution = .best
+        config.scalesToFit = false
+        config.colorSpaceName = CGColorSpace.sRGB
+        config.ignoreShadowsDisplay = true
+
+        do {
+            let image = try await SCScreenshotManager.captureImage(contentFilter: filter, configuration: config)
+            return CapturedDisplay(screen: screen, displayID: display.displayID, image: image, scale: scale)
+        } catch {
+            throw CaptureError.failed(error.localizedDescription)
+        }
     }
 }
 

@@ -26,6 +26,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
         let menu = NSMenu()
         menu.delegate = self
+        // Otherwise AppKit re-enables every item with a valid target/action and
+        // "Check for Updates…" appears live even without an update feed.
+        menu.autoenablesItems = false
         statusItem.menu = menu
     }
 
