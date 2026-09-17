@@ -8,3 +8,7 @@ Package.resolved
 .sparkle-public-key
 *.dmg
 *.zip
+
+__pycache__/
+*.p12
+*.p8

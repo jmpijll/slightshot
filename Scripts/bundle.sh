@@ -47,6 +47,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Framewor
 
 cp "$BIN/$APP_NAME" "$APP/Contents/MacOS/$APP_NAME"
 cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+cp "$ROOT/Resources/MenuBarTemplate.png" "$APP/Contents/Resources/MenuBarTemplate.png"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
 SPARKLE_SRC="$(find "$ROOT/.build" -type d -name Sparkle.framework -path '*xcframework*' | head -n 1)"

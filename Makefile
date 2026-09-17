@@ -17,7 +17,7 @@ help:
 	@echo "make dmg       — build the signed disk image"
 	@echo "make notarize  — notarise and staple the disk image"
 	@echo "make release   — app + dmg + notarize"
-	@echo "make icon      — regenerate Resources/AppIcon.icns"
+	@echo "make icon      — regenerate app, menu bar and README artwork"
 	@echo "make lint      — run SwiftLint"
 	@echo "make clean     — remove build artefacts"
 
@@ -36,7 +36,10 @@ dmg: app
 notarize:
 	./Scripts/notarize.sh $(DMG)
 
-release: dmg notarize
+release: app
+	./Scripts/notarize.sh $(APP)
+	VERSION=$(VERSION) ./Scripts/make_dmg.sh
+	./Scripts/notarize.sh $(DMG)
 	@echo "==> $(DMG) is ready to publish"
 
 icon:

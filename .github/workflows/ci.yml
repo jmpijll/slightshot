@@ -29,6 +29,9 @@ jobs:
           key: spm-${{ runner.os }}-${{ hashFiles('Package.swift') }}
           restore-keys: spm-${{ runner.os }}-
 
+      - name: Test notarisation release gates
+        run: python3 -m unittest discover -s Tests -v
+
       - name: Build
         run: swift build -c release
 

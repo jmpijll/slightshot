@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="480" viewBox="0 0 1440 480" role="img" aria-label="Slightshot. A screenshot with your point on it.">
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#1a302b"/><stop offset="1" stop-color="#3b5c52"/></linearGradient></defs>
+<rect width="1440" height="480" rx="28" fill="url(#bg)"/>
+<g transform="translate(790 -85) scale(.7)"><g fill="none" stroke-width="58" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M290 450 L290 290 L450 290 M574 734 L734 734 L734 574 M290 574 L290 734 L450 734" stroke="#f0f2e8"/>
+  <path d="M452 572 L734 290 M568 290 L734 290 L734 456" stroke="#f5a67d"/>
+</g></g>
+<g font-family="Inter,Segoe UI,Arial,sans-serif">
+<text x="80" y="113" fill="#f0f2e8" font-size="35" font-weight="600" letter-spacing="-1">Slightshot</text>
+<text x="80" y="240" fill="#f0f2e8" font-size="64" font-weight="600" letter-spacing="-2">A screenshot with</text>
+<text x="80" y="316" fill="#f5a67d" font-size="64" letter-spacing="-2">your point on it.</text>
+<text x="84" y="410" fill="#b8ccc4" font-size="15" letter-spacing="2.5">SCREENSHOTS FOR MACOS / OPEN SOURCE</text>
+</g></svg>

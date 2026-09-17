@@ -30,6 +30,11 @@ else
   rm -rf "$STAGING"
 fi
 
+if [[ -z "${SIGN_IDENTITY:-}" ]]; then
+  SIGN_IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null \
+    | awk -F'"' '/Developer ID Application/ {print $2; exit}')"
+fi
+
 if [[ -n "${SIGN_IDENTITY:-}" ]]; then
   codesign --force --sign "$SIGN_IDENTITY" --timestamp "$DMG"
 fi

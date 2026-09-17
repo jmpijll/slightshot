@@ -18,8 +18,15 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         super.init()
 
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "camera.viewfinder",
-                                   accessibilityDescription: "Slightshot")
+            if let url = Bundle.main.url(forResource: "MenuBarTemplate", withExtension: "png"),
+               let image = NSImage(contentsOf: url) {
+                image.size = NSSize(width: 18, height: 18)
+                image.accessibilityDescription = "Slightshot"
+                button.image = image
+            } else {
+                button.image = NSImage(systemSymbolName: "viewfinder",
+                                       accessibilityDescription: "Slightshot")
+            }
             button.image?.isTemplate = true
             button.toolTip = "Slightshot"
         }

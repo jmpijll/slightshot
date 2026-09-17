@@ -11,6 +11,11 @@ on:
 
 permissions:
   contents: write
+  actions: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -23,25 +28,34 @@ jobs:
 
       - name: Resolve version
         id: version
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-          fi
+          VERSION="${REQUESTED_VERSION:-${GITHUB_REF_NAME#v}}"
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "::error::Version must be MAJOR.MINOR.PATCH"
+            exit 1
+          }
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Check release credentials
         env:
-          HAS_CERT: ${{ secrets.MACOS_CERTIFICATE != '' }}
-          HAS_NOTARY: ${{ secrets.APP_PASSWORD != '' }}
-          HAS_SPARKLE: ${{ secrets.SPARKLE_PRIVATE_KEY != '' }}
+          MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+          APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+          SPARKLE_PUBLIC_KEY: ${{ secrets.SPARKLE_PUBLIC_KEY }}
         run: |
           missing=""
-          [ "$HAS_CERT" = "true" ] || missing="$missing MACOS_CERTIFICATE"
-          [ "$HAS_NOTARY" = "true" ] || missing="$missing APP_PASSWORD"
-          [ "$HAS_SPARKLE" = "true" ] || missing="$missing SPARKLE_PRIVATE_KEY"
-          if [ -n "$missing" ]; then
-            echo "::error::Missing release secrets:$missing — see docs/RELEASING.md"
+          for name in MACOS_CERTIFICATE MACOS_CERTIFICATE_PASSWORD KEYCHAIN_PASSWORD \
+                      APPLE_ID TEAM_ID APP_PASSWORD SPARKLE_PRIVATE_KEY SPARKLE_PUBLIC_KEY; do
+            [[ -n "${!name}" ]] || missing="$missing $name"
+          done
+          if [[ -n "$missing" ]]; then
+            echo "::error::Missing release secrets:$missing. See docs/RELEASING.md"
             exit 1
           fi
 
@@ -51,7 +65,9 @@ jobs:
           MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          echo "$MACOS_CERTIFICATE" | base64 --decode > /tmp/certificate.p12
+          umask 077
+          trap 'rm -f /tmp/certificate.p12' EXIT
+          printf '%s' "$MACOS_CERTIFICATE" | base64 --decode > /tmp/certificate.p12
           security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
           security default-keychain -s build.keychain
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
@@ -70,6 +86,13 @@ jobs:
           SPARKLE_PUBLIC_KEY: ${{ secrets.SPARKLE_PUBLIC_KEY }}
         run: ./Scripts/bundle.sh
 
+      - name: Notarise and staple the app
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+          APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
+        run: ./Scripts/notarize.sh build/Slightshot.app
+
       - name: Build the disk image
         env:
           VERSION: ${{ steps.version.outputs.version }}
@@ -86,6 +109,14 @@ jobs:
           APP_PASSWORD: ${{ secrets.APP_PASSWORD }}
         run: ./Scripts/notarize.sh "build/Slightshot-${{ steps.version.outputs.version }}.dmg"
 
+      - name: Preserve notarisation diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: notarisation-diagnostics
+          path: build/*.notary-*.json
+          if-no-files-found: ignore
+
       - name: Generate the Sparkle appcast
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
@@ -101,6 +132,8 @@ jobs:
           # Keep previously published entries so older versions can still update.
           cp public/appcast.xml dist/appcast.xml 2>/dev/null || true
 
+          umask 077
+          trap 'rm -f /tmp/sparkle_key' EXIT
           printf '%s' "$SPARKLE_PRIVATE_KEY" > /tmp/sparkle_key
           /tmp/sparkle/bin/generate_appcast \
             --ed-key-file /tmp/sparkle_key \
@@ -127,3 +160,15 @@ jobs:
           git diff --staged --quiet && echo "appcast unchanged" && exit 0
           git commit -m "Publish appcast for v${{ steps.version.outputs.version }}"
           git push origin HEAD:main
+
+      # A push made with GITHUB_TOKEN does not trigger the Pages push workflow.
+      - name: Deploy the update feed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main
+
+      - name: Remove signing credentials
+        if: always()
+        run: |
+          rm -f /tmp/certificate.p12 /tmp/sparkle_key
+          security delete-keychain build.keychain 2>/dev/null || true

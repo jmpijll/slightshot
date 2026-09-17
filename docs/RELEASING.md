@@ -1,114 +1,130 @@
 # Releasing Slightshot
 
-Everything below is a one-time setup except the last section.
+## Current status
 
-## Status
+Versions 1.0.0 and 1.0.1 are signed pre-releases without notarisation. The local
+Developer ID certificate and Sparkle keys are available. Apple notarisation
+credentials and the GitHub signing credentials still need to be configured.
+Do not mark a release as notarised until Apple accepts it and ticket validation
+and Gatekeeper assessment pass.
 
-| Piece | State |
-| --- | --- |
-| Sparkle EdDSA keys | **Done** — private key in the login keychain, public key in `.sparkle-public-key` and the `SPARKLE_PUBLIC_KEY` secret |
-| `SPARKLE_PRIVATE_KEY` secret | **Done** |
-| GitHub Pages feed | **Done** — <https://jmpijll.github.io/slightshot/appcast.xml> |
-| Developer ID signing (local) | **Done** — cert already in the login keychain |
-| `MACOS_CERTIFICATE` secret | **Todo** — needs a Keychain Access `.p12` export |
-| Notarisation credentials | **Todo** — needs an app-specific password |
+## Set up Apple notarisation locally
 
-Until the last two rows are done, releases are cut locally and published as
-pre-releases, because an un-notarised build trips Gatekeeper on first launch.
+Create an app-specific password at [account.apple.com](https://account.apple.com/),
+under **Sign-In and Security → App-Specific Passwords**. Use the Apple account
+that belongs to the developer team.
 
-## 1. Sparkle signing keys
-
-Sparkle verifies every update with an EdDSA signature. Generate the key pair
-once; the private half is stored in your login keychain.
+Run this in your own terminal. It prompts for your Apple ID and password, checks
+them with Apple and stores them in Keychain:
 
 ```bash
-SPARKLE_VERSION=2.10.0
-curl -fsSL -o /tmp/sparkle.tar.xz \
-  "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz"
-mkdir -p /tmp/sparkle && tar -xf /tmp/sparkle.tar.xz -C /tmp/sparkle
-/tmp/sparkle/bin/generate_keys
+xcrun notarytool store-credentials slightshot --team-id PAW49RLWAA
 ```
 
-It prints a **public** key. Save it so local builds embed it:
+Do not put the password in chat, source files or shell history. Confirm that the
+saved profile works:
 
 ```bash
-echo 'PASTE_PUBLIC_KEY_HERE' > .sparkle-public-key   # git-ignored
+xcrun notarytool history --keychain-profile slightshot
 ```
 
-Export the **private** key for CI (keep it out of the repo):
+## Configure GitHub releases
 
-```bash
-/tmp/sparkle/bin/generate_keys -x /tmp/sparkle_private_key
-cat /tmp/sparkle_private_key   # -> GitHub secret SPARKLE_PRIVATE_KEY
-rm /tmp/sparkle_private_key
-```
-
-Without a public key the app still builds and runs; it simply refuses to apply
-updates, and `Scripts/bundle.sh` says so.
-
-## 2. Apple credentials
-
-### Developer ID certificate
-
-Export **Developer ID Application** from Keychain Access as a `.p12`, then:
-
-```bash
-base64 -i Certificates.p12 | pbcopy   # -> GitHub secret MACOS_CERTIFICATE
-```
-
-### Notarisation
-
-Create an app-specific password at <https://appleid.apple.com>, then either
-store it locally:
-
-```bash
-xcrun notarytool store-credentials slightshot \
-  --apple-id "you@example.com" --team-id "PAW49RLWAA" --password "abcd-efgh-ijkl-mnop"
-export NOTARY_PROFILE=slightshot
-```
-
-…or add the three CI secrets below.
-
-## 3. GitHub secrets
+Export the **Developer ID Application** certificate with its private key from
+Keychain Access as a password-protected `.p12`. Add these repository secrets in
+[GitHub Actions settings](https://github.com/jmpijll/slightshot/settings/secrets/actions):
 
 | Secret | Value |
 | --- | --- |
-| `MACOS_CERTIFICATE` | base64 of the Developer ID `.p12` |
-| `MACOS_CERTIFICATE_PASSWORD` | password you set when exporting it |
-| `KEYCHAIN_PASSWORD` | any random string; scopes the CI keychain |
-| `APPLE_ID` | your Apple ID email |
+| `MACOS_CERTIFICATE` | Base64-encoded `.p12` certificate |
+| `MACOS_CERTIFICATE_PASSWORD` | Password for that export |
+| `KEYCHAIN_PASSWORD` | A random password for the temporary CI keychain |
+| `APPLE_ID` | Developer Apple account email |
 | `TEAM_ID` | `PAW49RLWAA` |
-| `APP_PASSWORD` | the app-specific password |
-| `SPARKLE_PRIVATE_KEY` | private EdDSA key from step 1 |
-| `SPARKLE_PUBLIC_KEY` | public EdDSA key from step 1 |
+| `APP_PASSWORD` | Apple app-specific password |
+| `SPARKLE_PRIVATE_KEY` | Existing Sparkle EdDSA private key |
+| `SPARKLE_PUBLIC_KEY` | Matching public key |
 
-Also enable **Settings › Pages › Source: GitHub Actions** — that is where the
-Sparkle appcast is published.
+The Sparkle secrets are already configured. Keep the existing key pair so
+installed versions can verify updates. Never commit the private key.
 
-## 4. Cutting a release
-
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
-
-The `Release` workflow then builds, signs, notarises, staples, publishes the
-GitHub release with the `.dmg`, regenerates `appcast.xml`, and deploys it to
-Pages. Existing installs pick the update up from there.
-
-### Doing it by hand
+To upload the certificate without printing it, use the path to your export:
 
 ```bash
-export NOTARY_PROFILE=slightshot
-make release VERSION=1.0.0
+base64 -i /path/to/Certificates.p12 | gh secret set MACOS_CERTIFICATE
 ```
 
-## 5. Homebrew cask
+`gh secret set SECRET_NAME` prompts for the other values without echoing them.
+The CI keychain and temporary private-key files are removed after the run.
 
-After the release is live, refresh `Casks/slightshot.rb`:
+Enable **Settings → Pages → Source: GitHub Actions** for the update feed.
+
+## Publish a version
+
+Commit and push the release changes to `main`, then create a new version tag:
 
 ```bash
-shasum -a 256 build/Slightshot-1.0.0.dmg
+git tag v1.0.2
+git push origin v1.0.2
 ```
 
-Update `version` and `sha256`, then commit.
+Use a new version for every published binary. Do not replace an existing download
+because its Sparkle signature and Homebrew checksum would no longer match.
+
+The Release workflow checks credentials, signs the app, submits it to Apple,
+and staples its ticket before building the disk image. It then signs, notarises
+and staples the disk image. Publication requires all checks to pass.
+
+After publication, it signs the Sparkle appcast, commits the feed and explicitly
+starts the Pages workflow. A push made with `GITHUB_TOKEN` does not trigger another
+push workflow. See [GitHub's workflow event rules](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).
+
+### Local release
+
+```bash
+NOTARY_PROFILE=slightshot make release VERSION=1.0.2
+```
+
+This produces a signed, notarised disk image locally. It does not publish a
+GitHub release or update the Sparkle feed.
+
+### If Apple rejects a submission
+
+`Scripts/notarize.sh` saves `*.notary-result.json` beside the artifact. If Apple
+provides a submission ID, the script also requests `*.notary-log.json`. CI keeps
+these files as the `notarisation-diagnostics` artifact, including on failure.
+
+A timeout does not cancel Apple's processing. Check the existing submission
+before uploading the same build again:
+
+```bash
+xcrun notarytool info SUBMISSION_ID --keychain-profile slightshot
+xcrun notarytool log SUBMISSION_ID --keychain-profile slightshot notary-log.json
+```
+
+Only an `Accepted` result permits stapling. Apps use Gatekeeper's `execute`
+assessment; disk images use `open` with `context:primary-signature`. ZIP files
+cannot carry a stapled ticket, so pass an `.app` or `.dmg` to the script.
+
+See [Apple's notarisation workflow](https://developer.apple.com/documentation/security/customizing-the-notarization-workflow)
+for submission and ticket details.
+
+## Update Homebrew
+
+After the release is live, update `version` and `sha256` in
+[Casks/slightshot.rb](../Casks/slightshot.rb) using the final stapled disk image:
+
+```bash
+shasum -a 256 build/Slightshot-1.0.2.dmg
+```
+
+## Check release scripts
+
+```bash
+python3 -m unittest discover -s Tests -v
+shellcheck Scripts/notarize.sh
+actionlint
+```
+
+The tests use mock Apple tools to check failure handling. They do not establish
+that Apple has accepted a real build.

@@ -9,90 +9,54 @@ let outputPath = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "A
 let outputURL = URL(fileURLWithPath: outputPath)
 try? FileManager.default.createDirectory(at: outputURL, withIntermediateDirectories: true)
 
-/// Draws the icon into a canvas of `side` points using a 1024-based design grid.
-func drawIcon(side: CGFloat) {
-    let s = side / 1024
-    let ctx = NSGraphicsContext.current!.cgContext
+// One mark supplies the app icon, menu-bar template and README header.
+let corners: [[CGPoint]] = [
+    [CGPoint(x: 290, y: 450), CGPoint(x: 290, y: 290), CGPoint(x: 450, y: 290)],
+    [CGPoint(x: 574, y: 734), CGPoint(x: 734, y: 734), CGPoint(x: 734, y: 574)],
+    [CGPoint(x: 290, y: 574), CGPoint(x: 290, y: 734), CGPoint(x: 450, y: 734)],
+]
+let arrow: [[CGPoint]] = [
+    [CGPoint(x: 452, y: 572), CGPoint(x: 734, y: 290)],
+    [CGPoint(x: 568, y: 290), CGPoint(x: 734, y: 290), CGPoint(x: 734, y: 456)],
+]
+let cream = NSColor(srgbRed: 0.94, green: 0.95, blue: 0.91, alpha: 1)
+let apricot = NSColor(srgbRed: 0.96, green: 0.65, blue: 0.49, alpha: 1)
 
-    // macOS app icons sit inside the canvas with a margin.
-    let plateRect = CGRect(x: 100 * s, y: 90 * s, width: 824 * s, height: 824 * s)
-    let plate = NSBezierPath(roundedRect: plateRect, xRadius: 185 * s, yRadius: 185 * s)
-
-    // Drop shadow under the plate.
-    ctx.saveGState()
-    ctx.setShadow(offset: CGSize(width: 0, height: -12 * s), blur: 28 * s,
-                  color: NSColor.black.withAlphaComponent(0.28).cgColor)
-    NSColor.black.setFill()
-    plate.fill()
-    ctx.restoreGState()
-
-    // Blue-to-violet gradient body.
-    ctx.saveGState()
-    plate.addClip()
-    let gradient = NSGradient(colors: [
-        NSColor(srgbRed: 0.24, green: 0.52, blue: 1.00, alpha: 1),
-        NSColor(srgbRed: 0.42, green: 0.27, blue: 0.95, alpha: 1),
-    ])!
-    gradient.draw(in: plateRect, angle: -90)
-
-    // Soft top highlight.
-    let highlight = NSGradient(colors: [
-        NSColor.white.withAlphaComponent(0.30),
-        NSColor.white.withAlphaComponent(0.0),
-    ])!
-    highlight.draw(in: CGRect(x: plateRect.minX, y: plateRect.midY,
-                              width: plateRect.width, height: plateRect.height / 2), angle: -90)
-    ctx.restoreGState()
-
-    // Marquee: four corner brackets, like a selection being dragged out.
-    let marquee = CGRect(x: 268 * s, y: 258 * s, width: 488 * s, height: 488 * s)
-    let arm = 132 * s
-    let weight = 46 * s
-    NSColor.white.setStroke()
-
-    let brackets = NSBezierPath()
-    brackets.lineWidth = weight
-    brackets.lineCapStyle = .round
-    brackets.lineJoinStyle = .round
-
-    // Top-left
-    brackets.move(to: CGPoint(x: marquee.minX, y: marquee.maxY - arm))
-    brackets.line(to: CGPoint(x: marquee.minX, y: marquee.maxY))
-    brackets.line(to: CGPoint(x: marquee.minX + arm, y: marquee.maxY))
-    // Top-right
-    brackets.move(to: CGPoint(x: marquee.maxX - arm, y: marquee.maxY))
-    brackets.line(to: CGPoint(x: marquee.maxX, y: marquee.maxY))
-    brackets.line(to: CGPoint(x: marquee.maxX, y: marquee.maxY - arm))
-    // Bottom-right
-    brackets.move(to: CGPoint(x: marquee.maxX, y: marquee.minY + arm))
-    brackets.line(to: CGPoint(x: marquee.maxX, y: marquee.minY))
-    brackets.line(to: CGPoint(x: marquee.maxX - arm, y: marquee.minY))
-    // Bottom-left
-    brackets.move(to: CGPoint(x: marquee.minX + arm, y: marquee.minY))
-    brackets.line(to: CGPoint(x: marquee.minX, y: marquee.minY))
-    brackets.line(to: CGPoint(x: marquee.minX, y: marquee.minY + arm))
-
-    ctx.saveGState()
-    ctx.setShadow(offset: CGSize(width: 0, height: -6 * s), blur: 16 * s,
-                  color: NSColor.black.withAlphaComponent(0.25).cgColor)
-    brackets.stroke()
-    ctx.restoreGState()
-
-    // Centre crosshair.
-    let centre = CGPoint(x: marquee.midX, y: marquee.midY)
-    let crossArm = 74 * s
-    let cross = NSBezierPath()
-    cross.lineWidth = weight * 0.72
-    cross.lineCapStyle = .round
-    cross.move(to: CGPoint(x: centre.x - crossArm, y: centre.y))
-    cross.line(to: CGPoint(x: centre.x + crossArm, y: centre.y))
-    cross.move(to: CGPoint(x: centre.x, y: centre.y - crossArm))
-    cross.line(to: CGPoint(x: centre.x, y: centre.y + crossArm))
-    NSColor.white.withAlphaComponent(0.92).setStroke()
-    cross.stroke()
+func stroke(_ lines: [[CGPoint]], colour: NSColor) {
+    let path = NSBezierPath()
+    path.lineWidth = 58
+    path.lineCapStyle = .round
+    path.lineJoinStyle = .round
+    for points in lines {
+        path.move(to: points[0])
+        for point in points.dropFirst() { path.line(to: point) }
+    }
+    colour.setStroke()
+    path.stroke()
 }
 
-func writePNG(side: Int, to url: URL) throws {
+func drawIcon(side: CGFloat, template: Bool = false) {
+    let ctx = NSGraphicsContext.current!.cgContext
+    ctx.saveGState()
+    defer { ctx.restoreGState() }
+    ctx.translateBy(x: 0, y: side)
+    ctx.scaleBy(x: side / 1024, y: -side / 1024)
+    if template {
+        ctx.translateBy(x: -400, y: -400)
+        ctx.scaleBy(x: 1.78, y: 1.78)
+    } else {
+        let plate = NSBezierPath(roundedRect: CGRect(x: 100, y: 100, width: 824, height: 824),
+                                 xRadius: 185, yRadius: 185)
+        NSGradient(colors: [
+            NSColor(srgbRed: 0.23, green: 0.36, blue: 0.32, alpha: 1),
+            NSColor(srgbRed: 0.10, green: 0.19, blue: 0.17, alpha: 1),
+        ])!.draw(in: plate, angle: 90)
+    }
+    stroke(corners, colour: template ? .black : cream)
+    stroke(arrow, colour: template ? .black : apricot)
+}
+
+func writePNG(side: Int, to url: URL, template: Bool = false) throws {
     guard let rep = NSBitmapImageRep(
         bitmapDataPlanes: nil, pixelsWide: side, pixelsHigh: side,
         bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
@@ -101,7 +65,7 @@ func writePNG(side: Int, to url: URL) throws {
 
     NSGraphicsContext.saveGraphicsState()
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-    drawIcon(side: CGFloat(side))
+    drawIcon(side: CGFloat(side), template: template)
     NSGraphicsContext.restoreGraphicsState()
 
     guard let data = rep.representation(using: .png, properties: [:]) else {
@@ -122,3 +86,33 @@ for variant in variants {
     try writePNG(side: variant.side, to: outputURL.appendingPathComponent("\(variant.name).png"))
 }
 print("Wrote \(variants.count) images to \(outputURL.path)")
+
+try writePNG(side: 1024, to: URL(fileURLWithPath: "docs/icon.png"))
+try writePNG(side: 36, to: URL(fileURLWithPath: "Resources/MenuBarTemplate.png"), template: true)
+
+func svgPath(_ lines: [[CGPoint]]) -> String {
+    lines.map { points in
+        points.enumerated().map { index, point in
+            "\(index == 0 ? "M" : "L")\(Int(point.x)) \(Int(point.y))"
+        }.joined(separator: " ")
+    }.joined(separator: " ")
+}
+let mark = """
+<g fill="none" stroke-width="58" stroke-linecap="round" stroke-linejoin="round">
+  <path d="\(svgPath(corners))" stroke="#f0f2e8"/>
+  <path d="\(svgPath(arrow))" stroke="#f5a67d"/>
+</g>
+"""
+let hero = """
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="480" viewBox="0 0 1440 480" role="img" aria-label="Slightshot. A screenshot with your point on it.">
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#1a302b"/><stop offset="1" stop-color="#3b5c52"/></linearGradient></defs>
+<rect width="1440" height="480" rx="28" fill="url(#bg)"/>
+<g transform="translate(790 -85) scale(.7)">\(mark)</g>
+<g font-family="Inter,Segoe UI,Arial,sans-serif">
+<text x="80" y="113" fill="#f0f2e8" font-size="35" font-weight="600" letter-spacing="-1">Slightshot</text>
+<text x="80" y="240" fill="#f0f2e8" font-size="64" font-weight="600" letter-spacing="-2">A screenshot with</text>
+<text x="80" y="316" fill="#f5a67d" font-size="64" letter-spacing="-2">your point on it.</text>
+<text x="84" y="410" fill="#b8ccc4" font-size="15" letter-spacing="2.5">SCREENSHOTS FOR MACOS / OPEN SOURCE</text>
+</g></svg>
+"""
+try hero.write(toFile: "docs/hero.svg", atomically: true, encoding: .utf8)
