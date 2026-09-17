@@ -11,8 +11,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
   release:
@@ -30,6 +28,21 @@ jobs:
             echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
           else
             echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check release credentials
+        env:
+          HAS_CERT: ${{ secrets.MACOS_CERTIFICATE != '' }}
+          HAS_NOTARY: ${{ secrets.APP_PASSWORD != '' }}
+          HAS_SPARKLE: ${{ secrets.SPARKLE_PRIVATE_KEY != '' }}
+        run: |
+          missing=""
+          [ "$HAS_CERT" = "true" ] || missing="$missing MACOS_CERTIFICATE"
+          [ "$HAS_NOTARY" = "true" ] || missing="$missing APP_PASSWORD"
+          [ "$HAS_SPARKLE" = "true" ] || missing="$missing SPARKLE_PRIVATE_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing release secrets:$missing — see docs/RELEASING.md"
+            exit 1
           fi
 
       - name: Import Developer ID certificate
@@ -86,8 +99,7 @@ jobs:
           mkdir -p dist
           cp "build/Slightshot-${VERSION}.dmg" dist/
           # Keep previously published entries so older versions can still update.
-          curl -fsSL -o dist/appcast.xml \
-            "https://jmpijll.github.io/slightshot/appcast.xml" || true
+          cp public/appcast.xml dist/appcast.xml 2>/dev/null || true
 
           printf '%s' "$SPARKLE_PRIVATE_KEY" > /tmp/sparkle_key
           /tmp/sparkle/bin/generate_appcast \
@@ -105,28 +117,13 @@ jobs:
           generate_release_notes: true
           files: build/Slightshot-${{ steps.version.outputs.version }}.dmg
 
-      - name: Prepare the update feed for Pages
+      - name: Commit the regenerated appcast
         run: |
           mkdir -p public
           cp dist/appcast.xml public/appcast.xml
-          cp docs/icon.png public/icon.png 2>/dev/null || true
-          cat > public/index.html <<'HTML'
-          <!doctype html><meta charset="utf-8">
-          <title>Slightshot</title>
-          <meta http-equiv="refresh" content="0; url=https://github.com/jmpijll/slightshot">
-          HTML
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: public
-
-  deploy-feed:
-    name: Deploy update feed
-    needs: release
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
-    steps:
-      - id: deploy
-        uses: actions/deploy-pages@v4
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/appcast.xml
+          git diff --staged --quiet && echo "appcast unchanged" && exit 0
+          git commit -m "Publish appcast for v${{ steps.version.outputs.version }}"
+          git push origin HEAD:main
