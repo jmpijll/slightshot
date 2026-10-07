@@ -141,6 +141,13 @@ checks, and [the release guide](docs/RELEASING.md) for signing and notarisation.
 - Capture history
 - Optional upload providers
 
+## Windows preview
+
+A native Windows source preview follows the Mac capture workflow and overlay
+style. See [Windows setup and parity notes](docs/windows.md) to run or build it.
+The Windows CI workflow publishes portable x64/ARM64 app folders and native
+rendering evidence. Manual validation on a Windows desktop is still needed.
+
 ## License
 
 [MIT](LICENSE). Slightshot is an independent project inspired by Lightshot.
