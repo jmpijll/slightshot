@@ -1,0 +1,22 @@
+{
+  "app_code_revision": "0aa7a0b932a7ebd54a05f37b20f67299cad384e6",
+  "shared_source_sha256": "04f6b157a6dee3a7c103dd0b5c8be6b4c87af836dd7871f951bceaf9e524df90",
+  "mac": "Signed bundled app; actual selection, selected Pen, Record, live Stop, save High quality, MP4 export. Native AppKit offscreen fixtures at 1x/2x use production controls.",
+  "windows": "Native WPF rendering, image export and recording smoke tests on GitHub Windows. Offscreen state fixtures, not an interactive desktop video.",
+  "windows_run": "https://github.com/jmpijll/slightshot/actions/runs/37642813917",
+  "mac_run": "https://github.com/jmpijll/slightshot/actions/runs/37643184898",
+  "export": {
+    "codec": "h264",
+    "width": 1720,
+    "height": 980,
+    "fps": 30,
+    "duration_seconds": 30.246667
+  },
+  "review_video": {
+    "width": 1440,
+    "height": 1440,
+    "fps": 30,
+    "duration_seconds": 22.966667,
+    "layout": "Actual GUI first 18 seconds; real exported MP4 excerpt last 5 seconds."
+  }
+}
