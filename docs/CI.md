@@ -1,6 +1,6 @@
 # Builds and runners
 
-Regular CI produces a Mac review DMG; the Windows workflow produces self-contained portable x64 and ARM64 apps plus native rendering/recording evidence. Download these under **Artifacts** on a successful workflow run. Review artifacts are retained for seven days on Mac. Mac review builds are explicitly ad-hoc signed, not notarised, and do not update the release or Sparkle feed.
+Regular CI produces a Mac review DMG; the Windows workflow produces self-contained portable x64 and ARM64 apps plus native rendering/recording evidence. Download these under **Artifacts** on a successful workflow run. Review artifacts are retained for seven days on Mac and Windows. Mac review builds are explicitly ad-hoc signed, not notarised, and do not update the release or Sparkle feed.
 
 The Mac job uses the existing `xcode-27` runner because the app requires macOS 27. Native Windows rendering and recording tests stay on `windows-latest`. Linux can run the release-gate tests, 47 Windows core geometry checks and a Windows cross-build; it cannot build/notarise a native Mac DMG or execute WPF.
 

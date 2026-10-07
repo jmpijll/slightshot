@@ -43,20 +43,24 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
+          retention-days: 7
           name: windows-native-parity-evidence
           path: Windows/artifacts/parity
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
         with:
+          retention-days: 7
           name: windows-native-recording-evidence
           path: Windows/artifacts/recording
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
+          retention-days: 7
           name: Slightshot-windows-x64
           path: Windows/artifacts/win-x64
       - uses: actions/upload-artifact@v4
         with:
+          retention-days: 7
           name: Slightshot-windows-arm64
           path: Windows/artifacts/win-arm64
