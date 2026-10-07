@@ -1,0 +1,47 @@
+name: Windows
+on:
+  push:
+    paths: ['Windows/**', '.github/workflows/windows.yml']
+  pull_request:
+    paths: ['Windows/**', '.github/workflows/windows.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-and-render:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Test selection, layout and output geometry
+        run: dotnet run --project Windows/Slightshot.Core.Tests -c Release
+      - name: Build native app with warnings as errors
+        run: dotnet build Windows/Slightshot -c Release
+      - name: Render native WPF parity fixtures and test image export
+        shell: pwsh
+        run: |
+          $app = Resolve-Path Windows/Slightshot/bin/Release/net10.0-windows/Slightshot.exe
+          $output = Join-Path $PWD Windows/artifacts/parity
+          $process = Start-Process $app -ArgumentList '--smoke-test', $output -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Native WPF smoke test failed with exit code $($process.ExitCode)" }
+          Get-Content "$output/validation.json"
+      - name: Publish portable x64 app
+        run: dotnet publish Windows/Slightshot -c Release -r win-x64 --self-contained true -o Windows/artifacts/win-x64
+      - name: Publish portable ARM64 app
+        run: dotnet publish Windows/Slightshot -c Release -r win-arm64 --self-contained true -o Windows/artifacts/win-arm64
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-native-parity-evidence
+          path: Windows/artifacts/parity
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Slightshot-windows-x64
+          path: Windows/artifacts/win-x64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Slightshot-windows-arm64
+          path: Windows/artifacts/win-arm64
