@@ -1,0 +1,44 @@
+# Windows recording review evidence
+
+Copied from the successful native [Windows CI run 37633645739](https://github.com/jmpijll/slightshot/actions/runs/37633645739),
+source revision `3f4aef9e07648f0f660ddec4f57b75dfd85020a8`.
+The [validation report](recording-validation.json) records the checks performed.
+
+CI creates the real timer/Stop, save and progress windows, verifies that their
+native handles accept and retain `WDA_EXCLUDEFROMCAPTURE`, checks timer/Stop and
+quality slider behavior, and renders the window content below. The HUD uses an
+opaque native window with rounded corners to avoid the Windows 10 conflict
+between per-pixel WPF transparency and display affinity.
+
+## Persistent recording boundary
+
+The live region now has the same red/dark four-point frame as Mac. It uses an opaque HWND with a hollow native region to preserve the Windows 10 display-affinity compatibility of the HUD. The native center is absent, so source content remains accessible. The frame closes with Stop, errors and shutdown.
+
+CI creates real boundary HWNDs at 100% and 200% display scale with negative monitor origins. It verifies exact capture-pixel placement, all four edges, the hollow center, passive window styles, absence of `WS_EX_LAYERED`, and readback of `WDA_EXCLUDEFROMCAPTURE`. These are native window checks; real desktop composition and live GDI exclusion still require the Windows acceptance run described below.
+
+## Timer and Stop
+
+![Compact timer and Stop control](recording-hud.png)
+
+## Save-time quality
+
+| Small & fast | Balanced | High quality |
+| --- | --- | --- |
+| ![Small and fast save dialog](recording-save-dark-compact.png) | ![Balanced save dialog](recording-save-dark-balanced.png) | ![High quality save dialog](recording-save-dark-high.png) |
+
+The save dialog follows the Windows app's light/dark preference:
+
+![Balanced save dialog in the light theme](recording-save-light-balanced.png)
+
+The run's **windows-native-recording-evidence** artifact also contains
+`recording-compact.mp4`, `recording-balanced.mp4` and `recording-high.mp4`.
+These encode moving synthetic BGRA frames through the real Windows H.264 media
+pipeline. CI verifies output dimensions/frame rates, native frame decoding,
+Stop finalization, cancellation that preserves an existing destination,
+successful retry and temporary-file cleanup.
+
+This is native UI/media evidence. It is **not an interactive Windows desktop
+recording or proof that GDI capture excludes the controls under real desktop
+composition**. Live desktop capture, mixed-DPI monitor placement and cursor
+capture still need a Windows desktop acceptance run. Encoded file size can vary
+with content; the quality dialog makes no fixed bitrate or file-size promise.

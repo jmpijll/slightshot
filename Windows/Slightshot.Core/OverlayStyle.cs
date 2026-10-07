@@ -12,7 +12,7 @@ public static class OverlayStyle
     public const double DisplayMargin = 4;
     public const double ToolsWidth = 38;
     public const double ToolsHeight = 265; // 8 buttons + one 1-point separator + eight 2-point gaps + padding.
-    public const double ActionsWidth = 137; // 4 buttons + separator + gaps + padding.
+    public const double ActionsWidth = 169; // 5 buttons + separator + gaps + padding.
     public const double ActionsHeight = 38;
     public static readonly string[] Swatches = ["#FF3B30", "#FF9500", "#FFCC00", "#34C759", "#00C7BE", "#0A84FF", "#5E5CE6", "#FF2D55", "#FFFFFF", "#8E8E93", "#000000", "#A2845E"];
 

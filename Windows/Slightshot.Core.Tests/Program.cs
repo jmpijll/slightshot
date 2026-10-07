@@ -23,13 +23,13 @@ var locked = SelectionGeometry.AxisLocked(new(0, 0), new(100, 85)); Near(locked.
 
 var regular = OverlayStyle.Layout(new(100, 100, 200, 200), bounds);
 Equal(new RectD(308, 100, 38, 265), regular.Tools, "Mac tool bar dimensions and right placement");
-Equal(new RectD(163, 308, 137, 38), regular.Actions, "Mac actions below right aligned");
+Equal(new RectD(131, 308, 169, 38), regular.Actions, "Mac actions with Record below right aligned");
 var edge = OverlayStyle.Layout(new(700, 500, 100, 100), bounds);
 Equal(new RectD(654, 331, 38, 265), edge.Tools, "right edge flips tools to left and clamps vertically");
-Equal(new RectD(659, 454, 137, 38), edge.Actions, "bottom edge flips actions above and clamps horizontally");
+Equal(new RectD(627, 454, 169, 38), edge.Actions, "bottom edge flips actions above and clamps horizontally");
 var full = OverlayStyle.Layout(bounds, bounds);
 Equal(new RectD(754, 4, 38, 265), full.Tools, "full monitor tucks tools inside");
-Equal(new RectD(659, 554, 137, 38), full.Actions, "full monitor tucks actions inside");
+Equal(new RectD(627, 554, 169, 38), full.Actions, "full monitor tucks actions inside");
 Equal(12, OverlayStyle.Swatches.Length, "same twelve Mac swatches");
 Equal("#FF3B30", OverlayStyle.Swatches[0], "Mac default red");
 Equal(new RectD(12, 25, 26, 38), new RectD(10, 20, 20, 30).ToPixels(1.25, 1.25, 100, 100), "fractional DPI covers selected pixels");
@@ -45,4 +45,22 @@ Equal("Screenshot", OutputNaming.FileName("...", when, 1, 1), "all dots fallback
 Equal(180, OutputNaming.FileName(new string('a', 300), when, 1, 1).Length, "long filename bounded");
 Equal(18.0, new Annotation(Tool.Marker, [], "#FF3B30", 3).EffectiveWidth, "marker six times stroke width");
 Near(0.35, new Annotation(Tool.Marker, [], "#FF3B30", 3).Alpha, "Mac marker opacity");
+Equal((1280, 720), RecordingQuality.Compact.Dimensions(3840, 2160), "compact preserves aspect at 720p");
+Equal((1920, 1080), RecordingQuality.Balanced.Dimensions(3840, 2160), "balanced preserves aspect at 1080p");
+Equal((4096, 2304), RecordingQuality.High.Dimensions(7680, 4320), "high caps maximum encoder dimension");
+Equal((320, 240), RecordingQuality.High.Dimensions(321, 241), "odd dimensions round inward");
+Equal((720, 1280), RecordingQuality.Compact.Dimensions(2160, 3840), "portrait sizing");
+Equal((2, 2), RecordingQuality.Compact.Dimensions(1, 1), "encoder minimum dimensions");
+Equal(15, RecordingQuality.Compact.FramesPerSecond(), "compact frame rate");
+Equal(24, RecordingQuality.Balanced.FramesPerSecond(), "balanced frame rate");
+Equal(30, RecordingQuality.High.FramesPerSecond(), "high frame rate");
+Equal(150000u, RecordingQuality.Compact.Bitrate(20, 20), "tiny video bitrate floor");
+Equal(1105920u, RecordingQuality.Compact.Bitrate(1280, 720), "compact bitrate budget");
+Equal("Small & fast", RecordingQuality.Compact.Title(), "Mac quality label");
+foreach (var quality in Enum.GetValues<RecordingQuality>())
+{
+    var size = quality.Dimensions(3457, 1973);
+    Equal(0, size.Width % 2, $"{quality} width even"); Equal(0, size.Height % 2, $"{quality} height even");
+    Equal(true, Math.Max(size.Width, size.Height) <= quality.MaximumDimension(), $"{quality} dimension cap");
+}
 Console.WriteLine($"Passed {checks} Windows parity geometry, pixel-boundary, style and filename checks.");

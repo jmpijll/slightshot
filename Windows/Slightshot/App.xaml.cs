@@ -15,15 +15,24 @@ public partial class App : System.Windows.Application
     private Icon? trayIcon;
     private HotKeyService? hotKeys;
     private OutputService? output;
+    private RecordingCoordinator? recording;
     private SettingsWindow? preferences;
     private readonly List<OverlayWindow> overlays = [];
     private Mutex? instance;
     private bool ownsInstance;
     private bool capturing;
+    private bool quitting;
 
-    protected override void OnStartup(StartupEventArgs e)
+    protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        if (e.Args.Length >= 1 && e.Args[0] == "--recording-smoke-test")
+        {
+            string directory = Path.GetFullPath(e.Args.Length > 1 ? e.Args[1] : "artifacts");
+            try { await RecordingSmokeTest.RunAsync(directory); Shutdown(0); }
+            catch (Exception ex) { Directory.CreateDirectory(directory); File.WriteAllText(Path.Combine(directory, "recording-failure.txt"), ex.ToString()); Shutdown(1); }
+            return;
+        }
         if (e.Args.Length >= 1 && e.Args[0] == "--smoke-test")
         {
             string directory = e.Args.Length > 1 ? e.Args[1] : "artifacts";
@@ -39,6 +48,7 @@ public partial class App : System.Windows.Application
         instance = new Mutex(true, "Local\\Slightshot", out ownsInstance);
         if (!ownsInstance) { Shutdown(); return; }
         settings = Settings.Load();
+        recording = new RecordingCoordinator(settings);
         trayIcon = CreateTrayIcon();
         tray = new Forms.NotifyIcon { Icon = trayIcon, Text = "Slightshot", Visible = true };
         tray.DoubleClick += (_, _) => Dispatcher.InvokeAsync(BeginCapture);
@@ -62,7 +72,7 @@ public partial class App : System.Windows.Application
         Add(menu, "Settings…", ShowSettings);
         menu.Items.Add(new Forms.ToolStripMenuItem("Check for Updates…") { Enabled = false });
         Add(menu, "About Slightshot", () => MessageBox.Show("Slightshot 0.1.0 for Windows\n\nA small screenshot tool with the same capture workflow as Slightshot on Mac.\n\ngithub.com/jmpijll/slightshot", "About Slightshot", MessageBoxButton.OK));
-        menu.Items.Add(new Forms.ToolStripSeparator()); Add(menu, "Quit Slightshot", Shutdown);
+        menu.Items.Add(new Forms.ToolStripSeparator()); Add(menu, "Quit Slightshot", Quit);
         var old = tray!.ContextMenuStrip; tray.ContextMenuStrip = menu; old?.Dispose();
         if (failures.Length > 0) tray.ShowBalloonTip(6000, "Shortcut unavailable", $"Already in use or invalid: {string.Join(", ", failures)}. Capture from the tray or choose another shortcut in Settings.", Forms.ToolTipIcon.Warning);
     }
@@ -70,7 +80,7 @@ public partial class App : System.Windows.Application
     private void Add(Forms.ContextMenuStrip menu, string label, Action action) => menu.Items.Add(label, null, (_, _) => Dispatcher.InvokeAsync(action));
     private void BeginCapture()
     {
-        if (capturing || overlays.Count > 0) return;
+        if (capturing || overlays.Count > 0 || recording?.IsBusy == true || quitting) return;
         capturing = true;
         try
         {
@@ -80,7 +90,7 @@ public partial class App : System.Windows.Application
             OverlayWindow? focus = null;
             foreach (var display in displays)
             {
-                var window = new OverlayWindow(display, settings, display == active, TakeOver, Dismiss, (_, action, bitmap) => { Dismiss(); output!.Perform(action, bitmap); });
+                var window = new OverlayWindow(display, settings, display == active, TakeOver, Dismiss, (_, action, bitmap) => { Dismiss(); output!.Perform(action, bitmap); }, StartRecording);
                 overlays.Add(window); window.Show();
                 if (display == active) focus = window;
             }
@@ -98,6 +108,12 @@ public partial class App : System.Windows.Application
         foreach (var other in overlays.Where(other => other != window)) other.Relinquish();
         window.Activate(); window.Focus();
     }
+    private void StartRecording(CapturedDisplay display, RectD selection)
+    {
+        try { foreach (var window in overlays) RecordingWindowExclusion.Exclude(window); }
+        catch (System.ComponentModel.Win32Exception error) { Dismiss(); Error(error.Message); return; }
+        Dismiss(); recording!.Begin(display, selection);
+    }
     private void Dismiss()
     {
         foreach (var window in overlays) window.Close(); overlays.Clear();
@@ -105,7 +121,7 @@ public partial class App : System.Windows.Application
     }
     private void FullScreen(CaptureAction action)
     {
-        if (capturing || overlays.Count > 0) return;
+        if (capturing || overlays.Count > 0 || recording?.IsBusy == true || quitting) return;
         capturing = true;
         try
         {
@@ -118,6 +134,7 @@ public partial class App : System.Windows.Application
     }
     private void ShowSettings()
     {
+        if (recording?.IsBusy == true || quitting) return;
         if (overlays.Count > 0) Dismiss();
         if (preferences == null)
         {
@@ -127,6 +144,13 @@ public partial class App : System.Windows.Application
         preferences.Show(); preferences.Activate();
     }
     internal static void Open(string path) => Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
+    private async void Quit()
+    {
+        if (quitting) return;
+        quitting = true; Dismiss();
+        if (recording != null) await recording.ShutdownAsync();
+        Shutdown();
+    }
     private static void Error(string text) => MessageBox.Show(text, "Slightshot", MessageBoxButton.OK, MessageBoxImage.Warning);
     private static Icon CreateTrayIcon()
     {

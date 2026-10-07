@@ -9,6 +9,7 @@ public sealed class Settings
     private static readonly string SettingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Slightshot", "settings.json");
     public ImageFormat ImageFormat { get; set; } = ImageFormat.Png;
     public double JpegQuality { get; set; } = 0.9;
+    public RecordingQuality RecordingQuality { get; set; } = RecordingQuality.Balanced;
     public string SaveDirectory { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "Screenshots");
     public string FilenameTemplate { get; set; } = "Screenshot {date} at {time}";
     public bool CopyAfterSave { get; set; }
@@ -34,6 +35,7 @@ public sealed class Settings
         {
             var settings = File.Exists(SettingsPath) ? JsonSerializer.Deserialize<Settings>(File.ReadAllText(SettingsPath)) ?? new() : new Settings();
             settings.JpegQuality = Clamp(settings.JpegQuality, 0.3, 1, 0.9);
+            if (!Enum.IsDefined(settings.RecordingQuality)) settings.RecordingQuality = RecordingQuality.Balanced;
             settings.DimOpacity = Clamp(settings.DimOpacity, 0, 0.85, 0.45);
             settings.LineWidth = Clamp(settings.LineWidth, 1, 12, 3);
             settings.FontSize = Clamp(settings.FontSize, 10, 48, 18);
