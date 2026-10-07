@@ -28,7 +28,8 @@ def commands(path):
 
 
 def catalogue():
-    raw = SOURCE.read_bytes()
+    # Git may check out CRLF on Windows; hash the same UTF-8/LF source on both OSes.
+    raw = SOURCE.read_text(encoding="utf-8").encode("utf-8")
     data = json.loads(raw)
     size, stroke = data["size"], data["strokeWidth"]
     assert size > 0 and stroke > 0
@@ -112,8 +113,8 @@ def main():
     stale = []
     for path, content in outputs.items():
         if args.check:
-            if not path.exists() or path.read_text() != content: stale.append(str(path.relative_to(ROOT)))
-        else: path.write_text(content)
+            if not path.exists() or path.read_text(encoding="utf-8") != content: stale.append(str(path.relative_to(ROOT)))
+        else: path.write_text(content, encoding="utf-8")
     if stale:
         print("Regenerate shared icons: python3 Scripts/generate_ui_icons.py\n" + "\n".join(stale), file=sys.stderr)
         return 1
