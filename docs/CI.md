@@ -24,6 +24,8 @@ GitHub shares runners across repositories through organisations. Personal-accoun
 
 ## Release DMG
 
-`Release` signs and notarises the app and DMG, then publishes a GitHub release and Sparkle feed. It uses the same `xcode-27` toolchain as regular CI. A future dedicated Mac can be selected with `MACOS_RELEASE_RUNNER`, containing a JSON runner label or label array; Linux containers are not suitable.
+`Release` signs and notarises the app and DMG and verifies Sparkle appcast signing. Manual runs default to verification only and retain the signed DMG as a seven-day artifact. A version tag, or a manual run with **publish** enabled, also publishes a GitHub release and Sparkle feed. It uses the same `xcode-27` toolchain as regular CI. A future dedicated Mac can be selected with `MACOS_RELEASE_RUNNER`, containing a JSON runner label or label array; Linux containers are not suitable.
 
-The latest tag-triggered runs failed at the credential check before building. At this audit, GitHub had `MACOS_CERTIFICATE`, `SPARKLE_PRIVATE_KEY`, `SPARKLE_PUBLIC_KEY`; it still lacked `MACOS_CERTIFICATE_PASSWORD`, `KEYCHAIN_PASSWORD`, `APPLE_ID`, `TEAM_ID`, `APP_PASSWORD`. Secret names are presence checks, not validation of their contents. See [RELEASING.md](RELEASING.md) for configuration. No release was published by this change.
+All eight repository secrets are configured. The [signed verification run](https://github.com/jmpijll/slightshot/actions/runs/37664140165) at `2712cfe` passed certificate import, app and DMG notarisation, ticket stapling and appcast signing. Both Apple submissions were accepted. The downloaded disk image and enclosed app also passed local Gatekeeper assessment; the generated Sparkle signature verified against the embedded, existing public key. Release publication, appcast commits and Pages deployment were skipped in verification mode.
+
+See [the validation record](review/releases/signing-validation.json) for the tested source commit, artifact hash and local checks, and [RELEASING.md](RELEASING.md) for verification and publishing instructions.

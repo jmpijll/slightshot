@@ -1,0 +1,25 @@
+{
+  "run_url": "https://github.com/jmpijll/slightshot/actions/runs/37664140165",
+  "source_commit": "2712cfed8f54c9677bd622f66c77296e72273f35",
+  "version": "1.0.3",
+  "build": "4",
+  "team": "PAW49RLWAA",
+  "sha256": "4a5faa8db2080905c0ed979e05ea612c643c037b1862888e11aa1544468e4af0",
+  "bytes": 1935047,
+  "accepted_artifacts": [
+    "Slightshot-1.0.3.dmg.notary-result.json",
+    "Slightshot.app.notary-result.json"
+  ],
+  "checks": {
+    "image": "Controlegetal berekenen van 'Protective Master Boot Record (MBR : 0)'\u2026\nProtective Master Boot Record (MBR :: Geverifieerd: CRC32 $03AC1F67\nControlegetal berekenen van 'GPT Header (Primary GPT Header : 1)'\u2026\n GPT Header (Primary GPT Header : 1): Geverifieerd: CRC32 $C34C5862\nControlegetal berekenen van 'GPT Partition Data (Primary GPT Table : 2)'\u2026\nGPT Partition Data (Primary GPT Tabl: Geverifieerd: CRC32 $E7E28C29\nControlegetal berekenen van ' (Apple_Free : 3)'\u2026\n                    (Apple_Free : 3): Geverifieerd: CRC32 $00000000\nControlegetal berekenen van 'disk image (Apple_APFS : 4)'\u2026\n         disk image (Apple_APFS : 4): Geverifieerd: CRC32 $CA1E53E9\nControlegetal berekenen van ' (Apple_Free : 5)'\u2026\n                    (Apple_Free : 5): Geverifieerd: CRC32 $00000000\nControlegetal berekenen van 'GPT Partition Data (Backup GPT Table : 6)'\u2026\nGPT Partition Data (Backup GPT Table: Geverifieerd: CRC32 $E7E28C29\nControlegetal berekenen van 'GPT Header (Backup GPT Header : 7)'\u2026\n  GPT Header (Backup GPT Header : 7): Geverifieerd: CRC32 $6020BDAE\nGeverifieerd: CRC32 $7AB4F619\n\nhdiutil: verify: checksum of \"Slightshot-1.0.3.dmg\" is VALID",
+    "dmg_signature": "Slightshot-1.0.3.dmg: valid on disk\nSlightshot-1.0.3.dmg: satisfies its Designated Requirement",
+    "dmg_ticket": "Processing: Slightshot-1.0.3.dmg\nThe validate action worked!",
+    "dmg_gatekeeper": "Slightshot-1.0.3.dmg: accepted\nsource=Notarized Developer ID",
+    "app_signature": "--prepared:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\n--prepared:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--validated:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--prepared:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--validated:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--prepared:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--validated:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--prepared:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\nmounted-image/Slightshot.app: valid on disk\nmounted-image/Slightshot.app: satisfies its Designated Requirement",
+    "app_ticket": "Processing: mounted-image/Slightshot.app\nThe validate action worked!",
+    "app_gatekeeper": "mounted-image/Slightshot.app: accepted\nsource=Notarized Developer ID",
+    "sparkle_signature": "Signature Verified Successfully"
+  },
+  "artifact_url": "https://github.com/jmpijll/slightshot/actions/runs/37664140165/artifacts/11502470036",
+  "publication": "verification only; release, appcast commit and Pages deployment skipped"
+}
