@@ -50,8 +50,9 @@ private struct GeneralTab: View {
             Section {
                 LabeledContent("Screen Recording") {
                     HStack(spacing: 8) {
-                        Image(systemName: ScreenRecordingPermission.isGranted
-                              ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        Image(nsImage: (ScreenRecordingPermission.isGranted ? ProductIcon.check : .warning)
+                            .image(accessibilityDescription: ScreenRecordingPermission.isGranted
+                                   ? "Screen recording granted" : "Screen recording not granted"))
                             .foregroundStyle(ScreenRecordingPermission.isGranted ? .green : .orange)
                         Text(ScreenRecordingPermission.isGranted ? "Granted" : "Not granted")
                         if !ScreenRecordingPermission.isGranted {

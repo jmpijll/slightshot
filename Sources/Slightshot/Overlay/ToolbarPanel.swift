@@ -8,13 +8,11 @@ final class ToolbarButton: NSButton {
 
     var isSelectedItem = false { didSet { refresh() } }
 
-    init(symbol: String, tooltip: String, onClick: @escaping () -> Void) {
+    init(icon: ProductIcon, tooltip: String, onClick: @escaping () -> Void) {
         self.onClick = onClick
         super.init(frame: NSRect(x: 0, y: 0, width: 30, height: 30))
 
-        let config = NSImage.SymbolConfiguration(pointSize: 15, weight: .medium)
-        image = NSImage(systemSymbolName: symbol, accessibilityDescription: tooltip)?
-            .withSymbolConfiguration(config)
+        image = icon.image(accessibilityDescription: tooltip)
         imagePosition = .imageOnly
         isBordered = false
         bezelStyle = .regularSquare

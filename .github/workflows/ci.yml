@@ -32,6 +32,9 @@ jobs:
       - name: Test notarisation release gates
         run: python3 -m unittest discover -s Tests -v
 
+      - name: Verify shared icon assets
+        run: python3 Scripts/generate_ui_icons.py --check
+
       - name: Build
         run: swift build -c release
 

@@ -8,7 +8,7 @@ final class RecordingPanel: NSPanel {
     private var timer: Timer?
 
     init(screen: NSScreen, selection: CGRect, onStop: @escaping () -> Void) {
-        stopButton = ToolbarButton(symbol: "stop.fill", tooltip: "Stop recording", onClick: onStop)
+        stopButton = ToolbarButton(icon: .stop, tooltip: "Stop recording", onClick: onStop)
         super.init(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel],
                    backing: .buffered, defer: false)
         isReleasedWhenClosed = false
