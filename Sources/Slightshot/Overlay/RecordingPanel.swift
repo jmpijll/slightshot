@@ -112,7 +112,7 @@ final class RecordingQualityView: NSView {
     @objc private func changed() {
         titleLabel.stringValue = quality.title
         detailLabel.stringValue = quality.detail(for: sourceSize)
-        slider.setAccessibilityValue(quality.title)
+        slider.setAccessibilityValueDescription(quality.title)
     }
 }
 
