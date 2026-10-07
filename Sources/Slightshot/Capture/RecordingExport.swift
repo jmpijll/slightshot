@@ -48,9 +48,12 @@ nonisolated enum RecordingQuality: Int, CaseIterable, Sendable {
 
     func detail(for source: CGSize) -> String {
         let size = dimensions(for: source)
-        let megabits = Double(bitrate(for: size)) / 1_000_000
-        return "\(Int(size.width)) × \(Int(size.height)) · \(framesPerSecond) fps · "
-            + String(format: "%.1f Mbps", megabits)
+        let tradeoff: String = switch self {
+        case .compact: "Prioritize smaller files and quicker saving"
+        case .balanced: "Balance detail and file size"
+        case .high: "Preserve more detail and smoother motion"
+        }
+        return "\(Int(size.width)) × \(Int(size.height)) · \(framesPerSecond) fps\n\(tradeoff)"
     }
 }
 

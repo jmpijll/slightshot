@@ -19,8 +19,8 @@
 ## Capture an area
 
 Slightshot lives in the menu bar. Press <kbd>⌘⇧9</kbd> and drag to select part of
-your screen. The drawing tools appear beside the selection; copy, save and
-print and record sit underneath it.
+your screen. The drawing tools appear beside the selection; copy, save, print
+and record sit underneath it.
 
 Use the pen, line, arrow, rectangle, marker or text tool to point something out.
 You can change the colour and thickness, undo an annotation, or resize the

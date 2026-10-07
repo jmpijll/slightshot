@@ -81,6 +81,9 @@ final class RecordingQualityView: NSView {
         titleLabel.font = .systemFont(ofSize: 13, weight: .medium)
         detailLabel.font = .systemFont(ofSize: 11)
         detailLabel.textColor = .secondaryLabelColor
+        detailLabel.usesSingleLineMode = false
+        detailLabel.maximumNumberOfLines = 2
+        detailLabel.lineBreakMode = .byWordWrapping
         let small = NSTextField(labelWithString: "Small & fast")
         let high = NSTextField(labelWithString: "High quality")
         small.font = .systemFont(ofSize: 11)
@@ -99,6 +102,7 @@ final class RecordingQualityView: NSView {
             stack.topAnchor.constraint(equalTo: topAnchor, constant: 8),
             slider.widthAnchor.constraint(equalTo: stack.widthAnchor),
             labels.widthAnchor.constraint(equalTo: stack.widthAnchor),
+            detailLabel.widthAnchor.constraint(equalTo: stack.widthAnchor),
         ])
         changed()
     }
