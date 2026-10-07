@@ -26,8 +26,14 @@ public partial class App : System.Windows.Application
         base.OnStartup(e);
         if (e.Args.Length >= 1 && e.Args[0] == "--smoke-test")
         {
-            try { SmokeTest.Run(e.Args.Length > 1 ? e.Args[1] : "artifacts"); Shutdown(0); }
-            catch (Exception ex) { Console.Error.WriteLine(ex); Shutdown(1); }
+            string directory = e.Args.Length > 1 ? e.Args[1] : "artifacts";
+            try { SmokeTest.Run(directory); Shutdown(0); }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex);
+                try { Directory.CreateDirectory(directory); File.WriteAllText(Path.Combine(directory, "failure.txt"), ex.ToString()); } catch (IOException) { }
+                Shutdown(1);
+            }
             return;
         }
         instance = new Mutex(true, "Local\\Slightshot", out ownsInstance);
@@ -125,9 +131,12 @@ public partial class App : System.Windows.Application
     private static Icon CreateTrayIcon()
     {
         using var bitmap = new Bitmap(32, 32); using var graphics = Graphics.FromImage(bitmap);
-        graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-        using var pen = new System.Drawing.Pen(System.Drawing.Color.FromArgb(235, 160, 160, 165), 3) { StartCap = System.Drawing.Drawing2D.LineCap.Round, EndCap = System.Drawing.Drawing2D.LineCap.Round };
-        foreach (var p in new[] { new[] { 5, 12, 5, 5, 12, 5 }, new[] { 20, 5, 27, 5, 27, 12 }, new[] { 27, 20, 27, 27, 20, 27 }, new[] { 12, 27, 5, 27, 5, 20 } }) graphics.DrawLines(pen, [new(p[0], p[1]), new(p[2], p[3]), new(p[4], p[5])]);
+        using var resource = typeof(App).Assembly.GetManifestResourceStream("Slightshot.MenuBarTemplate.png")!;
+        using var template = new Bitmap(resource);
+        float shade = Appearance.IsDark(taskbar: true) ? 0.92f : 0.12f;
+        using var attributes = new System.Drawing.Imaging.ImageAttributes();
+        attributes.SetColorMatrix(new System.Drawing.Imaging.ColorMatrix([[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 1, 0], [shade, shade, shade, 0, 1]]));
+        graphics.DrawImage(template, new System.Drawing.Rectangle(0, 0, 32, 32), 0, 0, template.Width, template.Height, GraphicsUnit.Pixel, attributes);
         IntPtr handle = bitmap.GetHicon();
         try { using var icon = Icon.FromHandle(handle); return (Icon)icon.Clone(); }
         finally { NativeMethods.DestroyIcon(handle); }

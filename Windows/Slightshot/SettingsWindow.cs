@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using Microsoft.Win32;
 using Slightshot.Core;
@@ -13,15 +14,30 @@ internal sealed class SettingsWindow : Window
 {
     private const string RunKey = @"Software\Microsoft\Windows\CurrentVersion\Run";
     private readonly Settings settings;
-    public SettingsWindow(Settings settings)
+    private readonly Brush secondary;
+    private readonly Brush surface;
+    public SettingsWindow(Settings settings, bool? forceDark = null)
     {
         this.settings = settings;
         Title = "Slightshot Settings"; Width = 560; Height = 620; ResizeMode = ResizeMode.NoResize;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        FontFamily = new FontFamily("Segoe UI"); FontSize = 13; Background = new SolidColorBrush(Color.FromRgb(243, 243, 245));
+        bool dark = forceDark ?? Appearance.IsDark();
+        FontFamily = new FontFamily("Segoe UI"); FontSize = 13;
+        Background = Appearance.Brush(dark ? "#222226" : "#F3F3F5"); Foreground = Appearance.Brush(dark ? "#F3F3F5" : "#242426");
+        secondary = Appearance.Brush(dark ? "#A5A5AB" : "#727278"); surface = Appearance.Brush(dark ? "#303034" : "#FFFFFF");
+        Resources["TextBrush"] = Foreground; Resources["SecondaryBrush"] = secondary; Resources["SurfaceBrush"] = surface;
+        Resources["TabRailBrush"] = Appearance.Brush(dark ? "#17171A" : "#E5E5E9");
+        Resources["TabSelectedBrush"] = Appearance.Brush(dark ? "#55555A" : "#FFFFFF");
+        Resources["ButtonBrush"] = Appearance.Brush(dark ? "#505056" : "#FFFFFF");
+        Resources["BorderBrush"] = Appearance.Brush(dark ? "#606066" : "#D0D0D6");
+        Resources["HoverBrush"] = Appearance.Brush(dark ? "#606068" : "#F0F0F4");
+        Resources["SwitchBrush"] = Appearance.Brush(dark ? "#66666C" : "#C8C8CE");
+        Resources["InputBrush"] = Appearance.Brush(dark ? "#26262A" : "#FAFAFC");
+        Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("/Slightshot;component/SettingsTheme.xaml", UriKind.Relative) });
+        SourceInitialized += (_, _) => { int value = dark ? 1 : 0; NativeMethods.DwmSetWindowAttribute(new WindowInteropHelper(this).Handle, 20, ref value, sizeof(int)); };
         var tabs = new TabControl { Margin = new Thickness(12, 16, 12, 12) };
         tabs.Items.Add(Tab("General", General())); tabs.Items.Add(Tab("Shortcuts", Shortcuts())); tabs.Items.Add(Tab("Output", Output())); tabs.Items.Add(Tab("Capture", Capture()));
-        Content = tabs;
+        Content = new Border { Background = Background, Child = tabs };
         PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape && e.OriginalSource is not TextBox) Close(); };
     }
     private UIElement General()
@@ -49,7 +65,7 @@ internal sealed class SettingsWindow : Window
         var panel = Column();
         panel.Children.Add(Group("Global shortcuts", Row("Capture area", Shortcut(() => settings.CaptureAreaHotKey, v => settings.CaptureAreaHotKey = v)), Row("Capture full screen", Shortcut(() => settings.SaveFullScreenHotKey, v => settings.SaveFullScreenHotKey = v)), Row("Copy full screen", Shortcut(() => settings.CopyFullScreenHotKey, v => settings.CopyFullScreenHotKey = v)), Help("Click a field, then press the combination. Escape clears it.\nChanges take effect when Settings closes.")));
         (string Shortcut, string Description)[] shortcuts = [("Ctrl+A", "Select the whole screen"), ("Ctrl+C", "Copy to clipboard"), ("Ctrl+S", "Save to file"), ("Ctrl+Shift+S", "Save as…"), ("Ctrl+P", "Print"), ("Ctrl+Z", "Undo the last annotation"), ("Enter", "Confirm"), ("Esc", "Cancel"), ("Shift+drag", "Constrain to a square or 45°"), ("Ctrl+drag", "Select and copy in one motion"), ("↑↓←→", "Nudge the selection by one point"), ("Ctrl+Enter", "Finish typing an annotation")];
-        panel.Children.Add(Group("While capturing", shortcuts.Select(s => Row(s.Description, new TextBlock { Text = s.Shortcut, FontFamily = new FontFamily("Consolas"), Foreground = Brushes.DimGray })).ToArray()));
+        panel.Children.Add(Group("While capturing", shortcuts.Select(s => Row(s.Description, new TextBlock { Text = s.Shortcut, FontFamily = new FontFamily("Consolas"), Foreground = secondary })).ToArray()));
         return panel;
     }
     private TextBox Shortcut(Func<HotKey> get, Action<HotKey> set)
@@ -73,7 +89,7 @@ internal sealed class SettingsWindow : Window
     private UIElement Output()
     {
         var panel = Column();
-        var directory = new TextBlock { Text = settings.SaveDirectory, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 225, Foreground = Brushes.DimGray, VerticalAlignment = VerticalAlignment.Center };
+        var directory = new TextBlock { Text = settings.SaveDirectory, TextTrimming = TextTrimming.CharacterEllipsis, MaxWidth = 225, Foreground = secondary, VerticalAlignment = VerticalAlignment.Center };
         var choose = new Button { Content = "Choose…", Padding = new Thickness(8, 4, 8, 4), Margin = new Thickness(8, 0, 0, 0) };
         choose.Click += (_, _) => { var dialog = new OpenFolderDialog { Title = "Choose screenshots folder", InitialDirectory = settings.SaveDirectory }; if (dialog.ShowDialog(this) == true) { settings.SaveDirectory = dialog.FolderName; directory.Text = dialog.FolderName; } };
         var pathRow = new StackPanel { Orientation = Orientation.Horizontal }; pathRow.Children.Add(directory); pathRow.Children.Add(choose);
@@ -94,19 +110,19 @@ internal sealed class SettingsWindow : Window
     }
     private static TabItem Tab(string title, UIElement content) => new() { Header = title, Content = new ScrollViewer { Content = content, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled } };
     private static StackPanel Column() => new() { Margin = new Thickness(16, 18, 16, 12) };
-    private static Border Group(string? title, params UIElement[] rows)
+    private Border Group(string? title, params UIElement[] rows)
     {
         var column = new StackPanel();
-        if (title != null) column.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 8), Foreground = Brushes.DimGray });
+        if (title != null) column.Children.Add(new TextBlock { Text = title, FontWeight = FontWeights.SemiBold, Margin = new Thickness(0, 0, 0, 8), Foreground = secondary });
         foreach (var row in rows) column.Children.Add(row);
-        return new Border { Background = Brushes.White, CornerRadius = new CornerRadius(9), Padding = new Thickness(14), Margin = new Thickness(0, 0, 0, 14), Child = column };
+        return new Border { Background = surface, CornerRadius = new CornerRadius(9), Padding = new Thickness(14), Margin = new Thickness(0, 0, 0, 14), Child = column };
     }
     private static Grid Row(string label, UIElement control)
     {
         var grid = new Grid { Margin = new Thickness(0, 5, 0, 5) }; grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.Children.Add(new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 10, 0) }); Grid.SetColumn(control, 1); grid.Children.Add(control); AutomationProperties.SetName(control, label); return grid;
     }
-    private static TextBlock Help(string text) => new() { Text = text, FontSize = 11, Foreground = Brushes.Gray, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
+    private TextBlock Help(string text) => new() { Text = text, FontSize = 11, Foreground = secondary, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
     private static CheckBox Check(string label, bool value, Action<bool> changed)
     {
         var check = new CheckBox { Content = label, IsChecked = value, Margin = new Thickness(0, 6, 0, 6) }; check.Checked += (_, _) => changed(true); check.Unchecked += (_, _) => changed(false); return check;
@@ -118,12 +134,12 @@ internal sealed class SettingsWindow : Window
         combo.SelectedItem = combo.Items.Cast<ComboBoxItem>().First(v => Equals(v.Tag, current));
         combo.SelectionChanged += (_, _) => { if (combo.SelectedItem is ComboBoxItem { Tag: T value }) changed(value); }; return combo;
     }
-    private static UIElement Slider(double value, double min, double max, Action<double> changed, string low, string high, double step = 0)
+    private UIElement Slider(double value, double min, double max, Action<double> changed, string low, string high, double step = 0)
     {
         var grid = new Grid { Width = 210 }; grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto }); grid.ColumnDefinitions.Add(new ColumnDefinition()); grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.Children.Add(new TextBlock { Text = low, FontSize = 11, Foreground = Brushes.Gray, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 5, 0) });
+        grid.Children.Add(new TextBlock { Text = low, FontSize = 11, Foreground = secondary, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 5, 0) });
         var slider = new System.Windows.Controls.Slider { Minimum = min, Maximum = max, Value = value, TickFrequency = step == 0 ? 1 : step, IsSnapToTickEnabled = step != 0, IsMoveToPointEnabled = true, VerticalAlignment = VerticalAlignment.Center };
         slider.ValueChanged += (_, _) => changed(slider.Value); Grid.SetColumn(slider, 1); grid.Children.Add(slider);
-        var maximum = new TextBlock { Text = high, FontSize = 11, Foreground = Brushes.Gray, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(5, 0, 0, 0) }; Grid.SetColumn(maximum, 2); grid.Children.Add(maximum); return grid;
+        var maximum = new TextBlock { Text = high, FontSize = 11, Foreground = secondary, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(5, 0, 0, 0) }; Grid.SetColumn(maximum, 2); grid.Children.Add(maximum); return grid;
     }
 }

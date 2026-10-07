@@ -95,6 +95,11 @@ video of a person using the Windows desktop. Manual Windows acceptance still
 needs capture/clipboard/print/tray testing, mixed-DPI multi-monitor dragging,
 keyboard focus, and a real desktop video. The Mac cannot run WPF.
 
+Settings follow the Windows light/dark app preference with grouped panels,
+rounded segmented tabs, switch controls and matching subdued colours. CI renders
+both themes. The tray reuses the Mac menu artwork (tinted for the taskbar theme)
+and the Windows executable icon is converted from the existing Mac app artwork.
+
 Windows uses Segoe UI and equivalent custom vector icons because Apple's system
 fonts and SF Symbols are platform-specific. Frosted material and text shadow are
 approximations of AppKit rather than identical OS rendering. Windows update

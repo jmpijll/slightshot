@@ -52,8 +52,11 @@ internal static class SmokeTest
             SaveVisual((FrameworkElement)edge.Content, 800, 520, Path.Combine(directory, "overlay-edge-parity.png"));
             var hint = new OverlayWindow(display, new Settings { PlaySound = false }, true, _ => { }, () => { }, (_, _, _) => { });
             SaveVisual((FrameworkElement)hint.Content, 800, 520, Path.Combine(directory, "overlay-hint-parity.png"));
-            var prefs = new SettingsWindow(new Settings { PlaySound = false });
-            SaveVisual((FrameworkElement)prefs.Content, 540, 580, Path.Combine(directory, "settings-parity.png"));
+            foreach (bool dark in new[] { false, true })
+            {
+                var prefs = new SettingsWindow(new Settings { PlaySound = false }, dark);
+                SaveVisual((FrameworkElement)prefs.Content, 540, 580, Path.Combine(directory, $"settings-{(dark ? "dark" : "light")}-parity.png"));
+            }
         }
         File.WriteAllText(Path.Combine(directory, "validation.json"), JsonSerializer.Serialize(new { platform = "Windows WPF", source = "Synthetic fixture; not a live screen capture or manual interaction recording", checks }, new JsonSerializerOptions { WriteIndented = true }));
     }
