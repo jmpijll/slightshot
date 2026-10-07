@@ -30,10 +30,9 @@ struct RecordingExportTests {
             let track = try #require(try await asset.loadTracks(withMediaType: .video).first)
             let dimensions = try await track.load(.naturalSize)
             #expect(dimensions == quality.dimensions(for: CGSize(width: 2048, height: 1200)))
-            let rate = try await track.load(.nominalFrameRate)
-            #expect(abs(rate - Float(quality.framesPerSecond)) < 0.1)
             let duration = try await asset.load(.duration)
             #expect(abs(duration.seconds - 2) < 0.1)
+            try await verifyFrameCadence(asset: asset, track: track, quality: quality, duration: duration)
             let descriptions = try await track.load(.formatDescriptions)
             #expect(descriptions.first.map { CMFormatDescriptionGetMediaSubType($0) } == kCMVideoCodecType_H264)
             fileSizes[quality] = try Data(contentsOf: destination).count
@@ -100,6 +99,41 @@ struct RecordingExportTests {
         #expect(try await AVURLAsset(url: destination).load(.isPlayable))
         #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).sorted()
             == ["existing.mp4", "source.mp4"])
+    }
+
+    /// Container nominalFrameRate can include a short boundary sample and vary
+    /// with the encoder used by a hosted macOS runner. Inspect the encoded video
+    /// samples instead: a broken fps choice must fail even if metadata looks right.
+    private func verifyFrameCadence(asset: AVAsset, track: AVAssetTrack, quality: RecordingQuality,
+                                    duration: CMTime) async throws {
+        let reader = try AVAssetReader(asset: asset)
+        let output = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
+        let provider = reader.outputProvider(for: output)
+        try reader.start()
+        var timestamps: [Double] = []
+        while let sample = try await provider.next() {
+            // The async reader also emits marker-only buffers for stream
+            // boundaries. They carry no encoded frame and may have invalid time.
+            guard sample.contentType == .dataBuffer, sample.presentationTimeStamp.isNumeric else { continue }
+            timestamps.append(sample.presentationTimeStamp.seconds)
+        }
+        timestamps.sort() // H.264 may store frames in decode order.
+        let fps = Double(quality.framesPerSecond)
+        let interval = 1 / fps
+        let expectedCount = Int((duration.seconds * fps).rounded())
+        #expect(abs(timestamps.count - expectedCount) <= 1,
+                "\(quality.title): \(timestamps.count) frames; expected \(expectedCount)")
+        let first = try #require(timestamps.first)
+        let last = try #require(timestamps.last)
+        // Frame reordering can introduce a leading offset in compressed H.264
+        // samples. Check cadence and coverage independently of that offset.
+        let span = last - first
+        #expect(abs(span + interval - duration.seconds) <= interval + 0.001,
+                "\(quality.title): frame span \(span); video duration \(duration.seconds)")
+        for (previous, next) in zip(timestamps, timestamps.dropFirst()) {
+            #expect(abs(next - previous - interval) < 0.001,
+                    "\(quality.title): frame interval \(next - previous); expected \(interval)")
+        }
     }
 
     private func temporaryDirectory() throws -> URL {
