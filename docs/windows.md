@@ -96,6 +96,13 @@ and per-monitor DPI are retained. Native Win32 positions the borderless windows
 in physical pixels, while selection/annotation coordinates use display points.
 Focus goes to the display under the pointer after every overlay is presented.
 
+Screenshot output temporarily hides every overlay so native dialogs can take
+focus. Cancelling Save As or Print, or failing a write, restores the same frozen
+display, selection and annotations. Text committed for export remains undoable.
+Retry from the restored toolbar or shortcut; successful output or explicit
+Escape releases the editor. Capture shortcuts and Settings stay blocked while
+the editor is retained, and modal output rejects duplicate actions.
+
 ## Validation and evidence
 
 ```powershell
@@ -114,6 +121,15 @@ only `Slightshot.exe`, and verifies the executable's architecture and version.
 It runs both screenshot and recording smoke tests against the extracted x64 app
 from a folder containing spaces. ARM64 is cross-built and inspected, but is not
 executed by the x64 CI runner.
+
+The screenshot smoke test also drives the retained-session coordinator, real
+WPF text/export/Undo paths and image output service through Save As cancellation,
+a real filesystem write failure and a successful retry. It checks two retained
+overlay windows, Blur/Pixelate/text pixels, selection dimensions, duplicate
+capture/output/recording rejection and Escape. Native dialog focus still needs a
+desktop check: annotate a selection, cancel Save As, fail a write to an unwritable
+destination, then Undo and save successfully. Confirm the restored overlay takes
+keyboard focus and another capture shortcut leaves the selection intact.
 
 [Saved native Windows review evidence](review/windows-parity/README.md) includes
 the overlay, light/dark settings fixtures, DPI/export results and the successful

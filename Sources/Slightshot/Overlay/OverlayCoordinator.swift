@@ -5,21 +5,36 @@ import AppKit
 final class OverlayCoordinator: OverlayViewDelegate {
     static let shared = OverlayCoordinator()
 
-    private var windows: [OverlayWindow] = []
     private var views: [OverlayView] = []
     private var isCapturing = false
-    /// Set when we had to escalate to `.regular` to win activation.
-    private var didEscalateActivationPolicy = false
+    private var isDelivering = false
+    private let presentation: any OverlayPresentation
+    private let output: @MainActor (CaptureAction, CGImage) -> Bool
+    private let record: @MainActor (CapturedDisplay, CGRect) -> Void
+    private let captureAll: @MainActor () async throws -> [CapturedDisplay]
+    private let captureActive: @MainActor () async throws -> CapturedDisplay
 
-    private init() {}
+    init(presentation: any OverlayPresentation = OverlayWindows(),
+         output: @escaping @MainActor (CaptureAction, CGImage) -> Bool = OutputService.perform,
+         record: @escaping @MainActor (CapturedDisplay, CGRect) -> Void = {
+             RecordingCoordinator.shared.begin(display: $0, selection: $1)
+         },
+         captureAll: @escaping @MainActor () async throws -> [CapturedDisplay] = ScreenCapture.captureAllDisplays,
+         captureActive: @escaping @MainActor () async throws -> CapturedDisplay = ScreenCapture.captureActiveDisplay) {
+        self.presentation = presentation
+        self.output = output
+        self.record = record
+        self.captureAll = captureAll
+        self.captureActive = captureActive
+    }
 
-    var isActive: Bool { !windows.isEmpty }
-    var isBusy: Bool { isActive || isCapturing }
+    var isActive: Bool { !views.isEmpty }
+    var isBusy: Bool { isActive || isCapturing || isDelivering }
 
     // MARK: - Region capture
 
     func beginRegionCapture() {
-        guard !isActive, !isCapturing, !RecordingCoordinator.shared.isBusy else {
+        guard !isBusy, !RecordingCoordinator.shared.isBusy else {
             Log.debug("Region capture ignored (active: \(isActive), capturing: \(isCapturing))", Log.overlay)
             return
         }
@@ -28,7 +43,7 @@ final class OverlayCoordinator: OverlayViewDelegate {
         Task {
             defer { isCapturing = false }
             do {
-                let displays = try await ScreenCapture.captureAllDisplays()
+                let displays = try await captureAll()
                 Log.debug("Captured \(displays.count) display(s)", Log.overlay)
                 present(displays)
             } catch CaptureError.permissionDenied {
@@ -42,80 +57,34 @@ final class OverlayCoordinator: OverlayViewDelegate {
         }
     }
 
-    private func present(_ displays: [CapturedDisplay]) {
+    func present(_ displays: [CapturedDisplay]) {
+        guard !isActive, !isDelivering else { return }
         let mouse = NSEvent.mouseLocation
-
-        // Activate *before* ordering windows in. A menu-bar-only app triggered by
-        // a global hotkey is not frontmost, and a window that is merely ordered
-        // front in an inactive app receives mouse events but no key events — the
-        // exact failure mode where Esc and ⌘C silently do nothing.
-        activateForCapture()
-
-        for captured in displays {
-            let window = OverlayWindow(screen: captured.screen)
-            let view = OverlayView(display: captured)
+        views = displays.map { display in
+            let view = OverlayView(display: display)
             view.delegate = self
-            window.contentView = view
-            windows.append(window)
-            views.append(view)
-            window.orderFrontRegardless()
-            view.prepare(isUnderMouse: captured.frame.contains(mouse))
+            return view
         }
-
-        // Key focus goes to the display the pointer is on, so ⌘C/⌘S land there.
         let index = displays.firstIndex { $0.frame.contains(mouse) } ?? 0
-        if windows.indices.contains(index) {
-            windows[index].makeKeyAndOrderFront(nil)
-            windows[index].makeFirstResponder(views[index])
-        }
-        NSCursor.crosshair.set()
-
-        Log.debug("Overlay presented on \(windows.count) window(s); "
-                  + "active: \(NSApp.isActive), key: \(windows[safe: index]?.isKeyWindow ?? false)", Log.overlay)
-
-        // If cooperative activation refused us, escalate: a .regular app is
-        // always allowed to come forward. Restored on dismiss.
-        if !NSApp.isActive {
-            Log.debug("Activation refused; escalating to .regular", Log.overlay)
-            didEscalateActivationPolicy = true
-            NSApp.setActivationPolicy(.regular)
-            activateForCapture()
-            if windows.indices.contains(index) {
-                windows[index].makeKeyAndOrderFront(nil)
-                windows[index].makeFirstResponder(views[index])
-            }
-        }
-    }
-
-    private func activateForCapture() {
-        NSApp.activate(ignoringOtherApps: true)
+        presentation.show(views, focused: views[safe: index])
+        for view in views { view.prepare(isUnderMouse: view.display.frame.contains(mouse)) }
     }
 
     func dismiss() {
-        for window in windows {
-            window.orderOut(nil)
-            window.contentView = nil
-            window.close()
-        }
-        windows.removeAll()
+        guard !isDelivering else { return }
+        presentation.close()
         views.removeAll()
-        NSCursor.arrow.set()
-        if didEscalateActivationPolicy {
-            didEscalateActivationPolicy = false
-            NSApp.setActivationPolicy(.accessory)
-        }
-        NSApp.hide(nil)
     }
 
     // MARK: - Whole-screen shortcuts
 
     func captureFullScreen(_ action: CaptureAction) {
-        guard !isCapturing, !RecordingCoordinator.shared.isBusy else { return }
+        guard !isBusy, !RecordingCoordinator.shared.isBusy else { return }
         isCapturing = true
         Task {
             defer { isCapturing = false }
             do {
-                let display = try await ScreenCapture.captureActiveDisplay()
+                let display = try await captureActive()
                 deliver(action, image: display.image)
             } catch CaptureError.permissionDenied {
                 ScreenRecordingPermission.request()
@@ -133,38 +102,30 @@ final class OverlayCoordinator: OverlayViewDelegate {
     }
 
     func overlayDidTakeOver(_ view: OverlayView) {
+        guard !isDelivering, views.contains(where: { $0 === view }) else { return }
         for other in views where other !== view { other.relinquish() }
-        if let window = view.window, !window.isKeyWindow {
-            window.makeKeyAndOrderFront(nil)
-            window.makeFirstResponder(view)
-        }
+        presentation.focus(view)
     }
 
     func overlay(_ view: OverlayView, didComplete action: CaptureAction, image: CGImage) {
-        // Tear the overlay down first: panels and print sheets must not have to
-        // fight a shielding-level window for focus.
-        dismiss()
-        deliver(action, image: image)
+        guard !isDelivering, views.contains(where: { $0 === view }) else { return }
+        isDelivering = true
+        // Hide the native windows for modal focus while retaining the frozen
+        // pixels and the real editor instances until output succeeds.
+        presentation.hide()
+        let succeeded = output(action, image)
+        isDelivering = false
+        if succeeded { dismiss() } else { presentation.show(views, focused: view) }
     }
 
     func overlay(_ view: OverlayView, didRequestRecording selection: CGRect) {
+        guard !isDelivering, views.contains(where: { $0 === view }) else { return }
         let display = view.display
         dismiss()
-        RecordingCoordinator.shared.begin(display: display, selection: selection)
+        record(display, selection)
     }
 
     private func deliver(_ action: CaptureAction, image: CGImage) {
-        switch action {
-        case .copy:
-            OutputService.copyToClipboard(image)
-            OutputService.playShutter()
-        case .save:
-            OutputService.save(image)
-            OutputService.playShutter()
-        case .saveAs:
-            OutputService.saveAs(image)
-        case .print:
-            OutputService.print(image)
-        }
+        _ = output(action, image)
     }
 }

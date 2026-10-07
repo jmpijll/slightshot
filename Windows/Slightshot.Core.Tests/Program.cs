@@ -12,6 +12,57 @@ void Near(double expected, double actual, string message)
 }
 
 var bounds = new RectD(0, 0, 800, 600);
+// Export must retain the editor across cancellation/write failure and reject
+// reentrant capture, output, and close while the modal boundary is running.
+var captureSession = new CaptureSession();
+var history = new List<string> { "blur", "pixelate", "Retry me" };
+bool visible = true;
+int outputAttempts = 0;
+Equal(true, captureSession.TryBegin(), "first capture starts");
+void CloseEditor() { history.Clear(); visible = false; }
+bool Export(bool succeed)
+{
+    return captureSession.Perform(() =>
+    {
+        outputAttempts++;
+        Equal(false, visible, "overlay hidden before modal output");
+        Equal(false, captureSession.TryBegin(), "second capture rejected while modal output runs");
+        Equal(false, captureSession.Dismiss(CloseEditor), "nested Escape cannot destroy the hidden editor");
+        Equal(false, captureSession.Perform(() => throw new InvalidOperationException("duplicate output"), () => { }, () => { }, CloseEditor), "duplicate output rejected");
+        return succeed;
+    }, () => visible = false, () => visible = true, CloseEditor);
+}
+Equal(false, Export(false), "cancelled save is incomplete");
+Equal(true, visible, "cancelled save restores editor");
+Equal("blur,pixelate,Retry me", string.Join(',', history), "cancelled save keeps annotation history");
+Equal(false, captureSession.TryBegin(), "retained editor rejects second capture");
+Equal(false, captureSession.Perform(() =>
+{
+    string unavailable = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString(), "missing", "capture.png");
+    try { File.WriteAllBytes(unavailable, [1]); return true; }
+    catch (IOException) { return false; }
+}, () => visible = false, () => visible = true, CloseEditor), "write failure is incomplete");
+Equal("blur,pixelate,Retry me", string.Join(',', history), "write failure keeps Undo history");
+try
+{
+    captureSession.Perform(() => throw new IOException("encoder output failed"), () => visible = false, () => visible = true, CloseEditor);
+    throw new InvalidOperationException("failed output should propagate its exception");
+}
+catch (IOException)
+{
+    Equal(true, visible, "unexpected output exception restores the hidden editor");
+    Equal(false, captureSession.IsDelivering, "unexpected output exception releases the modal gate");
+    Equal(true, captureSession.IsActive, "unexpected output exception keeps the capture available");
+}
+history.RemoveAt(history.Count - 1);
+Equal("blur,pixelate", string.Join(',', history), "Undo after retry removes only text");
+Equal(true, Export(true), "successful retry completes");
+Equal(2, outputAttempts, "nested output never runs");
+Equal(false, captureSession.IsBusy, "successful retry releases capture gate");
+Equal(0, history.Count, "successful retry releases editor");
+Equal(true, captureSession.TryBegin(), "new capture starts after successful retry");
+Equal(true, captureSession.Dismiss(CloseEditor), "explicit Escape closes retained capture");
+Equal(false, captureSession.IsBusy, "explicit Escape releases capture gate");
 Equal(new RectD(10, 20, 80, 40), RectD.Between(new(90, 60), new(10, 20)), "reverse drag normalizes");
 Equal(new RectD(0, 0, 800, 600), new RectD(-100, -100, 1000, 800).Clamp(bounds), "selection remains within monitor");
 Equal(new RectD(0, 400, 200, 200), new RectD(20, 20, 200, 200).MoveTo(new(-20, 700), bounds), "move clamps both axes");
