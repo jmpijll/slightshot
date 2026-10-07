@@ -153,6 +153,11 @@ The HUD uses an opaque native window with a rounded region. This avoids the
 Windows 10 conflict between WPF per-pixel transparency and display affinity while
 retaining the compact rounded timer/Stop styling.
 
+Review the [recording controls, save-time quality dialog and native validation
+report](review/windows-recording/README.md). Encoded video fixtures are available
+in the linked Windows CI artifact; the evidence page states the desktop-capture
+checks that remain unverified.
+
 Native media references: [MediaStreamSource/MediaTranscoder recording](https://learn.microsoft.com/en-us/windows/uwp/audio-video-camera/screen-capture-video),
 [excluding windows from capture](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity).
 

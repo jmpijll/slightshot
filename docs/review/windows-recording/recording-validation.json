@@ -1,0 +1,14 @@
+{
+  "platform": "Windows native WPF / MediaTranscoder",
+  "source": "Real recording-control HWNDs plus moving synthetic BGRA video. Native display affinity, UI rendering, media encode/decode and lifecycle evidence; not a manual desktop recording or proof of GDI exclusion.",
+  "checks": [
+    "Real recording HUD HWND is opaque (no WS_EX_LAYERED), accepts/readbacks WDA_EXCLUDEFROMCAPTURE, enables Stop after startup and renders its timer/Stop fixture.",
+    "Real save/progress HWNDs accept/readback display affinity. Save dialog renders light/dark fixtures, restores Balanced and updates details for all three slider choices.",
+    "Native BGRA frames encoded to a playable H.264 MP4 source; Stop finalized the file.",
+    "Small \u0026 fast: 1280\u00D7720, 15 fps, 2596012 bytes, native frame decode passed.",
+    "Balanced: 1600\u00D7900, 24 fps, 3923604 bytes, native frame decode passed.",
+    "High quality: 1600\u00D7900, 30 fps, 3777361 bytes, native frame decode passed.",
+    "Early and active export cancellation preserved an existing file, removed staging files, and allowed a successful retry.",
+    "Temporary source directory removed after recording/export release their file handles."
+  ]
+}
