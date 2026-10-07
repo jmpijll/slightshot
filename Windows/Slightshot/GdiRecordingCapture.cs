@@ -129,6 +129,11 @@ internal static class RecordingNative
     [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool GetWindowDisplayAffinity(IntPtr window, out uint affinity);
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool GetWindowRect(IntPtr window, out NativeMethods.NativeRect bounds);
     [DllImport("user32.dll", EntryPoint = "GetWindowLongW")] internal static extern int GetWindowLong(IntPtr window, int index);
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongW")] internal static extern int SetWindowLong(IntPtr window, int index, int value);
+    [DllImport("gdi32.dll", SetLastError = true)] internal static extern IntPtr CreateRectRgn(int left, int top, int right, int bottom);
+    [DllImport("gdi32.dll", SetLastError = true)] internal static extern int CombineRgn(IntPtr destination, IntPtr first, IntPtr second, int mode);
+    [DllImport("user32.dll")] internal static extern int GetWindowRgn(IntPtr window, IntPtr region);
+    [DllImport("gdi32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool PtInRegion(IntPtr region, int x, int y);
     [DllImport("gdi32.dll")] internal static extern IntPtr CreateRoundRectRgn(int left, int top, int right, int bottom, int ellipseWidth, int ellipseHeight);
     [DllImport("user32.dll")] internal static extern int SetWindowRgn(IntPtr window, IntPtr region, [MarshalAs(UnmanagedType.Bool)] bool redraw);
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool EnumWindows(WindowCallback callback, IntPtr data);

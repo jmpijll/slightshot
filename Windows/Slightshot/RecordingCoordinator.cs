@@ -8,6 +8,7 @@ internal sealed class RecordingCoordinator(Settings settings)
 {
     private RecordingSession? session;
     private RecordingPanel? recordingPanel;
+    private RecordingOutline? recordingOutline;
     private RecordingSaveWindow? saveWindow;
     private RecordingProgressWindow? progressWindow;
     private CancellationTokenSource? exportCancellation;
@@ -24,13 +25,15 @@ internal sealed class RecordingCoordinator(Settings settings)
             session = RecordingSession.Create(display, selection, settings.CaptureCursor, settings.NativeResolution);
             RecordingSession current = session;
             current.Started += () => Application.Current.Dispatcher.InvokeAsync(() => { if (session == current && !terminating) recordingPanel?.Started(() => current.Duration); });
-            recordingPanel = new RecordingPanel(display, selection, () => { recordingPanel?.Close(); recordingPanel = null; current.Stop(); });
+            recordingPanel = new RecordingPanel(display, selection, () => { CloseRecordingControls(); current.Stop(); });
+            recordingOutline = new RecordingOutline(display, selection);
+            recordingOutline.Show();
             recordingPanel.Show();
             work = CompleteAsync(current);
         }
         catch (Exception error)
         {
-            recordingPanel?.Close(); recordingPanel = null;
+            CloseRecordingControls();
             session?.Dispose(); session = null;
             MessageBox.Show($"Slightshot could not start recording.\n\n{error.Message}", "Slightshot", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
@@ -41,14 +44,14 @@ internal sealed class RecordingCoordinator(Settings settings)
         try
         {
             await current.RunAsync();
-            recordingPanel?.Close(); recordingPanel = null;
+            CloseRecordingControls();
             if (!terminating) await ChooseDestinationAsync(current);
         }
         catch (OperationCanceledException) { }
         catch (Exception error) { if (!terminating) MessageBox.Show($"Slightshot could not record the screen.\n\n{error.Message}", "Slightshot", MessageBoxButton.OK, MessageBoxImage.Warning); }
         finally
         {
-            recordingPanel?.Close(); recordingPanel = null;
+            CloseRecordingControls();
             progressWindow?.Close(); progressWindow = null;
             exportCancellation?.Dispose(); exportCancellation = null;
             current.Dispose(); if (session == current) session = null;
@@ -96,7 +99,13 @@ internal sealed class RecordingCoordinator(Settings settings)
 
     internal async Task ShutdownAsync()
     {
-        terminating = true; saveWindow?.Close(); exportCancellation?.Cancel(); session?.Abort();
+        terminating = true; CloseRecordingControls(); saveWindow?.Close(); exportCancellation?.Cancel(); session?.Abort();
         if (work != null) await work;
+    }
+
+    private void CloseRecordingControls()
+    {
+        recordingOutline?.Close(); recordingOutline = null;
+        recordingPanel?.Close(); recordingPanel = null;
     }
 }

@@ -101,6 +101,34 @@ internal static class RecordingSmokeTest
     {
         var image = new WriteableBitmap(800, 520, 96, 96, PixelFormats.Pbgra32, null); image.Freeze();
         var display = new CapturedDisplay(image, 0, 0, 800, 520, 1);
+        foreach (double scale in new[] { 1.0, 2.0 })
+        {
+            var monitor = new CapturedDisplay(image, -800, 40, 800, 520, scale);
+            var selection = new RectD(20, 30, 200, 120);
+            var outline = new RecordingOutline(monitor, selection);
+            IntPtr region = RecordingNative.CreateRectRgn(0, 0, 0, 0);
+            try
+            {
+                outline.Show();
+                await outline.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Loaded);
+                IntPtr handle = new WindowInteropHelper(outline).Handle;
+                int styles = RecordingNative.GetWindowLong(handle, -20);
+                Require(!outline.AllowsTransparency && (styles & 0x80000) == 0, "boundary avoids layered-window affinity conflict");
+                Require((styles & 0x08000020) == 0x08000020, "boundary is passive and does not activate");
+                RequireExcluded(outline, "real recording boundary");
+                Require(RecordingNative.GetWindowRect(handle, out var bounds), "boundary has native bounds");
+                var expected = selection.ToPixels(scale, scale, monitor.PixelWidth, monitor.PixelHeight);
+                Require(bounds.Left == monitor.Left + (int)expected.X && bounds.Top == monitor.Top + (int)expected.Y
+                    && bounds.Right - bounds.Left == (int)expected.Width && bounds.Bottom - bounds.Top == (int)expected.Height, "boundary matches exact capture rectangle at display scale " + scale);
+                Require(RecordingNative.GetWindowRgn(handle, region) != 0, "boundary has a native window region");
+                int width = bounds.Right - bounds.Left, height = bounds.Bottom - bounds.Top;
+                Require(RecordingNative.PtInRegion(region, 0, height / 2) && RecordingNative.PtInRegion(region, width - 1, height / 2)
+                    && RecordingNative.PtInRegion(region, width / 2, 0) && RecordingNative.PtInRegion(region, width / 2, height - 1), "all four recording edges remain visible");
+                Require(!RecordingNative.PtInRegion(region, width / 2, height / 2), "boundary center is a native hole and cannot intercept source content");
+            }
+            finally { outline.Close(); NativeMethods.DeleteObject(region); }
+        }
+        checks.Add("Real recording boundary HWNDs at 100%/200% display scale match the exact capture pixels, including negative monitor origins; all four native edges exist, the center is hollow, activation/layered styles are absent, and WDA_EXCLUDEFROMCAPTURE is retained.");
         bool stopped = false;
         var panel = new RecordingPanel(display, new RectD(100, 100, 560, 300), () => stopped = true);
         try
