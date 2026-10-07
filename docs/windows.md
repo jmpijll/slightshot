@@ -9,8 +9,9 @@ or later, or Windows 11, is required.
 
 Download the portable [x64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-x64.zip)
 or [ARM64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-arm64.zip)
-from the latest release. Extract the entire archive and run `Slightshot.exe`.
-The .NET runtime is included. Windows preview binaries are unsigned; updates
+from the latest release. Extract the ZIP and double-click its only file,
+`Slightshot.exe`. The .NET runtime is bundled into the executable; you do not
+need to install it. Windows preview binaries are unsigned; updates
 are downloaded manually from Releases.
 
 ## Run and build
@@ -30,12 +31,21 @@ If another app owns a shortcut, the tray reports it and remains available.
 Create a portable app that includes its runtime:
 
 ```powershell
-dotnet publish Windows/Slightshot -c Release -r win-x64 --self-contained true -o Windows/artifacts/win-x64
-dotnet publish Windows/Slightshot -c Release -r win-arm64 --self-contained true -o Windows/artifacts/win-arm64
+dotnet publish Windows/Slightshot -c Release -r win-x64 -p:PublishProfile=Portable -o Windows/artifacts/win-x64
+dotnet publish Windows/Slightshot -c Release -r win-arm64 -p:PublishProfile=Portable -o Windows/artifacts/win-arm64
+python Scripts/package_windows.py Windows/artifacts/win-x64 Windows/artifacts/Slightshot-windows-x64.zip --architecture x64
+python Scripts/package_windows.py Windows/artifacts/win-arm64 Windows/artifacts/Slightshot-windows-arm64.zip --architecture arm64
 ```
 
-Run `Slightshot.exe` from the published folder. No installer or administrator
-rights are needed. Launch at login is available in Settings.
+The publish profile creates one `Slightshot.exe`, including its managed assemblies,
+native libraries and .NET runtime. The package script rejects loose dependencies,
+missing executables and mismatched architectures before creating a ZIP with that
+one file at its root. CI uses the same profile for review artifacts and releases.
+
+Run `Slightshot.exe` from any folder. No installer or administrator rights are
+needed. On first launch, .NET extracts bundled native libraries into its cache
+under `%TEMP%/.net`; later launches reuse that cache. Launch at login is available
+in Settings. See [Microsoft's single-file deployment documentation](https://learn.microsoft.com/en-us/dotnet/core/deploying/single-file/overview).
 
 ## Mac parity
 
@@ -91,7 +101,12 @@ Start-Process Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slights
 The Windows workflow builds with warnings treated as errors, checks selection and
 toolbar edge cases, renders native WPF overlay/settings fixtures, verifies export
 sizes at 100%, 125%, 150% and 200%, and decodes PNG/JPEG/TIFF output. It uploads the
-rendered images, a validation report and portable x64/ARM64 app folders.
+rendered images, a validation report and portable x64/ARM64 executables. For each
+architecture, it creates and extracts the release ZIP, checks that it contains
+only `Slightshot.exe`, and verifies the executable's architecture and version.
+It runs both screenshot and recording smoke tests against the extracted x64 app
+from a folder containing spaces. ARM64 is cross-built and inspected, but is not
+executed by the x64 CI runner.
 
 [Saved native Windows review evidence](review/windows-parity/README.md) includes
 the overlay, light/dark settings fixtures, DPI/export results and the successful
@@ -112,9 +127,11 @@ instantiates the actual recording HUD/save/progress windows and checks that thei
 native handles accept and retain capture exclusion. It renders timer/Stop and
 light/dark save-time quality slider fixtures, and uploads images, MP4s and a report.
 These verify native media and display-affinity registration, rather than desktop
-capture or manual interaction. Manual Windows acceptance still
-needs capture/clipboard/print/tray testing, mixed-DPI multi-monitor dragging,
-keyboard focus, and a real desktop video. The Mac cannot run WPF.
+capture or manual interaction. On 8 October 2026, the maintainer verified the
+Windows app on a real Windows PC and reported that capture and recording worked
+as expected, matching the Mac workflow. That acceptance did not include a
+separate per-case record for clipboard/print/tray, mixed-DPI multi-monitor dragging
+or keyboard focus. The Mac cannot run WPF.
 
 Settings follow the Windows light/dark app preference with grouped panels,
 rounded segmented tabs, switch controls and matching subdued colours. CI renders
@@ -154,8 +171,9 @@ Saving writes beside the destination, then replaces it after a complete MP4 is
 finalized. Cancel or export failure keeps the source available for retry;
 capture shortcuts are blocked while recording or saving. Quit cancels the
 encoder, waits for its resources, and removes the temporary source directory.
-Desktop interaction, exclusion under real Windows composition, mixed-DPI region
-placement and cursor capture still require a Windows user acceptance run.
+The maintainer's 8 October 2026 desktop acceptance covers the overall recording
+workflow. Exclusion under real Windows composition, mixed-DPI region placement
+and cursor capture were not separately documented in that run.
 
 The HUD uses an opaque native window with a rounded region. This avoids the
 Windows 10 conflict between WPF per-pixel transparency and display affinity while

@@ -4,5 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
+    <!-- Keep diagnostics inside each Release assembly, including project references. -->
+    <DebugType Condition="'$(Configuration)' == 'Release'">embedded</DebugType>
   </PropertyGroup>
 </Project>
