@@ -43,6 +43,9 @@ Cancel an export to choose another quality or destination. Cancel the save
 panel to keep the recording or discard it. Temporary source files are removed
 after saving, discarding, or quitting.
 
+See the [live recording review video and validation](docs/review/recording/README.md)
+for the native Record, Stop and save-time quality flow.
+
 ## Screenshot
 
 <p align="center">
