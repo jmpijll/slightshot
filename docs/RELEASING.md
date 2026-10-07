@@ -86,8 +86,10 @@ release, appcast commit or Pages deployment is created in this mode.
 Notarisation diagnostics and the signed DMG expire after seven days.
 
 The Release workflow also calls the native Windows checks and packages portable
-x64/ARM64 ZIPs with the requested version. The published x64 app is smoke-tested;
-ARM64 is cross-built and checked for matching version metadata. A release is
+x64/ARM64 ZIPs with the requested version. Each ZIP contains only `Slightshot.exe`,
+with the runtime bundled. The archives are extracted and checked for layout,
+architecture and matching version metadata; the extracted x64 app runs native
+screenshot and recording smoke tests. ARM64 is cross-built and inspected. A release is
 published only after the Windows job and Mac notarisation succeed. Windows
 previews are unsigned and update manually.
 
