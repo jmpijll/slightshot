@@ -29,3 +29,12 @@ GitHub shares runners across repositories through organisations. Personal-accoun
 All eight repository secrets are configured. The [signed verification run](https://github.com/jmpijll/slightshot/actions/runs/37664140165) at `2712cfe` passed certificate import, app and DMG notarisation, ticket stapling and appcast signing. Both Apple submissions were accepted. The downloaded disk image and enclosed app also passed local Gatekeeper assessment; the generated Sparkle signature verified against the embedded, existing public key. Release publication, appcast commits and Pages deployment were skipped in verification mode.
 
 See [the validation record](review/releases/signing-validation.json) for the tested source commit, artifact hash and local checks, and [RELEASING.md](RELEASING.md) for verification and publishing instructions.
+
+The [1.1.0 publication run](https://github.com/jmpijll/slightshot/actions/runs/37671914101)
+also passed the reusable native Windows checks and attached portable x64/ARM64
+ZIPs alongside the Mac DMG. The [downloaded release validation](review/releases/v1.1.0-validation.json)
+confirms the actual public DMG's signatures, stapled tickets, Gatekeeper acceptance
+and Sparkle signature against the live feed, plus both Windows ZIPs' integrity,
+version, architecture and bundled runtime. Windows remains an unsigned preview;
+the CI fixtures do not establish real desktop acceptance. The public update feed
+was deployed through [Pages](https://github.com/jmpijll/slightshot/actions/runs/37672469651).

@@ -2,9 +2,13 @@
 
 ## Current status
 
-Version 1.0.2 is signed and notarised by Apple. Versions 1.0.0 and 1.0.1 remain
-unnotarised pre-releases. The local Developer ID certificate, Sparkle keys and
-`slightshot` notarisation profile are configured.
+Version [1.1.0](https://github.com/jmpijll/slightshot/releases/tag/v1.1.0) is live
+with a signed, Apple-notarised Mac DMG and unsigned Windows x64/ARM64 previews.
+The public Sparkle feed and Homebrew cask point to the final Mac download.
+See the [published-file validation](review/releases/v1.1.0-validation.json) for
+signatures, tickets, Gatekeeper checks, package contents and checksums.
+Versions 1.0.0 and 1.0.1 remain unnotarised pre-releases. The local Developer ID
+certificate, Sparkle keys and `slightshot` notarisation profile are configured.
 
 Local releases work. The GitHub Release workflow uses the repository secrets
 listed below to sign and notarise both the app and its disk image. The local
@@ -72,7 +76,7 @@ Run the Release workflow from the branch to check, using the next unpublished
 version and leaving **publish** disabled:
 
 ```bash
-gh workflow run release.yml --ref BRANCH -f version=1.0.3 -F publish=false
+gh workflow run release.yml --ref BRANCH -f version=1.1.1 -F publish=false
 ```
 
 A successful run confirms certificate import, app and DMG notarisation,

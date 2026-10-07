@@ -1,0 +1,68 @@
+{
+  "source_commit": "380ae7c79e9114137e76a3f3940e4f8ffec4109e",
+  "run_url": "https://github.com/jmpijll/slightshot/actions/runs/37671914101",
+  "version": "1.1.0",
+  "build": "6",
+  "team": "PAW49RLWAA",
+  "mac_architecture": "arm64",
+  "sha256": "b841a598ae1f79782f7fd17a0fd1097a8863d7376feaefc9234538cf29c58e16",
+  "bytes": 1939425,
+  "checks": {
+    "image": "Controlegetal berekenen van 'Protective Master Boot Record (MBR : 0)'\u2026\nProtective Master Boot Record (MBR :: Geverifieerd: CRC32 $0AF90ED5\nControlegetal berekenen van 'GPT Header (Primary GPT Header : 1)'\u2026\n GPT Header (Primary GPT Header : 1): Geverifieerd: CRC32 $349C1B54\nControlegetal berekenen van 'GPT Partition Data (Primary GPT Table : 2)'\u2026\nGPT Partition Data (Primary GPT Tabl: Geverifieerd: CRC32 $CDB0D2DA\nControlegetal berekenen van ' (Apple_Free : 3)'\u2026\n                    (Apple_Free : 3): Geverifieerd: CRC32 $00000000\nControlegetal berekenen van 'disk image (Apple_APFS : 4)'\u2026\n         disk image (Apple_APFS : 4): Geverifieerd: CRC32 $CB8FBB0C\nControlegetal berekenen van ' (Apple_Free : 5)'\u2026\n                    (Apple_Free : 5): Geverifieerd: CRC32 $00000000\nControlegetal berekenen van 'GPT Partition Data (Backup GPT Table : 6)'\u2026\nGPT Partition Data (Backup GPT Table: Geverifieerd: CRC32 $CDB0D2DA\nControlegetal berekenen van 'GPT Header (Backup GPT Header : 7)'\u2026\n  GPT Header (Backup GPT Header : 7): Geverifieerd: CRC32 $15F275A8\nGeverifieerd: CRC32 $5899867B\nhdiutil: verify: checksum of \"Slightshot-1.1.0.dmg\" is VALID",
+    "dmg_signature": "Slightshot-1.1.0.dmg: valid on disk\nSlightshot-1.1.0.dmg: satisfies its Designated Requirement",
+    "dmg_ticket": "Processing: Slightshot-1.1.0.dmg\nThe validate action worked!",
+    "dmg_gatekeeper": "Slightshot-1.1.0.dmg: accepted\nsource=Notarized Developer ID",
+    "app_signature": "--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\n--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\nmounted-image/Slightshot.app: valid on disk\nmounted-image/Slightshot.app: satisfies its Designated Requirement",
+    "app_ticket": "Processing: mounted-image/Slightshot.app\nThe validate action worked!",
+    "app_gatekeeper": "mounted-image/Slightshot.app: accepted\nsource=Notarized Developer ID",
+    "sparkle_signature": "Signature Verified Successfully"
+  },
+  "windows": [
+    {
+      "file": "Slightshot-windows-x64.zip",
+      "architecture": "x64",
+      "version": "1.1.0",
+      "bytes": 82836442,
+      "sha256": "01667c0655b3833e90dca435ecba90e46d3e30cac623c1a8af79b8465b69a1c2",
+      "entries": 477,
+      "runtime_included": true,
+      "desktop_acceptance": "pending",
+      "signing": "unsigned preview"
+    },
+    {
+      "file": "Slightshot-windows-arm64.zip",
+      "architecture": "arm64",
+      "version": "1.1.0",
+      "bytes": 77333010,
+      "sha256": "40fa9212c9e644c6680985ed006f77667100010553101170b8f763779f128a67",
+      "entries": 476,
+      "runtime_included": true,
+      "desktop_acceptance": "pending",
+      "signing": "unsigned preview"
+    }
+  ],
+  "dmg_url": "https://github.com/jmpijll/slightshot/releases/download/v1.1.0/Slightshot-1.1.0.dmg",
+  "feed_url": "https://jmpijll.github.io/slightshot/appcast.xml",
+  "release_url": "https://github.com/jmpijll/slightshot/releases/tag/v1.1.0",
+  "pages_run_url": "https://github.com/jmpijll/slightshot/actions/runs/37672469651",
+  "verified_at": "2026-10-07T19:14:56.653795+00:00",
+  "accepted_artifacts": [
+    {
+      "file": "Slightshot-1.1.0.dmg",
+      "status": "Accepted",
+      "submission_id": "0f4c98ab-4e07-4ebd-ada3-e3cf110dcb81"
+    },
+    {
+      "file": "Slightshot.app",
+      "status": "Accepted",
+      "submission_id": "0a5af8cf-63ea-488d-ac31-13159436ba0f"
+    }
+  ],
+  "homebrew": {
+    "version": "1.1.0",
+    "sha256": "b841a598ae1f79782f7fd17a0fd1097a8863d7376feaefc9234538cf29c58e16",
+    "minimum_macos": "27",
+    "architecture": "arm64",
+    "fetch_and_checksum": "passed"
+  }
+}

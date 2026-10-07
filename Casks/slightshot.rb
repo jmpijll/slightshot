@@ -1,9 +1,8 @@
 cask "slightshot" do
-  version "1.0.2"
-  sha256 "4002b20a7aa7c4989fa4b9ca4b11e4add34b4a6df7f33debed8ca321e3f798bb"
+  version "1.1.0"
+  sha256 "b841a598ae1f79782f7fd17a0fd1097a8863d7376feaefc9234538cf29c58e16"
 
-  url "https://github.com/jmpijll/slightshot/releases/download/v#{version}/Slightshot-#{version}.dmg",
-      verified: "github.com/jmpijll/slightshot/"
+  url "https://github.com/jmpijll/slightshot/releases/download/v#{version}/Slightshot-#{version}.dmg"
   name "Slightshot"
   desc "Native open-source screenshot tool inspired by Lightshot"
   homepage "https://github.com/jmpijll/slightshot"
@@ -13,9 +12,8 @@ cask "slightshot" do
     strategy :github_latest
   end
 
-  # The app itself requires macOS 27 via LSMinimumSystemVersion; :tahoe is
-  # the newest symbol Homebrew knows, so it acts as the cask-level floor.
-  depends_on macos: ">= :tahoe"
+  depends_on arch: :arm64
+  depends_on macos: :golden_gate
 
   app "Slightshot.app"
 
