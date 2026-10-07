@@ -39,3 +39,13 @@ version, architecture and bundled runtime. Windows remains an unsigned preview;
 the maintainer reported successful real Windows desktop capture/recording
 acceptance on 8 October 2026 (see [Windows validation](windows.md#validation-and-evidence)). The public update feed
 was deployed through [Pages](https://github.com/jmpijll/slightshot/actions/runs/37672469651).
+
+The [1.2.0 publication run](https://github.com/jmpijll/slightshot/actions/runs/37702953604)
+passed native Windows raster/recording tests, both portable architecture/version
+checks, screenshot/recording tests of the extracted x64 single-file app, and Mac
+app/DMG signing and notarisation. The [public-download validation](review/releases/v1.2.0-validation.json)
+confirms each Windows ZIP contains only `Slightshot.exe`, with matching release
+digests and actual PE version/architecture metadata. It also records Mac
+Gatekeeper acceptance, both stapled tickets, the live Sparkle signature and
+Homebrew's fetch/checksum check. ARM64 Windows execution was not tested.
+The new feed was deployed through [Pages](https://github.com/jmpijll/slightshot/actions/runs/37703387744).

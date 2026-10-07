@@ -145,7 +145,7 @@ open `Package.swift` to work in Xcode.
 | `make release` | App and disk image, with notarisation and stapling |
 | `make icon` | Regenerate app, menu bar and README artwork |
 | `make lint` | Run SwiftLint, if installed |
-| `make test` | Verify video export, quality, cancellation and replacement |
+| `make test` | Verify raster effects, annotation export and recording |
 
 To write debug logs to the terminal:
 
@@ -161,6 +161,9 @@ checks, and [the release guide](docs/RELEASING.md) for signing and notarisation.
 
 ## Planned
 
+See [small next steps after 1.2.0](docs/NEXT_STEPS.md) for the current priorities:
+save retry, Windows version/update polish and measured performance work.
+
 - Numbered steps
 - Selections across multiple displays
 - Capture history
@@ -170,12 +173,13 @@ checks, and [the release guide](docs/RELEASING.md) for signing and notarisation.
 
 Download the portable [x64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-x64.zip)
 or [ARM64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-arm64.zip),
-extract it, then run `Slightshot.exe`. The runtime is included. These Windows
-preview builds are unsigned and follow the Mac capture, recording and overlay
+extract it, then run the single `Slightshot.exe` inside. The runtime is included.
+These Windows preview builds are unsigned and follow the Mac capture, recording and overlay
 style with shared original toolbar icons.
 
 See [Windows setup and parity notes](docs/windows.md) for shortcuts, building
-and the native CI evidence. Manual acceptance on a Windows desktop is still needed.
+and the native CI evidence. The maintainer verified the capture and recording
+workflow on a Windows desktop on 8 October 2026; ARM64 is cross-built and inspected.
 
 ## License
 
