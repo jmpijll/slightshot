@@ -24,8 +24,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
                 image.accessibilityDescription = "Slightshot"
                 button.image = image
             } else {
-                button.image = NSImage(systemSymbolName: "viewfinder",
-                                       accessibilityDescription: "Slightshot")
+                button.image = ProductIcon.capture.image(accessibilityDescription: "Slightshot")
             }
             button.image?.isTemplate = true
             button.toolTip = "Slightshot"

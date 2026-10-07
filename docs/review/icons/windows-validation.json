@@ -1,0 +1,11 @@
+{
+  "platform": "Windows WPF",
+  "source": "Synthetic fixture; not a live screen capture or manual interaction recording",
+  "checks": [
+    "16 shared native WPF vectors render unclipped at 1\u00D7/2\u00D7; Record size/label/action retained. Production toolbar renderer produces normal, hover-style, selected and disabled fixtures. Source SHA-256: 04f6b157a6dee3a7c103dd0b5c8be6b4c87af836dd7871f951bceaf9e524df90.",
+    "1\u00D7: native and logical export dimensions, red annotation pixels, PNG/JPEG/TIFF decode passed",
+    "1.25\u00D7: native and logical export dimensions, red annotation pixels, PNG/JPEG/TIFF decode passed",
+    "1.5\u00D7: native and logical export dimensions, red annotation pixels, PNG/JPEG/TIFF decode passed",
+    "2\u00D7: native and logical export dimensions, red annotation pixels, PNG/JPEG/TIFF decode passed"
+  ]
+}

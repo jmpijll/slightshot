@@ -21,7 +21,7 @@ internal sealed class RecordingPanel : Window
         // native window region for the same rounded HUD shape instead.
         Title = "Screen recording"; WindowStyle = WindowStyle.None; Background = Appearance.Brush("#17171A");
         Width = 112; Height = 38; ResizeMode = ResizeMode.NoResize; ShowInTaskbar = false; Topmost = true; ShowActivated = false;
-        stop = new ToolbarButton("Stop", "Stop recording", onStop) { IsEnabled = false, Selected = true };
+        stop = new ToolbarButton(ProductIcon.Stop, "Stop recording", onStop) { IsEnabled = false, Selected = true };
         var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(4) };
         row.Children.Add(elapsed); elapsed.Margin = new Thickness(0, 0, 2, 0); row.Children.Add(stop);
         Content = new FrostedPanel(row);

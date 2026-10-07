@@ -1,9 +1,9 @@
 name: Windows
 on:
   push:
-    paths: ['Windows/**', '.github/workflows/windows.yml']
+    paths: ['Windows/**', 'Resources/UI/**', 'Scripts/generate_ui_icons.py', '.github/workflows/windows.yml']
   pull_request:
-    paths: ['Windows/**', '.github/workflows/windows.yml']
+    paths: ['Windows/**', 'Resources/UI/**', 'Scripts/generate_ui_icons.py', '.github/workflows/windows.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -12,6 +12,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Verify shared icon assets
+        run: python Scripts/generate_ui_icons.py --check
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'

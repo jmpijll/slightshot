@@ -6,14 +6,14 @@ nonisolated enum Tool: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
-    var symbolName: String {
+    var icon: ProductIcon {
         switch self {
-        case .pen: "pencil.tip"
-        case .line: "line.diagonal"
-        case .arrow: "arrow.up.right"
-        case .rectangle: "rectangle"
-        case .marker: "highlighter"
-        case .text: "textformat"
+        case .pen: .pen
+        case .line: .line
+        case .arrow: .arrow
+        case .rectangle: .rectangle
+        case .marker: .marker
+        case .text: .text
         }
     }
 

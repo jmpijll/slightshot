@@ -107,7 +107,7 @@ final class ToolbarController {
 
         var toolViews: [NSView] = []
         for tool in Tool.allCases {
-            let button = ToolbarButton(symbol: tool.symbolName, tooltip: tool.title) { [weak self] in
+            let button = ToolbarButton(icon: tool.icon, tooltip: tool.title) { [weak self] in
                 self?.toggle(tool)
             }
             button.accentColor = color
@@ -121,7 +121,7 @@ final class ToolbarController {
         colorButton = swatch
         toolViews.append(swatch)
 
-        toolViews.append(ToolbarButton(symbol: "arrow.uturn.backward", tooltip: "Undo  ⌘Z") { [weak self] in
+        toolViews.append(ToolbarButton(icon: .undo, tooltip: "Undo  ⌘Z") { [weak self] in
             self?.delegate?.toolbarDidRequestUndo()
         })
 
@@ -130,20 +130,20 @@ final class ToolbarController {
         toolPanel = tools
 
         let actions = ToolbarPanel(orientation: .horizontal, views: [
-            ToolbarButton(symbol: "printer", tooltip: "Print  ⌘P") { [weak self] in
+            ToolbarButton(icon: .print, tooltip: "Print  ⌘P") { [weak self] in
                 self?.delegate?.toolbarDidRequest(.print)
             },
-            ToolbarButton(symbol: "doc.on.doc", tooltip: "Copy  ⌘C") { [weak self] in
+            ToolbarButton(icon: .copy, tooltip: "Copy  ⌘C") { [weak self] in
                 self?.delegate?.toolbarDidRequest(.copy)
             },
-            ToolbarButton(symbol: "square.and.arrow.down", tooltip: "Save  ⌘S  ·  Save As  ⇧⌘S") { [weak self] in
+            ToolbarButton(icon: .save, tooltip: "Save  ⌘S  ·  Save As  ⇧⌘S") { [weak self] in
                 self?.delegate?.toolbarDidRequest(.save)
             },
-            ToolbarButton(symbol: "record.circle", tooltip: "Record selected area") { [weak self] in
+            ToolbarButton(icon: .record, tooltip: "Record selected area") { [weak self] in
                 self?.delegate?.toolbarDidRequestRecording()
             },
             ToolbarPanel.separator(orientation: .horizontal),
-            ToolbarButton(symbol: "xmark", tooltip: "Close  Esc") { [weak self] in
+            ToolbarButton(icon: .close, tooltip: "Close  Esc") { [weak self] in
                 self?.delegate?.toolbarDidRequestClose()
             },
         ])

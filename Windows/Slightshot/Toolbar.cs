@@ -11,47 +11,36 @@ namespace Slightshot;
 
 internal sealed class ToolbarButton : Button
 {
-    private readonly string symbol;
+    private readonly ProductIcon? icon;
     public string Accent { get; set; } = "#FF3B30";
     public bool Selected { get; set; }
     public string? Swatch { get; set; }
-    public ToolbarButton(string symbol, string tooltip, Action onClick)
+    public ToolbarButton(ProductIcon? icon, string tooltip, Action onClick)
     {
-        this.symbol = symbol;
+        this.icon = icon;
         Width = Height = OverlayStyle.ButtonSize;
         ToolTip = tooltip; FocusVisualStyle = null; OverridesDefaultStyle = true;
         AutomationProperties.SetName(this, tooltip);
         Click += (_, _) => onClick();
         IsKeyboardFocusWithinChanged += (_, _) => InvalidateVisual();
+        IsEnabledChanged += (_, _) => InvalidateVisual();
     }
     protected override void OnMouseEnter(MouseEventArgs e) { base.OnMouseEnter(e); InvalidateVisual(); }
     protected override void OnMouseLeave(MouseEventArgs e) { base.OnMouseLeave(e); InvalidateVisual(); }
     protected override void OnRender(DrawingContext dc)
+        => DrawContent(dc, IsMouseOver);
+    internal void DrawContent(DrawingContext dc, bool hovering)
     {
-        dc.DrawRoundedRectangle(Selected ? AnnotationRenderer.Brush(Accent) : IsMouseOver ? AnnotationRenderer.Brush("#FFFFFF", 0.16) : Brushes.Transparent, IsKeyboardFocused ? new Pen(Brushes.White, 1) : null, new Rect(0, 0, 30, 30), 6, 6);
+        dc.DrawRoundedRectangle(Selected ? AnnotationRenderer.Brush(Accent) : hovering ? AnnotationRenderer.Brush("#FFFFFF", 0.16) : Brushes.Transparent, IsKeyboardFocused ? new Pen(Brushes.White, 1) : null, new Rect(0, 0, 30, 30), 6, 6);
         if (Swatch != null) { dc.DrawEllipse(AnnotationRenderer.Brush(Swatch), new Pen(AnnotationRenderer.Brush("#FFFFFF", 0.7), 1.5), new Point(15, 15), 7, 7); return; }
-        var brush = AnnotationRenderer.Brush("#FFFFFF", Selected || IsMouseOver ? 1 : 0.85);
-        var pen = new Pen(brush, 1.5) { StartLineCap = PenLineCap.Round, EndLineCap = PenLineCap.Round, LineJoin = PenLineJoin.Round };
-        dc.PushTransform(new TranslateTransform(7.5, 7.5));
-        switch (symbol)
-        {
-            case "Pen": Path(dc, "M2,13 L3,9 L11,1 L14,4 L6,12 Z M3,9 L6,12 M10,2 L13,5", pen); break;
-            case "Line": dc.DrawLine(pen, new(1, 14), new(14, 1)); break;
-            case "Arrow": Path(dc, "M1,14 L14,1 M6,1 L14,1 L14,9", pen); break;
-            case "Rectangle": dc.DrawRectangle(null, pen, new(1, 2, 13, 11)); break;
-            case "Marker": Path(dc, "M2,11 L5,14 L7,10 L4,7 Z M4,7 L10,1 L14,5 L7,12 M1,14 L5,14", pen); break;
-            case "Text": Path(dc, "M0,13 L5,1 L10,13 M2,9 L8,9 M11,6 C16,3 16,12 11,13 C8,13 9,9 15,9 M15,6 L15,13", pen); break;
-            case "Undo": Path(dc, "M5,1 L1,5 L5,9 M1,5 L9,5 C16,5 16,13 9,13", pen); break;
-            case "Print": Path(dc, "M4,5 L4,1 L11,1 L11,5 M3,11 L1,11 L1,5 L14,5 L14,11 L12,11 M4,9 L11,9 L11,14 L4,14 Z", pen); break;
-            case "Copy": Path(dc, "M5,4 L13,4 L13,14 L5,14 Z M3,11 L1,11 L1,1 L9,1 L9,2", pen); break;
-            case "Save": Path(dc, "M7.5,0 L7.5,10 M4,6 L7.5,10 L11,6 M1,9 L1,14 L14,14 L14,9", pen); break;
-            case "Close": Path(dc, "M2,2 L13,13 M13,2 L2,13", pen); break;
-            case "Record": dc.DrawEllipse(null, pen, new Point(7.5, 7.5), 6.5, 6.5); dc.DrawEllipse(brush, null, new Point(7.5, 7.5), 3, 3); break;
-            case "Stop": dc.DrawRoundedRectangle(brush, null, new Rect(2, 2, 11, 11), 1, 1); break;
-        }
+        var brush = AnnotationRenderer.Brush("#FFFFFF", Selected || hovering ? 1 : 0.85);
+        if (!IsEnabled) dc.PushOpacity(0.5);
+        double inset = (OverlayStyle.ButtonSize - ProductIcons.Size) / 2;
+        dc.PushTransform(new TranslateTransform(inset, inset));
+        if (icon is { } glyph) ProductIcons.Draw(glyph, dc, brush);
         dc.Pop();
+        if (!IsEnabled) dc.Pop();
     }
-    private static void Path(DrawingContext dc, string path, Pen pen) => dc.DrawGeometry(null, pen, Geometry.Parse(path));
 }
 
 internal sealed class FrostedPanel : Grid
@@ -89,6 +78,13 @@ internal sealed class Toolbar
     private readonly List<SwatchButton> swatches = [];
     private static Tool? lastTool;
     public Tool? ActiveTool { get; private set; }
+    private static ProductIcon IconForTool(Tool tool) => tool switch
+    {
+        Tool.Pen => ProductIcon.Pen, Tool.Line => ProductIcon.Line,
+        Tool.Arrow => ProductIcon.Arrow, Tool.Rectangle => ProductIcon.Rectangle,
+        Tool.Marker => ProductIcon.Marker, Tool.Text => ProductIcon.Text,
+        _ => throw new ArgumentOutOfRangeException(nameof(tool))
+    };
 
     public Toolbar(Canvas host, CapturedDisplay display, Settings settings, Action<Tool?> toolChanged, Action changed, Action undo, Action<CaptureAction> perform, Action close, Action record)
     {
@@ -96,19 +92,19 @@ internal sealed class Toolbar
         var toolViews = new List<FrameworkElement>();
         foreach (var tool in Enum.GetValues<Tool>())
         {
-            var button = new ToolbarButton(tool.ToString(), tool.ToString(), () => Select(ActiveTool == tool ? null : tool)) { Accent = settings.AnnotationColor };
+            var button = new ToolbarButton(IconForTool(tool), tool.ToString(), () => Select(ActiveTool == tool ? null : tool)) { Accent = settings.AnnotationColor };
             buttons[tool] = button; toolViews.Add(button);
         }
         toolViews.Add(Separator(true));
-        colorButton = new ToolbarButton("Color", "Colour", TogglePalette) { Swatch = settings.AnnotationColor };
-        toolViews.Add(colorButton); toolViews.Add(new ToolbarButton("Undo", "Undo  Ctrl+Z", undo));
+        colorButton = new ToolbarButton(null, "Colour", TogglePalette) { Swatch = settings.AnnotationColor };
+        toolViews.Add(colorButton); toolViews.Add(new ToolbarButton(ProductIcon.Undo, "Undo  Ctrl+Z", undo));
         tools = new FrostedPanel(Stack(toolViews, true));
         actions = new FrostedPanel(Stack([
-            new ToolbarButton("Print", "Print  Ctrl+P", () => perform(CaptureAction.Print)),
-            new ToolbarButton("Copy", "Copy  Ctrl+C", () => perform(CaptureAction.Copy)),
-            new ToolbarButton("Save", "Save  Ctrl+S  ·  Save As  Ctrl+Shift+S", () => perform(CaptureAction.Save)),
-            new ToolbarButton("Record", "Record selected area", record),
-            Separator(false), new ToolbarButton("Close", "Close  Esc", close)], false));
+            new ToolbarButton(ProductIcon.Print, "Print  Ctrl+P", () => perform(CaptureAction.Print)),
+            new ToolbarButton(ProductIcon.Copy, "Copy  Ctrl+C", () => perform(CaptureAction.Copy)),
+            new ToolbarButton(ProductIcon.Save, "Save  Ctrl+S  ·  Save As  Ctrl+Shift+S", () => perform(CaptureAction.Save)),
+            new ToolbarButton(ProductIcon.Record, "Record selected area", record),
+            Separator(false), new ToolbarButton(ProductIcon.Close, "Close  Esc", close)], false));
         host.Children.Add(tools); host.Children.Add(actions); SetVisible(false);
     }
 
