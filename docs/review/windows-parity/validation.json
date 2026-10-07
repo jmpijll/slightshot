@@ -1,0 +1,10 @@
+{
+  "platform": "Windows WPF",
+  "source": "Synthetic fixture; not a live screen capture or manual interaction recording",
+  "checks": [
+    "1\u00D7: native and logical export dimensions, red annotation pixels, PNG/JPEG/TIFF decode passed",
+    "1.25\u00D7: native and logical export dimensions, red annotation pixels, PNG/JPEG/TIFF decode passed",
+    "1.5\u00D7: native and logical export dimensions, red annotation pixels, PNG/JPEG/TIFF decode passed",
+    "2\u00D7: native and logical export dimensions, red annotation pixels, PNG/JPEG/TIFF decode passed"
+  ]
+}

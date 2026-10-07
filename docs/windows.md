@@ -83,6 +83,10 @@ toolbar edge cases, renders native WPF overlay/settings fixtures, verifies expor
 sizes at 100%, 125%, 150% and 200%, and decodes PNG/JPEG/TIFF output. It uploads the
 rendered images, a validation report and portable x64/ARM64 app folders.
 
+[Saved native Windows review evidence](review/windows-parity/README.md) includes
+the overlay, light/dark settings fixtures, DPI/export results and the successful
+Windows workflow run. These are synthetic native renderer checks.
+
 On macOS, the platform-independent tests and Windows cross-compilation can run:
 
 ```bash
