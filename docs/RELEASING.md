@@ -6,12 +6,14 @@ Version 1.0.2 is signed and notarised by Apple. Versions 1.0.0 and 1.0.1 remain
 unnotarised pre-releases. The local Developer ID certificate, Sparkle keys and
 `slightshot` notarisation profile are configured.
 
-Local releases work. Automated GitHub releases still lack five repository secrets:
-`MACOS_CERTIFICATE_PASSWORD`, `KEYCHAIN_PASSWORD`, `APPLE_ID`, `TEAM_ID`,
-`APP_PASSWORD`. The certificate and Sparkle secret names are present; their
-contents still need validation in a real release. The local Keychain profile is
-not available to GitHub-hosted runners. Regular CI also offers an ad-hoc-signed
-review DMG; see [builds and runners](CI.md).
+Local releases work. The GitHub Release workflow uses the repository secrets
+listed below to sign and notarise both the app and its disk image. The local
+Keychain profile is not available to GitHub-hosted runners.
+
+Manual runs default to verification: they keep a signed, notarised DMG as a
+seven-day Actions artifact and exercise Sparkle appcast signing, without
+publishing a release or changing the public update feed. Regular CI separately
+offers an ad-hoc-signed review DMG; see [builds and runners](CI.md).
 
 ## Set up Apple notarisation locally
 
@@ -64,6 +66,21 @@ The CI keychain and temporary private-key files are removed after the run.
 
 Enable **Settings → Pages → Source: GitHub Actions** for the update feed.
 
+## Verify GitHub signing before publication
+
+Run the Release workflow from the branch to check, using the next unpublished
+version and leaving **publish** disabled:
+
+```bash
+gh workflow run release.yml --ref BRANCH -f version=1.0.3 -F publish=false
+```
+
+A successful run confirms certificate import, app and DMG notarisation,
+Gatekeeper assessment and Sparkle signing. Download the
+`Slightshot-macos-signed-dmg` artifact from that run. No version tag, public
+release, appcast commit or Pages deployment is created in this mode.
+Notarisation diagnostics and the signed DMG expire after seven days.
+
 ## Publish a version
 
 Commit and push the release changes to `main`, then create a new version tag:
@@ -75,6 +92,9 @@ git push origin v1.0.2
 
 Use a new version for every published binary. Do not replace an existing download
 because its Sparkle signature and Homebrew checksum would no longer match.
+
+A `v*` tag publishes automatically. A manual run publishes only when **publish**
+is explicitly enabled.
 
 The Release workflow checks credentials, signs the app, submits it to Apple,
 and staples its ticket before building the disk image. It then signs, notarises
