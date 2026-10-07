@@ -1,7 +1,7 @@
 # Windows recording review evidence
 
-Copied from the successful native [Windows CI run 37624042021](https://github.com/jmpijll/slightshot/actions/runs/37624042021),
-source revision `bd8301fd9848201e0a3b2afbb9a9fdc54a1f7196`.
+Copied from the successful native [Windows CI run 37633645739](https://github.com/jmpijll/slightshot/actions/runs/37633645739),
+source revision `3f4aef9e07648f0f660ddec4f57b75dfd85020a8`.
 The [validation report](recording-validation.json) records the checks performed.
 
 CI creates the real timer/Stop, save and progress windows, verifies that their
@@ -9,6 +9,12 @@ native handles accept and retain `WDA_EXCLUDEFROMCAPTURE`, checks timer/Stop and
 quality slider behavior, and renders the window content below. The HUD uses an
 opaque native window with rounded corners to avoid the Windows 10 conflict
 between per-pixel WPF transparency and display affinity.
+
+## Persistent recording boundary
+
+The live region now has the same red/dark four-point frame as Mac. It uses an opaque HWND with a hollow native region to preserve the Windows 10 display-affinity compatibility of the HUD. The native center is absent, so source content remains accessible. The frame closes with Stop, errors and shutdown.
+
+CI creates real boundary HWNDs at 100% and 200% display scale with negative monitor origins. It verifies exact capture-pixel placement, all four edges, the hollow center, passive window styles, absence of `WS_EX_LAYERED`, and readback of `WDA_EXCLUDEFROMCAPTURE`. These are native window checks; real desktop composition and live GDI exclusion still require the Windows acceptance run described below.
 
 ## Timer and Stop
 
