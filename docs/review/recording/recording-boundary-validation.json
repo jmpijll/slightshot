@@ -1,0 +1,128 @@
+{
+  "code_commit": "cdf28a530fcedc6f14e933b9ae4eee9cfd52e92c",
+  "signed_build": 15,
+  "platform": "macOS 27",
+  "selection_points": {
+    "x": 530,
+    "y": 250,
+    "width": 860,
+    "height": 490
+  },
+  "source": "Real Mac Record / Stop / High quality / Save on a clean animated native test window.",
+  "observed": [
+    "Four red edges remain visible during live recording, with a dark contrast ring.",
+    "Boundary disappears after Stop.",
+    "Native MP4 fully decodes and has one video stream, no audio."
+  ],
+  "boundary_exclusion": {
+    "method": "Decoded all exported frames, checked the full 8-pixel strip at every edge for the visible red boundary (R>180, G<100, B<100). The fixture has no red source content at those edges.",
+    "checks": [
+      {
+        "edge": "top",
+        "pixels_checked": 6536000,
+        "red_boundary_pixels": 0
+      },
+      {
+        "edge": "bottom",
+        "pixels_checked": 6536000,
+        "red_boundary_pixels": 0
+      },
+      {
+        "edge": "left",
+        "pixels_checked": 3724000,
+        "red_boundary_pixels": 0
+      },
+      {
+        "edge": "right",
+        "pixels_checked": 3724000,
+        "red_boundary_pixels": 0
+      }
+    ]
+  },
+  "media": {
+    "streams": [
+      {
+        "index": 0,
+        "codec_name": "h264",
+        "codec_long_name": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+        "profile": "High",
+        "codec_type": "video",
+        "codec_tag_string": "avc1",
+        "codec_tag": "0x31637661",
+        "mime_codec_string": "avc1.640028",
+        "width": 1720,
+        "height": 980,
+        "coded_width": 1720,
+        "coded_height": 980,
+        "has_b_frames": 2,
+        "pix_fmt": "yuv420p",
+        "level": 40,
+        "color_range": "tv",
+        "color_space": "bt709",
+        "color_transfer": "bt709",
+        "color_primaries": "bt709",
+        "chroma_location": "left",
+        "field_order": "progressive",
+        "is_avc": "true",
+        "nal_length_size": "4",
+        "id": "0x1",
+        "r_frame_rate": "30/1",
+        "avg_frame_rate": "950/37",
+        "time_base": "1/600",
+        "start_pts": 0,
+        "start_time": "0.000000",
+        "duration_ts": 11094,
+        "duration": "18.490000",
+        "bit_rate": "1479509",
+        "bits_per_raw_sample": "8",
+        "nb_frames": "475",
+        "extradata_size": 36,
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0,
+          "multilayer": 0
+        },
+        "tags": {
+          "creation_time": "2026-10-07T14:05:57.000000Z",
+          "language": "und",
+          "handler_name": "Core Media Video"
+        }
+      }
+    ],
+    "format": {
+      "filename": "recording-boundary-output.mp4",
+      "nb_streams": 1,
+      "nb_programs": 0,
+      "nb_stream_groups": 0,
+      "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+      "format_long_name": "QuickTime / MOV",
+      "start_time": "0.000000",
+      "duration": "18.490000",
+      "size": "3429571",
+      "bit_rate": "1483859",
+      "probe_score": 100,
+      "tags": {
+        "major_brand": "mp42",
+        "minor_version": "1",
+        "compatible_brands": "isommp41mp42",
+        "creation_time": "2026-10-07T14:05:57.000000Z"
+      }
+    }
+  }
+}
