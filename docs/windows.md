@@ -52,7 +52,7 @@ in Settings. See [Microsoft's single-file deployment documentation](https://lear
 The overlay uses 30-point buttons, 18-point shared original vector icons, 6-point button corners,
 9-point panel corners, 2-point button spacing, 4-point panel padding and 8-point
 spacing from the selection. Tool order is Pen, Line, Arrow, Rectangle, Marker,
-Text, Colour, Undo. Actions are Print, Copy, Save, Record and Close. The twelve swatches,
+Text, Blur, Pixelate, Colour, Undo. Actions are Print, Copy, Save, Record and Close. The twelve swatches,
 1–12-point thickness range, 45% dimming, selection handles, dimension badge and
 136×174-point pixel loupe follow the Mac source. A frozen-screenshot blur and dark
 tint reproduce the Mac HUD panel treatment without adding a WebView.
@@ -76,13 +76,20 @@ double-click uses the configured default action. Esc/right-click cancels.
 | Enter while typing | Insert a newline |
 | Esc while typing | Discard the draft |
 
-All six tools share their renderer between the live canvas and exports, including
+The drawing tools share their renderer between the live canvas and exports, including
 Catmull–Rom pen smoothing, arrowhead geometry and 35%-opacity highlighter strokes.
 Copy includes a native bitmap and PNG clipboard representation. PNG, JPEG (90%
 default quality) and LZW TIFF are supported. Save defaults to Pictures/Screenshots
 and the same filename tokens as Mac; existing files receive `(2)`, `(3)` suffixes.
 Optional copy-after-save, cursor inclusion, full display resolution, sound,
 notifications, remembered tools and custom save directory are available.
+
+Blur and Pixelate obscure a dragged rectangle using the frozen screenshot and
+earlier annotations. The live preview, committed image and export share the
+same compositor; later marks remain on top, and Undo removes the last effect.
+Blur uses an 8-point radius and pixelation uses 12-point blocks, scaled for the
+monitor's DPI. The cached committed image is reused while dragging. These tools
+apply to screenshot output, not live video recordings.
 
 Each monitor gets its own frozen image and overlay; negative desktop coordinates
 and per-monitor DPI are retained. Native Win32 positions the borderless windows

@@ -10,6 +10,8 @@ struct Annotation: Identifiable {
         case arrow(from: CGPoint, to: CGPoint)
         case rectangle(CGRect)
         case text(String, origin: CGPoint)
+        case blur(CGRect)
+        case pixelate(CGRect)
     }
 
     let id = UUID()
@@ -18,6 +20,14 @@ struct Annotation: Identifiable {
     var lineWidth: CGFloat
     var alpha: CGFloat = 1
     var fontSize: CGFloat = 18
+
+    var rasterEffect: (effect: RasterEffect, rect: CGRect)? {
+        switch shape {
+        case .blur(let rect): (.blur, rect)
+        case .pixelate(let rect): (.pixelate, rect)
+        default: nil
+        }
+    }
 
     // MARK: - Drawing
 
@@ -66,6 +76,8 @@ struct Annotation: Identifiable {
             guard !string.isEmpty else { return }
             Self.attributedString(string, color: stroke, size: fontSize)
                 .draw(at: origin)
+        case .blur, .pixelate:
+            break // Raster effects are composited by Renderer, in annotation order.
         }
     }
 
@@ -140,7 +152,7 @@ struct Annotation: Identifiable {
             return box.insetBy(dx: -pad, dy: -pad)
         case .line(let a, let b), .arrow(let a, let b):
             return CGRect(corner: a, corner: b).insetBy(dx: -pad, dy: -pad)
-        case .rectangle(let r):
+        case .rectangle(let r), .blur(let r), .pixelate(let r):
             return r.insetBy(dx: -pad, dy: -pad)
         case .text(let s, let origin):
             let size = Self.attributedString(s, color: .white, size: fontSize).size()

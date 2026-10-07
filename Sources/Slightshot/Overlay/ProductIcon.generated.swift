@@ -8,6 +8,8 @@ nonisolated enum ProductIcon: String, CaseIterable, Sendable {
     case rectangle
     case marker
     case text
+    case blur
+    case pixelate
     case undo
     case print
     case copy
@@ -19,7 +21,7 @@ nonisolated enum ProductIcon: String, CaseIterable, Sendable {
     case check
     case warning
 
-    static let sourceHash = "04f6b157a6dee3a7c103dd0b5c8be6b4c87af836dd7871f951bceaf9e524df90"
+    static let sourceHash = "d934be9a9a96579ebf61c63647eda91196beddf0c818b5ba11cfe631085a518b"
     static let size: CGFloat = 18
 
     // Generated exhaustive asset dispatch; no conditional application behavior.
@@ -35,6 +37,8 @@ nonisolated enum ProductIcon: String, CaseIterable, Sendable {
         case .rectangle: drawRectangle(in: context)
         case .marker: drawMarker(in: context)
         case .text: drawText(in: context)
+        case .blur: drawBlur(in: context)
+        case .pixelate: drawPixelate(in: context)
         case .undo: drawUndo(in: context)
         case .print: drawPrint(in: context)
         case .copy: drawCopy(in: context)
@@ -154,6 +158,62 @@ extension ProductIcon {
                          control1: CGPoint(x: 14, y: 15),
                          control2: CGPoint(x: 15.5, y: 14))
         context.addPath(path0)
+        context.drawPath(using: .stroke)
+    }
+
+    nonisolated private func drawBlur(in context: CGContext) {
+        let path0 = CGMutablePath()
+        path0.move(to: CGPoint(x: 3, y: 4))
+        path0.addCurve(to: CGPoint(x: 9, y: 4),
+                         control1: CGPoint(x: 5, y: 2),
+                         control2: CGPoint(x: 7, y: 6))
+        path0.addCurve(to: CGPoint(x: 15, y: 4),
+                         control1: CGPoint(x: 11, y: 2),
+                         control2: CGPoint(x: 13, y: 6))
+        path0.move(to: CGPoint(x: 3, y: 9))
+        path0.addCurve(to: CGPoint(x: 9, y: 9),
+                         control1: CGPoint(x: 5, y: 7),
+                         control2: CGPoint(x: 7, y: 11))
+        path0.addCurve(to: CGPoint(x: 15, y: 9),
+                         control1: CGPoint(x: 11, y: 7),
+                         control2: CGPoint(x: 13, y: 11))
+        path0.move(to: CGPoint(x: 3, y: 14))
+        path0.addCurve(to: CGPoint(x: 9, y: 14),
+                         control1: CGPoint(x: 5, y: 12),
+                         control2: CGPoint(x: 7, y: 16))
+        path0.addCurve(to: CGPoint(x: 15, y: 14),
+                         control1: CGPoint(x: 11, y: 12),
+                         control2: CGPoint(x: 13, y: 16))
+        context.addPath(path0)
+        context.drawPath(using: .stroke)
+    }
+
+    nonisolated private func drawPixelate(in context: CGContext) {
+        let path0 = CGMutablePath()
+        path0.move(to: CGPoint(x: 2.5, y: 2.5))
+        path0.addLine(to: CGPoint(x: 7, y: 2.5))
+        path0.addLine(to: CGPoint(x: 7, y: 7))
+        path0.addLine(to: CGPoint(x: 2.5, y: 7))
+        path0.closeSubpath()
+        path0.move(to: CGPoint(x: 10.5, y: 10.5))
+        path0.addLine(to: CGPoint(x: 15, y: 10.5))
+        path0.addLine(to: CGPoint(x: 15, y: 15))
+        path0.addLine(to: CGPoint(x: 10.5, y: 15))
+        path0.closeSubpath()
+        context.addPath(path0)
+        context.drawPath(using: .fill)
+        let path1 = CGMutablePath()
+        path1.move(to: CGPoint(x: 10.5, y: 2.5))
+        path1.addLine(to: CGPoint(x: 15, y: 2.5))
+        path1.addLine(to: CGPoint(x: 15, y: 7))
+        path1.addLine(to: CGPoint(x: 10.5, y: 7))
+        path1.closeSubpath()
+        path1.move(to: CGPoint(x: 2.5, y: 10.5))
+        path1.addLine(to: CGPoint(x: 7, y: 10.5))
+        path1.addLine(to: CGPoint(x: 7, y: 15))
+        path1.addLine(to: CGPoint(x: 2.5, y: 15))
+        path1.closeSubpath()
+        context.addPath(path1)
         context.drawPath(using: .stroke)
     }
 

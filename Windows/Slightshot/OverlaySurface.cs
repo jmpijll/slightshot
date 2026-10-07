@@ -7,6 +7,7 @@ namespace Slightshot;
 
 internal sealed class OverlaySurface(CapturedDisplay display, Settings settings) : FrameworkElement
 {
+    private readonly AnnotationCompositor compositor = new(display);
     public RectD? Selection { get; set; }
     public List<Annotation> Annotations { get; } = [];
     public Annotation? LiveAnnotation { get; set; }
@@ -22,8 +23,17 @@ internal sealed class OverlaySurface(CapturedDisplay display, Settings settings)
         if (Selection is { Width: >= 1, Height: >= 1 } r)
         {
             dc.PushClip(new RectangleGeometry(AnnotationRenderer.Rect(r)));
-            foreach (var annotation in Annotations) AnnotationRenderer.Draw(dc, annotation, scale);
-            if (LiveAnnotation != null) AnnotationRenderer.Draw(dc, LiveAnnotation, scale);
+            if (Annotations.Any(a => a.IsRasterEffect) || LiveAnnotation is { IsRasterEffect: true })
+            {
+                var composition = compositor.Committed(r, Annotations);
+                dc.DrawImage(composition, new Rect(r.X, r.Y, composition.PixelWidth / display.Scale, composition.PixelHeight / display.Scale));
+                if (LiveAnnotation != null) compositor.DrawLive(dc, r, LiveAnnotation);
+            }
+            else
+            {
+                foreach (var annotation in Annotations) AnnotationRenderer.Draw(dc, annotation, scale);
+                if (LiveAnnotation != null) AnnotationRenderer.Draw(dc, LiveAnnotation, scale);
+            }
             dc.Pop();
             var outline = AnnotationRenderer.Rect(r); outline.Inflate(0.5 / scale, 0.5 / scale);
             dc.DrawRectangle(null, new Pen(AnnotationRenderer.Brush("#FFFFFF", 0.95), 2 / scale), outline);

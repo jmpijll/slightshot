@@ -47,7 +47,9 @@ final class ToolbarController {
     func select(_ tool: Tool?) {
         activeTool = tool
         for (candidate, button) in toolButtons { button.isSelectedItem = (candidate == tool) }
-        if tool == nil { hidePalette() }
+        let usesStyle = tool?.usesColorAndWidth ?? true
+        colorButton?.isEnabled = usesStyle
+        if tool == nil || !usesStyle { hidePalette() }
         if Settings.shared.rememberLastTool { Self.lastTool = tool }
         delegate?.toolbarDidChangeTool(tool)
     }
@@ -118,6 +120,7 @@ final class ToolbarController {
 
         let swatch = ColorSwatchButton { [weak self] in self?.togglePalette() }
         swatch.color = color
+        swatch.isEnabled = activeTool?.usesColorAndWidth ?? true
         colorButton = swatch
         toolViews.append(swatch)
 
@@ -157,6 +160,7 @@ final class ToolbarController {
     // MARK: - Palette
 
     private func togglePalette() {
+        guard activeTool?.usesColorAndWidth ?? true else { return }
         if palette != nil { hidePalette(); return }
         let panel = PalettePanel(selected: color, width: lineWidth) { [weak self] picked in
             self?.apply(color: picked)

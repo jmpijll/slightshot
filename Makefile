@@ -18,7 +18,7 @@ help:
 	@echo "make notarize  — notarise and staple the disk image"
 	@echo "make release   — app + dmg + notarize"
 	@echo "make icon      — regenerate app, menu bar and README artwork"
-	@echo "make test      — verify video export behavior"
+	@echo "make test      — verify annotation rendering and video export"
 	@echo "make lint      — run SwiftLint"
 	@echo "make clean     — remove build artefacts"
 

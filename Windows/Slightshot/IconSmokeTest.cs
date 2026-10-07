@@ -36,14 +36,15 @@ internal static class IconSmokeTest
             throw new InvalidOperationException("Shared icon changed button size or accessibility");
         record.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
         if (!clicked) throw new InvalidOperationException("Shared icon changed the Record action");
-        checks.Add($"16 shared native WPF vectors render unclipped at 1×/2×; Record size/label/action retained. Production toolbar renderer produces normal, hover-style, selected and disabled fixtures. Source SHA-256: {ProductIcons.SourceHash}.");
+        checks.Add($"{Enum.GetValues<ProductIcon>().Length} shared native WPF vectors render unclipped at 1×/2×; Record size/label/action retained. Production toolbar renderer produces normal, hover-style, selected and disabled fixtures. Source SHA-256: {ProductIcons.SourceHash}.");
     }
 
     private static void SaveBoard(string directory, int scale)
     {
         var visual = new DrawingVisual();
         var icons = Enum.GetValues<ProductIcon>();
-        const int width = 760, height = 280;
+        int width = 112 + icons.Length * 39 + 20;
+        const int height = 280;
         using (var dc = visual.RenderOpen())
         {
             dc.DrawRectangle(Appearance.Brush("#17171A"), null, new Rect(0, 0, width, height));

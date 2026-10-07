@@ -68,21 +68,13 @@ internal static class AnnotationRenderer
 
     public static BitmapSource Flatten(CapturedDisplay display, RectD selection, IEnumerable<Annotation> annotations, bool nativeResolution)
     {
-        double sourceScaleX = display.PixelWidth / display.Width, sourceScaleY = display.PixelHeight / display.Height;
-        var pixels = selection.ToPixels(sourceScaleX, sourceScaleY, display.PixelWidth, display.PixelHeight);
-        var crop = new CroppedBitmap(display.Image, new Int32Rect((int)pixels.X, (int)pixels.Y, (int)pixels.Width, (int)pixels.Height));
-        double scale = nativeResolution ? display.Scale : 1;
-        int width = Math.Max(1, (int)Math.Round(selection.Width * scale)), height = Math.Max(1, (int)Math.Round(selection.Height * scale));
+        var composed = new AnnotationCompositor(display).Committed(selection, annotations.ToArray());
+        if (nativeResolution) return composed;
+        int width = Math.Max(1, (int)Math.Round(selection.Width)), height = Math.Max(1, (int)Math.Round(selection.Height));
         var visual = new DrawingVisual();
         using (var dc = visual.RenderOpen())
-        {
-            dc.DrawImage(crop, new Rect(0, 0, selection.Width, selection.Height));
-            dc.PushClip(new RectangleGeometry(new Rect(0, 0, selection.Width, selection.Height)));
-            dc.PushTransform(new TranslateTransform(-selection.X, -selection.Y));
-            foreach (var annotation in annotations) Draw(dc, annotation, scale);
-            dc.Pop(); dc.Pop();
-        }
-        var bitmap = new RenderTargetBitmap(width, height, 96 * scale, 96 * scale, PixelFormats.Pbgra32);
+            dc.DrawImage(composed, new Rect(0, 0, selection.Width, selection.Height));
+        var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(visual); bitmap.Freeze(); return bitmap;
     }
 }

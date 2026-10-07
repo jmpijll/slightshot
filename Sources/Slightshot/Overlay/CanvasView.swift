@@ -5,9 +5,15 @@ import AppKit
 ///
 /// Flipped, so its coordinate space matches `Annotation` and the exporter.
 final class CanvasView: NSView {
-    var selection: CGRect? { didSet { needsDisplay = true } }
-    var annotations: [Annotation] = [] { didSet { needsDisplay = true } }
-    var liveAnnotation: Annotation? { didSet { needsDisplay = true } }
+    var sourceImage: CGImage? { didSet { invalidateComposite() } }
+    var imageScale: CGFloat = 1 { didSet { invalidateComposite() } }
+    var selection: CGRect? { didSet { invalidateComposite() } }
+    var annotations: [Annotation] = [] { didSet { invalidateComposite() } }
+    var liveAnnotation: Annotation? { didSet { livePatchIsValid = false; needsDisplay = true } }
+    private var committedImage: CGImage?
+    private var compositeIsValid = false
+    private var livePatch: (image: CGImage, pixels: CGRect)?
+    private var livePatchIsValid = false
     var accent: NSColor = .systemRed
     var showDimensions = true
     var showHint = true { didSet { needsDisplay = true } }
@@ -28,13 +34,65 @@ final class CanvasView: NSView {
 
     // MARK: - Pieces
 
+    private func invalidateComposite() {
+        compositeIsValid = false
+        committedImage = nil
+        livePatchIsValid = false
+        livePatch = nil
+        needsDisplay = true
+    }
+
     private func drawAnnotations(clippedTo selection: CGRect) {
         guard !annotations.isEmpty || liveAnnotation != nil else { return }
         NSGraphicsContext.saveGraphicsState()
+        defer { NSGraphicsContext.restoreGraphicsState() }
         NSBezierPath(rect: selection).setClip()
-        for annotation in annotations { annotation.draw() }
-        liveAnnotation?.draw()
-        NSGraphicsContext.restoreGraphicsState()
+        let hasRaster = annotations.contains { $0.rasterEffect != nil } || liveAnnotation?.rasterEffect != nil
+        guard hasRaster else {
+            for annotation in annotations { annotation.draw() }
+            liveAnnotation?.draw()
+            return
+        }
+
+        let rect = selection.pixelAligned
+        if !compositeIsValid {
+            committedImage = sourceImage.flatMap {
+                Renderer.flatten(image: $0, scale: imageScale, selection: rect, annotations: annotations)
+            }
+            compositeIsValid = true
+        }
+        guard let image = committedImage else {
+            NSColor.black.setFill()
+            NSBezierPath(rect: selection).fill()
+            return
+        }
+        drawImage(image, in: rect)
+        guard let liveAnnotation else { return }
+        guard let effect = liveAnnotation.rasterEffect else { liveAnnotation.draw(); return }
+        if !livePatchIsValid {
+            livePatch = Renderer.effectPatch(liveAnnotation, source: image, selection: rect, scale: imageScale)
+            livePatchIsValid = true
+        }
+        if let patch = livePatch {
+            let destination = CGRect(x: rect.minX + patch.pixels.minX / imageScale,
+                                     y: rect.minY + patch.pixels.minY / imageScale,
+                                     width: patch.pixels.width / imageScale,
+                                     height: patch.pixels.height / imageScale)
+            drawImage(patch.image, in: destination)
+        } else {
+            NSColor.black.setFill()
+            NSBezierPath(rect: effect.rect).fill()
+        }
+    }
+
+    private func drawImage(_ image: CGImage, in rect: CGRect) {
+        guard let context = NSGraphicsContext.current?.cgContext else { return }
+        context.saveGState()
+        context.translateBy(x: rect.minX, y: rect.maxY)
+        context.scaleBy(x: 1, y: -1)
+        context.interpolationQuality = .none
+        context.draw(image, in: CGRect(origin: .zero, size: rect.size))
+        context.restoreGState()
     }
 
     private func drawOutline(_ selection: CGRect) {
