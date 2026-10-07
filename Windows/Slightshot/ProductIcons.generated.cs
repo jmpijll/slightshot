@@ -3,11 +3,11 @@ using System.Windows.Media;
 
 namespace Slightshot;
 
-internal enum ProductIcon { Pen, Line, Arrow, Rectangle, Marker, Text, Undo, Print, Copy, Save, Close, Record, Stop, Capture, Check, Warning }
+internal enum ProductIcon { Pen, Line, Arrow, Rectangle, Marker, Text, Blur, Pixelate, Undo, Print, Copy, Save, Close, Record, Stop, Capture, Check, Warning }
 
 internal static class ProductIcons
 {
-    internal const string SourceHash = "04f6b157a6dee3a7c103dd0b5c8be6b4c87af836dd7871f951bceaf9e524df90";
+    internal const string SourceHash = "d934be9a9a96579ebf61c63647eda91196beddf0c818b5ba11cfe631085a518b";
     internal const double Size = 18;
     private sealed record Layer(Geometry Path, bool Fill, bool Stroke);
     private static Layer Shape(string path, bool fill, bool stroke)
@@ -34,6 +34,13 @@ internal static class ProductIcons
         ],
         [ProductIcon.Text] = [
             Shape("M2 15 L6 3 L10 15 M3.5 10.5 L8.5 10.5 M11.5 9 C12.5 7.5 15.5 7.5 15.5 10 L15.5 15 M15.5 11 L12.5 11 C10 11 10 15 12.5 15 C14 15 15.5 14 15.5 13", false, true),
+        ],
+        [ProductIcon.Blur] = [
+            Shape("M3 4 C5 2 7 6 9 4 C11 2 13 6 15 4 M3 9 C5 7 7 11 9 9 C11 7 13 11 15 9 M3 14 C5 12 7 16 9 14 C11 12 13 16 15 14", false, true),
+        ],
+        [ProductIcon.Pixelate] = [
+            Shape("M2.5 2.5 L7 2.5 L7 7 L2.5 7 Z M10.5 10.5 L15 10.5 L15 15 L10.5 15 Z", true, false),
+            Shape("M10.5 2.5 L15 2.5 L15 7 L10.5 7 Z M2.5 10.5 L7 10.5 L7 15 L2.5 15 Z", false, true),
         ],
         [ProductIcon.Undo] = [
             Shape("M6 3 L2 7 L6 11 M2 7 L10.5 7 C17 7 17 15 10.5 15 L8 15", false, true),

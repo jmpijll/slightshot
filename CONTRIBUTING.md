@@ -45,9 +45,11 @@ modern and as fast as we can make them.
 ## Coordinate systems
 
 Everything drawn in the overlay uses **flipped display points, origin top-left**.
-`Annotation.draw()` is shared between the live canvas and `Renderer.flatten()`,
-which is why what you see is what gets saved. If you add a drawing tool, add it
-to `Annotation.Shape` and it works in both places for free.
+`Annotation.draw()` shares vector drawing between the live canvas and exports.
+Blur and pixelation use the same raster compositor for preview and export,
+processing annotations in order so they include earlier marks. The canvas
+caches the committed image and processes only the live rectangle while dragging.
+Add vector tools to `Annotation.Shape`; raster tools also need compositor support.
 
 `ScreenshotView`, `DimView` and `MagnifierView` are deliberately *not* flipped,
 because `CALayer.contents` and `CGContext.draw(_:in:)` render images upright in

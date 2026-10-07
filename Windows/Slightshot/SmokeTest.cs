@@ -16,6 +16,7 @@ internal static class SmokeTest
         Directory.CreateDirectory(directory);
         var checks = new List<string>();
         IconSmokeTest.Run(directory, checks);
+        RasterEffectSmokeTest.Run(directory, checks);
         foreach (double scale in new[] { 1.0, 1.25, 1.5, 2.0 })
         {
             var display = Fixture(scale);

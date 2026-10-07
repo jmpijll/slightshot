@@ -83,6 +83,7 @@ internal sealed class Toolbar
         Tool.Pen => ProductIcon.Pen, Tool.Line => ProductIcon.Line,
         Tool.Arrow => ProductIcon.Arrow, Tool.Rectangle => ProductIcon.Rectangle,
         Tool.Marker => ProductIcon.Marker, Tool.Text => ProductIcon.Text,
+        Tool.Blur => ProductIcon.Blur, Tool.Pixelate => ProductIcon.Pixelate,
         _ => throw new ArgumentOutOfRangeException(nameof(tool))
     };
 
@@ -112,7 +113,8 @@ internal sealed class Toolbar
     {
         ActiveTool = tool;
         foreach (var (candidate, button) in buttons) { button.Selected = candidate == tool; button.InvalidateVisual(); }
-        if (tool == null) HidePalette();
+        colorButton.IsEnabled = tool is not (Tool.Blur or Tool.Pixelate);
+        if (tool == null || !colorButton.IsEnabled) HidePalette();
         if (settings.RememberLastTool) lastTool = tool;
         toolChanged(tool);
     }

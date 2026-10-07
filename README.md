@@ -26,6 +26,11 @@ Use the pen, line, arrow, rectangle, marker or text tool to point something out.
 You can change the colour and thickness, undo an annotation, or resize the
 selection before copying it.
 
+Choose **Blur** or **Pixelate**, then drag a rectangle over details you want
+to obscure. The effect appears while dragging and is included when you copy,
+save or print. Undo removes it just like any other annotation. Both tools work
+locally on Mac and Windows; they do not modify live screen recordings.
+
 ## Record an area
 
 Select an area and click the **Record** button underneath it. The frozen
@@ -156,7 +161,6 @@ checks, and [the release guide](docs/RELEASING.md) for signing and notarisation.
 
 ## Planned
 
-- Blur and pixelation for redaction
 - Numbered steps
 - Selections across multiple displays
 - Capture history

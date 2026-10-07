@@ -85,6 +85,8 @@ final class OverlayView: NSView {
         dimView.frame = bounds
         dimView.opacity = settings.dimOpacity
         canvas.frame = bounds
+        canvas.sourceImage = display.image
+        canvas.imageScale = display.scale
         canvas.accent = color
         canvas.showDimensions = settings.showDimensions
 
@@ -299,6 +301,8 @@ final class OverlayView: NSView {
         case .line: shape = .line(from: start, to: end)
         case .arrow: shape = .arrow(from: start, to: end)
         case .rectangle: shape = .rectangle(CGRect(corner: start, corner: end))
+        case .blur: shape = .blur(CGRect(corner: start, corner: current))
+        case .pixelate: shape = .pixelate(CGRect(corner: start, corner: current))
         case .text: return nil
         }
         return Annotation(shape: shape, color: color, lineWidth: width,

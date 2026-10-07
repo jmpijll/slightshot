@@ -22,18 +22,41 @@ Equal<SelectionHandle?>(SelectionHandle.TopLeft, SelectionGeometry.Hit(new(4, 4)
 var locked = SelectionGeometry.AxisLocked(new(0, 0), new(100, 85)); Near(locked.X, locked.Y, "Shift nearest 45 degrees");
 
 var regular = OverlayStyle.Layout(new(100, 100, 200, 200), bounds);
-Equal(new RectD(308, 100, 38, 265), regular.Tools, "Mac tool bar dimensions and right placement");
+Equal(new RectD(308, 100, 38, 329), regular.Tools, "tool bar fits the added rectangular effects on the right");
 Equal(new RectD(131, 308, 169, 38), regular.Actions, "Mac actions with Record below right aligned");
 var edge = OverlayStyle.Layout(new(700, 500, 100, 100), bounds);
-Equal(new RectD(654, 331, 38, 265), edge.Tools, "right edge flips tools to left and clamps vertically");
+Equal(new RectD(654, 267, 38, 329), edge.Tools, "right edge flips tools to left and clamps vertically");
 Equal(new RectD(627, 454, 169, 38), edge.Actions, "bottom edge flips actions above and clamps horizontally");
 var full = OverlayStyle.Layout(bounds, bounds);
-Equal(new RectD(754, 4, 38, 265), full.Tools, "full monitor tucks tools inside");
+Equal(new RectD(754, 4, 38, 329), full.Tools, "full monitor tucks tools inside");
 Equal(new RectD(627, 554, 169, 38), full.Actions, "full monitor tucks actions inside");
 Equal(12, OverlayStyle.Swatches.Length, "same twelve Mac swatches");
 Equal("#FF3B30", OverlayStyle.Swatches[0], "Mac default red");
 Equal(new RectD(12, 25, 26, 38), new RectD(10, 20, 20, 30).ToPixels(1.25, 1.25, 100, 100), "fractional DPI covers selected pixels");
 Equal(new RectD(99, 99, 1, 1), new RectD(100, 100, 0, 0).ToPixels(1, 1, 100, 100), "edge pixel crop is valid");
+
+var effect = new Annotation(Tool.Blur, [new(90, 60), new(10, 20)], "#FF3B30", 3);
+Equal<RectD?>(new RectD(20, 30, 50, 30), RasterEffects.Region(effect, new(20, 30, 50, 50)), "reverse effect drag clips to screenshot selection");
+Equal<RectD?>(null, RasterEffects.Region(effect, new(200, 200, 50, 50)), "effect outside selection is empty");
+Equal<RectD?>(null, RasterEffects.Region(effect with { Points = [new(20, 20), new(20, 50)] }, bounds), "zero-width effect does not edit an edge pixel");
+byte[] blocks = [0, 10, 20, 255, 20, 30, 40, 255, 200, 210, 220, 255, 40, 50, 60, 255, 60, 70, 80, 255, 100, 110, 120, 255];
+RasterEffects.Pixelate(blocks, 3, 2, 2);
+Equal(true, blocks.SequenceEqual(new byte[] {30, 40, 50, 255, 30, 40, 50, 255, 150, 160, 170, 255, 30, 40, 50, 255, 30, 40, 50, 255, 150, 160, 170, 255}), "pixelation averages real channels and partial edge blocks");
+byte[] gradient = [0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 255, 255];
+RasterEffects.Blur(gradient, 3, 1, 1);
+Equal(true, gradient.SequenceEqual(new byte[] {0, 0, 0, 255, 85, 85, 85, 255, 170, 170, 170, 255}), "blur mixes adjacent pixels and clamps screenshot edges");
+var solid = Enumerable.Range(0, 49).SelectMany(_ => new byte[] {30, 80, 120, 255}).ToArray();
+RasterEffects.Blur(solid, 7, 7, 8);
+Equal(true, solid.Where((value, index) => value != new byte[] {30, 80, 120, 255}[index % 4]).Any() == false, "blur preserves a solid image at corners with a large radius");
+var impulse = new byte[41 * 41 * 4];
+for (int i = 3; i < impulse.Length; i += 4) impulse[i] = 255;
+for (int c = 0; c < 3; c++) impulse[(20 * 41 + 20) * 4 + c] = 255;
+RasterEffects.Blur(impulse, 41, 41, 2);
+Equal(true, impulse[(20 * 41 + 20) * 4] is > 0 and < 255, "blur transforms the source instead of drawing an overlay");
+Equal(true, impulse[(20 * 41 + 19) * 4] > 0, "blur spreads an impulse to nearby pixels");
+Equal(impulse[(20 * 41 + 19) * 4], impulse[(20 * 41 + 21) * 4], "blur kernel is symmetric");
+Equal(true, impulse[(19 * 41 + 20) * 4] > 0, "blur spreads an impulse vertically");
+Equal(impulse[(19 * 41 + 20) * 4], impulse[(21 * 41 + 20) * 4], "vertical blur kernel is symmetric");
 
 var when = new DateTimeOffset(2026, 10, 7, 14, 30, 5, TimeSpan.FromHours(2));
 Equal("Screenshot 2026-10-07 at 14.30.05", OutputNaming.FileName("", when, 1200, 800), "default filename");

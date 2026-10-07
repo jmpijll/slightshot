@@ -106,7 +106,11 @@ internal sealed class OverlayWindow : Window
     private void MouseUpOnSurface(object sender, MouseButtonEventArgs e)
     {
         surface.ReleaseMouseCapture();
-        if (drag == Drag.Drawing && surface.LiveAnnotation is { } live) { surface.Annotations.Add(live); surface.LiveAnnotation = null; }
+        if (drag == Drag.Drawing && surface.LiveAnnotation is { } live)
+        {
+            if (!live.IsRasterEffect || surface.Selection is { } selection && RasterEffects.Region(live, selection) != null) surface.Annotations.Add(live);
+            surface.LiveAnnotation = null;
+        }
         if (drag == Drag.NewSelection)
         {
             if (surface.Selection is { } r && (r.Width < 4 || r.Height < 4)) { surface.Selection = null; surface.ShowHint = true; }
