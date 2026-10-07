@@ -5,6 +5,14 @@ current Mac capture workflow and keeps the same floating controls, tool order,
 colours, selection geometry and keyboard interactions. Windows 10 version 2004
 or later, or Windows 11, is required.
 
+## Download the preview
+
+Download the portable [x64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-x64.zip)
+or [ARM64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-arm64.zip)
+from the latest release. Extract the entire archive and run `Slightshot.exe`.
+The .NET runtime is included. Windows preview binaries are unsigned; updates
+are downloaded manually from Releases.
+
 ## Run and build
 
 Install the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) on
@@ -31,7 +39,7 @@ rights are needed. Launch at login is available in Settings.
 
 ## Mac parity
 
-The overlay uses 30-point buttons, 15-point vector icons, 6-point button corners,
+The overlay uses 30-point buttons, 18-point shared original vector icons, 6-point button corners,
 9-point panel corners, 2-point button spacing, 4-point panel padding and 8-point
 spacing from the selection. Tool order is Pen, Line, Arrow, Rectangle, Marker,
 Text, Colour, Undo. Actions are Print, Copy, Save, Record and Close. The twelve swatches,
@@ -113,8 +121,8 @@ rounded segmented tabs, switch controls and matching subdued colours. CI renders
 both themes. The tray reuses the Mac menu artwork (tinted for the taskbar theme)
 and the Windows executable icon is converted from the existing Mac app artwork.
 
-Windows uses Segoe UI and equivalent custom vector icons because Apple's system
-fonts and SF Symbols are platform-specific. Frosted material and text shadow are
+Windows uses Segoe UI and the same original toolbar glyphs as Mac. The shared
+source is `Resources/UI/icons.json`; Apple's system fonts remain platform-specific. Frosted material and text shadow are
 approximations of AppKit rather than identical OS rendering. Windows update
 delivery is manual; no signing, installer or automatic updater is provided in this
 initial port. GDI screen capture targets the ordinary desktop; protected video

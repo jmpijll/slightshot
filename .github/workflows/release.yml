@@ -22,7 +22,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  windows:
+    name: Windows preview and native checks
+    uses: ./.github/workflows/windows.yml
+    with:
+      version: ${{ inputs.version }}
+      release_archives: true
+
   release:
+    needs: windows
     name: Build, notarise and publish
     # Same macOS 27/Xcode toolchain as regular CI. Optional dedicated Mac runner.
     runs-on: ${{ fromJSON(vars.MACOS_RELEASE_RUNNER || '"xcode-27"') }}
@@ -159,6 +167,12 @@ jobs:
           rm -f /tmp/sparkle_key
           cat dist/appcast.xml
 
+      - name: Download verified Windows archives
+        uses: actions/download-artifact@v4
+        with:
+          name: Slightshot-windows-release-zips
+          path: build/windows-release
+
       - name: Publish the GitHub release
         if: steps.version.outputs.publish == 'true'
         uses: softprops/action-gh-release@v2
@@ -166,7 +180,9 @@ jobs:
           tag_name: v${{ steps.version.outputs.version }}
           name: Slightshot ${{ steps.version.outputs.version }}
           generate_release_notes: true
-          files: build/Slightshot-${{ steps.version.outputs.version }}.dmg
+          files: |
+            build/Slightshot-${{ steps.version.outputs.version }}.dmg
+            build/windows-release/Slightshot-windows-*.zip
 
       - name: Commit the regenerated appcast
         if: steps.version.outputs.publish == 'true'
