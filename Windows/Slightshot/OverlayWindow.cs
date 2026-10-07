@@ -15,6 +15,7 @@ internal sealed class OverlayWindow : Window
     private readonly Action<OverlayWindow> takeOver;
     private readonly Action cancel;
     private readonly Action<OverlayWindow, CaptureAction, BitmapSource> complete;
+    private readonly Action<CapturedDisplay, RectD> record;
     private readonly OverlaySurface surface;
     private readonly Canvas chrome = new();
     private readonly Toolbar toolbar;
@@ -29,16 +30,17 @@ internal sealed class OverlayWindow : Window
     private bool copyOnRelease;
     private RectD Bounds => new(0, 0, display.Width, display.Height);
 
-    public OverlayWindow(CapturedDisplay display, Settings settings, bool underPointer, Action<OverlayWindow> takeOver, Action cancel, Action<OverlayWindow, CaptureAction, BitmapSource> complete)
+    public OverlayWindow(CapturedDisplay display, Settings settings, bool underPointer, Action<OverlayWindow> takeOver, Action cancel, Action<OverlayWindow, CaptureAction, BitmapSource> complete, Action<CapturedDisplay, RectD>? record = null)
     {
         this.display = display; this.settings = settings; this.takeOver = takeOver; this.cancel = cancel; this.complete = complete;
+        this.record = record ?? ((_, _) => { });
         WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize; ShowInTaskbar = false; Topmost = true;
         Width = display.Width; Height = display.Height; Left = display.Left / display.Scale; Top = display.Top / display.Scale;
         Background = Brushes.Black; Cursor = Cursors.Cross;
         surface = new OverlaySurface(display, settings) { ShowHint = underPointer };
         RenderOptions.SetBitmapScalingMode(surface, BitmapScalingMode.NearestNeighbor);
         var grid = new Grid(); grid.Children.Add(surface); grid.Children.Add(chrome); Content = grid;
-        toolbar = new Toolbar(chrome, display, settings, _ => { CommitText(); surface.MagnifierPoint = null; Refresh(); }, () => { Refresh(); }, Undo, Perform, cancel);
+        toolbar = new Toolbar(chrome, display, settings, _ => { CommitText(); surface.MagnifierPoint = null; Refresh(); }, () => { Refresh(); }, Undo, Perform, cancel, BeginRecording);
         surface.MouseLeftButtonDown += MouseDownOnSurface; surface.MouseMove += MouseMoved; surface.MouseLeftButtonUp += MouseUpOnSurface;
         surface.MouseRightButtonDown += (_, _) => cancel();
         surface.MouseLeave += (_, _) => { surface.MagnifierPoint = null; surface.InvalidateVisual(); };
@@ -170,6 +172,10 @@ internal sealed class OverlayWindow : Window
         if (offset != default && surface.Selection is { } r) { surface.Selection = r.MoveTo(new(r.X + offset.X, r.Y + offset.Y), Bounds); Refresh(); e.Handled = true; }
     }
     private void DefaultPerform() { if (settings.DefaultAction != DefaultAction.StayOpen) Perform(settings.DefaultAction == DefaultAction.Save ? CaptureAction.Save : CaptureAction.Copy); }
+    private void BeginRecording()
+    {
+        if (surface.Selection is { Width: >= 8, Height: >= 8 } selection) record(display, selection);
+    }
     private void Perform(CaptureAction action)
     {
         CommitText();

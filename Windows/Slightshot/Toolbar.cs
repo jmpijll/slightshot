@@ -46,6 +46,8 @@ internal sealed class ToolbarButton : Button
             case "Copy": Path(dc, "M5,4 L13,4 L13,14 L5,14 Z M3,11 L1,11 L1,1 L9,1 L9,2", pen); break;
             case "Save": Path(dc, "M7.5,0 L7.5,10 M4,6 L7.5,10 L11,6 M1,9 L1,14 L14,14 L14,9", pen); break;
             case "Close": Path(dc, "M2,2 L13,13 M13,2 L2,13", pen); break;
+            case "Record": dc.DrawEllipse(null, pen, new Point(7.5, 7.5), 6.5, 6.5); dc.DrawEllipse(brush, null, new Point(7.5, 7.5), 3, 3); break;
+            case "Stop": dc.DrawRoundedRectangle(brush, null, new Rect(2, 2, 11, 11), 1, 1); break;
         }
         dc.Pop();
     }
@@ -88,7 +90,7 @@ internal sealed class Toolbar
     private static Tool? lastTool;
     public Tool? ActiveTool { get; private set; }
 
-    public Toolbar(Canvas host, CapturedDisplay display, Settings settings, Action<Tool?> toolChanged, Action changed, Action undo, Action<CaptureAction> perform, Action close)
+    public Toolbar(Canvas host, CapturedDisplay display, Settings settings, Action<Tool?> toolChanged, Action changed, Action undo, Action<CaptureAction> perform, Action close, Action record)
     {
         this.host = host; this.display = display; this.settings = settings; this.toolChanged = toolChanged; this.changed = changed;
         var toolViews = new List<FrameworkElement>();
@@ -105,6 +107,7 @@ internal sealed class Toolbar
             new ToolbarButton("Print", "Print  Ctrl+P", () => perform(CaptureAction.Print)),
             new ToolbarButton("Copy", "Copy  Ctrl+C", () => perform(CaptureAction.Copy)),
             new ToolbarButton("Save", "Save  Ctrl+S  ·  Save As  Ctrl+Shift+S", () => perform(CaptureAction.Save)),
+            new ToolbarButton("Record", "Record selected area", record),
             Separator(false), new ToolbarButton("Close", "Close  Esc", close)], false));
         host.Children.Add(tools); host.Children.Add(actions); SetVisible(false);
     }

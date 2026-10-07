@@ -2,7 +2,8 @@
 
 The Windows app is a native .NET 10 WPF tray application. It starts from the
 current Mac capture workflow and keeps the same floating controls, tool order,
-colours, selection geometry and keyboard interactions. Windows 10/11 is required.
+colours, selection geometry and keyboard interactions. Windows 10 version 2004
+or later, or Windows 11, is required.
 
 ## Run and build
 
@@ -33,7 +34,7 @@ rights are needed. Launch at login is available in Settings.
 The overlay uses 30-point buttons, 15-point vector icons, 6-point button corners,
 9-point panel corners, 2-point button spacing, 4-point panel padding and 8-point
 spacing from the selection. Tool order is Pen, Line, Arrow, Rectangle, Marker,
-Text, Colour, Undo. Actions are Print, Copy, Save and Close. The twelve swatches,
+Text, Colour, Undo. Actions are Print, Copy, Save, Record and Close. The twelve swatches,
 1–12-point thickness range, 45% dimming, selection handles, dimension badge and
 136×174-point pixel loupe follow the Mac source. A frozen-screenshot blur and dark
 tint reproduce the Mac HUD panel treatment without adding a WebView.
@@ -75,7 +76,8 @@ Focus goes to the display under the pointer after every overlay is presented.
 ```powershell
 dotnet run --project Windows/Slightshot.Core.Tests -c Release
 dotnet build Windows/Slightshot -c Release
-Start-Process Windows/Slightshot/bin/Release/net10.0-windows/Slightshot.exe -ArgumentList '--smoke-test', 'Windows/artifacts/parity' -Wait
+Start-Process Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe -ArgumentList '--smoke-test', 'Windows/artifacts/parity' -Wait
+Start-Process Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe -ArgumentList '--recording-smoke-test', 'Windows/artifacts/recording' -Wait
 ```
 
 The Windows workflow builds with warnings treated as errors, checks selection and
@@ -95,7 +97,11 @@ dotnet build Windows/Slightshot -c Release
 ```
 
 The fixtures use synthetic content. They are native renderer evidence, not a
-video of a person using the Windows desktop. Manual Windows acceptance still
+video of a person using the Windows desktop. Recording CI encodes moving synthetic
+BGRA frames through the real Windows H.264 media pipeline, decodes video frames,
+verifies every quality preset, cancellation, retry and temporary-file cleanup,
+and uploads its MP4s and report. These verify native media, rather than desktop
+capture or manual interaction. Manual Windows acceptance still
 needs capture/clipboard/print/tray testing, mixed-DPI multi-monitor dragging,
 keyboard focus, and a real desktop video. The Mac cannot run WPF.
 
@@ -108,9 +114,40 @@ Windows uses Segoe UI and equivalent custom vector icons because Apple's system
 fonts and SF Symbols are platform-specific. Frosted material and text shadow are
 approximations of AppKit rather than identical OS rendering. Windows update
 delivery is manual; no signing, installer or automatic updater is provided in this
-initial port. GDI screenshot capture targets the ordinary desktop; protected video
-and HDR-specific colour management are outside this first version. Screen recording
-is tracked separately so it can be reviewed independently from the capture port.
+initial port. GDI screen capture targets the ordinary desktop; protected video
+and HDR-specific colour management are outside this first version.
+
+## Screen recording
+
+Select an area, then click **Record** in the existing action bar. The frozen
+overlay closes and a compact timer/Stop control appears beside the live area.
+Stop opens a save dialog with file name, destination and a compression slider.
+The choice is remembered for the next recording. This matches the Mac workflow
+without extra setup before capture. Recording is silent; the existing cursor
+and full-resolution capture preferences apply.
+
+| Quality | Maximum side | Frame rate |
+| --- | --- | --- |
+| Small & fast | 1280 pixels | 15 fps |
+| Balanced | 1920 pixels | 24 fps |
+| High quality | 4096 pixels | 30 fps |
+
+The source stays at up to 4096 pixels/30 fps until save succeeds or you explicitly
+discard it. H.264 MP4 capture/export use the native Windows media encoder; no
+external executable is required. All Slightshot windows are excluded through
+Windows display affinity, including recording controls. The selected region is
+cropped in physical monitor pixels; capture stays paced with one reusable BGRA
+buffer and no queued backlog. Disconnected displays report an error.
+
+Saving writes beside the destination, then replaces it after a complete MP4 is
+finalized. Cancel or export failure keeps the source available for retry;
+capture shortcuts are blocked while recording or saving. Quit cancels the
+encoder, waits for its resources, and removes the temporary source directory.
+Desktop interaction, exclusion under real Windows composition, mixed-DPI region
+placement and cursor capture still require a Windows user acceptance run.
+
+Native media references: [MediaStreamSource/MediaTranscoder recording](https://learn.microsoft.com/en-us/windows/uwp/audio-video-camera/screen-capture-video),
+[excluding windows from capture](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity).
 
 References: [Windows targeting from macOS](https://learn.microsoft.com/en-us/dotnet/core/tools/sdk-errors/netsdk1100),
 [Microsoft's DPI guidance](https://learn.microsoft.com/en-us/windows/win32/hidpi/high-dpi-desktop-application-development-on-windows),

@@ -22,11 +22,20 @@ jobs:
       - name: Render native WPF parity fixtures and test image export
         shell: pwsh
         run: |
-          $app = Resolve-Path Windows/Slightshot/bin/Release/net10.0-windows/Slightshot.exe
+          $app = Resolve-Path Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe
           $output = Join-Path $PWD Windows/artifacts/parity
           $process = Start-Process $app -ArgumentList '--smoke-test', $output -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Native WPF smoke test failed with exit code $($process.ExitCode)" }
           Get-Content "$output/validation.json"
+      - name: Test native video recording, export quality, cancellation and retry
+        shell: pwsh
+        run: |
+          $app = Resolve-Path Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe
+          $output = Join-Path $PWD Windows/artifacts/recording
+          $process = Start-Process $app -ArgumentList '--recording-smoke-test', $output -PassThru
+          if (!$process.WaitForExit(180000)) { $process.Kill(); throw 'Native recording smoke test timed out' }
+          if ($process.ExitCode -ne 0) { Get-Content "$output/recording-failure.txt" -ErrorAction SilentlyContinue; throw "Native recording smoke test failed with exit code $($process.ExitCode)" }
+          Get-Content "$output/recording-validation.json"
       - name: Publish portable x64 app
         run: dotnet publish Windows/Slightshot -c Release -r win-x64 --self-contained true -o Windows/artifacts/win-x64
       - name: Publish portable ARM64 app
@@ -36,6 +45,12 @@ jobs:
         with:
           name: windows-native-parity-evidence
           path: Windows/artifacts/parity
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-native-recording-evidence
+          path: Windows/artifacts/recording
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
