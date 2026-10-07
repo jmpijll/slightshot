@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 # Wraps build/Slightshot.app in a drag-to-Applications disk image.
+# DMG_LAYOUT=plain avoids Finder automation on CI; default prefers create-dmg.
+# SIGN_IDENTITY=- explicitly uses ad-hoc signing for review builds.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -11,7 +13,12 @@ VERSION="${VERSION:-$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionStr
 DMG="$ROOT/build/Slightshot-$VERSION.dmg"
 rm -f "$DMG"
 
-if command -v create-dmg > /dev/null; then
+case "${DMG_LAYOUT:-auto}" in
+  auto|plain) ;;
+  *) echo "error: DMG_LAYOUT must be auto or plain"; exit 1 ;;
+esac
+
+if [[ "${DMG_LAYOUT:-auto}" == auto ]] && command -v create-dmg > /dev/null; then
   create-dmg \
     --volname "Slightshot $VERSION" \
     --window-pos 200 120 --window-size 620 400 --icon-size 110 \
@@ -23,6 +30,7 @@ if command -v create-dmg > /dev/null; then
 else
   # Plain fallback so the release still works without Homebrew's create-dmg.
   STAGING="$(mktemp -d)"
+  trap 'rm -rf "$STAGING"' EXIT
   cp -R "$APP" "$STAGING/"
   ln -s /Applications "$STAGING/Applications"
   hdiutil create -volname "Slightshot $VERSION" -srcfolder "$STAGING" \
@@ -36,7 +44,11 @@ if [[ -z "${SIGN_IDENTITY:-}" ]]; then
 fi
 
 if [[ -n "${SIGN_IDENTITY:-}" ]]; then
-  codesign --force --sign "$SIGN_IDENTITY" --timestamp "$DMG"
+  if [[ "$SIGN_IDENTITY" == "-" ]]; then
+    codesign --force --sign - "$DMG"
+  else
+    codesign --force --sign "$SIGN_IDENTITY" --timestamp "$DMG"
+  fi
 fi
 
 echo "==> Built $DMG"

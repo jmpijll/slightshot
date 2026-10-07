@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -31,9 +32,16 @@ if name == "xcrun" and args[:2] == ["notarytool", "log"]:
     pathlib.Path(args[-1]).write_text('{"issues": ["test rejection"]}')
 if name == "spctl":
     sys.exit(int(os.environ.get("ASSESS_EXIT", "0")))
+if name == "plutil":
+    field = args[args.index("-extract") + 1]
+    print(json.loads(pathlib.Path(args[-1]).read_text())[field])
 ''')
         mock.chmod(0o755)
-        for name in ("xcrun", "spctl", "codesign", "ditto"):
+        tools = ["xcrun", "spctl", "codesign", "ditto"]
+        # Mac exercises real plutil. Portable CI mocks this Apple-only JSON API.
+        if sys.platform != "darwin":
+            tools.append("plutil")
+        for name in tools:
             (self.bin / name).symlink_to(mock)
         self.env = dict(os.environ, PATH=f"{self.bin}:{os.environ['PATH']}",
                         CALLS=str(self.calls), NOTARY_PROFILE="test-profile")
