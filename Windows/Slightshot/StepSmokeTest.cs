@@ -30,9 +30,9 @@ internal static class StepSmokeTest
                 var before = AnnotationRenderer.Flatten(display, selection, [step, effect], true);
                 var after = AnnotationRenderer.Flatten(display, selection, [effect, step], true);
                 Require(!Bytes(before).SequenceEqual(Bytes(after)), $"{tool} transforms earlier steps and preserves later steps @{scale}");
-                CheckSurface(display, selection, [step, effect], step with { Points = [new(76, 56)], StepNumber = 100 });
+                CheckSurface(directory, display, selection, [step, effect], step with { Points = [new(76, 56)], StepNumber = 100 });
             }
-            CheckSurface(display, selection, [], step);
+            CheckSurface(directory, display, selection, [], step);
 
             var clipped = step with { Points = [new(10, 44)], StepNumber = 1 };
             var output = AnnotationRenderer.Flatten(display, selection, [clipped], true);
@@ -50,20 +50,33 @@ internal static class StepSmokeTest
         }
     }
 
-    private static void CheckSurface(CapturedDisplay display, RectD selection, Annotation[] history, Annotation live)
+    private static void CheckSurface(string directory, CapturedDisplay display, RectD selection, Annotation[] history, Annotation live)
     {
         var exported = AnnotationRenderer.Flatten(display, selection, history.Append(live), true);
         var surface = Surface(display, selection, history, live);
         var preview = Render(surface, display);
         surface.Annotations.Add(live); surface.LiveAnnotation = null; surface.InvalidateVisual(); surface.UpdateLayout();
         var committed = Render(surface, display);
+        var mismatches = new List<string>();
+        int differences = 0;
         // Compare the interior, excluding the selection border and handles.
         for (int y = (int)(12 * display.Scale); y < (int)(60 * display.Scale); y++)
         for (int x = (int)(12 * display.Scale); x < (int)(84 * display.Scale); x++)
         {
             int offset = (int)(8 * display.Scale);
-            Require(Pixel(preview, x + offset, y + offset) == Pixel(exported, x, y), $"live step matches export @{display.Scale} at {x},{y}");
-            Require(Pixel(committed, x + offset, y + offset) == Pixel(exported, x, y), $"committed step matches export @{display.Scale} at {x},{y}");
+            var expected = Pixel(exported, x, y);
+            var current = Pixel(preview, x + offset, y + offset);
+            var retained = Pixel(committed, x + offset, y + offset);
+            if (current == expected && retained == expected) continue;
+            differences++;
+            if (mismatches.Count < 12) mismatches.Add($"{x},{y}: live={current}, committed={retained}, export={expected}");
+        }
+        if (differences > 0)
+        {
+            Save(preview, Path.Combine(directory, $"step-failure-live-{display.Scale:0.##}x.png"));
+            Save(committed, Path.Combine(directory, $"step-failure-committed-{display.Scale:0.##}x.png"));
+            Save(exported, Path.Combine(directory, $"step-failure-export-{display.Scale:0.##}x.png"));
+            throw new InvalidOperationException($"Step pixel parity @{display.Scale}, history={string.Join(',', history.Select(annotation => annotation.Tool))}, {differences} mismatches: {string.Join(';', mismatches)}");
         }
         surface.Annotations.RemoveAt(surface.Annotations.Count - 1); surface.InvalidateVisual(); surface.UpdateLayout();
         var undone = Render(surface, display);
@@ -85,6 +98,7 @@ internal static class StepSmokeTest
         bitmap.Render(surface); return bitmap;
     }
     private static byte[] Bytes(BitmapSource image) { var bytes = new byte[image.PixelWidth * image.PixelHeight * 4]; image.CopyPixels(bytes, image.PixelWidth * 4, 0); return bytes; }
+    private static void Save(BitmapSource image, string path) { using var stream = File.Create(path); OutputService.Encode(image, ImageFormat.Png, 1).Save(stream); }
     private static Color Pixel(BitmapSource image, int x, int y) { byte[] pixel = new byte[4]; image.CopyPixels(new Int32Rect(x, y, 1, 1), pixel, 4, 0); return Color.FromArgb(pixel[3], pixel[2], pixel[1], pixel[0]); }
     private static void Require(bool condition, string check) { if (!condition) throw new InvalidOperationException($"Windows numbered step smoke test failed: {check}"); }
 }
