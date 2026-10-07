@@ -1,0 +1,48 @@
+{
+  "platform": "macOS 27, signed Slightshot build 14",
+  "codeCommit": "5ce9b0f27f3e10d97697f4f7e4d4de68cd22c224",
+  "source": "Actual ScreenCaptureKit region capture of a clean animated test window; native UI operated through macOS accessibility",
+  "selectionPoints": {
+    "x": 530,
+    "y": 250,
+    "width": 860,
+    "height": 490
+  },
+  "retinaSourcePixels": {
+    "width": 1720,
+    "height": 980
+  },
+  "qualityChoicesVerified": [
+    "Small & fast: 1280 × 728, 15 fps",
+    "Balanced: 1720 × 980, 24 fps",
+    "High quality: 1720 × 980, 30 fps"
+  ],
+  "savedQuality": "Small & fast",
+  "output": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1280,
+        "height": 728,
+        "r_frame_rate": "15/1",
+        "nb_frames": "429"
+      }
+    ],
+    "format": {
+      "duration": "28.838333",
+      "size": "1292748"
+    }
+  },
+  "checks": [
+    "Record action starts a live region recording",
+    "Compact timer and Stop control are visible beside the selected region",
+    "All three save-time slider choices update their native value, label and dimensions/fps",
+    "Save completes and produces an H.264 MP4 with one video stream and no audio",
+    "Entire saved video decoded successfully with ffmpeg",
+    "Reviewed frames contain the selected moving test scene; Slightshot controls are absent"
+  ],
+  "reviewVideo": "Cropped to the clean fixture, idle intervals removed; final five seconds are playback of the unmodified saved MP4"
+}

@@ -19,12 +19,32 @@
 ## Capture an area
 
 Slightshot lives in the menu bar. Press <kbd>⌘⇧9</kbd> and drag to select part of
-your screen. The drawing tools appear beside the selection; copy, save and
-print sit underneath it.
+your screen. The drawing tools appear beside the selection; copy, save, print
+and record sit underneath it.
 
 Use the pen, line, arrow, rectangle, marker or text tool to point something out.
 You can change the colour and thickness, undo an annotation, or resize the
 selection before copying it.
+
+## Record an area
+
+Select an area and click the **Record** button underneath it. The frozen
+selection disappears and Slightshot records that part of the live screen.
+A compact timer and **Stop** button stay beside the selected area.
+
+After stopping, choose where to save the MP4 and adjust its quality slider:
+**Small & fast**, **Balanced**, or **High quality**. The choice is remembered.
+Small exports use a lower resolution, frame rate and bitrate; high quality
+keeps more detail. Recording controls and other Slightshot windows are excluded
+from the video. Recordings contain video only; microphone and system audio are
+not captured, and screenshot annotations are not added to the live screen.
+
+Cancel an export to choose another quality or destination. Cancel the save
+panel to keep the recording or discard it. Temporary source files are removed
+after saving, discarding, or quitting.
+
+See the [live recording review video and validation](docs/review/recording/README.md)
+for the native Record, Stop and save-time quality flow.
 
 ## Screenshot
 
@@ -120,6 +140,7 @@ open `Package.swift` to work in Xcode.
 | `make release` | App and disk image, with notarisation and stapling |
 | `make icon` | Regenerate app, menu bar and README artwork |
 | `make lint` | Run SwiftLint, if installed |
+| `make test` | Verify video export, quality, cancellation and replacement |
 
 To write debug logs to the terminal:
 

@@ -12,8 +12,8 @@ concurrency:
 
 jobs:
   build:
-    name: Build and lint
-    runs-on: macos-26
+    name: Build, media tests and lint
+    runs-on: xcode-27
     steps:
       - uses: actions/checkout@v4
 
@@ -34,6 +34,9 @@ jobs:
 
       - name: Build
         run: swift build -c release
+
+      - name: Test recording export
+        run: swift test
 
       - name: Assemble app bundle (ad-hoc signed)
         run: VERSION=0.0.0-ci BUILD=${{ github.run_number }} ./Scripts/bundle.sh
