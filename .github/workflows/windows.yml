@@ -1,6 +1,7 @@
 name: Windows
 on:
   push:
+    branches: [main]
     paths: ['Windows/**', '.github/workflows/windows.yml']
   pull_request:
     paths: ['Windows/**', '.github/workflows/windows.yml']
