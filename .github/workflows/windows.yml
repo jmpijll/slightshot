@@ -5,15 +5,43 @@ on:
   pull_request:
     paths: ['Windows/**', 'Resources/UI/**', 'Scripts/generate_ui_icons.py', '.github/workflows/windows.yml']
   workflow_dispatch:
+    inputs:
+      version:
+        description: Optional app version (defaults to the project version)
+        type: string
+        required: false
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        default: ''
+      release_archives:
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   build-and-render:
-    # Feature branches are validated by their PR run; avoid a duplicate native build.
-    if: github.event_name != 'push' || github.ref == 'refs/heads/main'
+    # Release callers request archives; feature branches use their PR run.
+    if: inputs.release_archives || github.event_name != 'push' || github.ref == 'refs/heads/main'
     runs-on: windows-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - name: Resolve app version
+        shell: pwsh
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          $version = $env:REQUESTED_VERSION
+          if (!$version -and $env:GITHUB_REF.StartsWith('refs/tags/v')) {
+            $version = $env:GITHUB_REF.Substring('refs/tags/v'.Length)
+          }
+          if (!$version) {
+            $version = ([xml](Get-Content Windows/Slightshot/Slightshot.csproj)).Project.PropertyGroup.Version
+          }
+          if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Version must be MAJOR.MINOR.PATCH' }
+          "WINDOWS_VERSION=$version" >> $env:GITHUB_ENV
       - name: Verify shared icon assets
         run: python Scripts/generate_ui_icons.py --check
       - uses: actions/setup-dotnet@v4
@@ -22,7 +50,7 @@ jobs:
       - name: Test selection, layout and output geometry
         run: dotnet run --project Windows/Slightshot.Core.Tests -c Release
       - name: Build native app with warnings as errors
-        run: dotnet build Windows/Slightshot -c Release
+        run: dotnet build Windows/Slightshot -c Release -p:Version="$env:WINDOWS_VERSION"
       - name: Render native WPF parity fixtures and test image export
         shell: pwsh
         run: |
@@ -41,9 +69,38 @@ jobs:
           if ($process.ExitCode -ne 0) { Get-Content "$output/recording-failure.txt" -ErrorAction SilentlyContinue; throw "Native recording smoke test failed with exit code $($process.ExitCode)" }
           Get-Content "$output/recording-validation.json"
       - name: Publish portable x64 app
-        run: dotnet publish Windows/Slightshot -c Release -r win-x64 --self-contained true -o Windows/artifacts/win-x64
+        run: dotnet publish Windows/Slightshot -c Release -r win-x64 --self-contained true -o Windows/artifacts/win-x64 -p:Version="$env:WINDOWS_VERSION"
       - name: Publish portable ARM64 app
-        run: dotnet publish Windows/Slightshot -c Release -r win-arm64 --self-contained true -o Windows/artifacts/win-arm64
+        run: dotnet publish Windows/Slightshot -c Release -r win-arm64 --self-contained true -o Windows/artifacts/win-arm64 -p:Version="$env:WINDOWS_VERSION"
+      - name: Verify portable packages
+        shell: pwsh
+        run: |
+          foreach ($arch in @('x64', 'arm64')) {
+            $app = Get-Item "Windows/artifacts/win-$arch/Slightshot.exe"
+            if ($app.VersionInfo.ProductVersion.Split('+')[0] -ne $env:WINDOWS_VERSION) {
+              throw "Wrong $arch app version: $($app.VersionInfo.ProductVersion)"
+            }
+            Write-Output "$arch app: $($app.VersionInfo.ProductVersion)"
+          }
+          $app = Resolve-Path Windows/artifacts/win-x64/Slightshot.exe
+          $output = Join-Path $PWD Windows/artifacts/parity/portable
+          $process = Start-Process $app -ArgumentList '--smoke-test', $output -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw 'Published x64 app failed its native smoke test' }
+          Get-Content "$output/validation.json"
+      - name: Package release archives
+        if: inputs.release_archives
+        shell: pwsh
+        run: |
+          foreach ($arch in @('x64', 'arm64')) {
+            Compress-Archive -Path "Windows/artifacts/win-$arch/*" -DestinationPath "Windows/artifacts/Slightshot-windows-$arch.zip"
+          }
+      - uses: actions/upload-artifact@v4
+        if: inputs.release_archives
+        with:
+          retention-days: 7
+          name: Slightshot-windows-release-zips
+          path: Windows/artifacts/Slightshot-windows-*.zip
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -59,11 +116,13 @@ jobs:
           path: Windows/artifacts/recording
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
+        if: ${{ !inputs.release_archives }}
         with:
           retention-days: 7
           name: Slightshot-windows-x64
           path: Windows/artifacts/win-x64
       - uses: actions/upload-artifact@v4
+        if: ${{ !inputs.release_archives }}
         with:
           retention-days: 7
           name: Slightshot-windows-arm64

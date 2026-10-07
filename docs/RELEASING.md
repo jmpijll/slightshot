@@ -81,13 +81,19 @@ Gatekeeper assessment and Sparkle signing. Download the
 release, appcast commit or Pages deployment is created in this mode.
 Notarisation diagnostics and the signed DMG expire after seven days.
 
+The Release workflow also calls the native Windows checks and packages portable
+x64/ARM64 ZIPs with the requested version. The published x64 app is smoke-tested;
+ARM64 is cross-built and checked for matching version metadata. A release is
+published only after the Windows job and Mac notarisation succeed. Windows
+previews are unsigned and update manually.
+
 ## Publish a version
 
 Commit and push the release changes to `main`, then create a new version tag:
 
 ```bash
-git tag v1.0.2
-git push origin v1.0.2
+git tag v1.1.0
+git push origin v1.1.0
 ```
 
 Use a new version for every published binary. Do not replace an existing download
@@ -107,7 +113,7 @@ push workflow. See [GitHub's workflow event rules](https://docs.github.com/en/ac
 ### Local release
 
 ```bash
-NOTARY_PROFILE=slightshot make release VERSION=1.0.2
+NOTARY_PROFILE=slightshot make release VERSION=1.1.0
 ```
 
 This produces a signed, notarised disk image locally. It does not publish a
@@ -140,7 +146,7 @@ After the release is live, update `version` and `sha256` in
 [Casks/slightshot.rb](../Casks/slightshot.rb) using the final stapled disk image:
 
 ```bash
-shasum -a 256 build/Slightshot-1.0.2.dmg
+shasum -a 256 build/Slightshot-1.1.0.dmg
 ```
 
 ## Check release scripts

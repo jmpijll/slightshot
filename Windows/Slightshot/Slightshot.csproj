@@ -8,7 +8,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets/Slightshot.ico</ApplicationIcon>
     <AssemblyName>Slightshot</AssemblyName>
-    <Version>0.1.0</Version>
+    <Version>1.1.0</Version>
   </PropertyGroup>
   <ItemGroup><ProjectReference Include="../Slightshot.Core/Slightshot.Core.csproj" /></ItemGroup>
   <ItemGroup><EmbeddedResource Include="../../Resources/MenuBarTemplate.png" LogicalName="Slightshot.MenuBarTemplate.png" /></ItemGroup>

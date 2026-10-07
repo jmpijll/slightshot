@@ -63,7 +63,7 @@ Each display has its own capture overlay.
 ## Get started
 
 Download a `.dmg` from [Releases](https://github.com/jmpijll/slightshot/releases),
-move Slightshot to Applications, then open it. Version 1.0.2 is signed with
+move Slightshot to Applications, then open it. Mac releases are signed with
 Developer ID and notarised by Apple.
 
 You can also install it with Homebrew:
@@ -105,8 +105,8 @@ While selecting or annotating:
 
 Slightshot saves screenshots to your Mac or copies them to your clipboard.
 It has no screenshot upload service, account system or application telemetry.
-The app uses Sparkle to check for updates. You can also check manually in
-Settings.
+On macOS, the app uses Sparkle to check for updates. You can also check manually
+in Settings. Windows preview updates are downloaded from Releases.
 
 ## Scripting
 
@@ -164,10 +164,14 @@ checks, and [the release guide](docs/RELEASING.md) for signing and notarisation.
 
 ## Windows preview
 
-A native Windows source preview follows the Mac capture workflow and overlay
-style. See [Windows setup and parity notes](docs/windows.md) to run or build it.
-The Windows CI workflow publishes portable x64/ARM64 app folders and native
-rendering evidence. Manual validation on a Windows desktop is still needed.
+Download the portable [x64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-x64.zip)
+or [ARM64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-arm64.zip),
+extract it, then run `Slightshot.exe`. The runtime is included. These Windows
+preview builds are unsigned and follow the Mac capture, recording and overlay
+style with shared original toolbar icons.
+
+See [Windows setup and parity notes](docs/windows.md) for shortcuts, building
+and the native CI evidence. Manual acceptance on a Windows desktop is still needed.
 
 ## License
 
