@@ -50,6 +50,7 @@ final class Settings {
             Key.copyFullScreen: KeyCombo.copyFullScreen.storageValue,
             Key.imageFormat: ImageFormat.png.rawValue,
             Key.jpegQuality: 0.9,
+            Key.recordingQuality: RecordingQuality.balanced.rawValue,
             Key.filenameTemplate: "Screenshot {date} at {time}",
             Key.copyAfterSave: false,
             Key.showMagnifier: true,
@@ -73,6 +74,7 @@ final class Settings {
         static let copyFullScreen = "hotkey.copyFullScreen"
         static let imageFormat = "output.format"
         static let jpegQuality = "output.jpegQuality"
+        static let recordingQuality = "output.recordingQuality"
         static let saveDirectory = "output.saveDirectory"
         static let filenameTemplate = "output.filenameTemplate"
         static let copyAfterSave = "output.copyAfterSave"
@@ -132,6 +134,10 @@ final class Settings {
     var jpegQuality: Double {
         get { double(Key.jpegQuality) }
         set { set(newValue, Key.jpegQuality) }
+    }
+    var recordingQuality: RecordingQuality {
+        get { RecordingQuality(rawValue: Int(double(Key.recordingQuality))) ?? .balanced }
+        set { set(newValue.rawValue, Key.recordingQuality) }
     }
     var filenameTemplate: String {
         get { string(Key.filenameTemplate) }

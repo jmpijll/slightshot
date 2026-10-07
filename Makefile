@@ -8,7 +8,7 @@ VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || 
 APP := build/Slightshot.app
 DMG := build/Slightshot-$(VERSION).dmg
 
-.PHONY: help build run app dmg notarize release icon lint clean
+.PHONY: help build run app dmg notarize release icon lint test clean
 
 help:
 	@echo "make build     — debug build"
@@ -18,6 +18,7 @@ help:
 	@echo "make notarize  — notarise and staple the disk image"
 	@echo "make release   — app + dmg + notarize"
 	@echo "make icon      — regenerate app, menu bar and README artwork"
+	@echo "make test      — verify video export behavior"
 	@echo "make lint      — run SwiftLint"
 	@echo "make clean     — remove build artefacts"
 
@@ -49,6 +50,9 @@ icon:
 	iconutil -c icns -o Resources/AppIcon.icns build/AppIcon.iconset
 	@rm -rf build/AppIcon.iconset
 	@echo "==> Wrote Resources/AppIcon.icns"
+
+test:
+	swift test
 
 lint:
 	@command -v swiftlint > /dev/null && swiftlint --quiet || echo "swiftlint not installed; skipping"

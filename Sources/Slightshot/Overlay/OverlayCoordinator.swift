@@ -14,11 +14,12 @@ final class OverlayCoordinator: OverlayViewDelegate {
     private init() {}
 
     var isActive: Bool { !windows.isEmpty }
+    var isBusy: Bool { isActive || isCapturing }
 
     // MARK: - Region capture
 
     func beginRegionCapture() {
-        guard !isActive, !isCapturing else {
+        guard !isActive, !isCapturing, !RecordingCoordinator.shared.isBusy else {
             Log.debug("Region capture ignored (active: \(isActive), capturing: \(isCapturing))", Log.overlay)
             return
         }
@@ -109,7 +110,7 @@ final class OverlayCoordinator: OverlayViewDelegate {
     // MARK: - Whole-screen shortcuts
 
     func captureFullScreen(_ action: CaptureAction) {
-        guard !isCapturing else { return }
+        guard !isCapturing, !RecordingCoordinator.shared.isBusy else { return }
         isCapturing = true
         Task {
             defer { isCapturing = false }
@@ -144,6 +145,12 @@ final class OverlayCoordinator: OverlayViewDelegate {
         // fight a shielding-level window for focus.
         dismiss()
         deliver(action, image: image)
+    }
+
+    func overlay(_ view: OverlayView, didRequestRecording selection: CGRect) {
+        let display = view.display
+        dismiss()
+        RecordingCoordinator.shared.begin(display: display, selection: selection)
     }
 
     private func deliver(_ action: CaptureAction, image: CGImage) {

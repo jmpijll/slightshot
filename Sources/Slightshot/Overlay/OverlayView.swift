@@ -9,6 +9,7 @@ protocol OverlayViewDelegate: AnyObject {
     func overlayDidCancel(_ view: OverlayView)
     func overlayDidTakeOver(_ view: OverlayView)
     func overlay(_ view: OverlayView, didComplete action: CaptureAction, image: CGImage)
+    func overlay(_ view: OverlayView, didRequestRecording selection: CGRect)
 }
 
 /// The interactive capture surface for one display.
@@ -512,6 +513,11 @@ extension OverlayView: ToolbarControllerDelegate {
 
     func toolbarDidRequest(_ action: CaptureAction) {
         perform(action)
+    }
+
+    func toolbarDidRequestRecording() {
+        guard let selection, selection.width >= 8, selection.height >= 8 else { return }
+        delegate?.overlay(self, didRequestRecording: selection)
     }
 
     func toolbarDidRequestClose() {

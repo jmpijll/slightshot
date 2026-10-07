@@ -52,12 +52,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard RecordingCoordinator.shared.isBusy else { return .terminateNow }
+        Task {
+            await RecordingCoordinator.shared.prepareForTermination()
+            sender.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         HotKeyCenter.shared.unregisterAll()
     }
 
     /// No Dock icon, so there is nothing to reopen.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+        guard !OverlayCoordinator.shared.isBusy, !RecordingCoordinator.shared.isBusy else { return false }
         PreferencesWindowController.shared.show()
         return false
     }

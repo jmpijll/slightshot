@@ -7,6 +7,7 @@ protocol ToolbarControllerDelegate: AnyObject {
     func toolbarDidChangeLineWidth(_ width: CGFloat)
     func toolbarDidRequestUndo()
     func toolbarDidRequest(_ action: CaptureAction)
+    func toolbarDidRequestRecording()
     func toolbarDidRequestClose()
 }
 
@@ -137,6 +138,9 @@ final class ToolbarController {
             },
             ToolbarButton(symbol: "square.and.arrow.down", tooltip: "Save  ⌘S  ·  Save As  ⇧⌘S") { [weak self] in
                 self?.delegate?.toolbarDidRequest(.save)
+            },
+            ToolbarButton(symbol: "record.circle", tooltip: "Record selected area") { [weak self] in
+                self?.delegate?.toolbarDidRequestRecording()
             },
             ToolbarPanel.separator(orientation: .horizontal),
             ToolbarButton(symbol: "xmark", tooltip: "Close  Esc") { [weak self] in

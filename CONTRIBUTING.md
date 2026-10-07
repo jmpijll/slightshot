@@ -18,6 +18,7 @@ You need macOS 27 and the Xcode 27 command line tools. There is no `.xcodeproj`
 
 - `make lint` passes (`swiftlint --strict`)
 - `swift build` is warning-free
+- `make test` passes when changing recording capture or export behavior
 - You have actually run the app and used the feature you changed
 
 ## The one hard rule
