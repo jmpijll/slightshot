@@ -34,7 +34,7 @@ internal sealed class ToolbarButton : Button
         dc.DrawRoundedRectangle(Selected ? AnnotationRenderer.Brush(Accent) : hovering ? AnnotationRenderer.Brush("#FFFFFF", 0.16) : Brushes.Transparent, IsKeyboardFocused ? new Pen(Brushes.White, 1) : null, new Rect(0, 0, 30, 30), 6, 6);
         if (Swatch != null) { dc.DrawEllipse(AnnotationRenderer.Brush(Swatch), new Pen(AnnotationRenderer.Brush("#FFFFFF", 0.7), 1.5), new Point(15, 15), 7, 7); return; }
         var brush = AnnotationRenderer.Brush("#FFFFFF", Selected || hovering ? 1 : 0.85);
-        if (!IsEnabled) dc.PushOpacity(0.35);
+        if (!IsEnabled) dc.PushOpacity(0.5);
         double inset = (OverlayStyle.ButtonSize - ProductIcons.Size) / 2;
         dc.PushTransform(new TranslateTransform(inset, inset));
         if (icon is { } glyph) ProductIcons.Draw(glyph, dc, brush);
