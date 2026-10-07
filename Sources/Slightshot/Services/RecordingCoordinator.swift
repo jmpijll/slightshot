@@ -9,6 +9,7 @@ final class RecordingCoordinator {
     private var phase: Phase?
     private var session: ScreenRecordingSession?
     private var recordingPanel: RecordingPanel?
+    private var recordingOutline: RecordingOutlinePanel?
     private var savePanel: NSSavePanel?
     private var exportPanel: RecordingExportPanel?
     private var startTask: Task<Void, Never>?
@@ -40,6 +41,9 @@ final class RecordingCoordinator {
             }
             let panel = RecordingPanel(screen: display.screen, selection: selection) { [weak self] in self?.stop() }
             recordingPanel = panel
+            let outline = RecordingOutlinePanel(screen: display.screen, selection: selection)
+            recordingOutline = outline
+            outline.orderFrontRegardless()
             panel.orderFrontRegardless()
             // ScreenCaptureKit obtains fresh content only after the overlay has
             // closed. Its filter also excludes the app's live recording panel.
@@ -157,6 +161,8 @@ final class RecordingCoordinator {
     }
 
     private func closeRecordingPanel() {
+        recordingOutline?.close()
+        recordingOutline = nil
         recordingPanel?.close()
         recordingPanel = nil
     }
