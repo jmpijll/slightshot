@@ -12,6 +12,23 @@ void Near(double expected, double actual, string message)
 }
 
 var bounds = new RectD(0, 0, 800, 600);
+Equal(true, Enum.TryParse<Tool>("Step", out var stepTool), "numbered steps are available in the tool catalogue");
+Equal(stepTool, Enum.GetValues<Tool>()[^1], "steps follow all existing tools");
+var stepHistory = new List<Annotation> {
+    new(Tool.Step, [new(20, 30)], "#FF3B30", 3, StepNumber: 1),
+    new(Tool.Text, [new(40, 50)], "#FF3B30", 3, Text: "99"),
+    new(Tool.Step, [new(60, 70)], "#FF3B30", 3, StepNumber: 9),
+    new(Tool.Step, [new(80, 90)], "#FF3B30", 3, StepNumber: 10)
+};
+Equal(11, Annotation.NextStepNumber(stepHistory), "steps advance beyond the maximum retained number");
+stepHistory.RemoveAt(stepHistory.Count - 1);
+Equal(10, Annotation.NextStepNumber(stepHistory), "undo restores next step number");
+stepHistory.RemoveAt(stepHistory.Count - 1);
+Equal(2, Annotation.NextStepNumber(stepHistory), "other tools do not advance step numbering");
+Equal(1, Annotation.NextStepNumber([]), "new screenshot starts with step one");
+Near(32, stepHistory[0].StepDiameter, "one digit keeps a readable circle");
+Near(40, (stepHistory[0] with { StepNumber = 10 }).StepDiameter, "two digits have room inside the circle");
+Near(52, (stepHistory[0] with { StepNumber = 100, Width = 12, FontSize = 40 }).StepDiameter, "multi-digit circle ignores thickness and text size");
 Equal(new RectD(10, 20, 80, 40), RectD.Between(new(90, 60), new(10, 20)), "reverse drag normalizes");
 Equal(new RectD(0, 0, 800, 600), new RectD(-100, -100, 1000, 800).Clamp(bounds), "selection remains within monitor");
 Equal(new RectD(0, 400, 200, 200), new RectD(20, 20, 200, 200).MoveTo(new(-20, 700), bounds), "move clamps both axes");
@@ -22,13 +39,13 @@ Equal<SelectionHandle?>(SelectionHandle.TopLeft, SelectionGeometry.Hit(new(4, 4)
 var locked = SelectionGeometry.AxisLocked(new(0, 0), new(100, 85)); Near(locked.X, locked.Y, "Shift nearest 45 degrees");
 
 var regular = OverlayStyle.Layout(new(100, 100, 200, 200), bounds);
-Equal(new RectD(308, 100, 38, 329), regular.Tools, "tool bar fits the added rectangular effects on the right");
+Equal(new RectD(308, 100, 38, 361), regular.Tools, "tool bar fits numbered steps on the right");
 Equal(new RectD(131, 308, 169, 38), regular.Actions, "Mac actions with Record below right aligned");
 var edge = OverlayStyle.Layout(new(700, 500, 100, 100), bounds);
-Equal(new RectD(654, 267, 38, 329), edge.Tools, "right edge flips tools to left and clamps vertically");
+Equal(new RectD(654, 235, 38, 361), edge.Tools, "right edge flips tools to left and clamps vertically");
 Equal(new RectD(627, 454, 169, 38), edge.Actions, "bottom edge flips actions above and clamps horizontally");
 var full = OverlayStyle.Layout(bounds, bounds);
-Equal(new RectD(754, 4, 38, 329), full.Tools, "full monitor tucks tools inside");
+Equal(new RectD(754, 4, 38, 361), full.Tools, "full monitor tucks tools inside");
 Equal(new RectD(627, 554, 169, 38), full.Actions, "full monitor tucks actions inside");
 Equal(12, OverlayStyle.Swatches.Length, "same twelve Mac swatches");
 Equal("#FF3B30", OverlayStyle.Swatches[0], "Mac default red");
