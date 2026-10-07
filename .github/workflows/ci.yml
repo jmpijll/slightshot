@@ -10,10 +10,33 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
+  portable:
+    name: Portable checks (Linux)
+    # PRs always use hosted runners; Unraid only handles trusted pushes/manual runs.
+    runs-on: ${{ fromJSON(github.event_name != 'pull_request' && vars.LINUX_CI_RUNNER || '"ubuntu-latest"') }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        env:
+          DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
+        with:
+          dotnet-version: '10.0.x'
+      - name: Test notarisation release gates
+        run: python3 -m unittest discover -s Tests -v
+      - name: Test selection, layout and output geometry
+        run: dotnet run --project Windows/Slightshot.Core.Tests -c Release
+      - name: Cross-build Windows app
+        run: dotnet build Windows/Slightshot -c Release
+
   build:
-    name: Build, media tests and lint
+    name: Mac build, media tests, lint and DMG
     runs-on: xcode-27
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -39,7 +62,7 @@ jobs:
         run: swift test
 
       - name: Assemble app bundle (ad-hoc signed)
-        run: VERSION=0.0.0-ci BUILD=${{ github.run_number }} ./Scripts/bundle.sh
+        run: SIGN_IDENTITY=- VERSION=0.0.0-ci BUILD=${{ github.run_number }} ./Scripts/bundle.sh
 
       - name: Verify bundle
         run: |
@@ -50,3 +73,16 @@ jobs:
         run: |
           brew install swiftlint
           swiftlint --strict --quiet
+
+      - name: Package review disk image
+        run: DMG_LAYOUT=plain SIGN_IDENTITY=- ./Scripts/make_dmg.sh
+
+      - name: Verify disk image
+        run: hdiutil verify build/Slightshot-0.0.0-ci.dmg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Slightshot-macos-review-dmg
+          path: build/Slightshot-0.0.0-ci.dmg
+          if-no-files-found: error
+          retention-days: 7
