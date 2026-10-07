@@ -1,7 +1,6 @@
 name: Windows
 on:
   push:
-    branches: [main]
     paths: ['Windows/**', '.github/workflows/windows.yml']
   pull_request:
     paths: ['Windows/**', '.github/workflows/windows.yml']
@@ -10,6 +9,8 @@ permissions:
   contents: read
 jobs:
   build-and-render:
+    # Feature branches are validated by their PR run; avoid a duplicate native build.
+    if: github.event_name != 'push' || github.ref == 'refs/heads/main'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
