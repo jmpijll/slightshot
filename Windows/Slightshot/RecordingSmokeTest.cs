@@ -116,7 +116,7 @@ internal static class RecordingSmokeTest
             panel.Started(() => TimeSpan.FromSeconds(123));
             Require(stop.IsEnabled, "Stop becomes available after recording startup");
             Require(Descendants<TextBlock>((DependencyObject)panel.Content).Any(text => text.Text == "02:03"), "HUD displays elapsed recording time");
-            SaveVisual((FrameworkElement)panel.Content, 112, Path.Combine(directory, "recording-hud.png"));
+            SaveVisual(panel, 112, Path.Combine(directory, "recording-hud.png"));
             stop.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Require(stopped, "real HUD Stop invokes recording stop callback");
         }
@@ -137,7 +137,7 @@ internal static class RecordingSmokeTest
                     slider.Value = (int)quality;
                     Require(save.Quality == quality, "save-time slider chooses " + quality.Title());
                     Require(Descendants<TextBlock>((DependencyObject)save.Content).Any(text => text.Text == quality.Detail(1600, 900)), "save dialog updates quality details");
-                    SaveVisual((FrameworkElement)save.Content, 440, Path.Combine(directory, $"recording-save-{(dark ? "dark" : "light")}-{quality.ToString().ToLowerInvariant()}.png"));
+                    SaveVisual(save, 440, Path.Combine(directory, $"recording-save-{(dark ? "dark" : "light")}-{quality.ToString().ToLowerInvariant()}.png"));
                 }
                 Require(!save.Destination.Contains("Screenshot", StringComparison.Ordinal), "save dialog proposes recording file name");
             }
@@ -158,11 +158,20 @@ internal static class RecordingSmokeTest
         for (int index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
             foreach (var child in Descendants<T>(VisualTreeHelper.GetChild(root, index))) yield return child;
     }
-    private static void SaveVisual(FrameworkElement element, int width, string path)
+    private static void SaveVisual(Window window, int width, string path)
     {
+        var element = (FrameworkElement)window.Content;
         element.Measure(new Size(width, double.PositiveInfinity)); int height = Math.Max(1, (int)Math.Ceiling(element.DesiredSize.Height));
         element.Arrange(new Rect(0, 0, width, height)); element.UpdateLayout();
-        var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); bitmap.Render(element);
+        // Window.Background is painted by its HWND rather than the content
+        // StackPanel. Include it so rendered evidence matches the actual theme.
+        var background = new DrawingVisual();
+        using (var drawing = background.RenderOpen())
+        {
+            double radius = window is RecordingPanel ? 9 : 0;
+            drawing.DrawRoundedRectangle(window.Background, null, new Rect(0, 0, width, height), radius, radius);
+        }
+        var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); bitmap.Render(background); bitmap.Render(element);
         using var stream = File.Create(path); OutputService.Encode(bitmap, ImageFormat.Png, 1).Save(stream);
     }
     private sealed class CancelOnProgress(CancellationTokenSource cancellation) : IProgress<double>
