@@ -70,8 +70,8 @@ public partial class App : System.Windows.Application
         Add(menu, "Open Screenshots Folder", () => { try { Directory.CreateDirectory(settings.SaveDirectory); Open(settings.SaveDirectory); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Error(ex.Message); } });
         menu.Items.Add(new Forms.ToolStripSeparator());
         Add(menu, "Settings…", ShowSettings);
-        menu.Items.Add(new Forms.ToolStripMenuItem("Check for Updates…") { Enabled = false });
-        Add(menu, "About Slightshot", () => MessageBox.Show("Slightshot 0.1.0 for Windows\n\nA small screenshot tool with the same capture workflow as Slightshot on Mac.\n\ngithub.com/jmpijll/slightshot", "About Slightshot", MessageBoxButton.OK));
+        Add(menu, "Download updates…", () => Open(AppInfo.ReleaseUrl));
+        Add(menu, "About Slightshot", () => MessageBox.Show(AppInfo.AboutText, "About Slightshot", MessageBoxButton.OK));
         menu.Items.Add(new Forms.ToolStripSeparator()); Add(menu, "Quit Slightshot", Quit);
         var old = tray!.ContextMenuStrip; tray.ContextMenuStrip = menu; old?.Dispose();
         if (failures.Length > 0) tray.ShowBalloonTip(6000, "Shortcut unavailable", $"Already in use or invalid: {string.Join(", ", failures)}. Capture from the tray or choose another shortcut in Settings.", Forms.ToolTipIcon.Warning);

@@ -64,6 +64,7 @@ internal static class SmokeTest
                 var version = Descendants((DependencyObject)prefs.Content).OfType<TextBlock>()
                     .Single(block => AutomationProperties.GetName(block) == "Version");
                 Require(version.Text == $"{expectedVersion} · Windows", "Settings version matches the running executable");
+                Require(AppInfo.AboutText.StartsWith($"Slightshot {expectedVersion} for Windows\n", StringComparison.Ordinal), "About version matches the running executable");
             }
         }
         File.WriteAllText(Path.Combine(directory, "validation.json"), JsonSerializer.Serialize(new { platform = "Windows WPF", source = "Synthetic fixture; not a live screen capture or manual interaction recording", checks }, new JsonSerializerOptions { WriteIndented = true }));
