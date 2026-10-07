@@ -1,7 +1,9 @@
 using System.IO;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Automation;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Slightshot.Core;
@@ -58,6 +60,10 @@ internal static class SmokeTest
             {
                 var prefs = new SettingsWindow(new Settings { PlaySound = false }, dark);
                 SaveVisual((FrameworkElement)prefs.Content, 540, 580, Path.Combine(directory, $"settings-{(dark ? "dark" : "light")}-parity.png"));
+                var expectedVersion = FileVersionInfo.GetVersionInfo(Environment.ProcessPath!).ProductVersion!.Split('+')[0];
+                var version = Descendants((DependencyObject)prefs.Content).OfType<TextBlock>()
+                    .Single(block => AutomationProperties.GetName(block) == "Version");
+                Require(version.Text == $"{expectedVersion} · Windows", "Settings version matches the running executable");
             }
         }
         File.WriteAllText(Path.Combine(directory, "validation.json"), JsonSerializer.Serialize(new { platform = "Windows WPF", source = "Synthetic fixture; not a live screen capture or manual interaction recording", checks }, new JsonSerializerOptions { WriteIndented = true }));
@@ -92,4 +98,13 @@ internal static class SmokeTest
         using var stream = File.Create(path); OutputService.Encode(bitmap, ImageFormat.Png, 1).Save(stream);
     }
     private static void Require(bool condition, string check) { if (!condition) throw new InvalidOperationException($"Windows smoke test failed: {check}"); }
+    private static IEnumerable<DependencyObject> Descendants(DependencyObject parent)
+    {
+        for (int index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, index);
+            yield return child;
+            foreach (var descendant in Descendants(child)) yield return descendant;
+        }
+    }
 }
