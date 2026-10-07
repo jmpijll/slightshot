@@ -16,7 +16,10 @@ internal sealed class RecordingPanel : Window
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(500) };
     internal RecordingPanel(CapturedDisplay display, RectD selection, Action onStop)
     {
-        Title = "Screen recording"; WindowStyle = WindowStyle.None; AllowsTransparency = true; Background = Brushes.Transparent;
+        // Per-pixel WPF transparency uses UpdateLayeredWindow, which conflicts
+        // with display affinity on supported Windows 10 versions. Use an opaque
+        // native window region for the same rounded HUD shape instead.
+        Title = "Screen recording"; WindowStyle = WindowStyle.None; Background = Appearance.Brush("#17171A");
         Width = 112; Height = 38; ResizeMode = ResizeMode.NoResize; ShowInTaskbar = false; Topmost = true; ShowActivated = false;
         stop = new ToolbarButton("Stop", "Stop recording", onStop) { IsEnabled = false, Selected = true };
         var row = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(4) };
@@ -31,7 +34,10 @@ internal sealed class RecordingPanel : Window
         {
             RecordingWindowExclusion.Exclude(this);
             NativeMethods.SetWindowPos(new WindowInteropHelper(this).Handle, new IntPtr(-1), display.Left + (int)Math.Round(x * display.Scale), display.Top + (int)Math.Round(y * display.Scale), (int)Math.Round(Width * display.Scale), (int)Math.Round(Height * display.Scale), 0x0050);
+            RecordingWindowExclusion.RoundCorners(this, 9);
         };
+        SizeChanged += (_, _) => RecordingWindowExclusion.RoundCorners(this, 9);
+        DpiChanged += (_, _) => RecordingWindowExclusion.RoundCorners(this, 9);
         MouseLeftButtonDown += (_, e) => { if (e.OriginalSource is not Button) DragMove(); };
         Closed += (_, _) => timer.Stop();
     }
@@ -52,10 +58,10 @@ internal sealed class RecordingSaveWindow : Window
     private readonly Slider quality;
     internal string Destination => Path.Combine(folder.Text, filename.Text.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) ? filename.Text : filename.Text + ".mp4");
     internal RecordingQuality Quality => (RecordingQuality)(int)Math.Round(quality.Value);
-    internal RecordingSaveWindow(Settings settings, int width, int height, string? proposed)
+    internal RecordingSaveWindow(Settings settings, int width, int height, string? proposed, bool? forceDark = null)
     {
         Title = "Save recording"; Width = 440; SizeToContent = SizeToContent.Height; ResizeMode = ResizeMode.NoResize; WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        Appearance.ApplyWindowTheme(this);
+        Appearance.ApplyWindowTheme(this, forceDark);
         var column = new StackPanel { Margin = new Thickness(20) };
         filename = new TextBox { Text = proposed != null ? Path.GetFileName(proposed) : OutputNaming.FileName(settings.FilenameTemplate == "Screenshot {date} at {time}" ? "Recording {date} at {time}" : settings.FilenameTemplate, DateTimeOffset.Now, width, height) + ".mp4", Margin = new Thickness(0, 4, 0, 12) };
         column.Children.Add(new TextBlock { Text = "File name" }); column.Children.Add(filename);

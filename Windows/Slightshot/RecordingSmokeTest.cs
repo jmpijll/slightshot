@@ -1,5 +1,11 @@
 using System.IO;
 using System.Text.Json;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Interop;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using Windows.Media.Editing;
 using Windows.Media.MediaProperties;
 using Windows.Storage;
@@ -29,6 +35,7 @@ internal static class RecordingSmokeTest
             return bytes;
         }
         var checks = new List<string>();
+        await ValidateControlsAsync(directory, checks);
         var session = new RecordingSession(width, height, Pixels);
         string temporary = session.DirectoryPath;
         try
@@ -88,7 +95,75 @@ internal static class RecordingSmokeTest
         finally { session.Dispose(); }
         Require(!Directory.Exists(temporary), "temporary source directory cleaned");
         checks.Add("Temporary source directory removed after recording/export release their file handles.");
-        File.WriteAllText(Path.Combine(directory, "recording-validation.json"), JsonSerializer.Serialize(new { platform = "Windows native MediaTranscoder", source = "Moving synthetic BGRA fixture. Native media encode/decode and lifecycle evidence; not a manual desktop recording.", checks }, new JsonSerializerOptions { WriteIndented = true }));
+        File.WriteAllText(Path.Combine(directory, "recording-validation.json"), JsonSerializer.Serialize(new { platform = "Windows native WPF / MediaTranscoder", source = "Real recording-control HWNDs plus moving synthetic BGRA video. Native display affinity, UI rendering, media encode/decode and lifecycle evidence; not a manual desktop recording or proof of GDI exclusion.", checks }, new JsonSerializerOptions { WriteIndented = true }));
+    }
+    private static async Task ValidateControlsAsync(string directory, List<string> checks)
+    {
+        var image = new WriteableBitmap(800, 520, 96, 96, PixelFormats.Pbgra32, null); image.Freeze();
+        var display = new CapturedDisplay(image, 0, 0, 800, 520, 1);
+        bool stopped = false;
+        var panel = new RecordingPanel(display, new RectD(100, 100, 560, 300), () => stopped = true);
+        try
+        {
+            panel.Show();
+            await panel.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Loaded);
+            Require(!panel.AllowsTransparency, "HUD avoids per-pixel layered-window affinity conflict on Windows 10");
+            IntPtr handle = new WindowInteropHelper(panel).Handle;
+            Require((RecordingNative.GetWindowLong(handle, -20) & 0x80000) == 0, "HUD HWND is not WS_EX_LAYERED");
+            RequireExcluded(panel, "real recording HUD");
+            var stop = Descendants<ToolbarButton>((DependencyObject)panel.Content).Single();
+            Require(!stop.IsEnabled, "Stop waits for native recording startup");
+            panel.Started(() => TimeSpan.FromSeconds(123));
+            Require(stop.IsEnabled, "Stop becomes available after recording startup");
+            Require(Descendants<TextBlock>((DependencyObject)panel.Content).Any(text => text.Text == "02:03"), "HUD displays elapsed recording time");
+            SaveVisual((FrameworkElement)panel.Content, 112, Path.Combine(directory, "recording-hud.png"));
+            stop.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Require(stopped, "real HUD Stop invokes recording stop callback");
+        }
+        finally { panel.Close(); }
+        checks.Add("Real recording HUD HWND is opaque (no WS_EX_LAYERED), accepts/readbacks WDA_EXCLUDEFROMCAPTURE, enables Stop after startup and renders its timer/Stop fixture.");
+        foreach (bool dark in new[] { false, true })
+        {
+            var save = new RecordingSaveWindow(new Settings { SaveDirectory = directory, RecordingQuality = RecordingQuality.Balanced }, 1600, 900, null, dark);
+            try
+            {
+                save.Show();
+                await save.Dispatcher.InvokeAsync(() => { }, DispatcherPriority.Loaded);
+                RequireExcluded(save, "real recording save dialog");
+                var slider = Descendants<Slider>((DependencyObject)save.Content).Single();
+                Require(save.Quality == RecordingQuality.Balanced, "save dialog restores selected quality");
+                foreach (var quality in Enum.GetValues<RecordingQuality>())
+                {
+                    slider.Value = (int)quality;
+                    Require(save.Quality == quality, "save-time slider chooses " + quality.Title());
+                    Require(Descendants<TextBlock>((DependencyObject)save.Content).Any(text => text.Text == quality.Detail(1600, 900)), "save dialog updates quality details");
+                    SaveVisual((FrameworkElement)save.Content, 440, Path.Combine(directory, $"recording-save-{(dark ? "dark" : "light")}-{quality.ToString().ToLowerInvariant()}.png"));
+                }
+                Require(!save.Destination.Contains("Screenshot", StringComparison.Ordinal), "save dialog proposes recording file name");
+            }
+            finally { save.Close(); }
+        }
+        var progress = new RecordingProgressWindow(() => { });
+        try { progress.Show(); RequireExcluded(progress, "real recording progress dialog"); }
+        finally { progress.Close(); }
+        checks.Add("Real save/progress HWNDs accept/readback display affinity. Save dialog renders light/dark fixtures, restores Balanced and updates details for all three slider choices.");
+    }
+    private static void RequireExcluded(Window window, string title)
+    {
+        Require(RecordingNative.GetWindowDisplayAffinity(new WindowInteropHelper(window).Handle, out uint affinity) && affinity == 0x11, title + " accepts and retains WDA_EXCLUDEFROMCAPTURE");
+    }
+    private static IEnumerable<T> Descendants<T>(DependencyObject root) where T : DependencyObject
+    {
+        if (root is T match) yield return match;
+        for (int index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+            foreach (var child in Descendants<T>(VisualTreeHelper.GetChild(root, index))) yield return child;
+    }
+    private static void SaveVisual(FrameworkElement element, int width, string path)
+    {
+        element.Measure(new Size(width, double.PositiveInfinity)); int height = Math.Max(1, (int)Math.Ceiling(element.DesiredSize.Height));
+        element.Arrange(new Rect(0, 0, width, height)); element.UpdateLayout();
+        var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); bitmap.Render(element);
+        using var stream = File.Create(path); OutputService.Encode(bitmap, ImageFormat.Png, 1).Save(stream);
     }
     private sealed class CancelOnProgress(CancellationTokenSource cancellation) : IProgress<double>
     {

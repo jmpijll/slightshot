@@ -100,7 +100,10 @@ The fixtures use synthetic content. They are native renderer evidence, not a
 video of a person using the Windows desktop. Recording CI encodes moving synthetic
 BGRA frames through the real Windows H.264 media pipeline, decodes video frames,
 verifies every quality preset, cancellation, retry and temporary-file cleanup,
-and uploads its MP4s and report. These verify native media, rather than desktop
+instantiates the actual recording HUD/save/progress windows and checks that their
+native handles accept and retain capture exclusion. It renders timer/Stop and
+light/dark save-time quality slider fixtures, and uploads images, MP4s and a report.
+These verify native media and display-affinity registration, rather than desktop
 capture or manual interaction. Manual Windows acceptance still
 needs capture/clipboard/print/tray testing, mixed-DPI multi-monitor dragging,
 keyboard focus, and a real desktop video. The Mac cannot run WPF.
@@ -145,6 +148,10 @@ capture shortcuts are blocked while recording or saving. Quit cancels the
 encoder, waits for its resources, and removes the temporary source directory.
 Desktop interaction, exclusion under real Windows composition, mixed-DPI region
 placement and cursor capture still require a Windows user acceptance run.
+
+The HUD uses an opaque native window with a rounded region. This avoids the
+Windows 10 conflict between WPF per-pixel transparency and display affinity while
+retaining the compact rounded timer/Stop styling.
 
 Native media references: [MediaStreamSource/MediaTranscoder recording](https://learn.microsoft.com/en-us/windows/uwp/audio-video-camera/screen-capture-video),
 [excluding windows from capture](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setwindowdisplayaffinity).

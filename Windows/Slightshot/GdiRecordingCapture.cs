@@ -85,6 +85,16 @@ internal sealed class GdiRecordingCapture : IDisposable
 
 internal static class RecordingWindowExclusion
 {
+    internal static void RoundCorners(Window window, double radius)
+    {
+        IntPtr handle = new WindowInteropHelper(window).Handle;
+        if (handle == IntPtr.Zero || !RecordingNative.GetWindowRect(handle, out var bounds)) return;
+        int diameter = (int)Math.Round(radius * 2 * NativeMethods.GetDpiForWindow(handle) / 96);
+        IntPtr region = RecordingNative.CreateRoundRectRgn(0, 0, bounds.Right - bounds.Left + 1, bounds.Bottom - bounds.Top + 1, diameter, diameter);
+        if (region == IntPtr.Zero) return;
+        // SetWindowRgn owns the region on success, including later disposal.
+        if (RecordingNative.SetWindowRgn(handle, region, true) == 0) NativeMethods.DeleteObject(region);
+    }
     internal static void Exclude(Window window)
     {
         IntPtr handle = new WindowInteropHelper(window).EnsureHandle();
@@ -116,6 +126,11 @@ internal static class RecordingNative
     [DllImport("gdi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool StretchBlt(IntPtr destination, int x, int y, int width, int height, IntPtr source, int sourceX, int sourceY, int sourceWidth, int sourceHeight, uint operation);
     [DllImport("gdi32.dll", EntryPoint = "GetObjectW")] internal static extern int GetObject(IntPtr value, int size, out Bitmap bitmap);
     [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool SetWindowDisplayAffinity(IntPtr window, uint affinity);
+    [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool GetWindowDisplayAffinity(IntPtr window, out uint affinity);
+    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool GetWindowRect(IntPtr window, out NativeMethods.NativeRect bounds);
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongW")] internal static extern int GetWindowLong(IntPtr window, int index);
+    [DllImport("gdi32.dll")] internal static extern IntPtr CreateRoundRectRgn(int left, int top, int right, int bottom, int ellipseWidth, int ellipseHeight);
+    [DllImport("user32.dll")] internal static extern int SetWindowRgn(IntPtr window, IntPtr region, [MarshalAs(UnmanagedType.Bool)] bool redraw);
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool EnumWindows(WindowCallback callback, IntPtr data);
     [DllImport("user32.dll")] internal static extern uint GetWindowThreadProcessId(IntPtr window, out uint process);
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool IsWindowVisible(IntPtr window);
