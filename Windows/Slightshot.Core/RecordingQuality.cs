@@ -23,6 +23,12 @@ public static class RecordingQualityOptions
     public static string Detail(this RecordingQuality quality, int width, int height)
     {
         var size = quality.Dimensions(width, height);
-        return string.Create(CultureInfo.InvariantCulture, $"{size.Width} × {size.Height} · {quality.FramesPerSecond()} fps · {quality.Bitrate(size.Width, size.Height) / 1_000_000.0:0.0} Mbps");
+        string tradeoff = quality switch
+        {
+            RecordingQuality.Compact => "Prioritize smaller files and quicker saving",
+            RecordingQuality.High => "Preserve more detail and smoother motion",
+            _ => "Balance detail and file size"
+        };
+        return string.Create(CultureInfo.InvariantCulture, $"{size.Width} × {size.Height} · {quality.FramesPerSecond()} fps\n{tradeoff}");
     }
 }
