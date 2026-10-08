@@ -1,0 +1,12 @@
+{
+  "source": "Actual WPF app and clipboard smoke run on Windows; synthetic transparent image and annotation fixture",
+  "platform": "Microsoft Windows NT 10.0.26100.0",
+  "checks": [
+    "Empty, text and file-drop clipboards rejected without importing files",
+    "Explicit clipboard PNG read: 2003 \u00D7 1001 at 192 DPI, including alpha 0 and 128",
+    "Actual native WPF window: image selection, annotation fixture, Fit/100% viewing and hidden recording action; desktop screenshot saved",
+    "Real OutputService: cancelled Save As, failed write, retained edits, successful PNG export at original resolution and alpha, busy input rejection",
+    "Native close releases the capture/editor gate and permits the next import",
+    "Native Bitmap clipboard fallback read passed"
+  ]
+}

@@ -39,6 +39,7 @@ internal static class ClipboardEditorSmokeTest
         Require(decoded.PixelWidth == 2003 && decoded.PixelHeight == 1001, "direct PNG wins over the bitmap fallback and ignores physical DPI");
         Require(Alpha(decoded, 0, 0) == 0 && Alpha(decoded, 30, 30) == 128, "PNG read retains transparent and semitransparent pixels");
         checks.Add("Explicit clipboard PNG read: 2003 × 1001 at 192 DPI, including alpha 0 and 128");
+        CheckFractionalPreview(decoded, checks);
         var settings = new Settings { NativeResolution = false, PlaySound = false, ShowNotification = false, CopyAfterSave = false };
         string exported = Path.GetFullPath(Path.Combine(directory, "clipboard-edited-export.png"));
         int dialogs = 0, errors = 0, closes = 0, attempts = 0;
@@ -108,6 +109,42 @@ internal static class ClipboardEditorSmokeTest
             source = "Actual WPF app and clipboard smoke run on Windows; synthetic transparent image and annotation fixture",
             platform = Environment.OSVersion.ToString(), checks
         }, new JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    private static void CheckFractionalPreview(BitmapSource image, List<string> checks)
+    {
+        var source = EditorImageSource.Clipboard(image, 600, 400);
+        double scale = source.Scale;
+        RectD selection = new(20.4 / scale, 10.7 / scale, 400 / scale, 300 / scale);
+        Annotation[] history = [
+            new(Tool.Rectangle, [new(80 / scale, 80 / scale), new(180 / scale, 180 / scale)], "#FF3B30", 2),
+            new(Tool.Blur, [new(120 / scale, 60 / scale), new(200 / scale, 160 / scale)], "#FF3B30", 2),
+            new(Tool.Step, [new(260 / scale, 190 / scale)], "#FF3B30", 2, StepNumber: 1)
+        ];
+        var full = AnnotationRenderer.Flatten(source, source.Bounds, history);
+        var golden = new CroppedBitmap(full, new Int32Rect(20, 10, 401, 301));
+        var crop = AnnotationRenderer.Flatten(source, selection, history);
+        Require(crop.PixelWidth == 401 && crop.PixelHeight == 301, "fractional crop covers exact original pixels");
+        Require(Bytes(golden).Zip(Bytes(crop)).All(pair => Math.Abs(pair.First - pair.Second) <= 1), "fractional vector/raster crop preserves full-image pixel positions");
+        var settings = new Settings { ShowDimensions = false, ShowMagnifier = false };
+        var surface = new OverlaySurface(source, settings, showPixelDimensions: true) { Selection = selection };
+        surface.Annotations.AddRange(history);
+        foreach (bool live in new[] { false, true })
+        {
+            if (live) { surface.Annotations.RemoveAt(1); surface.LiveAnnotation = history[1]; }
+            surface.InvalidateVisual();
+            surface.Measure(new Size(source.Width, source.Height)); surface.Arrange(new Rect(0, 0, source.Width, source.Height));
+            var preview = new RenderTargetBitmap(source.PixelWidth, source.PixelHeight, 96 * scale, 96 * scale, PixelFormats.Pbgra32);
+            preview.Render(surface);
+            Require(Alpha(preview, 40, 40) == 128, "source alpha drawn once in committed and live raster preview");
+            var bytes = Bytes(preview);
+            var exported = Bytes(live ? AnnotationRenderer.Flatten(source, selection, [history[0], history[2], history[1]]) : crop);
+            foreach (var (x, y) in new[] { (40, 40), (160, 90), (260, 190) })
+            for (int channel = 0; channel < 4; channel++)
+                Require(Math.Abs(bytes[(y * source.PixelWidth + x) * 4 + channel] - exported[((y - 10) * crop.PixelWidth + x - 20) * 4 + channel]) <= 1,
+                    "fractional preview and export share original pixel origin and alpha");
+        }
+        checks.Add("Fractional 20.4/10.7 source-pixel crop: vector/raster positions match full-image crop; committed/live preview matches export and alpha is composited once");
     }
 
     private static BitmapSource Fixture()

@@ -152,7 +152,7 @@ internal sealed class OverlayWindow : Window
         }
         if (drag == Drag.NewSelection)
         {
-            if (surface.Selection is { } r && (r.Width < 4 || r.Height < 4)) { surface.Selection = null; surface.ShowHint = true; }
+            if (surface.Selection is { } r && (r.Width < (display == null ? 1 / imageSource.Scale : 4) || r.Height < (display == null ? 1 / imageSource.Scale : 4))) { surface.Selection = null; surface.ShowHint = true; }
             else if (copyOnRelease) { drag = Drag.None; copyOnRelease = false; Perform(CaptureAction.Copy); return; }
         }
         drag = Drag.None; copyOnRelease = false;

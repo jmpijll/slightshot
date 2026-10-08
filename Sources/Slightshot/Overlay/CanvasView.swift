@@ -7,14 +7,22 @@ import AppKit
 final class CanvasView: NSView {
     var sourceImage: CGImage? { didSet { invalidateComposite() } }
     var imageScale: CGFloat = 1 { didSet { invalidateComposite() } }
-    var selection: CGRect? { didSet { invalidateComposite() } }
-    var annotations: [Annotation] = [] { didSet { invalidateComposite() } }
-    var liveAnnotation: Annotation? { didSet { livePatchIsValid = false; needsDisplay = true } }
+    var selection: CGRect? { didSet { invalidateComposite(); updateSourceVisibility() } }
+    var annotations: [Annotation] = [] { didSet { invalidateComposite(); updateSourceVisibility() } }
+    var liveAnnotation: Annotation? {
+        didSet { livePatchIsValid = false; needsDisplay = true; updateSourceVisibility() }
+    }
+    var onSourceVisibilityChanged: ((CGRect?) -> Void)?
+    private func updateSourceVisibility() {
+        let hasRaster = annotations.contains { $0.rasterEffect != nil } || liveAnnotation?.rasterEffect != nil
+        onSourceVisibilityChanged?(hasRaster ? selection : nil)
+    }
     private var committedImage: CGImage?
     private var compositeIsValid = false
     private var livePatch: (image: CGImage, pixels: CGRect)?
     private var livePatchIsValid = false
     var accent: NSColor = .systemRed
+    var alignSelectionToPoints = true
     var dimensionScale: CGFloat = 1
     var showDimensions = true
     var showHint = true { didSet { needsDisplay = true } }
@@ -55,10 +63,12 @@ final class CanvasView: NSView {
             return
         }
 
-        let rect = selection.pixelAligned
+        let proposed = alignSelectionToPoints ? selection.pixelAligned : selection
+        let rect = sourceImage.map { Renderer.alignedSelectionRect(image: $0, scale: imageScale,
+                                                                  selection: proposed) } ?? proposed
         if !compositeIsValid {
             committedImage = sourceImage.flatMap {
-                Renderer.flatten(image: $0, scale: imageScale, selection: rect, annotations: annotations)
+                Renderer.flatten(image: $0, scale: imageScale, selection: proposed, annotations: annotations)
             }
             compositeIsValid = true
         }
@@ -67,7 +77,9 @@ final class CanvasView: NSView {
             NSBezierPath(rect: selection).fill()
             return
         }
-        drawImage(image, in: rect)
+        drawImage(image, in: CGRect(origin: rect.origin,
+                                   size: CGSize(width: CGFloat(image.width) / imageScale,
+                                                height: CGFloat(image.height) / imageScale)))
         guard let liveAnnotation else { return }
         guard let effect = liveAnnotation.rasterEffect else { liveAnnotation.draw(); return }
         if !livePatchIsValid {
@@ -79,16 +91,17 @@ final class CanvasView: NSView {
                                      y: rect.minY + patch.pixels.minY / imageScale,
                                      width: patch.pixels.width / imageScale,
                                      height: patch.pixels.height / imageScale)
-            drawImage(patch.image, in: destination)
+            drawImage(patch.image, in: destination, replacing: true)
         } else {
             NSColor.black.setFill()
             NSBezierPath(rect: effect.rect).fill()
         }
     }
 
-    private func drawImage(_ image: CGImage, in rect: CGRect) {
+    private func drawImage(_ image: CGImage, in rect: CGRect, replacing: Bool = false) {
         guard let context = NSGraphicsContext.current?.cgContext else { return }
         context.saveGState()
+        if replacing { context.setBlendMode(.copy) }
         context.translateBy(x: rect.minX, y: rect.maxY)
         context.scaleBy(x: 1, y: -1)
         context.interpolationQuality = .none

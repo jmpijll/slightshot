@@ -93,9 +93,7 @@ internal static class AnnotationRenderer
 
     public static BitmapSource Flatten(EditorImageSource source, RectD selection, IEnumerable<Annotation> annotations)
     {
-        var pixels = selection.ToPixels(source.Scale, source.Scale, source.PixelWidth, source.PixelHeight);
-        var aligned = new RectD(pixels.X / source.Scale, pixels.Y / source.Scale, pixels.Width / source.Scale, pixels.Height / source.Scale);
-        return new AnnotationCompositor(source).Committed(aligned, annotations.ToArray());
+        return new AnnotationCompositor(source).Committed(source.AlignedSelection(selection), annotations.ToArray());
     }
 
 }

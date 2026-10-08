@@ -95,8 +95,10 @@ final class OverlayView: NSView {
         dimView.frame = bounds
         dimView.opacity = settings.dimOpacity
         canvas.frame = bounds
+        canvas.onSourceVisibilityChanged = { [weak screenshotView] rect in screenshotView?.exclude(rect) }
         canvas.sourceImage = source.image
         canvas.imageScale = source.scale
+        canvas.alignSelectionToPoints = capturedDisplay != nil
         canvas.dimensionScale = capturedDisplay == nil ? source.scale : 1
         canvas.accent = color
         canvas.showDimensions = settings.showDimensions
@@ -258,7 +260,8 @@ final class OverlayView: NSView {
             }
         case .newSelection:
             // A click without a drag means "no selection yet", not a 1×1 capture.
-            if let selection, selection.width < 4 || selection.height < 4 {
+            if let selection, selection.width < (capturedDisplay == nil ? 1 / source.scale : 4) ||
+                selection.height < (capturedDisplay == nil ? 1 / source.scale : 4) {
                 self.selection = nil
                 canvas.showHint = true
             } else if copyOnRelease {

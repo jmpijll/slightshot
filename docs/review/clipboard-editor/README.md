@@ -27,14 +27,35 @@ The source/annotation fixture is synthetic; the WPF window and output pipeline a
 ## macOS manual acceptance
 
 Build `VERSION=0.0.0-review BUILD=1 ./Scripts/bundle.sh` and launch
-`open -n build/Slightshot.app --args --clipboard-review`.
+`open -n build/Slightshot.app --args --clipboard-review <evidence-directory>`.
 This bounded fixture seeds a 2003 × 1001 PNG with transparent margins and
 semitransparent artwork, opens the real clipboard editor and creates the real menu
 bar action. It requests no screen capture permission, registers no hotkeys and
-exits after five minutes. It replaces the clipboard deliberately for review.
+exits after five minutes. It holds original clipboard data only in memory and
+restores the seed or its own Copy exports on normal termination. A clipboard
+changed externally is preserved. It writes source/export PNG and JSON under the
+provided directory (default `build/clipboard-review`) for pixel/alpha inspection
+without reading the general clipboard.
 
 Check annotation and crop tools, Fit/100% and scrolling, menu-triggered busy
 rejection, cancelled Save As followed by retry, native close followed by another
 menu import, and PNG Copy/Save pixel dimensions and transparency. Capture the
 native window and exported image for the PR. The fixture artwork is synthetic;
 manual interaction with the actual AppKit editor supplies macOS acceptance evidence.
+
+## Captured Windows evidence
+
+Native WPF smoke and all Windows build/parity/recording/package checks passed in
+[run 37776259212](https://github.com/jmpijll/slightshot/actions/runs/37776259212)
+at source commit `7032ff57d3d84cd2138060824cb467435a4f9ad0`.
+
+![Actual WPF clipboard editor window, synthetic image and annotations](windows/clipboard-editor-window.png)
+
+- [Native edited PNG export](windows/clipboard-edited-export.png), 2003 × 1001 pixels with alpha
+- [Synthetic original clipboard PNG](windows/clipboard-source.png)
+- [Native validation checks](windows/clipboard-validation.json)
+- [Run, source, fixture and SHA-256 provenance](windows/provenance.json)
+
+The screenshot is a desktop capture of the actual application window. The source
+and annotation contents are repeatable synthetic fixtures. They do not claim a
+human Windows acceptance session.

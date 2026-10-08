@@ -14,6 +14,12 @@ public sealed record EditorImageSource(BitmapSource Image, double Scale)
     public double Height => PixelHeight / Scale;
     public RectD Bounds => new(0, 0, Width, Height);
 
+    public RectD AlignedSelection(RectD selection)
+    {
+        var pixels = selection.ToPixels(Scale, Scale, PixelWidth, PixelHeight);
+        return new(pixels.X / Scale, pixels.Y / Scale, pixels.Width / Scale, pixels.Height / Scale);
+    }
+
     public static EditorImageSource Clipboard(BitmapSource image, double width, double height)
         => new(image, ImageEditorGeometry.FitScale(image.PixelWidth, image.PixelHeight, width, height));
 }

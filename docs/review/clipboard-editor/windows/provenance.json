@@ -1,0 +1,16 @@
+{
+  "platform": "Windows 11 / native WPF",
+  "run": "https://github.com/jmpijll/slightshot/actions/runs/37776259212",
+  "source_head": "7032ff57d3d84cd2138060824cb467435a4f9ad0",
+  "artifact": "windows-native-clipboard-evidence",
+  "artifact_id": 11549384256,
+  "captured": "2026-10-08",
+  "method": "Slightshot.exe --clipboard-smoke-test; actual App.EditClipboard route, native window screenshot via CopyFromScreen, actual OutputService PNG export",
+  "fixture": "Synthetic 2003x1001 PNG at 192 DPI, transparent margin and alpha-128 interior. Arrow and numbered-step annotation fixture uses the same editor and compositor.",
+  "files": {
+    "clipboard-editor-window.png": "a94b129b72ac1f9c8b2c8da6cc881c071c34ff3a5ee70fff522d707a683488c9",
+    "clipboard-source.png": "f485ad2e528ac5116948b1723e0db323de5f683acae9d74327e37b34af7e9e09",
+    "clipboard-edited-export.png": "e47d179b6309d2dc9381e3bef57e2cb84493befcd1702be4ccc74f2e930ac875",
+    "clipboard-validation.json": "8709a8c333d0773154d7435b6286c0e77c3fd1afc3bdb7766f91799ee8e95810"
+  }
+}

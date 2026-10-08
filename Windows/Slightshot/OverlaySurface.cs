@@ -22,19 +22,26 @@ internal sealed class OverlaySurface(EditorImageSource display, Settings setting
             zoom = Math.Max(0.01, TranslatePoint(new Point(1, 0), window).X - origin.X);
         }
         double scale = VisualTreeHelper.GetDpi(this).DpiScaleX * zoom;
-        dc.DrawImage(display.Image, new Rect(0, 0, display.Width, display.Height));
+        bool composite = Annotations.Any(a => a.IsRasterEffect || a.Tool == Tool.Step) ||
+            LiveAnnotation is { IsRasterEffect: true } or { Tool: Tool.Step };
+        var sourceBounds = new Rect(0, 0, display.Width, display.Height);
+        if (composite && Selection is { Width: > 0, Height: > 0 } hole)
+        {
+            dc.PushClip(new CombinedGeometry(GeometryCombineMode.Exclude,
+                new RectangleGeometry(sourceBounds), new RectangleGeometry(AnnotationRenderer.Rect(hole))));
+            dc.DrawImage(display.Image, sourceBounds); dc.Pop();
+        }
+        else dc.DrawImage(display.Image, sourceBounds);
         Geometry veil = new RectangleGeometry(new Rect(0, 0, ActualWidth, ActualHeight));
         if (Selection is { } selection) veil = new CombinedGeometry(GeometryCombineMode.Exclude, veil, new RectangleGeometry(AnnotationRenderer.Rect(selection)));
         dc.DrawGeometry(AnnotationRenderer.Brush("#000000", settings.DimOpacity), null, veil);
         if (Selection is { Width: > 0, Height: > 0 } r)
         {
             dc.PushClip(new RectangleGeometry(AnnotationRenderer.Rect(r)));
-            if (Annotations.Any(a => a.IsRasterEffect || a.Tool == Tool.Step) ||
-                LiveAnnotation is { IsRasterEffect: true } or { Tool: Tool.Step })
+            if (composite)
             {
-                var composition = compositor.Committed(r, Annotations);
-                dc.DrawImage(composition, new Rect(r.X, r.Y, composition.PixelWidth / display.Scale, composition.PixelHeight / display.Scale));
-                if (LiveAnnotation != null) compositor.DrawLive(dc, r, LiveAnnotation);
+                var aligned = showPixelDimensions ? display.AlignedSelection(r) : r;
+                compositor.DrawComposition(dc, aligned, Annotations, LiveAnnotation);
             }
             else
             {
