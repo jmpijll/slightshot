@@ -15,5 +15,12 @@
       "stdout": "Slightshot runtime linkage verified",
       "stderr": ""
     }
-  ]
+  ],
+  "developerIdCheck": {
+    "source": "20fbcf86566ce075cecac9d4bf129029bb853c93",
+    "returncode": 0,
+    "stdout": "Slightshot runtime linkage verified",
+    "signatureFlags": "CodeDirectory v=20500 size=2658 flags=0x10000(runtime) hashes=76+3 location=embedded",
+    "libraryValidationDisabledEntitlementAdded": false
+  }
 }

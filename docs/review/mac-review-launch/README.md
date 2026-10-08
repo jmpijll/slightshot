@@ -19,6 +19,7 @@ or asking for desktop permissions.
 ```text
 Before: DYLD rejects Sparkle; process exits with SIGABRT (return code -6).
 After:  Slightshot runtime linkage verified; process exits 0.
+Developer ID: runtime remains enabled; linkage verified; process exits 0.
 ```
 
 `validation.json` records the unedited process results, including the loader
