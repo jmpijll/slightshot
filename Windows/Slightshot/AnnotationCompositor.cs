@@ -33,8 +33,10 @@ internal sealed class AnnotationCompositor(EditorImageSource display)
             var previous = image;
             image = Render(selection, dc =>
             {
-                dc.DrawImage(previous, ImageBounds(previous));
                 var bounds = patch.Bounds; bounds.Offset(-selection.X, -selection.Y);
+                dc.PushClip(new CombinedGeometry(GeometryCombineMode.Exclude,
+                    new RectangleGeometry(ImageBounds(previous)), new RectangleGeometry(bounds)));
+                dc.DrawImage(previous, ImageBounds(previous)); dc.Pop();
                 dc.PushClip(new RectangleGeometry(new Rect(0, 0, selection.Width, selection.Height)));
                 dc.DrawImage(patch.Image, bounds); dc.Pop();
             });

@@ -39,7 +39,7 @@ internal static class ClipboardEditorSmokeTest
         Require(decoded.PixelWidth == 2003 && decoded.PixelHeight == 1001, "direct PNG wins over the bitmap fallback and ignores physical DPI");
         Require(Alpha(decoded, 0, 0) == 0 && Alpha(decoded, 30, 30) == 128, "PNG read retains transparent and semitransparent pixels");
         checks.Add("Explicit clipboard PNG read: 2003 × 1001 at 192 DPI, including alpha 0 and 128");
-        CheckFractionalPreview(decoded, checks);
+        CheckFractionalPreview(decoded, checks, directory);
         var settings = new Settings { NativeResolution = false, PlaySound = false, ShowNotification = false, CopyAfterSave = false };
         string exported = Path.GetFullPath(Path.Combine(directory, "clipboard-edited-export.png"));
         int dialogs = 0, errors = 0, closes = 0, attempts = 0;
@@ -128,7 +128,7 @@ internal static class ClipboardEditorSmokeTest
         }, new JsonSerializerOptions { WriteIndented = true }));
     }
 
-    private static void CheckFractionalPreview(BitmapSource image, List<string> checks)
+    private static void CheckFractionalPreview(BitmapSource image, List<string> checks, string directory)
     {
         var source = EditorImageSource.Clipboard(image, 600, 400);
         double scale = source.Scale;
@@ -142,7 +142,11 @@ internal static class ClipboardEditorSmokeTest
         var golden = new CroppedBitmap(full, new Int32Rect(20, 10, 401, 301));
         var crop = AnnotationRenderer.Flatten(source, selection, history);
         Require(crop.PixelWidth == 401 && crop.PixelHeight == 301, "fractional crop covers exact original pixels");
-        Require(Bytes(golden).Zip(Bytes(crop)).All(pair => Math.Abs(pair.First - pair.Second) <= 1), "fractional vector/raster crop preserves full-image pixel positions");
+        Save(golden, Path.Combine(directory, "fractional-golden.png")); Save(crop, Path.Combine(directory, "fractional-export.png"));
+        var goldenBytes = Bytes(golden); var cropBytes = Bytes(crop);
+        var mismatches = goldenBytes.Zip(cropBytes).Select((pair, index) => new { index, delta = Math.Abs(pair.First - pair.Second), expected = pair.First, actual = pair.Second }).Where(item => item.delta > 1).ToArray();
+        File.WriteAllText(Path.Combine(directory, "fractional-differences.json"), JsonSerializer.Serialize(new { count = mismatches.Length, maximumDelta = mismatches.Select(item => item.delta).DefaultIfEmpty().Max(), first = mismatches.Take(20) }, new JsonSerializerOptions { WriteIndented = true }));
+        Require(mismatches.Length == 0, "fractional vector/raster crop preserves full-image pixel positions");
         var settings = new Settings { ShowDimensions = false, ShowMagnifier = false };
         var surface = new OverlaySurface(source, settings, showPixelDimensions: true) { Selection = selection };
         surface.Annotations.AddRange(history);
