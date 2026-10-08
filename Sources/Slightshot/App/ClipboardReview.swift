@@ -61,6 +61,20 @@ private final class ClipboardReviewDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: StatusItemController?
     private let directory: URL
     private var snapshot: ClipboardReviewPasteboard?
+    private var countdown: DelayedCapturePanel?
+    private lazy var delayed: DelayedCaptureController = DelayedCaptureController(
+        isBusy: { [weak self] in self?.coordinator.isBusy ?? true },
+        show: { [weak self] seconds in
+            guard let self else { return }
+            if self.countdown == nil {
+                self.countdown = DelayedCapturePanel { [weak self] in self?.delayed.cancel() }
+                self.countdown?.orderFrontRegardless()
+            }
+            self.countdown?.update(seconds: seconds)
+        },
+        hide: { [weak self] in self?.countdown?.close(); self?.countdown = nil },
+        capture: { [weak self] in self?.coordinator.editImageFromClipboard() }
+    )
     private lazy var coordinator = OverlayCoordinator(output: { [weak self] action, image in
         let owned = self?.snapshot?.ownsCurrentContents == true
         let succeeded = OutputService.perform(action, image: image)
@@ -78,7 +92,11 @@ private final class ClipboardReviewDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = StatusItemController(onCaptureArea: {}, onSaveFullScreen: {}, onCopyFullScreen: {},
-                                         onEditClipboard: { [weak self] in self?.coordinator.editImageFromClipboard() })
+            onDelayedCapture: { [weak self] in self?.delayed.start() },
+            onEditClipboard: { [weak self] in
+                self?.delayed.cancel()
+                self?.coordinator.editImageFromClipboard()
+            })
         guard let context = CGContext(data: nil, width: 2003, height: 1001, bitsPerComponent: 8,
             bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { NSApp.terminate(nil); return }
@@ -97,7 +115,10 @@ private final class ClipboardReviewDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 300) { NSApp.terminate(nil) }
     }
 
-    func applicationWillTerminate(_ notification: Notification) { snapshot?.restoreIfOwned() }
+    func applicationWillTerminate(_ notification: Notification) {
+        delayed.cancel()
+        snapshot?.restoreIfOwned()
+    }
 
     private func write(_ image: CGImage, png: Data, name: String) {
         do {

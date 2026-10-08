@@ -31,11 +31,13 @@ Build `VERSION=0.0.0-review BUILD=1 ./Scripts/bundle.sh` and launch
 This bounded fixture seeds a 2003 × 1001 PNG with transparent margins and
 semitransparent artwork, opens the real clipboard editor and creates the real menu
 bar action. It requests no screen capture permission, registers no hotkeys and
-exits after five minutes. It holds original clipboard data only in memory and
+exits after a successful output or five minutes. It holds original clipboard data only in memory and
 restores the seed or its own Copy exports on normal termination. A clipboard
 changed externally is preserved. It writes source/export PNG and JSON under the
 provided directory (default `build/clipboard-review`) for pixel/alpha inspection
-without reading the general clipboard.
+without including private clipboard contents in evidence. The timer menu uses the
+production controller/HUD with synthetic clipboard input at its deadline; it permits
+busy-rejection and pending-countdown cancellation checks without screen capture.
 
 Check annotation and crop tools, Fit/100% and scrolling, menu-triggered busy
 rejection, cancelled Save As followed by retry, native close followed by another

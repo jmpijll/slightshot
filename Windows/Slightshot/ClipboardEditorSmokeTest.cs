@@ -67,10 +67,18 @@ internal static class ClipboardEditorSmokeTest
             return output.Perform(action, bitmap);
         }, () => closes++, (_, _) => throw new InvalidOperationException("Clipboard images must not record"));
         field.SetValue(app, coordinator);
+        InvokeApp(app, "ConfigureDelayedCapture");
+        var delayed = (DelayedCaptureController)typeof(App).GetField("delayedCapture", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(app)!;
+        using var menu = app.CreateCaptureMenu();
+        var delayedAction = menu.Items.OfType<System.Windows.Forms.ToolStripMenuItem>().Single(item => item.Text == "Capture Area in 5 Seconds");
         try
         {
             // Exercise the actual tray action route, clipboard decode and native window.
+            delayedAction.PerformClick();
+            Require(delayed.IsPending, "countdown may start before the import");
+            var panel = (DelayedCapturePanel)typeof(App).GetField("countdownPanel", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(app)!;
             InvokeApp(app, "EditClipboard");
+            Require(!delayed.IsPending && !panel.IsVisible, "clipboard action cancels the pending countdown and closes its HUD");
             var editor = coordinator.Windows.Single();
             await Task.Delay(250); editor.UpdateLayout();
             Require(editor.Title == "Edit Image from Clipboard" && editor.WindowStyle != WindowStyle.None && editor.IsVisible, "clipboard opens a titled native editor");
@@ -80,6 +88,15 @@ internal static class ClipboardEditorSmokeTest
                 new(Tool.Arrow, [new(120 / source.Scale, 200 / source.Scale), new(800 / source.Scale, 450 / source.Scale)], "#FF3B30", 3),
                 new(Tool.Step, [new(1150 / source.Scale, 450 / source.Scale)], "#FF3B30", 3, StepNumber: 1)
             ]);
+            var surface = Descendants((DependencyObject)editor.Content).OfType<OverlaySurface>().Single();
+            var original = Bytes(AnnotationRenderer.Flatten(source, source.Bounds, surface.Annotations));
+            typeof(OverlayWindow).GetMethod("Undo", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(editor, null);
+            Require(surface.Annotations.Count == 1 && surface.Annotations.CanRedo, "imported annotation undo exposes redo");
+            typeof(OverlayWindow).GetMethod("Redo", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(editor, null);
+            Require(original.SequenceEqual(Bytes(AnnotationRenderer.Flatten(source, source.Bounds, surface.Annotations))), "imported annotation redo restores identical output pixels");
+            delayedAction.PerformClick();
+            Require(!delayed.IsPending && coordinator.Windows.Single() == editor, "imported editor rejects a countdown without replacing its session");
+            checks.Add("Combined menu/controller integration: clipboard import cancels a pending countdown/HUD, imported editor rejects a new countdown, and Undo/Redo restores identical annotated output pixels");
             Click(editor, "100%"); await Task.Delay(100); Click(editor, "Fit"); await Task.Delay(100);
             CaptureWindow(editor, Path.Combine(directory, "clipboard-editor-window.png"));
             checks.Add("Actual native WPF window: image selection, annotation fixture, Fit/100% viewing and hidden recording action; desktop screenshot saved");
@@ -100,7 +117,7 @@ internal static class ClipboardEditorSmokeTest
             Require(!coordinator.IsBusy && closes == 2, "native window close releases ownership");
             checks.Add("Native close releases the capture/editor gate and permits the next import");
         }
-        finally { coordinator.Dismiss(); field.SetValue(app, old); }
+        finally { delayed.Cancel(); coordinator.Dismiss(); field.SetValue(app, old); }
         System.Windows.Clipboard.SetImage(fixture);
         Require(ClipboardImage.Read()?.PixelWidth == 2003, "native bitmap fallback works");
         checks.Add("Native Bitmap clipboard fallback read passed");
