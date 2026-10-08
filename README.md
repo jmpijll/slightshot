@@ -115,13 +115,31 @@ in Settings. Windows preview updates are downloaded from Releases.
 
 ## Scripting
 
-Start a capture from Shortcuts, Alfred, Raycast or a terminal:
+Start a capture from Shortcuts (Open URLs), Alfred, Raycast or a terminal.
+These URLs work whether Slightshot is already running or starts with the command:
 
 ```bash
-open -a Slightshot --args --capture-area
-open -a Slightshot --args --capture-full
-open -a Slightshot --args --copy-full
+open 'slightshot://capture-area'
+open 'slightshot://capture-full'
+open 'slightshot://copy-full'
 ```
+
+Only these exact URLs are accepted; paths, query parameters and fragments are
+rejected. Commands received while a screenshot or recording session is busy are
+ignored, keeping that session intact.
+
+If several Slightshot bundles are installed, macOS chooses a registered bundle
+for the URL. Updated copies forward the action to the one active Slightshot
+process, without adding another menu item or registering competing hotkeys.
+You can select a specific installed bundle with
+`open -a '/Applications/Slightshot.app' 'slightshot://capture-area'`.
+Quit an older version before switching to an updated copy; versions without the
+URL route and ownership protocol cannot forward commands.
+
+The existing `--capture-area`, `--capture-full` and `--copy-full` arguments
+continue to work when starting a process, including a duplicate process which
+forwards to the active owner. macOS does not deliver new arguments to an already
+running process, so use the URLs for commands that must also work on warm starts.
 
 ## Build from source
 
