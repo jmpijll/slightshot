@@ -119,7 +119,9 @@ fi
 # in bash 3.2, which is what /bin/bash still is on macOS and on CI runners.
 sign() {
   if [[ "$SIGN_IDENTITY" == "-" ]]; then
-    codesign --force --options runtime --sign - "$@"
+    # Review builds have no Team ID. Hardened Runtime's library validation
+    # rejects their ad-hoc Sparkle framework before the app can start.
+    codesign --force --sign - "$@"
   else
     codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$@"
   fi

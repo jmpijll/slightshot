@@ -1,5 +1,12 @@
 import AppKit
 
+// CI verifies that the assembled bundle can load its frameworks without
+// starting a menu-bar session or requesting desktop permissions.
+if CommandLine.arguments.contains("--verify-runtime-linkage") {
+    print("Slightshot runtime linkage verified")
+    exit(EXIT_SUCCESS)
+}
+
 let commandInbox: ApplicationCommandInbox
 do {
     commandInbox = try ApplicationCommandInbox(directory: ApplicationCommandInbox.userDirectory())
