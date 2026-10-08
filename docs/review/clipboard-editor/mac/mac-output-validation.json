@@ -1,0 +1,14 @@
+{
+  "alphaPixelsChangedByCommittedStep" : 3325,
+  "height" : 1001,
+  "maxUnchangedAlphaError" : 0,
+  "outputSHA256" : "9600d08ded1b696ab9b65f35cd14d297618ccf56e0c7103921f58b7daa4ee7ba",
+  "platform" : "macOS AppKit actual toolbar Copy output after CUA annotation and Save As cancellation",
+  "scope" : "Synthetic fixture and actual production output only; no original user clipboard contents included",
+  "sourceCommit" : "2863e09b43f7cee9ed4f93b24eecb9fd4872ee66",
+  "sourceSemiTransparentPixels" : 1260000,
+  "sourceSHA256" : "1a93851574ab7a6d9588963ba62464cf03bdc2248377601b76a963991d876dd6",
+  "sourceTransparentPixelsPreserved" : 745003,
+  "unchangedAlphaPixels" : 2001678,
+  "width" : 2003
+}

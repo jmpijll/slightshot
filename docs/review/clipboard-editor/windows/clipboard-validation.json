@@ -4,6 +4,8 @@
   "checks": [
     "Empty, text and file-drop clipboards rejected without importing files",
     "Explicit clipboard PNG read: 2003 \u00D7 1001 at 192 DPI, including alpha 0 and 128",
+    "Fractional 20.4/10.7 source-pixel crop: vector/raster positions match full-image crop; committed/live preview matches export and alpha is composited once",
+    "Combined menu/controller integration: clipboard import cancels a pending countdown/HUD, imported editor rejects a new countdown, and Undo/Redo restores identical annotated output pixels",
     "Actual native WPF window: image selection, annotation fixture, Fit/100% viewing and hidden recording action; desktop screenshot saved",
     "Real OutputService: cancelled Save As, failed write, retained edits, successful PNG export at original resolution and alpha, busy input rejection",
     "Native close releases the capture/editor gate and permits the next import",

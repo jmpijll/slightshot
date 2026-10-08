@@ -1,16 +1,20 @@
 {
-  "platform": "Windows 11 / native WPF",
-  "run": "https://github.com/jmpijll/slightshot/actions/runs/37776259212",
-  "source_head": "7032ff57d3d84cd2138060824cb467435a4f9ad0",
+  "platform": "Windows11 / native WPF",
+  "run": "https://github.com/jmpijll/slightshot/actions/runs/37780758497",
+  "source_head": "84688139d99153575decb985564f3c7db3b5482c",
   "artifact": "windows-native-clipboard-evidence",
-  "artifact_id": 11549384256,
+  "artifact_id": 11551648541,
   "captured": "2026-10-08",
   "method": "Slightshot.exe --clipboard-smoke-test; actual App.EditClipboard route, native window screenshot via CopyFromScreen, actual OutputService PNG export",
-  "fixture": "Synthetic 2003x1001 PNG at 192 DPI, transparent margin and alpha-128 interior. Arrow and numbered-step annotation fixture uses the same editor and compositor.",
+  "fixture": "Synthetic2003x1001PNG at192DPI, transparent margin and alpha128interior. Arrow/numbered-step annotation fixture uses real editor/compositor. Fractional source-pixel crop includes rectangle, blur and Step with its sampling halo inside both selections.",
+  "checks": "Final native run passes clipboard source/output/alpha/lifecycle,401x301fractionalbadge+crop+preview/export, importedUndoRedo and pending/busy timer integration; same run passes renderer/recording/timer/package/installer suites.",
   "files": {
-    "clipboard-editor-window.png": "a94b129b72ac1f9c8b2c8da6cc881c071c34ff3a5ee70fff522d707a683488c9",
-    "clipboard-source.png": "f485ad2e528ac5116948b1723e0db323de5f683acae9d74327e37b34af7e9e09",
     "clipboard-edited-export.png": "e47d179b6309d2dc9381e3bef57e2cb84493befcd1702be4ccc74f2e930ac875",
-    "clipboard-validation.json": "8709a8c333d0773154d7435b6286c0e77c3fd1afc3bdb7766f91799ee8e95810"
+    "clipboard-editor-window.png": "d97d97f22c294d1b8c603d4b3976a7b795de40f34a5cf980cee8cae4043cbd21",
+    "clipboard-source.png": "f485ad2e528ac5116948b1723e0db323de5f683acae9d74327e37b34af7e9e09",
+    "clipboard-validation.json": "be6d14a776268e8eff9a015379449ba9a50ac4855e6da8dd5b411f3c079ab8d1",
+    "fractional-differences.json": "ab4d87237f67b3f6e6753069055df0175c2d8fd17386bc62f7da016ce64030f4",
+    "fractional-export.png": "d28e04088c7d9c0527e00ae7fc7057d718a34232ed0502c0c7568612c45687f9",
+    "fractional-golden.png": "d28e04088c7d9c0527e00ae7fc7057d718a34232ed0502c0c7568612c45687f9"
   }
 }
