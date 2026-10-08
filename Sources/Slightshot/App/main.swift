@@ -5,7 +5,7 @@ if CommandLine.arguments.contains("--delayed-review") {
     let review = DelayedCaptureReview()
     app.delegate = review
     app.setActivationPolicy(.accessory)
-    app.run()
+    withExtendedLifetime(review) { app.run() }
 } else {
     let commandInbox: ApplicationCommandInbox
     do {
@@ -18,5 +18,5 @@ if CommandLine.arguments.contains("--delayed-review") {
     let delegate = AppDelegate(launchCommand: LaunchCommand(arguments: CommandLine.arguments), inbox: commandInbox)
     app.delegate = delegate
     app.setActivationPolicy(.accessory)
-    app.run()
+    withExtendedLifetime(delegate) { app.run() }
 }
