@@ -28,3 +28,7 @@ signature and Info.plist verification.
 
 The review image shows GitHub's rendered result document. This is an internal
 packaging fix; the native capture interface does not change.
+
+`loader-results.jpg` is the actual GitHub Markdown preview of this document at
+`e5c472f`, captured on 8 October 2026. The process results themselves are stored
+in `validation.json`.
