@@ -135,12 +135,16 @@ internal static class ClipboardEditorSmokeTest
         RectD selection = new(20.4 / scale, 10.7 / scale, 400 / scale, 300 / scale);
         Annotation[] history = [
             new(Tool.Rectangle, [new(80 / scale, 80 / scale), new(180 / scale, 180 / scale)], "#FF3B30", 2),
-            new(Tool.Blur, [new(120 / scale, 60 / scale), new(200 / scale, 160 / scale)], "#FF3B30", 2),
+            new(Tool.Blur, [new(120 / scale, 120 / scale), new(200 / scale, 220 / scale)], "#FF3B30", 2),
             new(Tool.Step, [new(260 / scale, 190 / scale)], "#FF3B30", 2, StepNumber: 1)
         ];
+        // Keep the blur sampling halo inside both selections so this checks
+        // crop origins rather than their deliberately different effect boundaries.
         var full = AnnotationRenderer.Flatten(source, source.Bounds, history);
         var golden = new CroppedBitmap(full, new Int32Rect(20, 10, 401, 301));
         var crop = AnnotationRenderer.Flatten(source, selection, history);
+        var flatEffect = AnnotationRenderer.Flatten(source, selection, [history[1]]);
+        Require(Alpha(flatEffect, 140, 140) == 128, "raster export replaces the patch without doubling source alpha");
         Require(crop.PixelWidth == 401 && crop.PixelHeight == 301, "fractional crop covers exact original pixels");
         Save(golden, Path.Combine(directory, "fractional-golden.png")); Save(crop, Path.Combine(directory, "fractional-export.png"));
         var goldenBytes = Bytes(golden); var cropBytes = Bytes(crop);
@@ -160,7 +164,7 @@ internal static class ClipboardEditorSmokeTest
             Require(Alpha(preview, 40, 40) == 128, "source alpha drawn once in committed and live raster preview");
             var bytes = Bytes(preview);
             var exported = Bytes(live ? AnnotationRenderer.Flatten(source, selection, [history[0], history[2], history[1]]) : crop);
-            foreach (var (x, y) in new[] { (40, 40), (160, 90), (260, 190) })
+            foreach (var (x, y) in new[] { (40, 40), (160, 150), (260, 190) })
             for (int channel = 0; channel < 4; channel++)
                 Require(Math.Abs(bytes[(y * source.PixelWidth + x) * 4 + channel] - exported[((y - 10) * crop.PixelWidth + x - 20) * 4 + channel]) <= 1,
                     "fractional preview and export share original pixel origin and alpha");
