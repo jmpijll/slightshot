@@ -154,5 +154,15 @@ foreach (var quality in Enum.GetValues<RecordingQuality>())
     Equal(0, size.Width % 2, $"{quality} width even"); Equal(0, size.Height % 2, $"{quality} height even");
     Equal(true, Math.Max(size.Width, size.Height) <= quality.MaximumDimension(), $"{quality} dimension cap");
 }
+var dragPixels = Enumerable.Range(0, 400 * 200).SelectMany(_ => new byte[] {30, 80, 120, 255}).ToArray();
+for (int iteration = 0; iteration < 10; iteration++) RasterEffects.Blur(dragPixels, 400, 200, 8);
+long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+for (int iteration = 0; iteration < 20; iteration++) RasterEffects.Blur(dragPixels, 400, 200, 8);
+long dragAllocations = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+Console.WriteLine($"Warm 400×200 blur allocated {dragAllocations} bytes across 20 updates.");
+Equal(true, dragAllocations < 32 * 1024, $"warm blur reuses full-frame scratch storage, allocated {dragAllocations} bytes");
+var smallAfterLarge = Enumerable.Range(0, 15).SelectMany(_ => new byte[] {90, 100, 110, 255}).ToArray();
+RasterEffects.Blur(smallAfterLarge, 3, 5, 8);
+Equal(true, smallAfterLarge.SequenceEqual(Enumerable.Range(0, 15).SelectMany(_ => new byte[] {90, 100, 110, 255})), "pooled scratch cannot leak stale larger-image pixels into a smaller blur");
 checks += await RecordingFrameBufferChecks.RunAsync();
 Console.WriteLine($"Passed {checks} Windows parity geometry, pixel-boundary, style, filename and recording buffer checks.");

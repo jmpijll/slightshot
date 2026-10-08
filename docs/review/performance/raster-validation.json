@@ -1,0 +1,69 @@
+{
+  "fixture": "Synthetic opaque sRGB RGBA gradient; no screen capture",
+  "os": "Version 27.0 (Build 26A428)",
+  "rows": [
+    {
+      "implementation": "baseline",
+      "median_ms": 0.623875,
+      "p95_ms": 0.815542,
+      "rgba_sha256": "5e76aff0b37e8acc2675005e2534095aedb696168e22fe715da09c653d59d0de",
+      "size": "400x200",
+      "warm_samples": 40
+    },
+    {
+      "implementation": "current",
+      "median_ms": 0.530958,
+      "p95_ms": 0.649166,
+      "rgba_sha256": "5e76aff0b37e8acc2675005e2534095aedb696168e22fe715da09c653d59d0de",
+      "size": "400x200",
+      "warm_samples": 40
+    },
+    {
+      "implementation": "baseline",
+      "median_ms": 13.343209,
+      "p95_ms": 15.357334,
+      "rgba_sha256": "86cc5992b11cb74eb8c413813fd3d07073f5d09bcb0b16230bd5d2058a8bf9aa",
+      "size": "1920x1080",
+      "warm_samples": 40
+    },
+    {
+      "implementation": "current",
+      "median_ms": 10.265917,
+      "p95_ms": 11.371625,
+      "rgba_sha256": "86cc5992b11cb74eb8c413813fd3d07073f5d09bcb0b16230bd5d2058a8bf9aa",
+      "size": "1920x1080",
+      "warm_samples": 40
+    },
+    {
+      "implementation": "baseline",
+      "median_ms": 53.232041,
+      "p95_ms": 62.161041,
+      "rgba_sha256": "856f31da3a0de9bc94f3147c22ae32111db265ee3c1fb4b4fa4ea8d238e9a439",
+      "size": "3840x2160",
+      "warm_samples": 40
+    },
+    {
+      "implementation": "current",
+      "median_ms": 40.410292,
+      "p95_ms": 45.4675,
+      "rgba_sha256": "856f31da3a0de9bc94f3147c22ae32111db265ee3c1fb4b4fa4ea8d238e9a439",
+      "size": "3840x2160",
+      "warm_samples": 40
+    }
+  ],
+  "scale": 1,
+  "baseline_commit": "4ce77863c59c4e7084244ecd85e3ffc7805f9da9",
+  "hardware": "Apple M4, Mac16,13",
+  "swift": "Apple Swift 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)",
+  "method": "One process, alternating baseline/current order, one warm-up and forty measured operations per ROI. Upper middle median and nearest-rank p95. Includes ROI crop/render; excludes hashing and autorelease-pool disposal.",
+  "windows_blur": {
+    "runtime": ".NET 10.0.401, macOS arm64",
+    "roi": "400x200 BGRA",
+    "warm_up_updates": 10,
+    "measured_updates": 20,
+    "baseline_thread_allocated_bytes": 6404800,
+    "current_thread_allocated_bytes": 4320,
+    "measurement": "GC.GetAllocatedBytesForCurrentThread delta after warm-up; storage allocation in core raster operation, not WPF or whole editor."
+  },
+  "limits": "Synthetic opaque fixture at scale 1; timing is a local microbenchmark, not a whole-editor latency guarantee. Native CI checks preview/export parity at multiple scales."
+}
