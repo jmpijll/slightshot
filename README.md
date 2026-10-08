@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  A native screenshot and screen recording app for macOS and Windows, inspired by Lightshot.<br>
+  A native screenshot and screen recording app for macOS and Windows.<br>
   Select an area, add a note or an arrow, and copy it into your conversation.
 </p>
 
@@ -236,5 +236,9 @@ before adding more scope.
 
 ## License
 
-[MIT](LICENSE). Slightshot is an independent project inspired by Lightshot.
-It shares no code with Lightshot and is not affiliated with Skillbrains.
+[MIT](LICENSE).
+
+Slightshot was originally inspired by Lightshot. It is now an independent
+screenshot and screen recording app. We wrote its application code from scratch
+and use no Lightshot code. Slightshot is not affiliated with Lightshot or its
+publishers.

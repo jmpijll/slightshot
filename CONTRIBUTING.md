@@ -1,7 +1,7 @@
 # Contributing
 
-Thanks for looking. Slightshot is small on purpose, so contributions are easy to
-review.
+Bug fixes and improvements to capture, annotation and recording are welcome.
+Keep changes focused so they are easy to review.
 
 ## Getting set up
 
@@ -13,8 +13,8 @@ cd slightshot
 ```
 
 On macOS, you need macOS 27 and the Xcode 27 command line tools. Run `make run`.
-There is no `.xcodeproj` — it is a plain Swift package, so `open Package.swift`
-works if you want Xcode. `make run` builds `build/Slightshot.app`, signs it with
+The app is a plain Swift package. Open `Package.swift` in Xcode if you prefer
+working there. `make run` builds `build/Slightshot.app`, signs it with
 an available Developer ID or an ad-hoc signature, and launches it.
 
 | Command | Result |
@@ -73,22 +73,20 @@ or store them in `docs/review/<change>/`; temporary CI artifacts alone are not
 a lasting review record. Include the checks run separately: visual evidence
 helps review and complements tests.
 
-## The one hard rule
+## Design principles
 
-**Interaction fidelity with Lightshot wins.** If a change makes Slightshot
-faster or prettier but moves a toolbar, changes a shortcut, or adds a step, it
-probably belongs behind a setting rather than in the default path. People are
-switching to this because their hands already know Lightshot.
+Keep capture, annotation and recording simple to use. If you change a toolbar
+or shortcut, explain how it helps someone finish their task. Keep existing
+interactions when they work well.
 
-That applies to behaviour, not implementation — the internals should be as
-modern and as fast as we can make them.
+Write original code and keep it efficient.
 
 ## Where things live
 
 | Path | What |
 | --- | --- |
 | `Sources/Slightshot/Capture` | ScreenCaptureKit, permissions |
-| `Sources/Slightshot/Overlay` | The capture UI — the heart of the app |
+| `Sources/Slightshot/Overlay` | Capture overlay, drawing tools and clipboard editor |
 | `Sources/Slightshot/Editor` | Annotation model and the exporter |
 | `Sources/Slightshot/Services` | Hotkeys, settings, output, updates |
 | `Sources/Slightshot/Preferences` | SwiftUI settings window |

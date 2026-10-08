@@ -53,7 +53,7 @@ public partial class App : System.Windows.Application
         if (e.Args.Length >= 1 && e.Args[0] == "--smoke-test")
         {
             string directory = e.Args.Length > 1 ? e.Args[1] : "artifacts";
-            try { SmokeTest.Run(directory); Shutdown(0); }
+            try { await SmokeTest.RunAsync(directory); Shutdown(0); }
             catch (Exception ex)
             {
                 Console.Error.WriteLine(ex);

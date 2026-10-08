@@ -12,9 +12,8 @@ protocol ToolbarControllerDelegate: AnyObject {
     func toolbarDidRequestClose()
 }
 
-/// Owns the two floating bars and the colour popover, and keeps them glued to
-/// the selection. Splitting this out of `OverlayView` leaves that type to do one
-/// thing — turn mouse and keyboard input into a selection and annotations.
+/// Positions the two floating bars and colour popover next to the selection.
+/// `OverlayView` handles mouse and keyboard input for the selection and annotations.
 final class ToolbarController {
     weak var delegate: ToolbarControllerDelegate?
 

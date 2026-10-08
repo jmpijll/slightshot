@@ -36,13 +36,13 @@ private struct GeneralTab: View {
             }
 
             Section {
-                Picker("When you press Return:", selection: $settings.defaultAction) {
+                Picker("Return key action", selection: $settings.defaultAction) {
                     ForEach(DefaultAction.allCases) { action in
                         Text(action.displayName).tag(action)
                     }
                 }
             } footer: {
-                Text("Double-clicking inside the selection does the same thing.")
+                Text("Double-click inside the selection to use this action.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

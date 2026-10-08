@@ -92,7 +92,7 @@ cat > "$PLIST" <<PLISTEOF
   <key>LSUIElement</key>                        <true/>
   <key>NSHighResolutionCapable</key>            <true/>
   <key>NSPrincipalClass</key>                   <string>NSApplication</string>
-  <key>NSHumanReadableCopyright</key>           <string>MIT licensed. Inspired by Lightshot; not affiliated with Skillbrains.</string>
+  <key>NSHumanReadableCopyright</key>           <string>MIT licensed.</string>
   <key>SUFeedURL</key>                          <string>$SPARKLE_FEED_URL</string>
   <key>SUEnableInstallerLauncherService</key>   <false/>
 </dict>

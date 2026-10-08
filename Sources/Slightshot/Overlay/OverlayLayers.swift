@@ -37,9 +37,9 @@ final class ScreenshotView: NSView {
 
 /// The darkened veil with the selection punched out of it.
 ///
-/// Uses an even-odd `CAShapeLayer` so that resizing the selection swaps a single
-/// path instead of redrawing the whole display — this is what keeps dragging
-/// smooth on a 6K screen.
+/// Uses an even-odd `CAShapeLayer` so resizing the selection swaps a single
+/// path instead of redrawing the whole display. This keeps dragging smooth on
+/// a 6K screen.
 ///
 /// Also unflipped, so `update(hole:)` converts from the overlay's top-left
 /// origin space explicitly rather than relying on `isGeometryFlipped`.

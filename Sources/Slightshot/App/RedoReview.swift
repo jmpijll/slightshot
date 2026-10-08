@@ -22,7 +22,7 @@ final class RedoReview: NSObject, NSApplicationDelegate, OverlayViewDelegate {
                                                         image: image, scale: 1))
         let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 1000, height: 700),
                               styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        window.title = "Slightshot — Redo review"
+        window.title = "Slightshot redo review"
         window.isReleasedWhenClosed = false
         window.appearance = NSAppearance(named: .darkAqua)
         window.contentView = view

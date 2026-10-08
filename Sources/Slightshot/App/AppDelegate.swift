@@ -194,7 +194,7 @@ enum AboutPanel {
         NSApp.activate(ignoringOtherApps: true)
         let credits = NSAttributedString(
             string: """
-            An open-source screenshot tool for macOS, inspired by Lightshot.
+            An open-source screenshot and screen recording app for macOS.
 
             Press \(Settings.shared.captureAreaHotKey.displayString) to capture an area.
             """,

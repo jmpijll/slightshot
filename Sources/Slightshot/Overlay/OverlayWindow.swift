@@ -1,6 +1,6 @@
 import AppKit
 
-/// A borderless, full-display window that sits above everything — including the
+/// A borderless, full-display window that sits above everything, including the
 /// menu bar, the Dock and other apps' full-screen spaces.
 final class OverlayWindow: NSWindow {
     init(screen: NSScreen) {

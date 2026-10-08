@@ -10,7 +10,7 @@ final class DelayedCaptureReview: NSObject, NSApplicationDelegate {
     private var expiry: Timer?
     private var evidenceTask: Task<Void, Never>?
     private let evidenceDirectory: URL?
-    private let status = NSTextField(labelWithString: "Ready — choose Capture Area in 5 Seconds")
+    private let status = NSTextField(labelWithString: "Choose Capture Area in 5 Seconds to start.")
     private let overlays = OverlayCoordinator(output: { _, _ in false }, record: { _, _ in })
     private lazy var delayed = DelayedCaptureController(
         isBusy: { [weak self] in self?.overlays.isBusy ?? true },
@@ -29,13 +29,13 @@ final class DelayedCaptureReview: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 560, height: 230),
                               styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        window.title = "Slightshot — Delayed Capture Native Review"
+        window.title = "Slightshot delayed capture review"
         window.isReleasedWhenClosed = false
         let heading = NSTextField(labelWithString: "Capture Area in 5 Seconds")
         heading.font = .systemFont(ofSize: 20, weight: .semibold)
         let detail = NSTextField(labelWithString:
-            "Production AppKit menu, countdown and area editor.\n"
-                + "Frozen source is synthetic and generated at the deadline.")
+            "Test the app's menu, countdown and area editor.\n"
+                + "This fixture generates a test image when the countdown ends.")
         detail.font = .systemFont(ofSize: 13)
         detail.textColor = .secondaryLabelColor
         detail.maximumNumberOfLines = 2
@@ -77,12 +77,12 @@ final class DelayedCaptureReview: NSObject, NSApplicationDelegate {
     }
 
     @objc private func start() {
-        if delayed.start() { status.stringValue = "Countdown started — target focus stays unchanged" }
+        if delayed.start() { status.stringValue = "Countdown started. The focused window stays active." }
     }
 
     @objc private func cancel() {
         delayed.cancel()
-        status.stringValue = "Cancelled — no capture will open"
+        status.stringValue = "Countdown cancelled. No capture will open."
     }
 
     @objc private func quit() { NSApp.terminate(nil) }
@@ -156,7 +156,7 @@ final class DelayedCaptureReview: NSObject, NSApplicationDelegate {
 
     private func presentSource() {
         guard !overlays.isBusy, let screen = NSScreen.main else { return }
-        status.stringValue = "Deadline reached — synthetic source generated now"
+        status.stringValue = "Test image ready. Drag to select an area."
         let image = NSImage(size: screen.frame.size)
         image.lockFocus()
         NSColor(calibratedRed: 0.14, green: 0.35, blue: 0.25, alpha: 1).setFill()
