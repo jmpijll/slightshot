@@ -27,6 +27,8 @@ ownership and uninstall. They also exercise the installed app. Reports and logs
 are uploaded as `windows-installer-evidence`. ARM64 setup is built and inspected
 on the x64 runner; native ARM64 installation and app execution remain unverified.
 These automated checks do not replace a desktop review of the setup wizard.
+The [saved installer review](review/windows-installer/README.md) includes actual
+light/dark wizard images, the native lifecycle report and package checksums.
 
 Release callers use the `release_assets` input and consume
 `Slightshot-windows-release-assets`, containing both ZIPs and both setup packages.

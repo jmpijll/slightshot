@@ -58,6 +58,9 @@ Native x64 installation, upgrade and uninstall checks are recorded in the
 `windows-installer-evidence` artifact. The ARM64 installer is built and inspected
 on the x64 runner; running it requires an ARM64 Windows PC.
 
+See the [actual light/dark setup screenshots and lifecycle validation](review/windows-installer/README.md)
+for the reviewed installer build.
+
 ## Run and build
 
 Install the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) on

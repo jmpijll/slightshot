@@ -134,9 +134,14 @@ The Release workflow checks credentials, signs the app, submits it to Apple,
 and staples its ticket before building the disk image. It then signs, notarises
 and staples the disk image. Publication requires all checks to pass.
 
-After publication, it signs the Sparkle appcast, commits the feed and explicitly
-starts the Pages workflow. A push made with `GITHUB_TOKEN` does not trigger another
+The workflow signs the Sparkle appcast before publication. After publishing the
+downloads, it commits the feed and explicitly starts the Pages workflow. A push
+made with `GITHUB_TOKEN` does not trigger another
 push workflow. See [GitHub's workflow event rules](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).
+
+After the first release containing Windows setup packages, update the README's
+Windows download section to link to the published installers and remove the
+next-release notice. Keep the portable ZIP links available.
 
 ### Local release
 
