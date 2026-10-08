@@ -23,7 +23,7 @@ Choose your platform on [Releases](https://github.com/jmpijll/slightshot/release
 | Platform | Download | Updates |
 | --- | --- | --- |
 | macOS 27+, Apple silicon | Signed and Apple-notarised `.dmg` | In-app updates with Sparkle, or Homebrew |
-| Windows, x64 or ARM64 | Unsigned preview; portable `.zip` | Download the next version from Releases |
+| Windows, x64 or ARM64 | Unsigned preview; setup `.exe` or portable `.zip` | Download the next version from Releases |
 
 ### macOS
 
@@ -40,19 +40,20 @@ brew install --cask slightshot
 
 ### Windows
 
-Download the portable [x64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-x64.zip)
-or [ARM64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-arm64.zip),
-extract it, then run the single `Slightshot.exe` inside. The runtime is included;
-you do not need to install .NET. Use a supported Windows 11 release; see the
-[Windows guide](docs/windows.md) for compatibility and validation details.
-
-Windows installers will join the portable downloads in the next release as
-`Slightshot-windows-x64-setup.exe` and `Slightshot-windows-arm64-setup.exe`.
-Setup installs for your user without administrator rights, adds a Start menu
-shortcut and offers an optional desktop shortcut. Starting at login is an
+Download [x64 setup](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-x64-setup.exe)
+for an Intel/AMD PC or [ARM64 setup](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-arm64-setup.exe)
+for a Windows on Arm PC, then run it. Setup installs for your user without
+administrator rights, adds a Start menu shortcut and offers an optional desktop
+shortcut. Starting at login is an
 opt-in setting in the app. Quit Slightshot from its tray menu before installing,
 upgrading or uninstalling. Upgrades preserve your settings and saved captures.
-See [installer review and build instructions](docs/windows.md#installer).
+
+Prefer a portable copy? Download the [x64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-x64.zip)
+or [ARM64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-arm64.zip),
+extract it, then run the single `Slightshot.exe` inside. Both downloads include
+the runtime; you do not need to install .NET. Use a supported Windows 11 release;
+see the [Windows guide](docs/windows.md) for installation, compatibility and
+validation details.
 
 Windows builds remain unsigned previews and Windows may show a security warning.
 **Download updates…** in the app opens Releases. The maintainer verified capture

@@ -1,0 +1,19 @@
+{
+  "capture_tool": "Codex in-app browser; actual GitHub-rendered pages on macOS",
+  "captured_at": "2026-10-08T15:01:26.281542+00:00",
+  "documentation_commit": "059580b028a2904d31054c5f6c76d17ce1bc05ab",
+  "release_source_commit": "58fd64431a215af2fceb2733ff83a4c5c9fd0be3",
+  "captures": [
+    {
+      "file": "windows-downloads-readme.jpg",
+      "source": "https://github.com/jmpijll/slightshot/blob/059580b028a2904d31054c5f6c76d17ce1bc05ab/README.md#windows",
+      "sha256": "8460b263c68fc93f1389a425d906c1b77e66f2712eb6b200c8ef1193147a9c7c"
+    },
+    {
+      "file": "release-downloads.jpg",
+      "source": "https://github.com/jmpijll/slightshot/releases/tag/v1.4.0",
+      "note": "Five uploaded platform downloads plus GitHub-generated source archives.",
+      "sha256": "f95e7bc6b85a7258a716b45c76dc4a3fc6ec0e39046455388add4b76a0e2fd71"
+    }
+  ]
+}
