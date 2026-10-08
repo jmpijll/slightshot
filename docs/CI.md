@@ -2,6 +2,13 @@
 
 Regular CI produces a Mac review DMG; the Windows workflow produces self-contained portable x64 and ARM64 apps plus native rendering/recording evidence. Each Windows app artifact opens to one `Slightshot.exe`, with its runtime bundled. Download these under **Artifacts** on a successful workflow run. Review artifacts are retained for seven days on Mac and Windows. Mac review builds are explicitly ad-hoc signed, not notarised, and do not update the release or Sparkle feed.
 
+Ad-hoc Mac review builds omit Hardened Runtime because their app and embedded
+frameworks have no Team ID for library validation. CI invokes the assembled
+app's `--verify-runtime-linkage` check to catch loader failures before packaging;
+this check exits without creating windows, requesting permissions or owning a
+capture session. Developer ID release builds retain Hardened Runtime and secure
+timestamps. See the [before/after loader check](review/mac-review-launch/README.md).
+
 The Mac job uses the existing `xcode-27` runner because the app requires macOS 27. Native Windows rendering and recording tests stay on `windows-latest`. Linux can run the release-gate tests, Windows core geometry/raster checks and a Windows cross-build; it cannot build/notarise a native Mac DMG or execute WPF.
 
 ## Unraid
