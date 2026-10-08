@@ -1,9 +1,9 @@
 {
   "platform": "Windows Forms tray menu / native WPF HUD and editor / GDI desktop capture",
   "source": "Automated bounded native desktop acceptance fixture. Production menu/controller/capture/editor with a real WPF target window; screenshots sampled from the composed CI desktop, not mockups.",
-  "sourceCommit": "09bd51192aba1945272193803672c7c5d6f5a0b0",
-  "elapsedSeconds": 16.4643216,
+  "sourceCommit": "43230082b39bd57b406f7b37e2bbdee29901c881",
+  "elapsedSeconds": 16.7228924,
   "checks": [
-    "Production menu started a fixed five-second countdown with target focus unchanged; native nonactivation style checked. No early editor opened. The real GDI screenshot retained target pixels changed from red to green after scheduling, then the real area editor appeared. Active editor rejected a new timer. The real Cancel button prevented a later editor. An ordinary capture cancelled its pending timer, opened immediately, and never opened a second editor."
+    "Production menu started a fixed five-second countdown with target focus unchanged; native nonactivation style checked. No early editor opened. The real GDI screenshot retained target pixels changed from red to green after scheduling, then the real area editor appeared. Active editor rejected a new timer. The real Cancel button prevented a later editor. An ordinary capture cancelled its pending timer, opened immediately, sampled restored green target pixels beneath the removed HUD, and never opened a second editor."
   ]
 }
