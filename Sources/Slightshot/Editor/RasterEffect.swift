@@ -44,19 +44,28 @@ enum RasterEffects {
         for top in stride(from: 0, to: height, by: blockSize) {
             for left in stride(from: 0, to: width, by: blockSize) {
                 let bottom = min(top + blockSize, height), right = min(left + blockSize, width)
-                var sums = [Int](repeating: 0, count: 4)
+                var redSum = 0, greenSum = 0, blueSum = 0, alphaSum = 0
                 for y in top..<bottom {
                     for x in left..<right {
                         let offset = (y * width + x) * 4
-                        for channel in 0..<4 { sums[channel] += Int(bytes[offset + channel]) }
+                        redSum += Int(bytes[offset])
+                        greenSum += Int(bytes[offset + 1])
+                        blueSum += Int(bytes[offset + 2])
+                        alphaSum += Int(bytes[offset + 3])
                     }
                 }
                 let count = (bottom - top) * (right - left)
-                let average = sums.map { UInt8(($0 + count / 2) / count) }
+                let red = UInt8((redSum + count / 2) / count)
+                let green = UInt8((greenSum + count / 2) / count)
+                let blue = UInt8((blueSum + count / 2) / count)
+                let alpha = UInt8((alphaSum + count / 2) / count)
                 for y in top..<bottom {
                     for x in left..<right {
                         let offset = (y * width + x) * 4
-                        for channel in 0..<4 { bytes[offset + channel] = average[channel] }
+                        bytes[offset] = red
+                        bytes[offset + 1] = green
+                        bytes[offset + 2] = blue
+                        bytes[offset + 3] = alpha
                     }
                 }
             }

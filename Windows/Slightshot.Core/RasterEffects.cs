@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace Slightshot.Core;
 
 // Operates on premultiplied BGRA pixels. Visual obscuring, not secure redaction.
@@ -39,13 +41,17 @@ public static class RasterEffects
     // a radius-dependent convolution for every pixel during a rectangle drag.
     public static void Blur(byte[] pixels, int width, int height, double radius)
     {
-        var scratch = new byte[pixels.Length];
-        foreach (int boxRadius in BoxRadii(radius))
+        byte[] scratch = ArrayPool<byte>.Shared.Rent(pixels.Length);
+        try
         {
-            if (boxRadius == 0) continue;
-            BoxPass(pixels, scratch, width, height, boxRadius, true);
-            BoxPass(scratch, pixels, width, height, boxRadius, false);
+            foreach (int boxRadius in BoxRadii(radius))
+            {
+                if (boxRadius == 0) continue;
+                BoxPass(pixels, scratch, width, height, boxRadius, true);
+                BoxPass(scratch, pixels, width, height, boxRadius, false);
+            }
         }
+        finally { ArrayPool<byte>.Shared.Return(scratch); }
     }
 
     public static int BlurPadding(double radius) => BoxRadii(radius).Sum();
