@@ -40,7 +40,7 @@ internal sealed class OverlayWindow : Window
         surface = new OverlaySurface(display, settings) { ShowHint = underPointer };
         RenderOptions.SetBitmapScalingMode(surface, BitmapScalingMode.NearestNeighbor);
         var grid = new Grid(); grid.Children.Add(surface); grid.Children.Add(chrome); Content = grid;
-        toolbar = new Toolbar(chrome, display, settings, _ => { CommitText(); surface.MagnifierPoint = null; Refresh(); }, () => { Refresh(); }, Undo, Perform, cancel, BeginRecording);
+        toolbar = new Toolbar(chrome, display, settings, _ => { CommitText(); surface.MagnifierPoint = null; Refresh(); }, () => { Refresh(); }, Undo, Redo, Perform, cancel, BeginRecording);
         surface.MouseLeftButtonDown += MouseDownOnSurface; surface.MouseMove += MouseMoved; surface.MouseLeftButtonUp += MouseUpOnSurface;
         surface.MouseRightButtonDown += (_, _) => cancel();
         surface.MouseLeave += (_, _) => { surface.MagnifierPoint = null; surface.InvalidateVisual(); };
@@ -66,11 +66,21 @@ internal sealed class OverlayWindow : Window
             if (toolbar.ActiveTool is { } tool && selection.Contains(p))
             {
                 if (tool == Tool.Text) { BeginText(p); return; }
-                drag = Drag.Drawing; anchor = p; points.Clear(); points.Add(p); surface.LiveAnnotation = MakeAnnotation(p); surface.CaptureMouse(); return;
+                drag = Drag.Drawing; anchor = p; points.Clear(); points.Add(p); surface.LiveAnnotation = MakeAnnotation(p); surface.CaptureMouse(); Refresh(); return;
             }
             if (selection.Contains(p)) { drag = Drag.MoveSelection; grabOffset = new(p.X - selection.Left, p.Y - selection.Top); surface.CaptureMouse(); return; }
         }
-        surface.Annotations.Clear(); surface.LiveAnnotation = null; copyOnRelease = Control; drag = Drag.NewSelection; anchor = p; surface.Selection = RectD.Between(p, p); surface.CaptureMouse(); Refresh();
+        StartSelection(p);
+    }
+
+    private void StartSelection(PointD point)
+    {
+        surface.Annotations.Clear(); surface.LiveAnnotation = null; copyOnRelease = Control; drag = Drag.NewSelection; anchor = point; surface.Selection = RectD.Between(point, point); surface.CaptureMouse(); Refresh();
+    }
+
+    private void SelectDisplay()
+    {
+        surface.ShowHint = false; surface.Selection = Bounds; surface.MagnifierPoint = null; surface.Annotations.DiscardRedo(); Refresh();
     }
 
     private void MouseMoved(object sender, MouseEventArgs e)
@@ -136,19 +146,43 @@ internal sealed class OverlayWindow : Window
         textOrigin = new(point.X + 4, point.Y + 3);
         textEntry = new AnnotationTextBox { MinWidth = 64, MaxWidth = Math.Max(80, surface.Selection!.Value.Right - point.X), MinHeight = settings.FontSize * 1.6, FontFamily = new FontFamily("Segoe UI"), FontWeight = FontWeights.SemiBold, FontSize = settings.FontSize, Foreground = AnnotationRenderer.Brush(settings.AnnotationColor), CaretBrush = AnnotationRenderer.Brush(settings.AnnotationColor), Background = Brushes.Transparent, BorderThickness = new Thickness(0), Padding = new Thickness(4, 3, 4, 3), AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
         Canvas.SetLeft(textEntry, point.X); Canvas.SetTop(textEntry, point.Y); chrome.Children.Add(textEntry); textEntry.Focus();
+        Refresh();
     }
     private void CommitText()
     {
         if (textEntry == null) return;
         string text = textEntry.Text; chrome.Children.Remove(textEntry); textEntry = null; Focus();
         if (!string.IsNullOrWhiteSpace(text)) surface.Annotations.Add(new(Tool.Text, [textOrigin], settings.AnnotationColor, settings.LineWidth, settings.FontSize, text));
-        surface.InvalidateVisual();
+        Refresh();
     }
     private void Undo()
     {
-        if (textEntry != null) { chrome.Children.Remove(textEntry); textEntry = null; Focus(); return; }
-        if (surface.Annotations.Count > 0) surface.Annotations.RemoveAt(surface.Annotations.Count - 1);
+        if (textEntry != null) { chrome.Children.Remove(textEntry); textEntry = null; Focus(); Refresh(); return; }
+        surface.Annotations.Undo();
         Refresh();
+    }
+
+    private void Redo()
+    {
+        if (textEntry != null || surface.LiveAnnotation != null) return;
+        surface.Annotations.Redo();
+        Refresh();
+    }
+
+    private bool HandleHistoryShortcut(Key key, ModifierKeys modifiers)
+    {
+        if (!modifiers.HasFlag(ModifierKeys.Control) || key is not (Key.Z or Key.Y)) return false;
+        bool redo = key == Key.Y || modifiers.HasFlag(ModifierKeys.Shift);
+        if (textEntry != null)
+        {
+            // WPF's text Undo remains native. Both redo gestures use that same
+            // text history, including Ctrl+Shift+Z which WPF does not bind itself.
+            if (!redo) return false;
+            textEntry.Redo();
+        }
+        else if (redo) Redo();
+        else Undo();
+        return true;
     }
 
     private void KeyPressed(object sender, KeyEventArgs e)
@@ -157,15 +191,15 @@ internal sealed class OverlayWindow : Window
         if (key == Key.Escape) { if (textEntry != null) Undo(); else cancel(); e.Handled = true; return; }
         // Keep normal editing shortcuts inside the text field; export/save/print commit it first.
         if (textEntry != null && key == Key.Enter && Control) { CommitText(); e.Handled = true; return; }
+        if (HandleHistoryShortcut(key, Keyboard.Modifiers)) { e.Handled = true; return; }
         if (Control)
         {
             switch (key)
             {
-                case Key.A when textEntry == null: surface.ShowHint = false; surface.Selection = Bounds; surface.MagnifierPoint = null; Refresh(); break;
+                case Key.A when textEntry == null: SelectDisplay(); break;
                 case Key.C when textEntry == null: Perform(CaptureAction.Copy); break;
                 case Key.S: Perform(Shift ? CaptureAction.SaveAs : CaptureAction.Save); break;
                 case Key.P: Perform(CaptureAction.Print); break;
-                case Key.Z when textEntry == null: Undo(); break;
                 case Key.X when textEntry == null: cancel(); break;
                 default: return;
             }
@@ -189,7 +223,12 @@ internal sealed class OverlayWindow : Window
         surface.MagnifierPoint = null;
         complete(this, action, AnnotationRenderer.Flatten(display, selection, surface.Annotations, settings.NativeResolution));
     }
-    private void Refresh() { surface.InvalidateVisual(); toolbar.Layout(surface.Selection, Bounds, drag != Drag.NewSelection); }
+    private void Refresh()
+    {
+        surface.InvalidateVisual();
+        toolbar.SetRedoAvailability(textEntry == null && surface.LiveAnnotation == null && surface.Annotations.CanRedo);
+        toolbar.Layout(surface.Selection, Bounds, drag != Drag.NewSelection);
+    }
 
     internal void PrepareSmokeFixture(RectD selection, IEnumerable<Annotation> annotations)
     {

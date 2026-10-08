@@ -87,6 +87,10 @@ Security › Screen & System Audio Recording**, then relaunch Slightshot.
 
 ## Shortcuts
 
+Undo and Redo in the toolbar also work with text, blur, pixelation and numbered steps.
+Redo restores the original mark; adding a new annotation or starting a new selection
+clears Redo. While typing, the text field keeps its native Undo and Redo shortcuts.
+
 You can change the three capture shortcuts in Settings.
 
 | Shortcut | Action |
@@ -105,6 +109,7 @@ While selecting or annotating:
 | <kbd>⌘⇧S</kbd> | Save as |
 | <kbd>⌘P</kbd> | Print |
 | <kbd>⌘Z</kbd> | Undo the last annotation |
+| <kbd>⌘⇧Z</kbd> | Redo the last undone annotation |
 | <kbd>↩</kbd> | Confirm, copying by default |
 | <kbd>Esc</kbd> or <kbd>⌘X</kbd> | Cancel |
 | Arrow keys | Move the selection by one point |

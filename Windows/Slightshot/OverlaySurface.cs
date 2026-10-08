@@ -9,7 +9,7 @@ internal sealed class OverlaySurface(CapturedDisplay display, Settings settings)
 {
     private readonly AnnotationCompositor compositor = new(display);
     public RectD? Selection { get; set; }
-    public List<Annotation> Annotations { get; } = [];
+    public AnnotationHistory Annotations { get; } = new();
     public Annotation? LiveAnnotation { get; set; }
     public bool ShowHint { get; set; }
     public PointD? MagnifierPoint { get; set; }

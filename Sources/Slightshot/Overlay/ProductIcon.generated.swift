@@ -12,6 +12,7 @@ nonisolated enum ProductIcon: String, CaseIterable, Sendable {
     case pixelate
     case step
     case undo
+    case redo
     case print
     case copy
     case save
@@ -22,7 +23,7 @@ nonisolated enum ProductIcon: String, CaseIterable, Sendable {
     case check
     case warning
 
-    static let sourceHash = "8115a076e7afad18653074278ce685c5acc5063261ade9fbefe625e09630f238"
+    static let sourceHash = "6d2e85ff60e5481b8d8419533f2b3d6e2cb4297a623625a5adbf6dcfcc52ef94"
     static let size: CGFloat = 18
 
     // Generated exhaustive asset dispatch; no conditional application behavior.
@@ -42,6 +43,7 @@ nonisolated enum ProductIcon: String, CaseIterable, Sendable {
         case .pixelate: drawPixelate(in: context)
         case .step: drawStep(in: context)
         case .undo: drawUndo(in: context)
+        case .redo: drawRedo(in: context)
         case .print: drawPrint(in: context)
         case .copy: drawCopy(in: context)
         case .save: drawSave(in: context)
@@ -258,6 +260,21 @@ extension ProductIcon {
                          control1: CGPoint(x: 17, y: 7),
                          control2: CGPoint(x: 17, y: 15))
         path0.addLine(to: CGPoint(x: 8, y: 15))
+        context.addPath(path0)
+        context.drawPath(using: .stroke)
+    }
+
+    nonisolated private func drawRedo(in context: CGContext) {
+        let path0 = CGMutablePath()
+        path0.move(to: CGPoint(x: 12, y: 3))
+        path0.addLine(to: CGPoint(x: 16, y: 7))
+        path0.addLine(to: CGPoint(x: 12, y: 11))
+        path0.move(to: CGPoint(x: 16, y: 7))
+        path0.addLine(to: CGPoint(x: 7.5, y: 7))
+        path0.addCurve(to: CGPoint(x: 7.5, y: 15),
+                         control1: CGPoint(x: 1, y: 7),
+                         control2: CGPoint(x: 1, y: 15))
+        path0.addLine(to: CGPoint(x: 10, y: 15))
         context.addPath(path0)
         context.drawPath(using: .stroke)
     }

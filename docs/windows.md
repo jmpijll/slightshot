@@ -54,7 +54,7 @@ in Settings. See [Microsoft's single-file deployment documentation](https://lear
 The overlay uses 30-point buttons, 18-point shared original vector icons, 6-point button corners,
 9-point panel corners, 2-point button spacing, 4-point panel padding and 8-point
 spacing from the selection. Tool order is Pen, Line, Arrow, Rectangle, Marker,
-Text, Blur, Pixelate, Numbered steps, Colour, Undo. Actions are Print, Copy, Save, Record and Close. The twelve swatches,
+Text, Blur, Pixelate, Numbered steps, Colour, Undo, Redo. Actions are Print, Copy, Save, Record and Close. The twelve swatches,
 1–12-point thickness range, 45% dimming, selection handles, dimension badge and
 136×174-point pixel loupe follow the Mac source. A frozen-screenshot blur and dark
 tint reproduce the Mac HUD panel treatment without adding a WebView.
@@ -74,6 +74,7 @@ keep stamping. Esc/right-click cancels.
 | Ctrl+Shift+S | Save as… |
 | Ctrl+P | Print |
 | Ctrl+Z | Undo annotation |
+| Ctrl+Y / Ctrl+Shift+Z | Redo annotation |
 | Ctrl+X / Esc | Cancel |
 | Ctrl+Enter while typing | Finish the text annotation |
 | Enter while typing | Insert a newline |
@@ -93,6 +94,10 @@ same compositor; later marks remain on top, and Undo removes the last effect.
 Blur uses an 8-point radius and pixelation uses 12-point blocks, scaled for the
 monitor's DPI. The cached committed image is reused while dragging. These tools
 apply to screenshot output, not live video recordings.
+
+Redo restores the original committed annotation, including text, raster effects and
+step numbers. A new committed annotation or new selection clears Redo. The text
+field retains native text Undo/Redo while typing.
 
 Numbered steps stamps one circle per gesture at the press position, using the
 current colour and starting at 1 for each screenshot. Undo restores the next
