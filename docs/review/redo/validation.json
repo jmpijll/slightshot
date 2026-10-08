@@ -26,5 +26,34 @@
     "shared_icons": 20,
     "windows_release_cross_build": "pass; 0 warnings, 0 errors",
     "python_tests": 14
+  },
+  "windows": {
+    "source_commit": "eb93c1e",
+    "workflow": "https://github.com/jmpijll/slightshot/actions/runs/37775032123",
+    "result": "success",
+    "artifact": "windows-native-parity-evidence",
+    "artifact_id": 11549507203,
+    "platform": "Windows WPF (.NET 10), windows-latest x64 runner",
+    "evidence_kind": "production native WPF overlay/control render over synthetic source; production command handler and native text-input invocation",
+    "scales": [
+      1,
+      1.25,
+      1.5,
+      2
+    ],
+    "checks": [
+      "Undo and Redo toolbar and Ctrl+Z/Y/Shift+Z production handler",
+      "Original raster/vector/text/step object ordering and exact restored export pixels",
+      "Restored preview interior matches export",
+      "Repeated cycles and step numbering",
+      "Native TextBox text-input, undo and redo preserve annotation history",
+      "New committed text/new selection invalidation"
+    ],
+    "scope_limit": "No manual Windows desktop keyboard or physical screen-capture acceptance for this feature.",
+    "images": {
+      "windows-before.png": "9ace90a8b879e8a51f112822b5ac3126df52d17486f20f8a2584886c7da1785c",
+      "windows-undone.png": "6d7c24895a5e70960a636dcb7ab84040c5936432f1f700b2ca8e96729188e41b",
+      "windows-restored.png": "9ace90a8b879e8a51f112822b5ac3126df52d17486f20f8a2584886c7da1785c"
+    }
   }
 }

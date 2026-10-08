@@ -1,0 +1,29 @@
+{
+  "platform": "Windows WPF",
+  "source": "Synthetic fixture; not a live screen capture or manual interaction recording",
+  "checks": [
+    "20 shared native WPF vectors render unclipped at 1\u00D7/2\u00D7; Record size/label/action retained. Production toolbar renderer produces normal, hover-style, selected and disabled fixtures. Source SHA-256: 6d2e85ff60e5481b8d8419533f2b3d6e2cb4297a623625a5adbf6dcfcc52ef94.",
+    "1\u00D7 fractional origin/size: tiny blur/pixelate leave every outside BGRA pixel unchanged; every live/export pixel matches",
+    "1.25\u00D7 fractional origin/size: tiny blur/pixelate leave every outside BGRA pixel unchanged; every live/export pixel matches",
+    "1.5\u00D7 fractional origin/size: tiny blur/pixelate leave every outside BGRA pixel unchanged; every live/export pixel matches",
+    "2\u00D7 fractional origin/size: tiny blur/pixelate leave every outside BGRA pixel unchanged; every live/export pixel matches",
+    "1\u00D7 effects: source pixels transformed, ordered annotations, clipped/empty regions, live/committed/export parity, undo and logical export passed",
+    "1.25\u00D7 effects: source pixels transformed, ordered annotations, clipped/empty regions, live/committed/export parity, undo and logical export passed",
+    "1.5\u00D7 effects: source pixels transformed, ordered annotations, clipped/empty regions, live/committed/export parity, undo and logical export passed",
+    "2\u00D7 effects: source pixels transformed, ordered annotations, clipped/empty regions, live/committed/export parity, undo and logical export passed",
+    "Screenshot workflow: Save As cancellation, real failed write, retained two-display editor, text/Blur/Pixelate/Undo, nested input rejection, successful retry, and Escape passed",
+    "Settings route: blocked during modal output; idle editor dismissed and Output folder chooser accessible after a real save-directory failure",
+    "1\u00D7 numbered steps: current colour, fixed readable sizing, multi-digit labels, clipped/live/committed/export pixels, raster ordering and undo passed",
+    "1.25\u00D7 numbered steps: current colour, fixed readable sizing, multi-digit labels, clipped/live/committed/export pixels, raster ordering and undo passed",
+    "1.5\u00D7 numbered steps: current colour, fixed readable sizing, multi-digit labels, clipped/live/committed/export pixels, raster ordering and undo passed",
+    "2\u00D7 numbered steps: current colour, fixed readable sizing, multi-digit labels, clipped/live/committed/export pixels, raster ordering and undo passed",
+    "1\u00D7 redo: native toolbar, Ctrl\u002BZ/Y/Shift\u002BZ handler, original text/vector/effect/step objects and pixels, repeated cycles, native draft text editing, new-edit and selection invalidation passed",
+    "1.25\u00D7 redo: native toolbar, Ctrl\u002BZ/Y/Shift\u002BZ handler, original text/vector/effect/step objects and pixels, repeated cycles, native draft text editing, new-edit and selection invalidation passed",
+    "1.5\u00D7 redo: native toolbar, Ctrl\u002BZ/Y/Shift\u002BZ handler, original text/vector/effect/step objects and pixels, repeated cycles, native draft text editing, new-edit and selection invalidation passed",
+    "2\u00D7 redo: native toolbar, Ctrl\u002BZ/Y/Shift\u002BZ handler, original text/vector/effect/step objects and pixels, repeated cycles, native draft text editing, new-edit and selection invalidation passed",
+    "1\u00D7: native and logical export dimensions, red annotation pixels, PNG/JPEG/TIFF decode passed",
+    "1.25\u00D7: native and logical export dimensions, red annotation pixels, PNG/JPEG/TIFF decode passed",
+    "1.5\u00D7: native and logical export dimensions, red annotation pixels, PNG/JPEG/TIFF decode passed",
+    "2\u00D7: native and logical export dimensions, red annotation pixels, PNG/JPEG/TIFF decode passed"
+  ]
+}
