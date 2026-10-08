@@ -12,12 +12,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     init(onCaptureArea: @escaping () -> Void,
          onSaveFullScreen: @escaping () -> Void,
          onCopyFullScreen: @escaping () -> Void,
-         onDelayedCapture: @escaping () -> Void) {
+         onDelayedCapture: @escaping () -> Void,
+         showInMenuBar: Bool = true) {
         self.onCaptureArea = onCaptureArea
         self.onSaveFullScreen = onSaveFullScreen
         self.onCopyFullScreen = onCopyFullScreen
         self.onDelayedCapture = onDelayedCapture
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        statusItem.isVisible = showInMenuBar
         super.init()
 
         if let button = statusItem.button {

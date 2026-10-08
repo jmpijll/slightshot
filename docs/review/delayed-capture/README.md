@@ -20,16 +20,37 @@ new timer, and that Cancel and ordinary capture prevent a late second editor.
 The countdown is closed and the tray menu is dismissed before desktop
 composition is flushed for capture.
 
-The CI artifact `windows-native-delayed-capture-evidence` contains the native
-menu/countdown/result screenshots and `delayed-capture-validation.json` with
-source revision and checks. Durable copies and the source run will be added
-here after the native run completes.
+These unchanged desktop screenshots came from successful native
+[Windows CI run 37774229073](https://github.com/jmpijll/slightshot/actions/runs/37774229073),
+feature source `64b1b72340bb58a9374788062afff9070f840c3b` and CI merge checkout
+`09bd51192aba1945272193803672c7c5d6f5a0b0`. The complete
+[validation report](delayed-capture-validation.json) is saved alongside them.
+The CI desktop and runner terminal are visible behind the real acceptance
+window; these are native application screenshots, with no visual mockups.
+
+| Production tray menu | Passive countdown with Cancel |
+| --- | --- |
+| ![Native Windows menu](windows-menu.png) | ![Native Windows countdown](windows-countdown.png) |
+
+The actual area editor retains the green content changed after scheduling:
+
+![Native Windows editor after the five-second capture](windows-result.png)
 
 ## Mac desktop acceptance
 
 The countdown uses a nonactivating AppKit panel. It closes before capture;
 ScreenCaptureKit also excludes Slightshot's own windows. The timer uses a
 monotonic five-second deadline and runs while a popup menu is open.
+
+For an isolated native UI review alongside an existing Slightshot owner, launch
+the freshly built bundle with `--delayed-review`. This bounded five-minute
+fixture bypasses the command inbox, global shortcuts and updater. Its small
+review window exposes the actual production menu and the same countdown
+controller/panel. The callback presents the actual area editor with an explicitly
+labelled synthetic source created when capture starts. This demonstrates native
+menu/countdown/editor behavior without capturing private desktop content; it
+does not claim a live ScreenCaptureKit snapshot. Windows CI above separately
+checks actual live pixels changed after scheduling.
 
 Run the freshly built app bundle, then:
 
