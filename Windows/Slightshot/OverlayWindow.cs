@@ -84,6 +84,7 @@ internal sealed class OverlayWindow : Window
                 break;
             case Drag.ResizeSelection: surface.Selection = resizeHandle.Resize(resizeOriginal, p).Clamp(Bounds); break;
             case Drag.Drawing:
+                if (surface.LiveAnnotation is { Tool: Tool.Step }) break;
                 if (surface.Selection is { } drawing) { p = p.Clamp(drawing); points.Add(p); surface.LiveAnnotation = MakeAnnotation(p); }
                 break;
         }

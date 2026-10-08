@@ -14,6 +14,8 @@ internal sealed class AnnotationCompositor(CapturedDisplay display)
     private BitmapSource? cachedImage;
     private Annotation? cachedLive;
     private EffectPatch? cachedPatch;
+    private Annotation? cachedStep;
+    private BitmapSource? cachedStepImage;
     private sealed record EffectPatch(BitmapSource Image, Rect Bounds);
 
     public BitmapSource Committed(RectD selection, IReadOnlyList<Annotation> annotations)
@@ -39,11 +41,26 @@ internal sealed class AnnotationCompositor(CapturedDisplay display)
         }
         image = DrawVectors(image, selection, vectors);
         cachedImage = image; cachedSelection = selection; cachedHistory = annotations.ToArray(); cachedLive = null; cachedPatch = null;
+        cachedStep = null; cachedStepImage = null;
         return image;
     }
 
     public void DrawLive(DrawingContext dc, RectD selection, Annotation annotation)
     {
+        if (annotation.Tool == Tool.Step && cachedImage != null)
+        {
+            // WPF rounds antialiased edges differently when a vector draws
+            // directly over the surface. A fixed stamp uses the export layer
+            // path once per gesture, then reuses these exact preview pixels.
+            if (cachedStep != annotation)
+            {
+                cachedStepImage = DrawVectors(cachedImage, selection, [annotation]);
+                cachedStep = annotation;
+            }
+            if (cachedStepImage is { } image)
+                dc.DrawImage(image, new Rect(selection.X, selection.Y, image.PixelWidth / display.Scale, image.PixelHeight / display.Scale));
+            return;
+        }
         if (!annotation.IsRasterEffect) { AnnotationRenderer.Draw(dc, annotation, display.Scale); return; }
         if (cachedImage == null) return;
         if (cachedLive != annotation) { cachedPatch = Patch(cachedImage, selection, annotation); cachedLive = annotation; }
