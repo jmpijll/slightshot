@@ -31,6 +31,10 @@ to obscure. The effect appears while dragging and is included when you copy,
 save or print. Undo removes it just like any other annotation. Both tools work
 locally on Mac and Windows; they do not modify live screen recordings.
 
+Choose **Numbered steps** and click to place 1, 2, 3 in circles using the current
+colour. Undo restores the next number, and each screenshot starts at 1. Circles
+grow for extra digits and keep their size independent of the thickness slider.
+
 ## Record an area
 
 Select an area and click the **Record** button underneath it. The frozen
