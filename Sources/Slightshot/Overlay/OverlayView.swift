@@ -163,7 +163,7 @@ final class OverlayView: NSView {
 
         let point = location(of: event)
 
-        if event.clickCount == 2, let selection, selection.contains(point) {
+        if event.clickCount == 2, activeTool != .step, let selection, selection.contains(point) {
             performDefaultAction()
             return
         }
@@ -178,6 +178,10 @@ final class OverlayView: NSView {
                     beginTextEntry(at: point)
                 } else {
                     drag = .drawing(start: point, points: [point])
+                    if tool == .step {
+                        canvas.liveAnnotation = makeAnnotation(start: point, current: point,
+                                                               points: [point], constrained: false)
+                    }
                 }
                 return
             }
@@ -303,6 +307,7 @@ final class OverlayView: NSView {
         case .rectangle: shape = .rectangle(CGRect(corner: start, corner: end))
         case .blur: shape = .blur(CGRect(corner: start, corner: current))
         case .pixelate: shape = .pixelate(CGRect(corner: start, corner: current))
+        case .step: shape = .step(number: Annotation.nextStepNumber(in: annotations), center: start)
         case .text: return nil
         }
         return Annotation(shape: shape, color: color, lineWidth: width,

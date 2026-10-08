@@ -23,7 +23,8 @@ internal sealed class OverlaySurface(CapturedDisplay display, Settings settings)
         if (Selection is { Width: >= 1, Height: >= 1 } r)
         {
             dc.PushClip(new RectangleGeometry(AnnotationRenderer.Rect(r)));
-            if (Annotations.Any(a => a.IsRasterEffect) || LiveAnnotation is { IsRasterEffect: true })
+            if (Annotations.Any(a => a.IsRasterEffect || a.Tool == Tool.Step) ||
+                LiveAnnotation is { IsRasterEffect: true } or { Tool: Tool.Step })
             {
                 var composition = compositor.Committed(r, Annotations);
                 dc.DrawImage(composition, new Rect(r.X, r.Y, composition.PixelWidth / display.Scale, composition.PixelHeight / display.Scale));

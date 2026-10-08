@@ -12,6 +12,12 @@ SPEC.loader.exec_module(ICONS)
 
 
 class IconCatalogueTests(unittest.TestCase):
+    def test_numbered_step_artwork_compiles_for_both_platforms(self):
+        data, digest = ICONS.catalogue()
+        self.assertIn("step", data["icons"])
+        self.assertIn("case .step: drawStep(in: context)", ICONS.swift(data, digest))
+        self.assertIn("[ProductIcon.Step]", ICONS.csharp(data, digest))
+
     def test_windows_checkout_produces_identical_native_assets(self):
         data, digest = ICONS.catalogue()
         original = ICONS.SOURCE.read_bytes()
