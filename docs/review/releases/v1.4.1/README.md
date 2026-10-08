@@ -31,3 +31,13 @@ unpack installer payloads or rerun Windows execution.
 The [full validation record](../v1.4.1-validation.json) contains checksums,
 signature results, source commits and workflow provenance. Actual app text
 captures are preserved in the [project text review](../../independent-identity/README.md).
+
+## Rendered review evidence
+
+These browser captures show the committed release status, Windows download
+guide and measured validation summary. The macOS browser source commit and
+file hashes are recorded in [capture-source.json](capture-source.json).
+
+![Release status](release-status.jpg)
+![Windows downloads](windows-downloads.jpg)
+![Published-file validation](published-validation.jpg)

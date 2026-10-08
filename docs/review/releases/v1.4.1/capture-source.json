@@ -1,0 +1,18 @@
+{
+  "captured_at_utc": "2026-10-08T16:17:47.740827+00:00",
+  "platform": "macOS 27 arm64, Codex in-app browser",
+  "source_commit": "0a4fdd95b94b966c0f3417efd79b123881ba49d0",
+  "capture": "Actual committed Markdown rendered with GitHub Markdown API in a local browser. Release status and Windows downloads use focused document-coordinate crops; validation uses a full-page browser capture. Checks were performed on published release files, as recorded in the validation JSON.",
+  "source_files_sha256": {
+    "docs/RELEASING.md": "c6fb305860e73f65a92e192ad1d47f27d294e6940805c78e7830381b54a83434",
+    "docs/windows.md": "37b60a2d4f21acf79308e74bbbcac4c2aaeb09596c00b2645d72d201ddf4139a",
+    "docs/review/releases/v1.4.1/README.md": "930605da07ad8f3444077cce398c819c4744f9bc0ee9415426599f8841d3ba58",
+    "docs/review/releases/v1.4.1-validation.json": "089a95f05c4907053b4ed3e57b309a037f1d22784b91a0416667e48e3726f0f7",
+    "Casks/slightshot.rb": "a47e8d7a39133de553332356b202f6f2e6513c271fd2d1c29b90542d0d4e9d7d"
+  },
+  "screenshots_sha256": {
+    "windows-downloads.jpg": "6f5e1e0b0a58af5fcc397056be56345583f3d10ecf59df10e3783b8079e82a2d",
+    "published-validation.jpg": "6bbd32e4285d193fac4acd92e42cea355265d552e8d051bc3c1da86b2a5b3d7e",
+    "release-status.jpg": "45d0665aca20471e7fd8d7a53ce3b5a016fda6ad1f34dbd6b373f2fb17b30151"
+  }
+}
