@@ -103,4 +103,5 @@ foreach (var quality in Enum.GetValues<RecordingQuality>())
     Equal(0, size.Width % 2, $"{quality} width even"); Equal(0, size.Height % 2, $"{quality} height even");
     Equal(true, Math.Max(size.Width, size.Height) <= quality.MaximumDimension(), $"{quality} dimension cap");
 }
-Console.WriteLine($"Passed {checks} Windows parity geometry, pixel-boundary, style and filename checks.");
+checks += await RecordingFrameBufferChecks.RunAsync();
+Console.WriteLine($"Passed {checks} Windows parity geometry, pixel-boundary, style, filename and recording buffer checks.");
