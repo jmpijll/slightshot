@@ -70,6 +70,15 @@ jobs:
           if (!$process.WaitForExit(180000)) { $process.Kill(); throw 'Native recording smoke test timed out' }
           if ($process.ExitCode -ne 0) { Get-Content "$output/recording-failure.txt" -ErrorAction SilentlyContinue; throw "Native recording smoke test failed with exit code $($process.ExitCode)" }
           Get-Content "$output/recording-validation.json"
+      - name: Test delayed capture on the real Windows desktop
+        shell: pwsh
+        run: |
+          $app = Resolve-Path Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe
+          $output = Join-Path $PWD Windows/artifacts/delayed-capture
+          $process = Start-Process $app -ArgumentList '--delayed-capture-smoke-test', $output -PassThru
+          if (!$process.WaitForExit(45000)) { $process.Kill(); throw 'Delayed capture smoke test timed out' }
+          if ($process.ExitCode -ne 0) { Get-Content "$output/delayed-capture-failure.txt" -ErrorAction SilentlyContinue; throw "Delayed capture smoke test failed: $($process.ExitCode)" }
+          Get-Content "$output/delayed-capture-validation.json"
       - name: Publish portable x64 app
         run: dotnet publish Windows/Slightshot -c Release -r win-x64 -p:PublishProfile=Portable -o Windows/artifacts/win-x64 -p:Version="$env:WINDOWS_VERSION"
       - name: Publish portable ARM64 app
@@ -111,6 +120,13 @@ jobs:
             }
             Get-Content "$output/$($test.Report)"
           }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          retention-days: 7
+          name: windows-native-delayed-capture-evidence
+          path: Windows/artifacts/delayed-capture
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: inputs.release_archives
         with:
