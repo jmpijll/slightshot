@@ -1,6 +1,6 @@
 cask "slightshot" do
-  version "1.4.0"
-  sha256 "725db9d357aac22d5283b689ac9b224ee6c80a1c7b3c9f1284a52d9edbd3cbec"
+  version "1.4.1"
+  sha256 "cc9866cda12c7b4fe04d0b75d2906e79182d46b53e8e3ce3ff6878dbaa17bdfa"
 
   url "https://github.com/jmpijll/slightshot/releases/download/v#{version}/Slightshot-#{version}.dmg"
   name "Slightshot"
