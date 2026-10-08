@@ -20,6 +20,27 @@ You need macOS 27 and the Xcode 27 command line tools. There is no `.xcodeproj`
 - `swift build` is warning-free
 - `make test` passes when changing recording capture or export behavior
 - You have actually run the app and used the feature you changed
+- The PR description includes a screenshot or short video of the implemented
+  change, following the visual evidence rule below
+
+## Visual review evidence
+
+Every PR includes a screenshot or short video showing what the change does or
+how it works. Embed the evidence in the description so a reviewer can assess
+the behavior directly. Show the interaction and result; use a before/after
+sequence or video when a single screenshot does not explain the change.
+
+Capture the working app on each platform whose visible behavior changes, and
+identify the platform and source commit. Automated captures of native app
+windows are welcome: label fixture inputs and automated interaction clearly.
+Mockups and generated illustrations do not demonstrate an implemented feature.
+For internal changes, show the relevant measured or validation result; for
+documentation changes, show the rendered content that changed.
+
+Keep captures focused and free of personal information. Attach them to the PR
+or store them in `docs/review/<change>/`; temporary CI artifacts alone are not
+a lasting review record. Include the checks run separately: visual evidence
+helps review and complements tests.
 
 ## The one hard rule
 
