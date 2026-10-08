@@ -1,5 +1,12 @@
 import AppKit
 
+// CI verifies that the assembled bundle can load its frameworks without
+// starting a menu-bar session or requesting desktop permissions.
+if CommandLine.arguments.contains("--verify-runtime-linkage") {
+    print("Slightshot runtime linkage verified")
+    exit(EXIT_SUCCESS)
+}
+
 if CommandLine.arguments.contains("--redo-review") {
     let app = NSApplication.shared
     let review = RedoReview()
