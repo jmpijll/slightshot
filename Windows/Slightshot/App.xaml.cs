@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Windows;
-using System.Windows.Threading;
 using Slightshot.Core;
 using Forms = System.Windows.Forms;
 
@@ -17,7 +16,7 @@ public partial class App : System.Windows.Application
     private OutputService? output;
     private RecordingCoordinator? recording;
     private SettingsWindow? preferences;
-    private readonly List<OverlayWindow> overlays = [];
+    private OverlayCoordinator? overlays;
     private Mutex? instance;
     private bool ownsInstance;
     private bool capturing;
@@ -53,6 +52,7 @@ public partial class App : System.Windows.Application
         tray = new Forms.NotifyIcon { Icon = trayIcon, Text = "Slightshot", Visible = true };
         tray.DoubleClick += (_, _) => Dispatcher.InvokeAsync(BeginCapture);
         output = new OutputService(settings, (title, body) => tray.ShowBalloonTip(3000, title, body, Forms.ToolTipIcon.None));
+        overlays = new OverlayCoordinator(settings, output.Perform, SaveCaptureSettings, StartRecording);
         hotKeys = new HotKeyService(id => Dispatcher.InvokeAsync(() => { if (id == 1) BeginCapture(); else FullScreen(id == 2 ? CaptureAction.Save : CaptureAction.Copy); }));
         UpdateSettings();
     }
@@ -80,48 +80,32 @@ public partial class App : System.Windows.Application
     private void Add(Forms.ContextMenuStrip menu, string label, Action action) => menu.Items.Add(label, null, (_, _) => Dispatcher.InvokeAsync(action));
     private void BeginCapture()
     {
-        if (capturing || overlays.Count > 0 || recording?.IsBusy == true || quitting) return;
+        if (capturing || overlays?.IsBusy == true || recording?.IsBusy == true || quitting) return;
         capturing = true;
         try
         {
             preferences?.Hide();
             var displays = ScreenCapture.CaptureAll(settings.CaptureCursor);
             var active = ScreenCapture.UnderPointer(displays);
-            OverlayWindow? focus = null;
-            foreach (var display in displays)
-            {
-                var window = new OverlayWindow(display, settings, display == active, TakeOver, Dismiss, (_, action, bitmap) => { Dismiss(); output!.Perform(action, bitmap); }, StartRecording);
-                overlays.Add(window); window.Show();
-                if (display == active) focus = window;
-            }
-            if (focus != null)
-            {
-                var target = focus;
-                Dispatcher.InvokeAsync(() => { if (overlays.Contains(target)) { target.Activate(); target.Focus(); } }, DispatcherPriority.Loaded);
-            }
+            overlays!.Present(displays, active);
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or ArgumentException or OutOfMemoryException) { Dismiss(); Error(ex.Message); }
         finally { capturing = false; }
     }
-    private void TakeOver(OverlayWindow window)
-    {
-        foreach (var other in overlays.Where(other => other != window)) other.Relinquish();
-        window.Activate(); window.Focus();
-    }
     private void StartRecording(CapturedDisplay display, RectD selection)
     {
-        try { foreach (var window in overlays) RecordingWindowExclusion.Exclude(window); }
+        try { foreach (var window in overlays!.Windows) RecordingWindowExclusion.Exclude(window); }
         catch (System.ComponentModel.Win32Exception error) { Dismiss(); Error(error.Message); return; }
         Dismiss(); recording!.Begin(display, selection);
     }
-    private void Dismiss()
+    private void Dismiss() => overlays?.Dismiss();
+    private void SaveCaptureSettings()
     {
-        foreach (var window in overlays) window.Close(); overlays.Clear();
         try { settings.Save(); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Error(ex.Message); }
     }
     private void FullScreen(CaptureAction action)
     {
-        if (capturing || overlays.Count > 0 || recording?.IsBusy == true || quitting) return;
+        if (capturing || overlays?.IsBusy == true || recording?.IsBusy == true || quitting) return;
         capturing = true;
         try
         {
@@ -134,8 +118,8 @@ public partial class App : System.Windows.Application
     }
     private void ShowSettings()
     {
-        if (recording?.IsBusy == true || quitting) return;
-        if (overlays.Count > 0) Dismiss();
+        if (overlays?.IsDelivering == true || recording?.IsBusy == true || quitting) return;
+        if (overlays?.IsBusy == true) Dismiss();
         if (preferences == null)
         {
             preferences = new SettingsWindow(settings);

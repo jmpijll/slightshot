@@ -8,7 +8,8 @@ using Slightshot.Core;
 
 namespace Slightshot;
 
-internal sealed class OutputService(Settings settings, Action<string, string> notify)
+internal sealed class OutputService(Settings settings, Action<string, string> notify,
+    Func<SaveFileDialog, bool?>? showSaveDialog = null, Action<string>? presentError = null)
 {
     public bool Perform(CaptureAction action, BitmapSource bitmap)
     {
@@ -34,7 +35,9 @@ internal sealed class OutputService(Settings settings, Action<string, string> no
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Runtime.InteropServices.ExternalException or InvalidOperationException or ArgumentException or System.Printing.PrintSystemException)
         {
-            MessageBox.Show($"Slightshot could not complete this action.\n\n{ex.Message}", "Slightshot", MessageBoxButton.OK, MessageBoxImage.Warning);
+            string message = $"Slightshot could not complete this action.\n\n{ex.Message}";
+            if (presentError != null) presentError(message);
+            else MessageBox.Show(message, "Slightshot", MessageBoxButton.OK, MessageBoxImage.Warning);
             return false;
         }
     }
@@ -68,7 +71,7 @@ internal sealed class OutputService(Settings settings, Action<string, string> no
     private bool SaveAs(BitmapSource bitmap)
     {
         var dialog = new SaveFileDialog { Title = "Save screenshot", FileName = Name(bitmap), InitialDirectory = settings.SaveDirectory, DefaultExt = settings.ImageFormat.Extension(), Filter = "PNG image (*.png)|*.png|JPEG image (*.jpg)|*.jpg|TIFF image (*.tiff)|*.tiff", FilterIndex = (int)settings.ImageFormat + 1, AddExtension = true, OverwritePrompt = true };
-        if (dialog.ShowDialog() != true) return false;
+        if ((showSaveDialog != null ? showSaveDialog(dialog) : dialog.ShowDialog()) != true) return false;
         var format = (ImageFormat)(dialog.FilterIndex - 1);
         // Encode before replacing an existing file so encoder failures cannot truncate it.
         using var encoded = new MemoryStream(); Encode(bitmap, format, settings.JpegQuality).Save(encoded);
