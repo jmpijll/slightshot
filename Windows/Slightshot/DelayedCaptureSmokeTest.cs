@@ -77,13 +77,22 @@ internal static class DelayedCaptureSmokeTest
         Require(!delayed.IsPending && !panel.IsVisible, "real Cancel button releases pending countdown");
         await Task.Delay(5300);
         Require(!overlays.IsBusy, "cancelled countdown never opens a late editor");
+        target.WindowState = WindowState.Maximized; target.Activate();
+        await Task.Delay(200);
         action.PerformClick(); await Task.Delay(100);
         Require(delayed.IsPending, "ordinary capture fixture has a pending countdown");
+        panel = Get<DelayedCapturePanel>(app, "countdownPanel");
+        Require(RecordingNative.GetWindowRect(new WindowInteropHelper(panel).Handle, out var hudBounds), "pending HUD has native bounds");
+        int hudX = (hudBounds.Left + hudBounds.Right) / 2, hudY = (hudBounds.Top + hudBounds.Bottom) / 2;
         Invoke(app, "BeginCapture");
         Require(!delayed.IsPending && overlays.IsBusy, "ordinary capture cancels pending timer and opens editor immediately");
+        var immediate = (CapturedDisplay)field.GetValue(overlays.Windows[0])!;
+        new FormatConvertedBitmap(immediate.Image, PixelFormats.Bgra32, null, 0).CopyPixels(
+            new Int32Rect(hudX - immediate.Left, hudY - immediate.Top, 1, 1), pixel, 4, 0);
+        Require(pixel[1] > pixel[2] && pixel[1] > pixel[0], "ordinary capture samples green target pixels beneath the removed HUD");
         overlays.Dismiss(); await Task.Delay(5300);
         Require(!overlays.IsBusy, "ordinary capture's replaced timer never opens another editor");
-        checks.Add("Production menu started a fixed five-second countdown with target focus unchanged; native nonactivation style checked. No early editor opened. The real GDI screenshot retained target pixels changed from red to green after scheduling, then the real area editor appeared. Active editor rejected a new timer. The real Cancel button prevented a later editor. An ordinary capture cancelled its pending timer, opened immediately, and never opened a second editor.");
+        checks.Add("Production menu started a fixed five-second countdown with target focus unchanged; native nonactivation style checked. No early editor opened. The real GDI screenshot retained target pixels changed from red to green after scheduling, then the real area editor appeared. Active editor rejected a new timer. The real Cancel button prevented a later editor. An ordinary capture cancelled its pending timer, opened immediately, sampled restored green target pixels beneath the removed HUD, and never opened a second editor.");
         target.Close(); delayed.Cancel();
         File.WriteAllText(Path.Combine(directory, "delayed-capture-validation.json"), JsonSerializer.Serialize(new
         {

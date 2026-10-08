@@ -2,7 +2,12 @@ import AppKit
 
 if CommandLine.arguments.contains("--delayed-review") {
     let app = NSApplication.shared
-    let review = DelayedCaptureReview()
+    let evidenceFlag = CommandLine.arguments.firstIndex(of: "--delayed-review-evidence")
+    let evidenceDirectory = evidenceFlag.flatMap { index in
+        CommandLine.arguments.indices.contains(index + 1)
+            ? URL(fileURLWithPath: CommandLine.arguments[index + 1], isDirectory: true) : nil
+    }
+    let review = DelayedCaptureReview(evidenceDirectory: evidenceDirectory)
     app.delegate = review
     app.setActivationPolicy(.accessory)
     withExtendedLifetime(review) { app.run() }

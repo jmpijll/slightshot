@@ -1,4 +1,5 @@
 import AppKit
+import ScreenCaptureKit
 
 /// Bounded review entry point, with no inbox, hotkeys or updater. The controls,
 /// menu and countdown are production native UI; only the frozen source is
@@ -7,14 +8,18 @@ final class DelayedCaptureReview: NSObject, NSApplicationDelegate {
     private var window: NSWindow?
     private var countdown: DelayedCapturePanel?
     private var expiry: Timer?
+    private var evidenceTask: Task<Void, Never>?
+    private let evidenceDirectory: URL?
     private let status = NSTextField(labelWithString: "Ready — choose Capture Area in 5 Seconds")
     private let overlays = OverlayCoordinator(output: { _, _ in false }, record: { _, _ in })
     private lazy var delayed = DelayedCaptureController(
         isBusy: { [weak self] in self?.overlays.isBusy ?? true },
         show: { [weak self] seconds in self?.showCountdown(seconds) },
-        hide: { [weak self] in self?.countdown?.close(); self?.countdown = nil },
+        hide: { [weak self] in self?.closeCountdown() },
         capture: { [weak self] in self?.presentSource() }
     )
+
+    init(evidenceDirectory: URL? = nil) { self.evidenceDirectory = evidenceDirectory }
     private lazy var menuController = StatusItemController(
         onCaptureArea: { [weak self] in self?.delayed.cancel(); self?.presentSource() },
         onSaveFullScreen: {}, onCopyFullScreen: {},
@@ -57,9 +62,11 @@ final class DelayedCaptureReview: NSObject, NSApplicationDelegate {
         window.center()
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-        expiry = Timer.scheduledTimer(withTimeInterval: 300, repeats: false) { _ in
+        let timer = Timer(timeInterval: 300, repeats: false) { _ in
             MainActor.assumeIsolated { NSApp.terminate(nil) }
         }
+        expiry = timer
+        RunLoop.main.add(timer, forMode: .common)
     }
 
     @objc private func showMenu(_ sender: NSButton) {
@@ -84,8 +91,67 @@ final class DelayedCaptureReview: NSObject, NSApplicationDelegate {
         if countdown == nil {
             countdown = DelayedCapturePanel { [weak self] in self?.cancel() }
             countdown?.orderFrontRegardless()
+            if let countdown { captureHUDEvidence(countdown) }
         }
         countdown?.update(seconds: seconds)
+    }
+
+    private func closeCountdown() {
+        evidenceTask?.cancel()
+        evidenceTask = nil
+        countdown?.close()
+        countdown = nil
+    }
+
+    private func captureHUDEvidence(_ panel: DelayedCapturePanel) {
+        guard let directory = evidenceDirectory else { return }
+        evidenceTask = Task { [weak self] in
+            do {
+                try await Task.sleep(for: .milliseconds(300))
+                guard let self, self.delayed.isPending, self.countdown === panel else { return }
+                let bitmap: NSBitmapImageRep
+                let source: String
+                do {
+                    let content = try await SCShareableContent.excludingDesktopWindows(
+                        false, onScreenWindowsOnly: true)
+                    let windowID = UInt32(panel.windowNumber)
+                    guard let window = content.windows.first(where: { $0.windowID == windowID }) else {
+                        throw CaptureError.failed("Review HUD is not in shareable content")
+                    }
+                    let config = SCStreamConfiguration()
+                    let scale = panel.screen?.backingScaleFactor ?? 1
+                    config.width = Int(panel.frame.width * scale)
+                    config.height = Int(panel.frame.height * scale)
+                    config.showsCursor = false
+                    config.ignoreShadowsSingleWindow = true
+                    config.captureResolution = .best
+                    let image = try await SCScreenshotManager.captureImage(
+                        contentFilter: SCContentFilter(desktopIndependentWindow: window), configuration: config)
+                    bitmap = NSBitmapImageRep(cgImage: image)
+                    source = "ScreenCaptureKit screenshot of the live production AppKit countdown window; "
+                        + "no desktop pixels"
+                } catch {
+                    guard let view = panel.contentView,
+                          let rendered = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { throw error }
+                    view.cacheDisplay(in: view.bounds, to: rendered)
+                    bitmap = rendered
+                    source = "Native AppKit view rendering of the production countdown; ScreenCaptureKit unavailable: "
+                        + error.localizedDescription
+                }
+                try Task.checkCancellation()
+                guard self.delayed.isPending, self.countdown === panel,
+                      let png = bitmap.representation(using: .png, properties: [:]) else { return }
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                try png.write(to: directory.appendingPathComponent("mac-hud.png"), options: .atomic)
+                let report = try JSONSerialization.data(withJSONObject: ["source": source,
+                    "window": "DelayedCapturePanel", "delaySeconds": 5], options: [.prettyPrinted, .sortedKeys])
+                try report.write(to: directory.appendingPathComponent("mac-hud-source.json"), options: .atomic)
+            } catch {
+                if !(error is CancellationError) {
+                    Log.app.error("HUD review evidence failed: \(error.localizedDescription)")
+                }
+            }
+        }
     }
 
     private func presentSource() {

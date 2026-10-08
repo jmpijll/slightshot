@@ -189,7 +189,14 @@ public partial class App : System.Windows.Application
                     countdownPanel.Show();
                 }
                 countdownPanel.Update(seconds);
-            }, () => { countdownPanel?.Close(); countdownPanel = null; }, () =>
+            }, () =>
+            {
+                if (countdownPanel == null) return;
+                countdownPanel.Close(); countdownPanel = null;
+                // Cancel is also used by ordinary capture shortcuts. Flush here
+                // so every path samples restored target pixels beneath the HUD.
+                NativeMethods.DwmFlush();
+            }, () =>
             {
                 // Remove an open tray menu and wait for desktop composition so
                 // the screenshot contains neither the countdown nor our menu.
