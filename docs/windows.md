@@ -202,8 +202,8 @@ The source stays at up to 4096 pixels/30 fps until save succeeds or you explicit
 discard it. H.264 MP4 capture/export use the native Windows media encoder; no
 external executable is required. All Slightshot windows are excluded through
 Windows display affinity, including recording controls. The selected region is
-cropped in physical monitor pixels; capture stays paced with one reusable BGRA
-buffer and no queued backlog. Disconnected displays report an error.
+cropped in physical monitor pixels; capture stays paced with a bounded pool of up to four BGRA
+buffers, returned only after the native encoder has processed each sample. Disconnected displays report an error.
 
 Saving writes beside the destination, then replaces it after a complete MP4 is
 finalized. Cancel or export failure keeps the source available for retry;

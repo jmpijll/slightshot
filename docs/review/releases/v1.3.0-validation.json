@@ -1,0 +1,160 @@
+{
+  "source_commit": "b75746818ad82d3a6a2508a4ce5b7f0ccc81c81b",
+  "run_url": "https://github.com/jmpijll/slightshot/actions/runs/37743497133",
+  "pages_run_url": "https://github.com/jmpijll/slightshot/actions/runs/37744016338",
+  "version": "1.3.0",
+  "build": "8",
+  "team": "PAW49RLWAA",
+  "mac_architecture": "arm64",
+  "minimum_macos": "27.0",
+  "sha256": "c9d2a9ce1472f2fd859138cedb3e668a2cbbf5d85a65bc1f84660f474c51d2b6",
+  "bytes": 1997454,
+  "github_digest_verified": true,
+  "checks": {
+    "image": "Controlegetal berekenen van 'Protective Master Boot Record (MBR : 0)'\u2026\nProtective Master Boot Record (MBR :: Geverifieerd: CRC32 $14F47623\nControlegetal berekenen van 'GPT Header (Primary GPT Header : 1)'\u2026\n GPT Header (Primary GPT Header : 1): Geverifieerd: CRC32 $C207D4B1\nControlegetal berekenen van 'GPT Partition Data (Primary GPT Table : 2)'\u2026\nGPT Partition Data (Primary GPT Tabl: Geverifieerd: CRC32 $246EEE34\nControlegetal berekenen van ' (Apple_Free : 3)'\u2026\n                    (Apple_Free : 3): Geverifieerd: CRC32 $00000000\nControlegetal berekenen van 'disk image (Apple_APFS : 4)'\u2026\n         disk image (Apple_APFS : 4): Geverifieerd: CRC32 $E1FE493B\nControlegetal berekenen van ' (Apple_Free : 5)'\u2026\n                    (Apple_Free : 5): Geverifieerd: CRC32 $00000000\nControlegetal berekenen van 'GPT Partition Data (Backup GPT Table : 6)'\u2026\nGPT Partition Data (Backup GPT Table: Geverifieerd: CRC32 $246EEE34\nControlegetal berekenen van 'GPT Header (Backup GPT Header : 7)'\u2026\n  GPT Header (Backup GPT Header : 7): Geverifieerd: CRC32 $B9D8BBD7\nGeverifieerd: CRC32 $63750220\nhdiutil: verify: checksum of \"Slightshot-1.3.0.dmg\" is VALID",
+    "dmg_signature": "Slightshot-1.3.0.dmg: valid on disk\nSlightshot-1.3.0.dmg: satisfies its Designated Requirement",
+    "dmg_ticket": "Processing: Slightshot-1.3.0.dmg\nThe validate action worked!",
+    "dmg_gatekeeper": "Slightshot-1.3.0.dmg: accepted\nsource=Notarized Developer ID",
+    "app_signature": "--prepared:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\n--prepared:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--validated:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--prepared:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--validated:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--prepared:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--validated:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--prepared:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\nmounted-image/Slightshot.app: valid on disk\nmounted-image/Slightshot.app: satisfies its Designated Requirement",
+    "app_ticket": "Processing: mounted-image/Slightshot.app\nThe validate action worked!",
+    "app_gatekeeper": "mounted-image/Slightshot.app: accepted\nsource=Notarized Developer ID",
+    "sparkle_signature": "Verified Ed25519 against the public appcast and the downloaded app's embedded key"
+  },
+  "release_url": "https://github.com/jmpijll/slightshot/releases/tag/v1.3.0",
+  "dmg_url": "https://github.com/jmpijll/slightshot/releases/download/v1.3.0/Slightshot-1.3.0.dmg",
+  "feed_url": "https://jmpijll.github.io/slightshot/appcast.xml",
+  "verified_at": "2026-10-08T07:33:22.055404+00:00",
+  "main_checks": [
+    {
+      "run_url": "https://github.com/jmpijll/slightshot/actions/runs/37743197813",
+      "source_commit": "b75746818ad82d3a6a2508a4ce5b7f0ccc81c81b",
+      "status": "passed",
+      "jobs": [
+        {
+          "name": "Portable checks (Linux)",
+          "conclusion": "success"
+        },
+        {
+          "name": "Mac build, media tests, lint and DMG",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "run_url": "https://github.com/jmpijll/slightshot/actions/runs/37743197991",
+      "source_commit": "b75746818ad82d3a6a2508a4ce5b7f0ccc81c81b",
+      "status": "passed",
+      "jobs": [
+        {
+          "name": "build-and-render",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "windows": {
+    "checked_at_utc": "2026-10-08T07:33:02.146482+00:00",
+    "repository": "jmpijll/slightshot",
+    "expected_version": "1.3.0",
+    "source": "GitHub public release API",
+    "native_execution": {
+      "rerun": false,
+      "release_workflow_url": "https://github.com/jmpijll/slightshot/actions/runs/37743497133"
+    },
+    "assets": [
+      {
+        "asset": "Slightshot-windows-x64.zip",
+        "url": "https://github.com/jmpijll/slightshot/releases/download/v1.3.0/Slightshot-windows-x64.zip",
+        "architecture": "x64",
+        "archive_bytes": 75696559,
+        "archive_sha256": "07da6d9364347025c4355cc1fdb424d883e9381f13ada7cc77990fd9e62ae4e2",
+        "github_asset_digest": "sha256:07da6d9364347025c4355cc1fdb424d883e9381f13ada7cc77990fd9e62ae4e2",
+        "github_digest_matches": true,
+        "github_size_matches": true,
+        "archive_entries": [
+          "Slightshot.exe"
+        ],
+        "zip_crc_verified": true,
+        "executable_bytes": 198691679,
+        "executable_sha256": "7f2ec313860ebbd7aee48d510fb45f98c981d52d5e46a076a604e3be7b02d0c9",
+        "pe_machine": "0x8664",
+        "pe_format": "PE32+",
+        "version_strings": [
+          {
+            "CompanyName": "Slightshot",
+            "FileDescription": "Slightshot",
+            "FileVersion": "1.3.0.0",
+            "InternalName": "Slightshot.dll",
+            "LegalCopyright": " ",
+            "OriginalFilename": "Slightshot.dll",
+            "ProductName": "Slightshot",
+            "ProductVersion": "1.3.0+b75746818ad82d3a6a2508a4ce5b7f0ccc81c81b",
+            "Assembly Version": "1.3.0.0"
+          }
+        ],
+        "fixed_versions": [
+          {
+            "product": "1.3.0.0",
+            "file": "1.3.0.0"
+          }
+        ],
+        "status": "passed"
+      },
+      {
+        "asset": "Slightshot-windows-arm64.zip",
+        "url": "https://github.com/jmpijll/slightshot/releases/download/v1.3.0/Slightshot-windows-arm64.zip",
+        "architecture": "arm64",
+        "archive_bytes": 70799052,
+        "archive_sha256": "036c34d09d896d7d9a6bf767aa954baa6584bd6a60763f4385881f70afff3ac2",
+        "github_asset_digest": "sha256:036c34d09d896d7d9a6bf767aa954baa6584bd6a60763f4385881f70afff3ac2",
+        "github_digest_matches": true,
+        "github_size_matches": true,
+        "archive_entries": [
+          "Slightshot.exe"
+        ],
+        "zip_crc_verified": true,
+        "executable_bytes": 212544220,
+        "executable_sha256": "91d74c82c1492e9c5101336fe54da39a20867ff2068f2e140b852180aec6094e",
+        "pe_machine": "0xaa64",
+        "pe_format": "PE32+",
+        "version_strings": [
+          {
+            "CompanyName": "Slightshot",
+            "FileDescription": "Slightshot",
+            "FileVersion": "1.3.0.0",
+            "InternalName": "Slightshot.dll",
+            "LegalCopyright": " ",
+            "OriginalFilename": "Slightshot.dll",
+            "ProductName": "Slightshot",
+            "ProductVersion": "1.3.0+b75746818ad82d3a6a2508a4ce5b7f0ccc81c81b",
+            "Assembly Version": "1.3.0.0"
+          }
+        ],
+        "fixed_versions": [
+          {
+            "product": "1.3.0.0",
+            "file": "1.3.0.0"
+          }
+        ],
+        "status": "passed"
+      }
+    ],
+    "status": "passed",
+    "release_url": "https://github.com/jmpijll/slightshot/releases/tag/v1.3.0",
+    "published_at_utc": "2026-10-08T07:31:56Z"
+  },
+  "feature_verification": {
+    "mac_live_overlay": "On the combined implementation: Steps 1/2, Save As cancellation, retained editor, Undo and replacement step 2; cold/warm area URL, duplicate launch and busy guards checked before merging. No private screenshot uploaded.",
+    "swift_tests": 39,
+    "windows_core_checks": 111,
+    "python_tests": 14,
+    "windows_native_scales": [
+      1,
+      1.25,
+      1.5,
+      2
+    ],
+    "windows_x64": "Native screenshot and recording tests passed in the release workflow, including the extracted portable app.",
+    "windows_arm64": "Cross-built; public archive architecture/version/integrity inspected; no native execution."
+  }
+}

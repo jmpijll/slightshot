@@ -49,3 +49,12 @@ digests and actual PE version/architecture metadata. It also records Mac
 Gatekeeper acceptance, both stapled tickets, the live Sparkle signature and
 Homebrew's fetch/checksum check. ARM64 Windows execution was not tested.
 The new feed was deployed through [Pages](https://github.com/jmpijll/slightshot/actions/runs/37703387744).
+
+The [1.3.0 publication run](https://github.com/jmpijll/slightshot/actions/runs/37743497133)
+passed native screenshot retry, numbered steps and raster parity at four display
+scales, recording buffer reuse/lifecycle tests, both portable architecture/version
+checks, and the extracted x64 app's screenshot/recording checks. Mac app/DMG
+signing, notarisation and stapling passed. The [public-download validation](review/releases/v1.3.0-validation.json)
+records both Windows digests and exact source-version metadata, Mac Gatekeeper
+acceptance, tickets and the live Sparkle signature. The feed's build 8 preserves
+the build 7 entry and was deployed through [Pages](https://github.com/jmpijll/slightshot/actions/runs/37744016338).

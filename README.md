@@ -181,15 +181,13 @@ annotation. The editor and exporter share the same annotation drawing code.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the code layout and contribution
 checks, and [the release guide](docs/RELEASING.md) for signing and notarisation.
 
-## Planned
+## Further development
 
-See [small next steps after 1.2.0](docs/NEXT_STEPS.md) for the current priorities:
-save retry, Windows version/update polish and measured performance work.
-
-- Numbered steps
-- Selections across multiple displays
-- Capture history
-- Optional upload providers
+The [focused follow-up after 1.2.0](docs/NEXT_STEPS.md) is complete in 1.3.0:
+numbered steps, save retry, Mac capture commands, Windows version/update polish
+and measured performance fixes. Further work should focus on demonstrated
+reliability or performance problems. Capture history, upload providers and
+selections across displays need clear user demand before adding more scope.
 
 ## Windows preview
 
