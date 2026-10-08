@@ -75,6 +75,7 @@ internal static class ClipboardEditorSmokeTest
         {
             // Exercise the actual tray action route, clipboard decode and native window.
             delayedAction.PerformClick();
+            await Task.Delay(50);
             Require(delayed.IsPending, "countdown may start before the import");
             var panel = (DelayedCapturePanel)typeof(App).GetField("countdownPanel", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(app)!;
             InvokeApp(app, "EditClipboard");
@@ -95,6 +96,7 @@ internal static class ClipboardEditorSmokeTest
             typeof(OverlayWindow).GetMethod("Redo", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(editor, null);
             Require(original.SequenceEqual(Bytes(AnnotationRenderer.Flatten(source, source.Bounds, surface.Annotations))), "imported annotation redo restores identical output pixels");
             delayedAction.PerformClick();
+            await Task.Delay(50);
             Require(!delayed.IsPending && coordinator.Windows.Single() == editor, "imported editor rejects a countdown without replacing its session");
             checks.Add("Combined menu/controller integration: clipboard import cancels a pending countdown/HUD, imported editor rejects a new countdown, and Undo/Redo restores identical annotated output pixels");
             Click(editor, "100%"); await Task.Delay(100); Click(editor, "Fit"); await Task.Delay(100);
