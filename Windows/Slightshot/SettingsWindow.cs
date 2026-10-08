@@ -45,7 +45,8 @@ internal sealed class SettingsWindow : Window
         panel.Children.Add(Group(null, login, Check("Play a shutter sound", settings.PlaySound, v => settings.PlaySound = v), Check("Show a notification after saving", settings.ShowNotification, v => settings.ShowNotification = v)));
         panel.Children.Add(Group(null, Row("When you press Return:", Combo(Enum.GetValues<DefaultAction>(), settings.DefaultAction, v => settings.DefaultAction = v, v => v switch { DefaultAction.Copy => "Copy to clipboard", DefaultAction.Save => "Save to file", _ => "Do nothing (keep editing)" })), Help("Double-clicking inside the selection does the same thing.")));
         var source = new Button { Content = "Source on GitHub", HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(8, 4, 8, 4) }; source.Click += (_, _) => App.Open("https://github.com/jmpijll/slightshot");
-        panel.Children.Add(Group(null, Row("Version", new TextBlock { Text = "0.1.0 · Windows" }), source, Help("Windows updates are installed from GitHub releases.")));
+        var updates = new Button { Content = "Download updates…", HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(8, 4, 8, 4), Margin = new Thickness(0, 6, 0, 0) }; updates.Click += (_, _) => App.Open(AppInfo.ReleaseUrl);
+        panel.Children.Add(Group(null, Row("Version", new TextBlock { Text = $"{AppInfo.Version} · Windows" }), source, updates, Help("Windows updates are installed from GitHub releases.")));
         return panel;
     }
     private UIElement Shortcuts()
