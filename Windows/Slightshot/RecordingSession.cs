@@ -5,6 +5,7 @@ using Windows.Media.Core;
 using Windows.Media.MediaProperties;
 using Windows.Media.Transcoding;
 using Windows.Storage;
+using Windows.Foundation;
 using Slightshot.Core;
 
 namespace Slightshot;
@@ -13,8 +14,13 @@ namespace Slightshot;
 // H.264. Capture is paced against a monotonic clock, with no frame backlog.
 internal sealed class RecordingSession : IDisposable
 {
-    private readonly Func<byte[]> captureFrame;
-    private readonly IDisposable? captureResource;
+    private readonly Action<byte[]> captureFrame;
+    private IDisposable? captureResource;
+    private readonly RecordingFrameBuffers frameBuffers;
+    private readonly object lifetime = new();
+    private TaskCompletionSource? callbacksDrained;
+    private int activeCallbacks;
+    private bool acceptingSamples = true, disposed;
     private readonly CancellationTokenSource stopSignal = new();
     private readonly CancellationTokenSource abortSignal = new();
     private readonly SemaphoreSlim samples = new(1, 1);
@@ -31,9 +37,10 @@ internal sealed class RecordingSession : IDisposable
     internal TimeSpan Duration => clock.Elapsed;
     internal event Action? Started;
 
-    internal RecordingSession(int width, int height, Func<byte[]> captureFrame, IDisposable? captureResource = null)
+    internal RecordingSession(int width, int height, Action<byte[]> captureFrame, IDisposable? captureResource = null)
     {
         Width = width; Height = height; this.captureFrame = captureFrame; this.captureResource = captureResource;
+        frameBuffers = new(checked(width * height * 4));
         Directory.CreateDirectory(DirectoryPath);
     }
 
@@ -46,9 +53,18 @@ internal sealed class RecordingSession : IDisposable
         catch { capture.Dispose(); throw; }
     }
 
-    internal Task RunAsync() => completion ??= Task.Run(EncodeAsync);
-    internal void Stop() { Interlocked.Exchange(ref stopping, 1); stopSignal.Cancel(); }
-    internal void Abort() { Stop(); abortSignal.Cancel(); }
+    internal Task RunAsync()
+    {
+        lock (lifetime) { ObjectDisposedException.ThrowIf(disposed, this); return completion ??= Task.Run(EncodeAsync); }
+    }
+    internal void Stop()
+    {
+        lock (lifetime) { if (disposed) return; Interlocked.Exchange(ref stopping, 1); stopSignal.Cancel(); }
+    }
+    internal void Abort()
+    {
+        lock (lifetime) { if (disposed) return; Stop(); abortSignal.Cancel(); }
+    }
 
     private async Task EncodeAsync()
     {
@@ -67,45 +83,79 @@ internal sealed class RecordingSession : IDisposable
             var prepared = await transcoder.PrepareMediaStreamSourceTranscodeAsync(source, stream, RecordingExport.Profile(RecordingQuality.High, Width, Height)).AsTask(abortSignal.Token);
             if (!prepared.CanTranscode) throw new InvalidOperationException($"Windows could not start the video encoder ({prepared.FailureReason}).");
             await prepared.TranscodeAsync().AsTask(abortSignal.Token);
-            if (captureError != null) throw new InvalidOperationException("The recording stopped because the screen could no longer be captured.", captureError);
+            if (captureError != null) throw captureError;
             if (frames == 0) throw new InvalidOperationException("No video frames were recorded. Try recording for a little longer.");
+        }
+        catch (Exception) when (captureError != null)
+        {
+            throw new InvalidOperationException("The recording stopped because the screen could no longer be captured.", captureError);
         }
         finally
         {
             clock.Stop(); Stop();
+            Task drained;
+            lock (lifetime)
+            {
+                acceptingSamples = false;
+                drained = activeCallbacks == 0 ? Task.CompletedTask : (callbacksDrained = new(TaskCreationOptions.RunContinuationsAsynchronously)).Task;
+            }
             source.Starting -= SourceStarting; source.SampleRequested -= SampleRequested;
-            // A cancelled native transcode may leave its last deferral running.
-            // Wait for it before releasing the shared screen DC and DIB.
-            await samples.WaitAsync();
-            try { captureResource?.Dispose(); }
-            finally { samples.Release(); }
+            // Cancellation can complete the native operation before a deferral
+            // finishes. Stop wakes pacing, semaphore and buffer waits; account
+            // for every admitted callback before releasing capture resources.
+            await drained;
+            frameBuffers.Dispose();
+            Interlocked.Exchange(ref captureResource, null)?.Dispose();
         }
     }
 
     private void SourceStarting(MediaStreamSource sender, MediaStreamSourceStartingEventArgs args)
     {
-        args.Request.SetActualStartPosition(TimeSpan.Zero);
-        clock.Start(); Started?.Invoke();
+        lock (lifetime)
+        {
+            if (!acceptingSamples || stopping != 0) return;
+            args.Request.SetActualStartPosition(TimeSpan.Zero);
+            clock.Start(); Started?.Invoke();
+        }
     }
 
     private async void SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
     {
         var deferral = args.Request.GetDeferral();
-        bool entered = false;
+        bool entered = false, admitted = false;
+        RecordingFrame? frame = null;
+        MediaStreamSample? sample = null;
+        TypedEventHandler<MediaStreamSample, object>? processed = null;
         try
         {
-            await samples.WaitAsync(abortSignal.Token); entered = true;
+            lock (lifetime)
+            {
+                if (!acceptingSamples) return;
+                activeCallbacks++; admitted = true;
+            }
+            await samples.WaitAsync(stopSignal.Token); entered = true;
             if (Volatile.Read(ref stopping) != 0) return;
             TimeSpan due = TimeSpan.FromTicks(nextTimestamp) - clock.Elapsed;
             if (due > TimeSpan.Zero) await Task.Delay(due, stopSignal.Token);
             if (Volatile.Read(ref stopping) != 0) return;
-            byte[] bytes = captureFrame();
-            if (bytes.Length != checked(Width * Height * 4)) throw new InvalidOperationException("The recording frame has an unexpected size.");
+            frame = await frameBuffers.RentAsync(stopSignal.Token);
+            captureFrame(frame.Pixels);
+            if (Volatile.Read(ref stopping) != 0) return;
             long timestamp = frames == 0 ? 0 : Math.Max(nextTimestamp, clock.Elapsed.Ticks);
-            var sample = MediaStreamSample.CreateFromBuffer(bytes.AsBuffer(), TimeSpan.FromTicks(timestamp));
+            sample = MediaStreamSample.CreateFromBuffer(frame.Pixels.AsBuffer(), TimeSpan.FromTicks(timestamp));
             sample.Duration = TimeSpan.FromTicks(TimeSpan.TicksPerSecond / 30);
             sample.KeyFrame = true;
+            var submittedFrame = frame;
+            processed = (completed, _) =>
+            {
+                completed.Processed -= processed;
+                submittedFrame.Dispose();
+            };
+            sample.Processed += processed;
             args.Request.Sample = sample;
+            // Only Processed may return a submitted frame. A late callback after
+            // shutdown drops its storage instead of reopening the closed pool.
+            frame = null;
             frames++; nextTimestamp = timestamp + sample.Duration.Ticks;
         }
         catch (OperationCanceledException) { /* Null sample finishes a normal Stop. */ }
@@ -113,15 +163,35 @@ internal sealed class RecordingSession : IDisposable
         {
             captureError = error; Stop(); sender.NotifyError(MediaStreamSourceErrorStatus.Other);
         }
-        finally { if (entered) samples.Release(); deferral.Complete(); }
+        finally
+        {
+            if (frame != null)
+            {
+                if (sample != null && processed != null) sample.Processed -= processed;
+                frame.Dispose();
+            }
+            if (entered) samples.Release();
+            try { deferral.Complete(); }
+            finally
+            {
+                if (admitted) lock (lifetime) { if (--activeCallbacks == 0) callbacksDrained?.TrySetResult(); }
+            }
+        }
     }
 
     public void Dispose()
     {
         // Only call after RunAsync has completed: neither media nor capture keeps
         // a handle to the source file when its temporary directory is removed.
-        captureResource?.Dispose();
-        stopSignal.Dispose(); abortSignal.Dispose(); samples.Dispose();
+        lock (lifetime)
+        {
+            if (disposed) return;
+            if (completion is { IsCompleted: false }) throw new InvalidOperationException("Wait for recording completion before disposing the session.");
+            disposed = true; acceptingSamples = false;
+            frameBuffers.Dispose();
+            Interlocked.Exchange(ref captureResource, null)?.Dispose();
+            stopSignal.Dispose(); abortSignal.Dispose(); samples.Dispose();
+        }
         try { Directory.Delete(DirectoryPath, true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
     }
 }

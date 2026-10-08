@@ -2,7 +2,7 @@ import AppKit
 
 /// The annotation tools, in the same order Lightshot lists them.
 nonisolated enum Tool: String, CaseIterable, Identifiable, Sendable {
-    case pen, line, arrow, rectangle, marker, text, blur, pixelate
+    case pen, line, arrow, rectangle, marker, text, blur, pixelate, step
 
     var id: String { rawValue }
 
@@ -16,6 +16,7 @@ nonisolated enum Tool: String, CaseIterable, Identifiable, Sendable {
         case .text: .text
         case .blur: .blur
         case .pixelate: .pixelate
+        case .step: .step
         }
     }
 
@@ -29,6 +30,7 @@ nonisolated enum Tool: String, CaseIterable, Identifiable, Sendable {
         case .text: "Text"
         case .blur: "Blur"
         case .pixelate: "Pixelate"
+        case .step: "Numbered steps"
         }
     }
 
