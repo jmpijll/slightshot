@@ -7,14 +7,19 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let onCaptureArea: () -> Void
     private let onSaveFullScreen: () -> Void
     private let onCopyFullScreen: () -> Void
+    private let onDelayedCapture: () -> Void
 
     init(onCaptureArea: @escaping () -> Void,
          onSaveFullScreen: @escaping () -> Void,
-         onCopyFullScreen: @escaping () -> Void) {
+         onCopyFullScreen: @escaping () -> Void,
+         onDelayedCapture: @escaping () -> Void,
+         showInMenuBar: Bool = true) {
         self.onCaptureArea = onCaptureArea
         self.onSaveFullScreen = onSaveFullScreen
         self.onCopyFullScreen = onCopyFullScreen
+        self.onDelayedCapture = onDelayedCapture
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        statusItem.isVisible = showInMenuBar
         super.init()
 
         if let button = statusItem.button {
@@ -43,6 +48,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.removeAllItems()
 
         menu.addItem(item("Capture Area", settings.captureAreaHotKey, #selector(captureArea)))
+        menu.addItem(item("Capture Area in 5 Seconds", nil, #selector(delayedCapture)))
         menu.addItem(item("Capture Full Screen", settings.saveFullScreenHotKey, #selector(saveFullScreen)))
         menu.addItem(item("Copy Full Screen", settings.copyFullScreenHotKey, #selector(copyFullScreen)))
         menu.addItem(.separator())
@@ -81,6 +87,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     // MARK: - Actions
 
     @objc private func captureArea() { onCaptureArea() }
+    @objc private func delayedCapture() { onDelayedCapture() }
     @objc private func saveFullScreen() { onSaveFullScreen() }
     @objc private func copyFullScreen() { onCopyFullScreen() }
 

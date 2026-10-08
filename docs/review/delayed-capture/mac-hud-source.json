@@ -1,0 +1,5 @@
+{
+  "delaySeconds" : 5,
+  "source" : "ScreenCaptureKit screenshot of the live production AppKit countdown window; no desktop pixels",
+  "window" : "DelayedCapturePanel"
+}

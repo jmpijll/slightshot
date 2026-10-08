@@ -1,7 +1,6 @@
 import AppKit
 
-// CI verifies that the assembled bundle can load its frameworks without
-// starting a menu-bar session or requesting desktop permissions.
+// CI verifies framework linkage without claiming ownership or requesting permissions.
 if CommandLine.arguments.contains("--verify-runtime-linkage") {
     print("Slightshot runtime linkage verified")
     exit(EXIT_SUCCESS)
@@ -12,6 +11,20 @@ if CommandLine.arguments.contains("--redo-review") {
     let review = RedoReview()
     app.delegate = review
     app.setActivationPolicy(.regular)
+    withExtendedLifetime(review) { app.run() }
+    exit(EXIT_SUCCESS)
+}
+
+if CommandLine.arguments.contains("--delayed-review") {
+    let app = NSApplication.shared
+    let evidenceFlag = CommandLine.arguments.firstIndex(of: "--delayed-review-evidence")
+    let evidenceDirectory = evidenceFlag.flatMap { index in
+        CommandLine.arguments.indices.contains(index + 1)
+            ? URL(fileURLWithPath: CommandLine.arguments[index + 1], isDirectory: true) : nil
+    }
+    let review = DelayedCaptureReview(evidenceDirectory: evidenceDirectory)
+    app.delegate = review
+    app.setActivationPolicy(.accessory)
     withExtendedLifetime(review) { app.run() }
     exit(EXIT_SUCCESS)
 }
@@ -28,4 +41,4 @@ let app = NSApplication.shared
 let delegate = AppDelegate(launchCommand: LaunchCommand(arguments: CommandLine.arguments), inbox: commandInbox)
 app.delegate = delegate
 app.setActivationPolicy(.accessory)
-app.run()
+withExtendedLifetime(delegate) { app.run() }

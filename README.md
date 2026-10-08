@@ -80,6 +80,16 @@ Choose **Numbered steps** and click to place 1, 2, 3 in circles using the curren
 colour. Undo restores the next number, and each screenshot starts at 1. Circles
 grow for extra digits and keep their size independent of the thickness slider.
 
+Choose **Capture Area in 5 Seconds** in the Mac menu bar or Windows tray menu
+to arrange a menu, tooltip or other transient content before the screen freezes.
+The small countdown has a **Cancel** button and leaves keyboard focus with your
+current app. At five seconds the area editor opens using fresh screen pixels.
+Choosing the delayed action again restarts the countdown; an ordinary capture
+cancels it and captures immediately. An existing editor or recording blocks
+another capture. There is no additional setting or shortcut.
+
+See the [native delayed-capture review evidence](docs/review/delayed-capture/README.md).
+
 ## Record an area
 
 Select an area and click the **Record** button underneath it. The frozen

@@ -1,6 +1,7 @@
 using Slightshot.Core;
 
 int checks = 0;
+checks += DelayedCaptureChecks.Run();
 checks += AnnotationHistoryChecks.Run();
 void Equal<T>(T expected, T actual, string message)
 {
