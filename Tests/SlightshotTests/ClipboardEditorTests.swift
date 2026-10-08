@@ -85,6 +85,8 @@ struct ClipboardEditorTests {
         canvas.alignSelectionToPoints = false
         canvas.sourceImage = image; canvas.imageScale = scale
         canvas.selection = selection; canvas.showDimensions = false
+        canvas.dimensionScale = scale
+        #expect(canvas.dimensionsLabel(for: selection) == "401 × 301")
         canvas.annotations = marks
         #expect(screenshot.layer?.mask != nil)
         for liveRaster in [false, true] {

@@ -156,6 +156,7 @@ internal static class ClipboardEditorSmokeTest
         var settings = new Settings { ShowDimensions = false, ShowMagnifier = false };
         var surface = new OverlaySurface(source, settings, showPixelDimensions: true) { Selection = selection };
         surface.Annotations.AddRange(history);
+        Require(surface.DimensionsLabel(selection) == "401 × 301", "fractional imported crop badge reports actual exported source pixels");
         foreach (bool live in new[] { false, true })
         {
             if (live) { surface.Annotations.Clear(); surface.Annotations.AddRange([history[0], history[2]]); surface.LiveAnnotation = history[1]; }

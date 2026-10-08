@@ -58,7 +58,7 @@ internal sealed class OverlaySurface(EditorImageSource display, Settings setting
             }
             if (settings.ShowDimensions)
             {
-                var text = AnnotationRenderer.Text($"{Math.Round(r.Width * (showPixelDimensions ? display.Scale : 1))} × {Math.Round(r.Height * (showPixelDimensions ? display.Scale : 1))}", 11 / zoom, Brushes.White, scale, true);
+                var text = AnnotationRenderer.Text(DimensionsLabel(r), 11 / zoom, Brushes.White, scale, true);
                 double width = text.Width + 14 / zoom, height = text.Height + 6 / zoom;
                 double x = OverlayStyle.Fit(r.Left, width, ActualWidth, 2), y = r.Top - height - 5;
                 if (y < 2) y = r.Top + 5;
@@ -74,6 +74,13 @@ internal sealed class OverlaySurface(EditorImageSource display, Settings setting
             dc.DrawText(text, new(x + 14, y + 8));
         }
         if (settings.ShowMagnifier && MagnifierPoint is { } point) DrawMagnifier(dc, point, scale);
+    }
+
+    internal string DimensionsLabel(RectD selection)
+    {
+        var dimensions = showPixelDimensions
+            ? selection.ToPixels(display.Scale, display.Scale, display.PixelWidth, display.PixelHeight) : selection;
+        return $"{Math.Round(dimensions.Width)} × {Math.Round(dimensions.Height)}";
     }
 
     private void DrawMagnifier(DrawingContext dc, PointD point, double pixelsPerDip)

@@ -134,10 +134,17 @@ final class CanvasView: NSView {
         }
     }
 
+    func dimensionsLabel(for selection: CGRect) -> String {
+        let rect = !alignSelectionToPoints ? sourceImage.map {
+            Renderer.alignedSelectionRect(image: $0, scale: imageScale, selection: selection)
+        } ?? selection : selection
+        let width = Int((rect.width * dimensionScale).rounded())
+        let height = Int((rect.height * dimensionScale).rounded())
+        return "\(width) × \(height)"
+    }
+
     private func drawSizeBadge(for selection: CGRect) {
-        let width = Int((selection.width * dimensionScale).rounded())
-        let height = Int((selection.height * dimensionScale).rounded())
-        let text = "\(width) × \(height)"
+        let text = dimensionsLabel(for: selection)
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.monospacedDigitSystemFont(ofSize: 11 / viewingZoom, weight: .medium),
             .foregroundColor: NSColor.white,
