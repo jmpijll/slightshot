@@ -10,15 +10,19 @@ limit Windows 10 support to certain Enterprise/LTSC editions.
 
 ## Download and updates
 
-Version [1.3.0](https://github.com/jmpijll/slightshot/releases/tag/v1.3.0) offers
-portable [x64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-x64.zip)
-and [ARM64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-arm64.zip)
-downloads. Extract the ZIP and double-click its only file, `Slightshot.exe`.
-The .NET runtime is bundled; you do not need to install it separately.
+Version [1.4.0](https://github.com/jmpijll/slightshot/releases/tag/v1.4.0) offers
+[x64 setup](https://github.com/jmpijll/slightshot/releases/download/v1.4.0/Slightshot-windows-x64-setup.exe)
+and [ARM64 setup](https://github.com/jmpijll/slightshot/releases/download/v1.4.0/Slightshot-windows-arm64-setup.exe).
+Choose x64 for an Intel/AMD PC or ARM64 for a Windows on Arm PC, quit any running
+Slightshot copy, then run setup. See [Installer](#installer) for upgrades and
+switching from portable to installed.
 
-The next release will also include `Slightshot-windows-x64-setup.exe` and
-`Slightshot-windows-arm64-setup.exe`. Portable ZIPs remain available alongside
-the installers. Choose x64 for an Intel/AMD PC or ARM64 for a Windows on Arm PC.
+Portable [x64 ZIP](https://github.com/jmpijll/slightshot/releases/download/v1.4.0/Slightshot-windows-x64.zip)
+and [ARM64 ZIP](https://github.com/jmpijll/slightshot/releases/download/v1.4.0/Slightshot-windows-arm64.zip)
+downloads remain available. Extract the ZIP and double-click its only file,
+`Slightshot.exe`. Setup and the portable app both bundle the .NET runtime;
+you do not need to install it separately.
+
 The ARM64 payload is cross-built and inspected; it has not yet received native
 ARM64 desktop acceptance.
 
@@ -51,9 +55,10 @@ or silently moved. When switching from portable to installed, turn launch at
 login off in the portable app before quitting it, then enable it in the
 installed app if desired.
 
-For review before the next release, download the `Slightshot-windows-installers`
-artifact from a successful Windows workflow run. These are the same unsigned
-setup packages that the Release workflow will attach to future version tags.
+For development builds, download the `Slightshot-windows-installers` artifact
+from a successful Windows workflow run. These unsigned setup packages use the
+same packaging path as the published releases; use the versioned downloads above
+for a released build.
 Native x64 installation, upgrade and uninstall checks are recorded in the
 `windows-installer-evidence` artifact. The ARM64 installer is built and inspected
 on the x64 runner; running it requires an ARM64 Windows PC.
@@ -101,8 +106,8 @@ Install [Inno Setup 7.1.0](https://jrsoftware.org/isdl.php) on Windows and use
 After the portable publish above, wrap each architecture's executable in setup:
 
 ```powershell
-./Scripts/build_windows_installer.ps1 -Runtime win-x64 -Version 1.3.0 -PublishDirectory Windows/artifacts/win-x64 -OutputDirectory Windows/artifacts/installers -CompilerPath 'C:\Program Files\Inno Setup 7\ISCC.exe'
-./Scripts/build_windows_installer.ps1 -Runtime win-arm64 -Version 1.3.0 -PublishDirectory Windows/artifacts/win-arm64 -OutputDirectory Windows/artifacts/installers -CompilerPath 'C:\Program Files\Inno Setup 7\ISCC.exe'
+./Scripts/build_windows_installer.ps1 -Runtime win-x64 -Version 1.4.0 -PublishDirectory Windows/artifacts/win-x64 -OutputDirectory Windows/artifacts/installers -CompilerPath 'C:\Program Files\Inno Setup 7\ISCC.exe'
+./Scripts/build_windows_installer.ps1 -Runtime win-arm64 -Version 1.4.0 -PublishDirectory Windows/artifacts/win-arm64 -OutputDirectory Windows/artifacts/installers -CompilerPath 'C:\Program Files\Inno Setup 7\ISCC.exe'
 ```
 
 Use the version embedded in the published app; the builder rejects a mismatch.
