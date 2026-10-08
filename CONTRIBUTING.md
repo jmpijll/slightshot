@@ -5,21 +5,52 @@ review.
 
 ## Getting set up
 
+Clone the repository, then use the tools for your platform:
+
 ```bash
 git clone https://github.com/jmpijll/slightshot.git
 cd slightshot
-make run
 ```
 
-You need macOS 27 and the Xcode 27 command line tools. There is no `.xcodeproj`
-— it is a plain Swift package, so `open Package.swift` works if you want Xcode.
+On macOS, you need macOS 27 and the Xcode 27 command line tools. Run `make run`.
+There is no `.xcodeproj` — it is a plain Swift package, so `open Package.swift`
+works if you want Xcode. `make run` builds `build/Slightshot.app`, signs it with
+an available Developer ID or an ad-hoc signature, and launches it.
+
+| Command | Result |
+| --- | --- |
+| `make build` | Debug build |
+| `make app` | App bundle, signed locally |
+| `make dmg` | Disk image |
+| `make release` | App and disk image, with notarisation and stapling |
+| `make icon` | Regenerate app, menu bar and README artwork |
+| `make lint` | Run SwiftLint, if installed |
+| `make test` | Verify raster effects, annotation export and recording |
+
+To write Mac debug logs to the terminal:
+
+```bash
+SLIGHTSHOT_DEBUG=1 ./build/Slightshot.app/Contents/MacOS/Slightshot
+```
+
+On Windows, install the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
+and run `dotnet run --project Windows/Slightshot`. Use a supported Windows 11
+release. See [the Windows guide](docs/windows.md#run-and-build) for packaging,
+installer builds and native renderer/recording checks.
 
 ## Before opening a pull request
 
-- `make lint` passes (`swiftlint --strict`)
-- `swift build` is warning-free
-- `make test` passes when changing recording capture or export behavior
-- You have actually run the app and used the feature you changed
+Run the checks appropriate to your change:
+
+- macOS: `make lint` passes (`swiftlint --strict`), `swift build` is warning-free,
+  and `make test` passes for capture, annotation or recording changes.
+- Windows: `dotnet run --project Windows/Slightshot.Core.Tests -c Release` and
+  `dotnet build Windows/Slightshot -c Release` pass. Review the Windows CI native
+  rendering/recording results; installer changes also need its lifecycle checks.
+- Shared icons: `python3 Scripts/generate_ui_icons.py --check` passes.
+- Release scripts: `python3 -m unittest discover -s Tests -v` passes.
+- Run the app and use the feature you changed on its native platform. Clearly
+  state when only cross-building or automated fixtures were available.
 
 ## The one hard rule
 
@@ -40,9 +71,14 @@ modern and as fast as we can make them.
 | `Sources/Slightshot/Editor` | Annotation model and the exporter |
 | `Sources/Slightshot/Services` | Hotkeys, settings, output, updates |
 | `Sources/Slightshot/Preferences` | SwiftUI settings window |
-| `Scripts/` | Bundle, sign, notarise, disk image, icon |
+| `Windows/Slightshot` | WPF capture/editor, settings, output and recording |
+| `Windows/Slightshot.Core` | Platform-independent Windows geometry and raster logic |
+| `Windows/Slightshot.Core.Tests` | Windows core regression checks |
+| `Windows/Installer` | Per-user setup configuration and branding |
+| `Resources/UI` | Original toolbar glyphs shared by both platforms |
+| `Scripts/` | Bundle, sign, notarise, disk image, Windows packaging and icons |
 
-## Coordinate systems
+## macOS coordinate systems
 
 Everything drawn in the overlay uses **flipped display points, origin top-left**.
 `Annotation.draw()` shares vector drawing between the live canvas and exports.

@@ -112,7 +112,7 @@ let hero = """
 <text x="80" y="113" fill="#f0f2e8" font-size="35" font-weight="600" letter-spacing="-1">Slightshot</text>
 <text x="80" y="240" fill="#f0f2e8" font-size="64" font-weight="600" letter-spacing="-2">A screenshot with</text>
 <text x="80" y="316" fill="#f5a67d" font-size="64" letter-spacing="-2">your point on it.</text>
-<text x="84" y="410" fill="#b8ccc4" font-size="15" letter-spacing="2.5">SCREENSHOTS FOR MACOS / OPEN SOURCE</text>
+<text x="84" y="410" fill="#b8ccc4" font-size="15" letter-spacing="2.5">MACOS &amp; WINDOWS / OPEN SOURCE</text>
 </g></svg>
 """
 try hero.write(toFile: "docs/hero.svg", atomically: true, encoding: .utf8)

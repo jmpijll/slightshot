@@ -9,6 +9,8 @@ capture URLs, Windows version/update polish and measured raster/recording
 optimisations. Each Windows ZIP contains one `Slightshot.exe`, with its runtime
 and dependencies bundled. Sparkle uses build 8, following 1.2.0's build 7.
 The public Sparkle feed and Homebrew cask point to the final Mac download.
+Windows setup packages will be added alongside the ZIPs in the next release;
+1.3.0 contains portable Windows downloads only.
 See the [published-file validation](review/releases/v1.3.0-validation.json) for
 signatures, tickets, Gatekeeper checks, package contents and checksums.
 Versions 1.0.0 and 1.0.1 remain unnotarised pre-releases. The local Developer ID
@@ -89,13 +91,29 @@ Gatekeeper assessment and Sparkle signing. Download the
 release, appcast commit or Pages deployment is created in this mode.
 Notarisation diagnostics and the signed DMG expire after seven days.
 
-The Release workflow also calls the native Windows checks and packages portable
-x64/ARM64 ZIPs with the requested version. Each ZIP contains only `Slightshot.exe`,
-with the runtime bundled. The archives are extracted and checked for layout,
-architecture and matching version metadata; the extracted x64 app runs native
-screenshot and recording smoke tests. ARM64 is cross-built and inspected. A release is
-published only after the Windows job and Mac notarisation succeed. Windows
-previews are unsigned and update manually.
+The Release workflow also calls the native Windows checks and builds four
+Windows assets with the requested version:
+
+| Architecture | Installer | Portable |
+| --- | --- | --- |
+| x64 | `Slightshot-windows-x64-setup.exe` | `Slightshot-windows-x64.zip` |
+| ARM64 | `Slightshot-windows-arm64-setup.exe` | `Slightshot-windows-arm64.zip` |
+
+Each ZIP contains only `Slightshot.exe`, with its runtime bundled. Setup packages
+wrap that same self-contained executable. The archives are extracted and checked
+for layout, architecture and matching version metadata; the extracted x64 app
+runs native screenshot and recording smoke tests. CI also checks the x64 setup's
+installation, upgrade, downgrade rejection, running-app guard and uninstall,
+including settings preservation and launch-at-login ownership. ARM64 is
+cross-built and inspected, with native execution still pending. A release is
+published only after the Windows checks and Mac notarisation succeed. Windows
+previews, including the installers, are unsigned and update manually.
+
+Installer evidence and logs are retained in the `windows-installer-evidence`
+artifact. The reusable Windows workflow passes its four validated downloads to
+Release through `Slightshot-windows-release-assets`; review runs provide the
+`Slightshot-windows-installers` artifact. Windows setup does not use any of the
+Apple signing secrets. See [Windows installation and local builds](windows.md#installer).
 
 ## Publish a version
 

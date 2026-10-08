@@ -1,8 +1,37 @@
 # Builds and runners
 
-Regular CI produces a Mac review DMG; the Windows workflow produces self-contained portable x64 and ARM64 apps plus native rendering/recording evidence. Each Windows app artifact opens to one `Slightshot.exe`, with its runtime bundled. Download these under **Artifacts** on a successful workflow run. Review artifacts are retained for seven days on Mac and Windows. Mac review builds are explicitly ad-hoc signed, not notarised, and do not update the release or Sparkle feed.
+Regular CI produces a Mac review DMG and Windows review packages. Windows
+artifacts include self-contained portable x64/ARM64 apps and setup installers,
+plus native rendering, recording and installer evidence. Each portable app
+artifact opens to one `Slightshot.exe`, with its runtime bundled. The
+`Slightshot-windows-installers` artifact contains the x64 and ARM64 setup packages.
+Download these under **Artifacts** on a successful workflow run. Review artifacts
+are retained for seven days on Mac and Windows. Mac review builds are explicitly
+ad-hoc signed and not notarised; Windows packages are unsigned previews.
+Review builds do not update the public release or Sparkle feed.
 
 The Mac job uses the existing `xcode-27` runner because the app requires macOS 27. Native Windows rendering and recording tests stay on `windows-latest`. Linux can run the release-gate tests, Windows core geometry/raster checks and a Windows cross-build; it cannot build/notarise a native Mac DMG or execute WPF.
+
+## Windows installer checks
+
+The Windows workflow publishes each self-contained app once, then packages that
+same executable as both a portable ZIP and a per-user Inno Setup installer.
+CI downloads Inno Setup 7.1.0 from its official release, verifies a pinned SHA-256
+and a valid Authenticode signature, and installs the compiler only on the runner.
+Each setup enforces its payload's architecture and version.
+
+Native x64 checks cover a clean installation, an upgrade from a lower-version
+payload, reinstall, downgrade rejection, refusing an install/uninstall while
+Slightshot is running, settings preservation, shortcuts, launch-at-login
+ownership and uninstall. They also exercise the installed app. Reports and logs
+are uploaded as `windows-installer-evidence`. ARM64 setup is built and inspected
+on the x64 runner; native ARM64 installation and app execution remain unverified.
+These automated checks do not replace a desktop review of the setup wizard.
+
+Release callers use the `release_assets` input and consume
+`Slightshot-windows-release-assets`, containing both ZIPs and both setup packages.
+Version 1.3.0 predates this packaging change and has portable Windows downloads
+only; installers are attached starting with the next release.
 
 ## Unraid
 
