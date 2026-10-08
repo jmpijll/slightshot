@@ -12,7 +12,9 @@ or [ARM64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Sl
 from the latest release. Extract the ZIP and double-click its only file,
 `Slightshot.exe`. The .NET runtime is bundled into the executable; you do not
 need to install it. Windows preview binaries are unsigned; updates
-are downloaded manually from Releases.
+are downloaded manually from Releases. **Download updates…** in the tray menu
+or General settings opens the latest release. About and Settings show the
+version embedded in the running executable.
 
 ## Run and build
 
