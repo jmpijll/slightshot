@@ -77,6 +77,58 @@ internal static class ScreenshotRetrySmokeTest
         escapeEditor.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, source, 0, Key.Escape) { RoutedEvent = Keyboard.PreviewKeyDownEvent });
         Require(!coordinator.IsBusy && closed == 2, "Escape closes the capture and releases the gate");
         checks.Add("Screenshot workflow: Save As cancellation, real failed write, retained two-display editor, text/Blur/Pixelate/Undo, nested input rejection, successful retry, and Escape passed");
+        SettingsAfterFailedOutput(display, saved, checks);
+    }
+
+    private static void SettingsAfterFailedOutput(CapturedDisplay display, string existingImage, List<string> checks)
+    {
+        var app = (App)System.Windows.Application.Current;
+        var overlaysField = typeof(App).GetField("overlays", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var preferencesField = typeof(App).GetField("preferences", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var showSettings = typeof(App).GetMethod("ShowSettings", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var previousOverlays = overlaysField.GetValue(app);
+        var previousPreferences = preferencesField.GetValue(app);
+        var settings = new Settings { PlaySound = false, ShowNotification = false, CopyAfterSave = false,
+            SaveDirectory = Path.Combine(existingImage, "screenshots") };
+        // Supply an existing real Settings window so this fixture does not register
+        // global hotkeys or create a tray icon when its window is later closed.
+        var preferences = new SettingsWindow(settings);
+        int errors = 0;
+        var output = new OutputService(settings, (_, _) => { }, presentError: _ => errors++);
+        OverlayCoordinator? coordinator = null;
+        coordinator = new OverlayCoordinator(settings, (action, bitmap) =>
+        {
+            showSettings.Invoke(app, null);
+            Require(!preferences.IsVisible && coordinator!.IsDelivering && coordinator.Windows.Count == 1,
+                "Settings stays blocked while output owns modal focus");
+            return output.Perform(action, bitmap);
+        }, () => { }, (_, _) => { });
+        overlaysField.SetValue(app, coordinator);
+        preferencesField.SetValue(app, preferences);
+        try
+        {
+            Require(coordinator.Present([display], display), "Settings retry capture starts");
+            var editor = coordinator.Windows[0];
+            editor.PrepareSmokeFixture(new RectD(10, 10, 200, 120), []);
+            Invoke(editor, "Perform", CaptureAction.Save);
+            Require(errors == 1 && editor.IsVisible && coordinator.IsBusy, "failed directory write restores editor before Settings");
+            showSettings.Invoke(app, null);
+            Require(preferences.IsVisible && !coordinator.IsBusy && coordinator.Windows.Count == 0,
+                "Settings opens and dismisses an idle retained editor after output failure");
+            var tabs = Descendants((DependencyObject)preferences.Content).OfType<TabControl>().Single();
+            tabs.SelectedItem = tabs.Items.OfType<TabItem>().Single(tab => Equals(tab.Header, "Output"));
+            preferences.UpdateLayout();
+            Require(Descendants((DependencyObject)preferences.Content).OfType<Button>().Any(button =>
+                Equals(button.Content, "Choose…") && button.IsVisible && button.IsEnabled),
+                "save directory chooser is available after a failed write");
+            checks.Add("Settings route: blocked during modal output; idle editor dismissed and Output folder chooser accessible after a real save-directory failure");
+        }
+        finally
+        {
+            preferences.Close(); coordinator.Dismiss();
+            overlaysField.SetValue(app, previousOverlays);
+            preferencesField.SetValue(app, previousPreferences);
+        }
     }
 
     private static CapturedDisplay Fixture()
