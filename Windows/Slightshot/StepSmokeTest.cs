@@ -87,7 +87,7 @@ internal static class StepSmokeTest
 
     private static OverlaySurface Surface(CapturedDisplay display, RectD selection, Annotation[] history, Annotation? live)
     {
-        var surface = new OverlaySurface(display, new Settings { ShowDimensions = false, ShowMagnifier = false }) { Selection = selection, LiveAnnotation = live };
+        var surface = new OverlaySurface(display.Source, new Settings { ShowDimensions = false, ShowMagnifier = false }) { Selection = selection, LiveAnnotation = live };
         surface.Annotations.AddRange(history); surface.Measure(new Size(120, 100)); surface.Arrange(new Rect(0, 0, 120, 100)); surface.UpdateLayout();
         return surface;
     }

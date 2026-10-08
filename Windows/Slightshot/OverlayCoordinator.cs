@@ -8,6 +8,7 @@ internal sealed class OverlayCoordinator(Settings settings, Func<CaptureAction, 
 {
     private readonly CaptureSession session = new();
     private readonly List<OverlayWindow> windows = [];
+    private bool closing;
     public IReadOnlyList<OverlayWindow> Windows => windows;
     public bool IsBusy => session.IsBusy;
     public bool IsDelivering => session.IsDelivering;
@@ -19,11 +20,32 @@ internal sealed class OverlayCoordinator(Settings settings, Func<CaptureAction, 
         foreach (var display in displays)
         {
             var window = new OverlayWindow(display, settings, display == active, TakeOver, () => Dismiss(), Complete, StartRecording);
-            windows.Add(window); window.Show();
+            Register(window); window.Show();
             if (display == active) focus ??= window;
         }
         if (focus != null) TakeOver(focus);
         return true;
+    }
+
+    public bool PresentClipboardImage(BitmapSource bitmap)
+    {
+        if (!session.TryBegin()) return false;
+        var area = System.Windows.SystemParameters.WorkArea;
+        var source = EditorImageSource.Clipboard(bitmap, Math.Max(320, Math.Min(1000, area.Width - 100)), Math.Max(240, Math.Min(700, area.Height - 150)));
+        var window = new OverlayWindow(source, settings, TakeOver, () => Dismiss(), Complete);
+        Register(window); window.Show(); TakeOver(window);
+        return true;
+    }
+
+    private void Register(OverlayWindow window)
+    {
+        windows.Add(window);
+        window.Closing += (_, e) =>
+        {
+            if (closing) return;
+            e.Cancel = true;
+            if (!IsDelivering) window.Dispatcher.BeginInvoke(new Action(() => Dismiss()));
+        };
     }
 
     public void TakeOver(OverlayWindow window)
@@ -54,8 +76,9 @@ internal sealed class OverlayCoordinator(Settings settings, Func<CaptureAction, 
 
     private void Close()
     {
-        foreach (var window in windows) window.Close();
-        windows.Clear();
+        closing = true;
+        try { foreach (var window in windows) window.Close(); windows.Clear(); }
+        finally { closing = false; }
         closed();
     }
 }

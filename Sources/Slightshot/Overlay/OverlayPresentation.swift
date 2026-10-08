@@ -17,7 +17,8 @@ final class OverlayWindows: OverlayPresentation {
         NSApp.activate(ignoringOtherApps: true)
         if windows.isEmpty {
             for view in views {
-                let window = OverlayWindow(screen: view.display.screen)
+                guard let display = view.capturedDisplay else { continue }
+                let window = OverlayWindow(screen: display.screen)
                 window.contentView = view
                 windows.append(window)
             }

@@ -47,7 +47,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onCaptureArea: { [weak self] in self?.route(.capture(.captureArea)) },
             onSaveFullScreen: { [weak self] in self?.route(.capture(.saveFullScreen)) },
             onCopyFullScreen: { [weak self] in self?.route(.capture(.copyFullScreen)) },
-            onDelayedCapture: { [weak self] in self?.delayedCapture.start() }
+            onDelayedCapture: { [weak self] in self?.delayedCapture.start() },
+            onEditClipboard: { [weak self] in
+                self?.delayedCapture.cancel()
+                OverlayCoordinator.shared.editImageFromClipboard()
+            }
         )
 
         Settings.shared.onHotKeysChanged = { [weak self] in self?.registerHotKeys() }

@@ -17,6 +17,20 @@ final class ScreenshotView: NSView {
         layer?.minificationFilter = .trilinear
     }
 
+    /// Source-containing raster composition replaces these pixels in CanvasView.
+    func exclude(_ selection: CGRect?) {
+        guard let selection else { layer?.mask = nil; return }
+        let mask = CAShapeLayer()
+        mask.frame = bounds
+        mask.fillRule = .evenOdd
+        let path = CGMutablePath()
+        path.addRect(bounds)
+        path.addRect(CGRect(x: selection.minX, y: bounds.height - selection.maxY,
+                            width: selection.width, height: selection.height))
+        mask.path = path
+        layer?.mask = mask
+    }
+
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
 }

@@ -7,7 +7,7 @@ namespace Slightshot;
 
 // One native-resolution selection cache. Pointer movement only processes the
 // live effect's pixels; history and selection changes rebuild the composition.
-internal sealed class AnnotationCompositor(CapturedDisplay display)
+internal sealed class AnnotationCompositor(EditorImageSource display)
 {
     private RectD? cachedSelection;
     private Annotation[] cachedHistory = [];
@@ -33,8 +33,10 @@ internal sealed class AnnotationCompositor(CapturedDisplay display)
             var previous = image;
             image = Render(selection, dc =>
             {
-                dc.DrawImage(previous, ImageBounds(previous));
                 var bounds = patch.Bounds; bounds.Offset(-selection.X, -selection.Y);
+                dc.PushClip(new CombinedGeometry(GeometryCombineMode.Exclude,
+                    new RectangleGeometry(ImageBounds(previous)), new RectangleGeometry(bounds)));
+                dc.DrawImage(previous, ImageBounds(previous)); dc.Pop();
                 dc.PushClip(new RectangleGeometry(new Rect(0, 0, selection.Width, selection.Height)));
                 dc.DrawImage(patch.Image, bounds); dc.Pop();
             });
@@ -43,6 +45,32 @@ internal sealed class AnnotationCompositor(CapturedDisplay display)
         cachedImage = image; cachedSelection = selection; cachedHistory = annotations.ToArray(); cachedLive = null; cachedPatch = null;
         cachedStep = null; cachedStepImage = null;
         return image;
+    }
+
+    /// A source-containing preview must replace, rather than blend over, its base.
+    public void DrawComposition(DrawingContext dc, RectD selection, IReadOnlyList<Annotation> annotations, Annotation? live)
+    {
+        var image = Committed(selection, annotations);
+        var imageBounds = new Rect(selection.X, selection.Y, image.PixelWidth / display.Scale, image.PixelHeight / display.Scale);
+        if (live is { Tool: Tool.Step }) { DrawLive(dc, selection, live); return; }
+        EffectPatch? patch = null;
+        if (live is { IsRasterEffect: true })
+        {
+            if (cachedLive != live) { cachedPatch = Patch(image, selection, live); cachedLive = live; }
+            patch = cachedPatch;
+        }
+        if (patch != null)
+        {
+            dc.PushClip(new CombinedGeometry(GeometryCombineMode.Exclude,
+                new RectangleGeometry(imageBounds), new RectangleGeometry(patch.Bounds)));
+            dc.DrawImage(image, imageBounds); dc.Pop();
+            dc.DrawImage(patch.Image, patch.Bounds);
+        }
+        else
+        {
+            dc.DrawImage(image, imageBounds);
+            if (live != null && !live.IsRasterEffect) DrawLive(dc, selection, live);
+        }
     }
 
     public void DrawLive(DrawingContext dc, RectD selection, Annotation annotation)

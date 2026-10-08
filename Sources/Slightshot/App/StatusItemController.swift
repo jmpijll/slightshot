@@ -7,17 +7,20 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let onCaptureArea: () -> Void
     private let onSaveFullScreen: () -> Void
     private let onCopyFullScreen: () -> Void
+    private let onEditClipboard: () -> Void
     private let onDelayedCapture: () -> Void
 
     init(onCaptureArea: @escaping () -> Void,
          onSaveFullScreen: @escaping () -> Void,
          onCopyFullScreen: @escaping () -> Void,
-         onDelayedCapture: @escaping () -> Void,
+         onDelayedCapture: @escaping () -> Void = {},
+         onEditClipboard: @escaping () -> Void = {},
          showInMenuBar: Bool = true) {
         self.onCaptureArea = onCaptureArea
         self.onSaveFullScreen = onSaveFullScreen
         self.onCopyFullScreen = onCopyFullScreen
         self.onDelayedCapture = onDelayedCapture
+        self.onEditClipboard = onEditClipboard
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.isVisible = showInMenuBar
         super.init()
@@ -51,6 +54,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(item("Capture Area in 5 Seconds", nil, #selector(delayedCapture)))
         menu.addItem(item("Capture Full Screen", settings.saveFullScreenHotKey, #selector(saveFullScreen)))
         menu.addItem(item("Copy Full Screen", settings.copyFullScreenHotKey, #selector(copyFullScreen)))
+        menu.addItem(item("Edit Image from Clipboard", nil, #selector(editClipboard)))
         menu.addItem(.separator())
 
         menu.addItem(item("Open Screenshots Folder", nil, #selector(openFolder)))
@@ -90,6 +94,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     @objc private func delayedCapture() { onDelayedCapture() }
     @objc private func saveFullScreen() { onSaveFullScreen() }
     @objc private func copyFullScreen() { onCopyFullScreen() }
+    @objc private func editClipboard() { onEditClipboard() }
 
     @objc private func openFolder() {
         let directory = Settings.shared.saveDirectory

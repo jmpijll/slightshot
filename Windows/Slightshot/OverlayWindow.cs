@@ -10,7 +10,12 @@ namespace Slightshot;
 
 internal sealed class OverlayWindow : Window
 {
-    private readonly CapturedDisplay display;
+    private readonly CapturedDisplay? display;
+    private readonly EditorImageSource imageSource;
+    private readonly Canvas toolbarChrome;
+    private readonly ScrollViewer? scroll;
+    private readonly Grid imageContent;
+    private double zoom = 1;
     private readonly Settings settings;
     private readonly Action<OverlayWindow> takeOver;
     private readonly Action cancel;
@@ -28,28 +33,62 @@ internal sealed class OverlayWindow : Window
     private RectD resizeOriginal;
     private readonly List<PointD> points = [];
     private bool copyOnRelease;
-    private RectD Bounds => new(0, 0, display.Width, display.Height);
+    private RectD Bounds => imageSource.Bounds;
 
     public OverlayWindow(CapturedDisplay display, Settings settings, bool underPointer, Action<OverlayWindow> takeOver, Action cancel, Action<OverlayWindow, CaptureAction, BitmapSource> complete, Action<CapturedDisplay, RectD>? record = null)
+        : this(display.Source, settings, underPointer, takeOver, cancel, complete, display, record) { }
+
+    public OverlayWindow(EditorImageSource imageSource, Settings settings, Action<OverlayWindow> takeOver, Action cancel, Action<OverlayWindow, CaptureAction, BitmapSource> complete)
+        : this(imageSource, settings, false, takeOver, cancel, complete, null, null) { }
+
+    private OverlayWindow(EditorImageSource imageSource, Settings settings, bool underPointer, Action<OverlayWindow> takeOver, Action cancel, Action<OverlayWindow, CaptureAction, BitmapSource> complete, CapturedDisplay? display, Action<CapturedDisplay, RectD>? record)
     {
-        this.display = display; this.settings = settings; this.takeOver = takeOver; this.cancel = cancel; this.complete = complete;
+        this.imageSource = imageSource; this.display = display; this.settings = settings; this.takeOver = takeOver; this.cancel = cancel; this.complete = complete;
         this.record = record ?? ((_, _) => { });
-        WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize; ShowInTaskbar = false; Topmost = true;
-        Width = display.Width; Height = display.Height; Left = display.Left / display.Scale; Top = display.Top / display.Scale;
-        Background = Brushes.Black; Cursor = Cursors.Cross;
-        surface = new OverlaySurface(display, settings) { ShowHint = underPointer };
+        Background = display == null ? Brushes.DimGray : Brushes.Black; Cursor = Cursors.Cross;
+        surface = new OverlaySurface(imageSource, settings, display == null) { ShowHint = underPointer };
         RenderOptions.SetBitmapScalingMode(surface, BitmapScalingMode.NearestNeighbor);
-        var grid = new Grid(); grid.Children.Add(surface); grid.Children.Add(chrome); Content = grid;
-        toolbar = new Toolbar(chrome, display, settings, _ => { CommitText(); surface.MagnifierPoint = null; Refresh(); }, () => { Refresh(); }, Undo, Redo, Perform, cancel, BeginRecording);
+        imageContent = new Grid(); imageContent.Children.Add(surface); imageContent.Children.Add(chrome);
+        if (display != null)
+        {
+            WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize; ShowInTaskbar = false; Topmost = true;
+            Width = display.Width; Height = display.Height; Left = display.Left / display.Scale; Top = display.Top / display.Scale;
+            toolbarChrome = chrome; Content = imageContent;
+            SourceInitialized += (_, _) => NativeMethods.SetWindowPos(new WindowInteropHelper(this).Handle, new IntPtr(-1), display.Left, display.Top, display.PixelWidth, display.PixelHeight, 0x0040);
+        }
+        else
+        {
+            Title = "Edit Image from Clipboard"; ResizeMode = ResizeMode.CanResize;
+            Width = Math.Max(660, imageSource.Width + 36); Height = Math.Max(520, imageSource.Height + 90);
+            WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            imageContent.Width = Math.Max(640, imageSource.Width); imageContent.Height = Math.Max(460, imageSource.Height);
+            scroll = new ScrollViewer { Content = imageContent, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
+            toolbarChrome = new Canvas();
+            var editor = new Grid(); editor.Children.Add(scroll); editor.Children.Add(toolbarChrome);
+            var controls = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(8, 4, 8, 4) };
+            foreach (var (label, factor) in new[] { ("Fit", 1.0), ("100%", imageSource.Scale) })
+            {
+                var button = new Button { Content = label, Padding = new Thickness(10, 3, 10, 3), Margin = new Thickness(0, 0, 6, 0) };
+                button.Click += (_, _) =>
+                {
+                    zoom = label == "Fit" ? Math.Min(1, Math.Min(scroll.ViewportWidth / imageSource.Width, scroll.ViewportHeight / imageSource.Height)) : factor;
+                    imageContent.LayoutTransform = new ScaleTransform(zoom, zoom);
+                    Refresh(); Focus();
+                };
+                controls.Children.Add(button);
+            }
+            var root = new DockPanel(); DockPanel.SetDock(controls, Dock.Top); root.Children.Add(controls); root.Children.Add(editor); Content = root;
+            scroll.ScrollChanged += (_, _) => Refresh();
+            SizeChanged += (_, _) => Refresh();
+            surface.Selection = Bounds;
+        }
+        toolbar = new Toolbar(toolbarChrome, imageSource, settings, _ => { CommitText(); surface.MagnifierPoint = null; Refresh(); }, () => { Refresh(); }, Undo, Redo, Perform, cancel, BeginRecording, display != null);
+
         surface.MouseLeftButtonDown += MouseDownOnSurface; surface.MouseMove += MouseMoved; surface.MouseLeftButtonUp += MouseUpOnSurface;
         surface.MouseRightButtonDown += (_, _) => cancel();
         surface.MouseLeave += (_, _) => { surface.MagnifierPoint = null; surface.InvalidateVisual(); };
         PreviewKeyDown += KeyPressed;
-        SourceInitialized += (_, _) =>
-        {
-            var handle = new WindowInteropHelper(this).Handle;
-            NativeMethods.SetWindowPos(handle, new IntPtr(-1), display.Left, display.Top, display.PixelWidth, display.PixelHeight, 0x0040);
-        };
+        Loaded += (_, _) => Refresh();
     }
 
     public void Relinquish() { surface.ShowHint = false; surface.MagnifierPoint = null; surface.InvalidateVisual(); }
@@ -62,7 +101,7 @@ internal sealed class OverlayWindow : Window
         if (e.ClickCount == 2 && toolbar.ActiveTool != Tool.Step && surface.Selection is { } twice && twice.Contains(p)) { DefaultPerform(); return; }
         if (surface.Selection is { } selection)
         {
-            if (SelectionGeometry.Hit(p, selection) is { } handle) { drag = Drag.ResizeSelection; resizeHandle = handle; resizeOriginal = selection; surface.CaptureMouse(); return; }
+            if (SelectionGeometry.Hit(p, selection, zoom) is { } handle) { drag = Drag.ResizeSelection; resizeHandle = handle; resizeOriginal = selection; surface.CaptureMouse(); return; }
             if (toolbar.ActiveTool is { } tool && selection.Contains(p))
             {
                 if (tool == Tool.Text) { BeginText(p); return; }
@@ -101,7 +140,7 @@ internal sealed class OverlayWindow : Window
         surface.MagnifierPoint = surface.Selection == null || drag is Drag.NewSelection or Drag.ResizeSelection ? p : null;
         if (surface.Selection is { } selection)
         {
-            Cursor = SelectionGeometry.Hit(p, selection) switch
+            Cursor = SelectionGeometry.Hit(p, selection, zoom) switch
             {
                 SelectionHandle.Left or SelectionHandle.Right => Cursors.SizeWE,
                 SelectionHandle.Top or SelectionHandle.Bottom => Cursors.SizeNS,
@@ -124,7 +163,7 @@ internal sealed class OverlayWindow : Window
         }
         if (drag == Drag.NewSelection)
         {
-            if (surface.Selection is { } r && (r.Width < 4 || r.Height < 4)) { surface.Selection = null; surface.ShowHint = true; }
+            if (surface.Selection is { } r && (r.Width < (display == null ? 1 / imageSource.Scale : 4) || r.Height < (display == null ? 1 / imageSource.Scale : 4))) { surface.Selection = null; surface.ShowHint = true; }
             else if (copyOnRelease) { drag = Drag.None; copyOnRelease = false; Perform(CaptureAction.Copy); return; }
         }
         drag = Drag.None; copyOnRelease = false;
@@ -214,21 +253,36 @@ internal sealed class OverlayWindow : Window
     private void DefaultPerform() { if (settings.DefaultAction != DefaultAction.StayOpen) Perform(settings.DefaultAction == DefaultAction.Save ? CaptureAction.Save : CaptureAction.Copy); }
     private void BeginRecording()
     {
-        if (surface.Selection is { Width: >= 8, Height: >= 8 } selection) record(display, selection);
+        if (display != null && surface.Selection is { Width: >= 8, Height: >= 8 } selection) record(display, selection);
     }
     private void Perform(CaptureAction action)
     {
         CommitText();
-        if (surface.Selection is not { Width: >= 1, Height: >= 1 } selection) return;
+        if (surface.Selection is not { Width: > 0, Height: > 0 } selection) return;
         surface.MagnifierPoint = null;
-        complete(this, action, AnnotationRenderer.Flatten(display, selection, surface.Annotations, settings.NativeResolution));
+        var bitmap = display == null ? AnnotationRenderer.Flatten(imageSource, selection, surface.Annotations)
+            : AnnotationRenderer.Flatten(display, selection, surface.Annotations, settings.NativeResolution);
+        complete(this, action, bitmap);
     }
     private void Refresh()
     {
         surface.InvalidateVisual();
+        if (toolbar == null) return;
         toolbar.SetRedoAvailability(textEntry == null && surface.LiveAnnotation == null && surface.Annotations.CanRedo);
-        toolbar.Layout(surface.Selection, Bounds, drag != Drag.NewSelection);
+        var selection = surface.Selection;
+        var bounds = Bounds;
+        if (display == null)
+        {
+            bounds = new(0, 0, toolbarChrome.ActualWidth, toolbarChrome.ActualHeight);
+            if (selection is { } r)
+            {
+                var origin = surface.TranslatePoint(new Point(r.X, r.Y), toolbarChrome);
+                selection = new(origin.X, origin.Y, r.Width * zoom, r.Height * zoom);
+            }
+        }
+        if (bounds.Width > 0 && bounds.Height > 0) toolbar.Layout(selection, bounds, drag != Drag.NewSelection);
     }
+
 
     internal void PrepareSmokeFixture(RectD selection, IEnumerable<Annotation> annotations)
     {

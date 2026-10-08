@@ -8,14 +8,13 @@ enum Renderer {
     /// uses. That way `Annotation.draw()` is shared verbatim between the live
     /// canvas and the export, and there is no second code path to keep in sync.
     static func flatten(display: CapturedDisplay, selection: CGRect, annotations: [Annotation]) -> CGImage? {
-        flatten(image: display.image, scale: display.scale, selection: selection, annotations: annotations)
+        flatten(image: display.image, scale: display.scale, selection: selection.pixelAligned, annotations: annotations)
     }
 
     static func flatten(image: CGImage, scale: CGFloat, selection: CGRect, annotations: [Annotation]) -> CGImage? {
-        let rect = selection.pixelAligned
-        let pixels = CGRect(x: rect.minX * scale, y: rect.minY * scale,
-                            width: rect.width * scale, height: rect.height * scale).pixelAligned
-            .intersection(CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        let pixels = selectionPixels(image: image, scale: scale, selection: selection)
+        let rect = CGRect(x: pixels.minX / scale, y: pixels.minY / scale,
+                          width: pixels.width / scale, height: pixels.height / scale)
         guard !pixels.isNull, pixels.width >= 1, pixels.height >= 1,
               let base = image.cropping(to: pixels) else { return nil }
 
@@ -66,15 +65,35 @@ enum Renderer {
         return context.makeImage()
     }
 
+    /// Crops cover source pixel boundaries; marks use that same integer origin.
+    static func alignedSelectionRect(image: CGImage, scale: CGFloat, selection: CGRect) -> CGRect {
+        let pixels = selectionPixels(image: image, scale: scale, selection: selection)
+        guard !pixels.isNull else { return .zero }
+        return CGRect(x: pixels.minX / scale, y: pixels.minY / scale,
+                      width: pixels.width / scale, height: pixels.height / scale)
+    }
+
+    private static func selectionPixels(image: CGImage, scale: CGFloat, selection: CGRect) -> CGRect {
+        // Division by a fractional fit scale can return an exact pixel boundary
+        // a few floating-point ulps away from its integer coordinate.
+        func snap(_ value: CGFloat) -> CGFloat {
+            abs(value - value.rounded()) < 0.00000001 ? value.rounded() : value
+        }
+        let left = snap(selection.minX * scale).rounded(.down)
+        let top = snap(selection.minY * scale).rounded(.down)
+        let right = snap(selection.maxX * scale).rounded(.up)
+        let bottom = snap(selection.maxY * scale).rounded(.up)
+        return CGRect(x: left, y: top, width: right - left, height: bottom - top)
+            .intersection(CGRect(x: 0, y: 0, width: image.width, height: image.height))
+    }
+
     /// Both the live preview and export use this exact raster patch.
     static func effectPatch(_ annotation: Annotation, source: CGImage, selection: CGRect,
                             scale: CGFloat) -> (image: CGImage, pixels: CGRect)? {
         guard let effect = annotation.rasterEffect, !effect.rect.isEmpty else { return nil }
-        let bounds = CGRect(x: 0, y: 0, width: source.width, height: source.height)
-        let pixels = CGRect(x: (effect.rect.minX - selection.minX) * scale,
-                            y: (effect.rect.minY - selection.minY) * scale,
-                            width: effect.rect.width * scale, height: effect.rect.height * scale)
-            .integral.intersection(bounds)
+        let local = CGRect(x: effect.rect.minX - selection.minX, y: effect.rect.minY - selection.minY,
+                           width: effect.rect.width, height: effect.rect.height)
+        let pixels = selectionPixels(image: source, scale: scale, selection: local)
         guard !pixels.isNull, pixels.width >= 1, pixels.height >= 1,
               let image = RasterEffects.render(effect.effect, image: source, pixels: pixels, scale: scale)
         else { return nil }

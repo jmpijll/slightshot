@@ -1,0 +1,25 @@
+{
+  "platform": "macOS / native AppKit editor",
+  "source_head": "2863e09b43f7cee9ed4f93b24eecb9fd4872ee66",
+  "captured": "2026-10-08",
+  "method": "Root agent native desktop acceptance using signed Slightshot.app --clipboard-review /tmp/slightshot-clipboard-mac-2863e09; actual editor/window/clipboard/OutputService, native mouse and keyboard input",
+  "fixture": "Synthetic 2003x1001 PNG with transparent margins and semitransparent artwork; a numbered step created with a real editor click",
+  "checks": [
+    "Fit view reports original 2003x1001 pixels",
+    "100% enables both native scrollbars; vertical scroll operated from 0.5 to 1; Fit restores fitted view",
+    "Real Step click; Command-Z removes annotation and enables Redo; Command-Shift-Z restores annotation and disables Redo",
+    "Real Save As panel Cancel retains editor/history/step; toolbar Copy succeeds and gracefully terminates fixture",
+    "Source and actual export PNG/JSON each report 2003x1001 pixels, alpha and fully transparent corner",
+    "All 2,005,003 source/export pixels compared: all 745,003 fully transparent margin pixels unchanged; 2,001,678 alpha values identical; only 3,325 committed Step pixels changed alpha"
+  ],
+  "files": {
+    "clipboard-100percent.jpg": "36505631264b707b596de752906c0c4338db79066ac47acfc2ed9b1e95d7dafe",
+    "clipboard-annotated.jpg": "9238809de8b9ed5c30f8719f83042769f3c33177e961132373ec9ce731355251",
+    "clipboard-fit.jpg": "5de0b176e83617a055623a517001b5d5bcf17ac96f5913d8bfcd3436def250ea",
+    "clipboard-review-export.json": "f1da3b2178e605cb02f0b8230dafdcece694d56842ce6a70170088a6987bd62e",
+    "clipboard-review-export.png": "9600d08ded1b696ab9b65f35cd14d297618ccf56e0c7103921f58b7daa4ee7ba",
+    "clipboard-review-source.json": "f1da3b2178e605cb02f0b8230dafdcece694d56842ce6a70170088a6987bd62e",
+    "clipboard-review-source.png": "1a93851574ab7a6d9588963ba62464cf03bdc2248377601b76a963991d876dd6",
+    "mac-output-validation.json": "e161b9f19eac248b20ddf4984ba8e11b372917de6e42823e9b417feb01f97280"
+  }
+}

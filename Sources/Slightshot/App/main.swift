@@ -26,6 +26,12 @@ if CommandLine.arguments.contains("--delayed-review") {
     app.delegate = review
     app.setActivationPolicy(.accessory)
     withExtendedLifetime(review) { app.run() }
+
+    exit(EXIT_SUCCESS)
+}
+
+if CommandLine.arguments.contains("--clipboard-review") {
+    ClipboardReview.run()
     exit(EXIT_SUCCESS)
 }
 

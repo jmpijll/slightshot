@@ -17,12 +17,13 @@ public readonly record struct RectD(double X, double Y, double Width, double Hei
     public static RectD Between(PointD a, PointD b) => new(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y), Math.Abs(b.X - a.X), Math.Abs(b.Y - a.Y));
     public RectD Clamp(RectD bounds) => Between(new PointD(Left, Top).Clamp(bounds), new PointD(Right, Bottom).Clamp(bounds));
     public RectD MoveTo(PointD origin, RectD bounds) => new(Math.Clamp(origin.X, bounds.Left, Math.Max(bounds.Left, bounds.Right - Width)), Math.Clamp(origin.Y, bounds.Top, Math.Max(bounds.Top, bounds.Bottom - Height)), Width, Height);
+    private static double Snap(double value) => Math.Abs(value - Math.Round(value)) < 0.00000001 ? Math.Round(value) : value;
     public RectD ToPixels(double scaleX, double scaleY, int pixelWidth, int pixelHeight)
     {
-        int left = Math.Clamp((int)Math.Floor(Left * scaleX), 0, pixelWidth - 1);
-        int top = Math.Clamp((int)Math.Floor(Top * scaleY), 0, pixelHeight - 1);
-        int right = Math.Clamp((int)Math.Ceiling(Right * scaleX), left + 1, pixelWidth);
-        int bottom = Math.Clamp((int)Math.Ceiling(Bottom * scaleY), top + 1, pixelHeight);
+        int left = Math.Clamp((int)Math.Floor(Snap(Left * scaleX)), 0, pixelWidth - 1);
+        int top = Math.Clamp((int)Math.Floor(Snap(Top * scaleY)), 0, pixelHeight - 1);
+        int right = Math.Clamp((int)Math.Ceiling(Snap(Right * scaleX)), left + 1, pixelWidth);
+        int bottom = Math.Clamp((int)Math.Ceiling(Snap(Bottom * scaleY)), top + 1, pixelHeight);
         return new(left, top, right - left, bottom - top);
     }
 }
@@ -42,12 +43,12 @@ public static class SelectionGeometry
         SelectionHandle.BottomRight => new(r.Right, r.Bottom), SelectionHandle.Bottom => new(r.MidX, r.Bottom),
         SelectionHandle.BottomLeft => new(r.Left, r.Bottom), _ => new(r.Left, r.MidY)
     };
-    public static SelectionHandle? Hit(PointD p, RectD r)
+    public static SelectionHandle? Hit(PointD p, RectD r, double zoom = 1)
     {
         foreach (var handle in HitOrder)
         {
             var anchor = handle.Anchor(r);
-            if (Math.Abs(p.X - anchor.X) <= HitSize / 2 && Math.Abs(p.Y - anchor.Y) <= HitSize / 2) return handle;
+            if (Math.Abs(p.X - anchor.X) <= HitSize / zoom / 2 && Math.Abs(p.Y - anchor.Y) <= HitSize / zoom / 2) return handle;
         }
         return null;
     }

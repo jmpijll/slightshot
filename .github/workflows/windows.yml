@@ -61,6 +61,15 @@ jobs:
           $process = Start-Process $app -ArgumentList '--smoke-test', $output -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Native WPF smoke test failed with exit code $($process.ExitCode)" }
           Get-Content "$output/validation.json"
+      - name: Test clipboard image editor, native window, original pixels and output retry
+        shell: pwsh
+        run: |
+          $app = Resolve-Path Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe
+          $output = Join-Path $PWD Windows/artifacts/clipboard
+          $process = Start-Process $app -ArgumentList '--clipboard-smoke-test', $output -PassThru
+          if (!$process.WaitForExit(60000)) { $process.Kill(); throw 'Clipboard editor smoke test timed out' }
+          if ($process.ExitCode -ne 0) { Get-Content "$output/clipboard-failure.txt" -ErrorAction SilentlyContinue; throw "Clipboard editor smoke test failed with exit code $($process.ExitCode)" }
+          Get-Content "$output/clipboard-validation.json"
       - name: Test native video recording, export quality, cancellation and retry
         shell: pwsh
         run: |
@@ -206,7 +215,15 @@ jobs:
           path: Windows/artifacts/recording
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          retention-days: 7
+          name: windows-native-clipboard-evidence
+          path: Windows/artifacts/clipboard
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
         if: ${{ !inputs.release_assets }}
+
         with:
           retention-days: 7
           name: Slightshot-windows-x64

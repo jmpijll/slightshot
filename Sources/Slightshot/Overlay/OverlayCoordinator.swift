@@ -9,12 +9,17 @@ final class OverlayCoordinator: OverlayViewDelegate {
     private var isCapturing = false
     private var isDelivering = false
     private let presentation: any OverlayPresentation
+    private let clipboardPresentation: any OverlayPresentation
+    private var currentPresentation: any OverlayPresentation {
+        views.first?.capturedDisplay == nil ? clipboardPresentation : presentation
+    }
     private let output: @MainActor (CaptureAction, CGImage) -> Bool
     private let record: @MainActor (CapturedDisplay, CGRect) -> Void
     private let captureAll: @MainActor () async throws -> [CapturedDisplay]
     private let captureActive: @MainActor () async throws -> CapturedDisplay
 
     init(presentation: any OverlayPresentation = OverlayWindows(),
+         clipboardPresentation: any OverlayPresentation = ClipboardEditorWindows(),
          output: @escaping @MainActor (CaptureAction, CGImage) -> Bool = OutputService.perform,
          record: @escaping @MainActor (CapturedDisplay, CGRect) -> Void = {
              RecordingCoordinator.shared.begin(display: $0, selection: $1)
@@ -22,6 +27,7 @@ final class OverlayCoordinator: OverlayViewDelegate {
          captureAll: @escaping @MainActor () async throws -> [CapturedDisplay] = ScreenCapture.captureAllDisplays,
          captureActive: @escaping @MainActor () async throws -> CapturedDisplay = ScreenCapture.captureActiveDisplay) {
         self.presentation = presentation
+        self.clipboardPresentation = clipboardPresentation
         self.output = output
         self.record = record
         self.captureAll = captureAll
@@ -67,13 +73,34 @@ final class OverlayCoordinator: OverlayViewDelegate {
         }
         let index = displays.firstIndex { $0.frame.contains(mouse) } ?? 0
         presentation.show(views, focused: views[safe: index])
-        for view in views { view.prepare(isUnderMouse: view.display.frame.contains(mouse)) }
+        for view in views { view.prepare(isUnderMouse: view.capturedDisplay?.frame.contains(mouse) == true) }
     }
 
     func dismiss() {
         guard !isDelivering else { return }
-        presentation.close()
+        currentPresentation.close()
         views.removeAll()
+    }
+
+    // MARK: - Clipboard editor
+
+    func editImageFromClipboard() {
+        guard !isBusy, !RecordingCoordinator.shared.isBusy else { return }
+        guard let image = ClipboardImage.read() else {
+            OutputService.presentError("The clipboard does not contain an image. Copy an image and try again.")
+            return
+        }
+        presentClipboardImage(image)
+    }
+
+    func presentClipboardImage(_ image: CGImage) {
+        guard !isBusy, !RecordingCoordinator.shared.isBusy else { return }
+        let available = ClipboardEditorWindow.availableImageSize
+        let source = EditorImageSource.clipboard(image, fitting: available)
+        let view = OverlayView(source: source)
+        view.delegate = self
+        views = [view]
+        clipboardPresentation.show(views, focused: view)
     }
 
     // MARK: - Whole-screen shortcuts
@@ -104,7 +131,7 @@ final class OverlayCoordinator: OverlayViewDelegate {
     func overlayDidTakeOver(_ view: OverlayView) {
         guard !isDelivering, views.contains(where: { $0 === view }) else { return }
         for other in views where other !== view { other.relinquish() }
-        presentation.focus(view)
+        currentPresentation.focus(view)
     }
 
     func overlay(_ view: OverlayView, didComplete action: CaptureAction, image: CGImage) {
@@ -112,15 +139,15 @@ final class OverlayCoordinator: OverlayViewDelegate {
         isDelivering = true
         // Hide the native windows for modal focus while retaining the frozen
         // pixels and the real editor instances until output succeeds.
-        presentation.hide()
+        currentPresentation.hide()
         let succeeded = output(action, image)
         isDelivering = false
-        if succeeded { dismiss() } else { presentation.show(views, focused: view) }
+        if succeeded { dismiss() } else { currentPresentation.show(views, focused: view) }
     }
 
     func overlay(_ view: OverlayView, didRequestRecording selection: CGRect) {
         guard !isDelivering, views.contains(where: { $0 === view }) else { return }
-        let display = view.display
+        guard let display = view.capturedDisplay else { return }
         dismiss()
         record(display, selection)
     }

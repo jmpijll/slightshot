@@ -20,13 +20,29 @@ tests, strict lint and a warning-free Windows build. See the
 [raster measurements](review/performance/README.md) and
 [recording allocation measurements](recording-buffer-allocations.md).
 
-## Next work
+## Review the bounded next release candidate
 
-Use this version and address concrete reliability or performance issues as they
-appear. Investigate a measured bottleneck before adding caches or settings.
-Windows ARM64 desktop acceptance remains useful when a real ARM64 device is
-available; automated native execution currently runs on x64.
+The following small changes are prepared as separate pull requests and await
+review and merge. They are not shipped:
 
-Capture history, upload providers and selections across displays require clear
-user demand. The current capture, annotate, copy/save and record workflow is a
-good stopping point for feature additions.
+- [Windows installer (#20)](https://github.com/jmpijll/slightshot/pull/20)
+- [Redo for annotations (#23)](https://github.com/jmpijll/slightshot/pull/23)
+- [Five-second area capture (#22)](https://github.com/jmpijll/slightshot/pull/22)
+- [Edit Image from Clipboard (#25)](https://github.com/jmpijll/slightshot/pull/25)
+
+The review chain also includes the [visual evidence rule (#21)](https://github.com/jmpijll/slightshot/pull/21)
+and [macOS review-bundle signing fix (#24)](https://github.com/jmpijll/slightshot/pull/24).
+Review native screenshots, exports and run provenance in each PR, then test the
+combined candidate before preparing a release. Keep the normal capture flow fast
+and familiar; these additions stay behind explicit menu/tray actions or editor
+shortcuts.
+
+## Use the app and fix concrete problems
+
+After this candidate, prioritize problems found while using Slightshot: broken
+capture or editor interactions, output failures, and measured performance or
+memory regressions. Verify fixes on the affected native platform and retain a
+focused review diff with actual visual evidence when the UI changes.
+
+History, uploads, OCR, and new multi-display behavior remain outside this bounded
+candidate. Avoid expanding the app unless real usage shows a concrete need.

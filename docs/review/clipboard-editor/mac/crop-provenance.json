@@ -1,0 +1,17 @@
+{
+  "platform": "macOS / native AppKit editor",
+  "source_head": "84688139d99153575decb985564f3c7db3b5482c",
+  "captured": "2026-10-08",
+  "method": "Root agent native desktop acceptance; real right selection handle dragged at Fit from x1998 to x300, then Command-C through production output. Native app gracefully terminated afterward.",
+  "fixture": "Same synthetic original PNG as initial source2863; source SHA-256 1a93851574ab7a6d9588963ba62464cf03bdc2248377601b76a963991d876dd6",
+  "checks": [
+    "150 fitted points cover300.45source pixels; badge displays301x1001 using exact source coverage",
+    "Actual PNG export is301x1001 with alpha and corner alpha0",
+    "Successful Copy gracefully quits review fixture; original clipboard remains memory-only"
+  ],
+  "files": {
+    "clipboard-crop.jpg": "1d7d5f083f5d86b37769814e0f7e9ef3dba3b84421eca4468a239ee931336dcc",
+    "clipboard-review-crop.png": "7b53ce434fd22e6c0ff22a9dc2fdc134e26807b9dfb29a83137bdc93978962b0",
+    "clipboard-review-crop.json": "58d9e3f0e25a725cd3c3787c79bafec2d06fbae5ce8db01762d3ad4944c266d2"
+  }
+}

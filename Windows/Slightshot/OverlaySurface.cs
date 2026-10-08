@@ -5,7 +5,7 @@ using Slightshot.Core;
 
 namespace Slightshot;
 
-internal sealed class OverlaySurface(CapturedDisplay display, Settings settings) : FrameworkElement
+internal sealed class OverlaySurface(EditorImageSource display, Settings settings, bool showPixelDimensions = false) : FrameworkElement
 {
     private readonly AnnotationCompositor compositor = new(display);
     public RectD? Selection { get; set; }
@@ -15,20 +15,33 @@ internal sealed class OverlaySurface(CapturedDisplay display, Settings settings)
     public PointD? MagnifierPoint { get; set; }
     protected override void OnRender(DrawingContext dc)
     {
-        double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
-        dc.DrawImage(display.Image, new Rect(0, 0, ActualWidth, ActualHeight));
+        double zoom = 1;
+        if (showPixelDimensions && Window.GetWindow(this) is { } window)
+        {
+            var origin = TranslatePoint(new Point(0, 0), window);
+            zoom = Math.Max(0.01, TranslatePoint(new Point(1, 0), window).X - origin.X);
+        }
+        double scale = VisualTreeHelper.GetDpi(this).DpiScaleX * zoom;
+        bool composite = Annotations.Any(a => a.IsRasterEffect || a.Tool == Tool.Step) ||
+            LiveAnnotation is { IsRasterEffect: true } or { Tool: Tool.Step };
+        var sourceBounds = new Rect(0, 0, display.Width, display.Height);
+        if (composite && Selection is { Width: > 0, Height: > 0 } hole)
+        {
+            dc.PushClip(new CombinedGeometry(GeometryCombineMode.Exclude,
+                new RectangleGeometry(sourceBounds), new RectangleGeometry(AnnotationRenderer.Rect(hole))));
+            dc.DrawImage(display.Image, sourceBounds); dc.Pop();
+        }
+        else dc.DrawImage(display.Image, sourceBounds);
         Geometry veil = new RectangleGeometry(new Rect(0, 0, ActualWidth, ActualHeight));
         if (Selection is { } selection) veil = new CombinedGeometry(GeometryCombineMode.Exclude, veil, new RectangleGeometry(AnnotationRenderer.Rect(selection)));
         dc.DrawGeometry(AnnotationRenderer.Brush("#000000", settings.DimOpacity), null, veil);
-        if (Selection is { Width: >= 1, Height: >= 1 } r)
+        if (Selection is { Width: > 0, Height: > 0 } r)
         {
             dc.PushClip(new RectangleGeometry(AnnotationRenderer.Rect(r)));
-            if (Annotations.Any(a => a.IsRasterEffect || a.Tool == Tool.Step) ||
-                LiveAnnotation is { IsRasterEffect: true } or { Tool: Tool.Step })
+            if (composite)
             {
-                var composition = compositor.Committed(r, Annotations);
-                dc.DrawImage(composition, new Rect(r.X, r.Y, composition.PixelWidth / display.Scale, composition.PixelHeight / display.Scale));
-                if (LiveAnnotation != null) compositor.DrawLive(dc, r, LiveAnnotation);
+                var aligned = showPixelDimensions ? display.AlignedSelection(r) : r;
+                compositor.DrawComposition(dc, aligned, Annotations, LiveAnnotation);
             }
             else
             {
@@ -41,16 +54,16 @@ internal sealed class OverlaySurface(CapturedDisplay display, Settings settings)
             foreach (var handle in Enum.GetValues<SelectionHandle>())
             {
                 var anchor = handle.Anchor(r);
-                dc.DrawRectangle(Brushes.White, new Pen(AnnotationRenderer.Brush("#000000", 0.45), 1 / scale), new Rect(anchor.X - 3.5, anchor.Y - 3.5, 7, 7));
+                dc.DrawRectangle(Brushes.White, new Pen(AnnotationRenderer.Brush("#000000", 0.45), 1 / scale), new Rect(anchor.X - 3.5 / zoom, anchor.Y - 3.5 / zoom, 7 / zoom, 7 / zoom));
             }
             if (settings.ShowDimensions)
             {
-                var text = AnnotationRenderer.Text($"{Math.Round(r.Width)} × {Math.Round(r.Height)}", 11, Brushes.White, scale, true);
-                double width = text.Width + 14, height = text.Height + 6;
+                var text = AnnotationRenderer.Text(DimensionsLabel(r), 11 / zoom, Brushes.White, scale, true);
+                double width = text.Width + 14 / zoom, height = text.Height + 6 / zoom;
                 double x = OverlayStyle.Fit(r.Left, width, ActualWidth, 2), y = r.Top - height - 5;
                 if (y < 2) y = r.Top + 5;
                 dc.DrawRoundedRectangle(AnnotationRenderer.Brush("#000000", 0.72), null, new Rect(x, y, width, height), 4, 4);
-                dc.DrawText(text, new(x + 7, y + 3));
+                dc.DrawText(text, new(x + 7 / zoom, y + 3 / zoom));
             }
         }
         else if (ShowHint)
@@ -61,6 +74,13 @@ internal sealed class OverlaySurface(CapturedDisplay display, Settings settings)
             dc.DrawText(text, new(x + 14, y + 8));
         }
         if (settings.ShowMagnifier && MagnifierPoint is { } point) DrawMagnifier(dc, point, scale);
+    }
+
+    internal string DimensionsLabel(RectD selection)
+    {
+        var dimensions = showPixelDimensions
+            ? selection.ToPixels(display.Scale, display.Scale, display.PixelWidth, display.PixelHeight) : selection;
+        return $"{Math.Round(dimensions.Width)} × {Math.Round(dimensions.Height)}";
     }
 
     private void DrawMagnifier(DrawingContext dc, PointD point, double pixelsPerDip)

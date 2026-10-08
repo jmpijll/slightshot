@@ -11,13 +11,13 @@ final class MagnifierView: NSView {
     static let pixelsAcross = 17
     static let totalSize = NSSize(width: zoomSide, height: zoomSide + infoHeight)
 
-    private let display: CapturedDisplay
+    private let source: EditorImageSource
     private var point: CGPoint = .zero
     private var pickedColor: NSColor = .black
     var accentColor: NSColor = .systemRed
 
-    init(display: CapturedDisplay) {
-        self.display = display
+    init(source: EditorImageSource) {
+        self.source = source
         super.init(frame: NSRect(origin: .zero, size: Self.totalSize))
         wantsLayer = true
         layer?.cornerRadius = 8
@@ -39,7 +39,7 @@ final class MagnifierView: NSView {
     /// `location` is in the overlay's flipped (top-left origin) coordinates.
     func move(to location: CGPoint) {
         point = location
-        pickedColor = display.color(at: location) ?? .black
+        pickedColor = source.color(at: location) ?? .black
         needsDisplay = true
     }
 
@@ -55,9 +55,9 @@ final class MagnifierView: NSView {
         // Magnified pixels, nearest-neighbour so individual pixels stay square.
         let span = Self.pixelsAcross
         let half = span / 2
-        let px = Int((point.x * display.scale).rounded(.down)) - half
-        let py = Int((point.y * display.scale).rounded(.down)) - half
-        if let crop = display.image.cropping(to: CGRect(x: px, y: py, width: span, height: span)) {
+        let px = Int((point.x * source.scale).rounded(.down)) - half
+        let py = Int((point.y * source.scale).rounded(.down)) - half
+        if let crop = source.image.cropping(to: CGRect(x: px, y: py, width: span, height: span)) {
             ctx.saveGState()
             ctx.interpolationQuality = .none
             ctx.draw(crop, in: zoomRect)
