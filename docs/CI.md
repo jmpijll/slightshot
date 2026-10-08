@@ -10,6 +10,13 @@ are retained for seven days on Mac and Windows. Mac review builds are explicitly
 ad-hoc signed and not notarised; Windows packages are unsigned previews.
 Review builds do not update the public release or Sparkle feed.
 
+Ad-hoc Mac review builds omit Hardened Runtime because their app and embedded
+frameworks have no Team ID for library validation. CI invokes the assembled
+app's `--verify-runtime-linkage` check to catch loader failures before packaging;
+this check exits without creating windows, requesting permissions or owning a
+capture session. Developer ID release builds retain Hardened Runtime and secure
+timestamps. See the [before/after loader check](review/mac-review-launch/README.md).
+
 The Mac job uses the existing `xcode-27` runner because the app requires macOS 27. Native Windows rendering and recording tests stay on `windows-latest`. Linux can run the release-gate tests, Windows core geometry/raster checks and a Windows cross-build; it cannot build/notarise a native Mac DMG or execute WPF.
 
 ## Windows installer checks
