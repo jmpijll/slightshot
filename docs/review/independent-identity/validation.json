@@ -1,0 +1,118 @@
+{
+  "captured_date": "2026-10-08",
+  "platform": "macOS 27.0 arm64",
+  "source_commit": "89195620540adf9fe352af3ebb580a717758fff8",
+  "source_state": "Committed macOS application and documentation sources. Windows fixture capture provenance is recorded separately.",
+  "source_files_sha256": {
+    "CONTRIBUTING.md": "8ddb375c2bb53562d336bcdf7331194255ae5ec3c91c0911669d35e6a5033e83",
+    "Casks/slightshot.rb": "aa3a20b79003f442e863b90c1dd313a93d521c97f1522410e89130b2467eef0d",
+    "Makefile": "4f18221bdbe9372bbeeb426a5342c7cd2f91588fa5bcb7cba7e7cb3fa0ee6845",
+    "Package.swift": "4bc010b23bb2f1d68398fddc2ec3a83482a6e91322f8bb7285909d75a3b765da",
+    "README.md": "503b4ff7018b0b8e113722a9ac81488344c610c254ed58b15e25ecef80237d22",
+    "Scripts/bundle.sh": "2d612b8d7a90da6fe9c2f625801200eedaa1127dd4d358ffa6413e1045417385",
+    "Sources/Slightshot/App/AppDelegate.swift": "0bae5195593d82eb3f2d4c74a53bfd81a8694cb0d6408a4a6ba39c937f237bc5",
+    "Sources/Slightshot/App/DelayedCaptureReview.swift": "6d5b8812531cb741e4c24b8df696385f4f1f5164363f88ca28609bd895521ac6",
+    "Sources/Slightshot/App/RedoReview.swift": "45f8b24945795e78dc36a57f134002f862ecf93557efe317dad2a40427b8849f",
+    "Sources/Slightshot/Capture/ScreenCapture.swift": "48e5cfedb55f1178703035ffd225633ca63045958bf5eb203067ce7592ed1476",
+    "Sources/Slightshot/Editor/Tool.swift": "014d7aa804a244480d00e98346fda0b21122b32a039695f611193349f3949fb9",
+    "Sources/Slightshot/Overlay/OverlayLayers.swift": "f3bd861bbe1248af5f78facd661bb0f3b6e63b6f03f2f8eb05504d903576fcd1",
+    "Sources/Slightshot/Overlay/OverlayWindow.swift": "0b7a39dd61cb8ebe81d0eedc52e14d3b15532871b54f8456f26ca7f179024682",
+    "Sources/Slightshot/Overlay/PalettePanel.swift": "c431432fe73240e6a2832daa39b20fb9b53f62f2993e9e96f50754047cc14a25",
+    "Sources/Slightshot/Overlay/ToolbarController.swift": "efec31fca63c6003418af67f9fc4cebae8a54f74df55f73939ee3270fc23ddbd",
+    "Sources/Slightshot/Preferences/PreferencesView.swift": "cf68785c119770892b52e269715f9c25e03078af26723608781b957cbd66da2a",
+    "Sources/Slightshot/Services/Settings.swift": "704fe0e5f92823eaa9ac83d12ee5b147a641ef21884cfdc80f4bf6869348482e",
+    "Sources/Slightshot/Services/UpdaterController.swift": "a683e4093257fa8d1dd7c43a39c8f948083314ed7079ff780ad3fd89e9f3a66f",
+    "Windows/Slightshot/App.xaml.cs": "f26ccf1c20860517d4b41141b2c69ef22a60a054e5877e79bce807c049c02c93",
+    "Windows/Slightshot/AppInfo.cs": "56afe6ad7796bc62daeb358c7b1db6777a5b21fff8360d50e5209294e467c2c3",
+    "Windows/Slightshot/AppTextSmokeTest.cs": "44411a81b212ad3d5a6a4b4d06f3d0eeb34eca81f0400a8b0f8fe4124caba76d",
+    "Windows/Slightshot/SettingsWindow.cs": "e3498b74b0a63a139997b28834768cbc8caf80067176bfd3ee502d0ed8ff866f",
+    "Windows/Slightshot/Slightshot.csproj": "731747edc27038a77559755457c530ba9581d12e01714ff887df9c6434b7c25d",
+    "Windows/Slightshot/SmokeTest.cs": "323a50a52f0a0bd81a1e4772c3436f1a3e7bd61926177cea82e7dee025c2bfeb"
+  },
+  "macos_executable_sha256": "a47712c93f905fe2dbfa61948ed177a1694a16c151ef9010718f55b8bd7c11b8",
+  "app_version": "1.4.1 (10)",
+  "native_capture": "Existing --delayed-review launcher in an isolated, locally signed copy built from the committed sources. Automated clicks opened production About and General settings; Keep editing verified in the native accessibility menu. No capture was started and settings values were preserved.",
+  "documentation_capture": "GitHub Markdown API output of README.md and CONTRIBUTING.md at the recorded source commit, shown in a local in-app browser with presentation CSS and repository images. Browser crops focus on changed text.",
+  "screenshots_sha256": {
+    "contributing-principles.png": "3bc4893ac2a01ec037716809957e96f3de44907522e9fa7e17cb455ea9a02250",
+    "macos-about.png": "fffcb5cab81629f3e8eee1523ac3517eb1403e096079c4532de467096d6c6d11",
+    "macos-review-text.png": "72552f5dcdddc78fbe9515b80b1e3cf651d44f1f6bb082f14039470eb6fe381b",
+    "macos-settings.png": "b924704a8ae52cde988daf5e7cf622ac7111bb3df884f9069319d20dec0c872d",
+    "readme-independence.png": "f8c032681de17f01abbbaa2c6f9b102ae27945f93651ea0b69373f489865c320",
+    "readme-intro.png": "dc8552863509a355d0434f3e2275ecdab8e6b7847ac644ee613e1c712c43571b",
+    "windows-about.png": "fc22568e9a7757206017e14367312ecdd98903ad0906ddba0dc275c7109468ea",
+    "windows-settings-dark.png": "7326d3e91d556bbe4bf42f8467bbef4e11829f10d727cfe2e9f2468c2144e24a",
+    "windows-settings-light.png": "6a0f2122b00fa2fbe7a6e1899425afbdeffc291f1494f553a2db2491a3abca57"
+  },
+  "repository_metadata": {
+    "description": "A native, open-source screenshot and screen recording app for macOS and Windows.",
+    "repositoryTopics": [
+      {
+        "name": "annotation"
+      },
+      {
+        "name": "appkit"
+      },
+      {
+        "name": "macos"
+      },
+      {
+        "name": "menubar"
+      },
+      {
+        "name": "open-source"
+      },
+      {
+        "name": "screencapturekit"
+      },
+      {
+        "name": "screenshot"
+      },
+      {
+        "name": "swift"
+      },
+      {
+        "name": "swiftui"
+      }
+    ]
+  },
+  "validation": {
+    "make app": "passed; release build and signature verification",
+    "swiftlint --strict --quiet": "passed",
+    "plutil -lint build/Slightshot.app/Contents/Info.plist": "passed",
+    "build/Slightshot.app/Contents/MacOS/Slightshot --verify-runtime-linkage": "passed",
+    "ruby -c Casks/slightshot.rb": "passed",
+    "bash -n Scripts/bundle.sh": "passed",
+    "make help": "passed",
+    "python3 -m unittest discover -s Tests -v": "14 tests passed",
+    "Windows core checks": "191 checks passed",
+    "Windows cross-build": "passed; 0 warnings, 0 errors",
+    "git diff --check": "passed",
+    "product_reference_scan": {
+      "result": "References are confined to the bottom README license paragraph.",
+      "matches": [
+        {
+          "file": "README.md",
+          "line": 241
+        },
+        {
+          "file": "README.md",
+          "line": 243
+        }
+      ]
+    },
+    "em_dash_scan": {
+      "result": "No matches in tracked UTF-8 files.",
+      "matches": []
+    }
+  },
+  "windows_native_validation": {
+    "source_commit": "392b642200d6f2d69942ea50bbbc194ef8ea3c7f",
+    "workflow_run": "https://github.com/jmpijll/slightshot/actions/runs/37802763563",
+    "conclusion": "success",
+    "platform": "Windows Server 2025 hosted runner, native WPF and Win32",
+    "fixture": "Automated production General settings in light/dark themes with DefaultAction.StayOpen and sound disabled; production tray About action and OK button. Screenshots are cropped desktop window pixels.",
+    "report": "windows-native-validation.json",
+    "installer_and_portable_checks": "Passed native rendering, clipboard, delayed capture, recording, extracted portable executables, per-user installation, upgrade and uninstallation checks."
+  }
+}
