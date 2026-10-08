@@ -19,6 +19,7 @@ internal static class SmokeTest
         var checks = new List<string>();
         IconSmokeTest.Run(directory, checks);
         RasterEffectSmokeTest.Run(directory, checks);
+        StepSmokeTest.Run(directory, checks);
         foreach (double scale in new[] { 1.0, 1.25, 1.5, 2.0 })
         {
             var display = Fixture(scale);
@@ -29,7 +30,9 @@ internal static class SmokeTest
                 new(Tool.Arrow, [new(400, 270), new(570, 160)], "#FF3B30", 3),
                 new(Tool.Rectangle, [new(130, 130), new(350, 290)], "#34C759", 3),
                 new(Tool.Marker, [new(180, 335), new(320, 335), new(500, 335)], "#FFCC00", 3),
-                new(Tool.Text, [new(390, 300)], "#FFFFFF", 3, 18, "Slightshot")
+                new(Tool.Text, [new(390, 300)], "#FFFFFF", 3, 18, "Slightshot"),
+                new(Tool.Step, [new(150, 175)], "#FF3B30", 3, StepNumber: 1),
+                new(Tool.Step, [new(360, 230)], "#FFCC00", 3, StepNumber: 12)
             ];
             var output = AnnotationRenderer.Flatten(display, selection, annotations, true);
             Require(output.PixelWidth == (int)(560 * scale) && output.PixelHeight == (int)(300 * scale), $"native export size @{scale}");

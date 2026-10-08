@@ -54,7 +54,7 @@ in Settings. See [Microsoft's single-file deployment documentation](https://lear
 The overlay uses 30-point buttons, 18-point shared original vector icons, 6-point button corners,
 9-point panel corners, 2-point button spacing, 4-point panel padding and 8-point
 spacing from the selection. Tool order is Pen, Line, Arrow, Rectangle, Marker,
-Text, Blur, Pixelate, Colour, Undo. Actions are Print, Copy, Save, Record and Close. The twelve swatches,
+Text, Blur, Pixelate, Numbered steps, Colour, Undo. Actions are Print, Copy, Save, Record and Close. The twelve swatches,
 1–12-point thickness range, 45% dimming, selection handles, dimension badge and
 136×174-point pixel loupe follow the Mac source. A frozen-screenshot blur and dark
 tint reproduce the Mac HUD panel treatment without adding a WebView.
@@ -63,7 +63,8 @@ Selections can be moved, resized through all eight handles, nudged with arrows
 (Shift moves ten points), made square with Shift, or copied on Ctrl-drag release.
 Line/arrow/rectangle endpoints follow the Mac 45° constraint. Clicking outside
 the current selection starts a new one and clears annotations. Enter or
-double-click uses the configured default action. Esc/right-click cancels.
+double-click uses the configured default action; rapid clicks with Numbered steps
+keep stamping. Esc/right-click cancels.
 
 | While capturing | Action |
 | --- | --- |
@@ -93,6 +94,12 @@ Blur uses an 8-point radius and pixelation uses 12-point blocks, scaled for the
 monitor's DPI. The cached committed image is reused while dragging. These tools
 apply to screenshot output, not live video recordings.
 
+Numbered steps stamps one circle per gesture at the press position, using the
+current colour and starting at 1 for each screenshot. Undo restores the next
+number. Circles start at 32 points and grow for extra digits; their size is
+independent of the thickness slider. Live steps reuse the same cached pixels as
+the committed image and export, including earlier raster edits.
+
 Each monitor gets its own frozen image and overlay; negative desktop coordinates
 and per-monitor DPI are retained. Native Win32 positions the borderless windows
 in physical pixels, while selection/annotation coordinates use display points.
@@ -109,7 +116,8 @@ Start-Process Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slights
 
 The Windows workflow builds with warnings treated as errors, checks selection and
 toolbar edge cases, renders native WPF overlay/settings fixtures, verifies export
-sizes at 100%, 125%, 150% and 200%, and decodes PNG/JPEG/TIFF output. It uploads the
+sizes and numbered-step live/export pixels at 100%, 125%, 150% and 200%, and
+decodes PNG/JPEG/TIFF output. It uploads the
 rendered images, a validation report and portable x64/ARM64 executables. For each
 architecture, it creates and extracts the release ZIP, checks that it contains
 only `Slightshot.exe`, and verifies the executable's architecture and version.
