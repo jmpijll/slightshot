@@ -38,6 +38,11 @@ function Require([bool]$Condition, [string]$Message) {
     Write-Output "Passed: $Message"
 }
 
+function Get-FixedFileVersion([string]$Path) {
+    $info = [Diagnostics.FileVersionInfo]::GetVersionInfo($Path)
+    return [version]::new($info.FileMajorPart, $info.FileMinorPart, $info.FileBuildPart, $info.FilePrivatePart)
+}
+
 function Read-RegistryValue([string]$Key, [string]$Name) {
     $handle = $registry.OpenSubKey($Key)
     if ($null -eq $handle) { return $null }
@@ -178,14 +183,14 @@ try {
     Require ($null -eq (Read-RegistryValue $uninstallKey 'DisplayVersion')) 'CI runner has no pre-existing Slightshot installation.'
     Require (!(Test-Path -LiteralPath $startMenuShortcut) -and !(Test-Path -LiteralPath $desktopShortcut)) 'CI runner has no pre-existing Slightshot shortcuts.'
     Require (!(Has-AppMutex)) 'CI runner has no running Slightshot instance.'
-    $previousVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo($previousInstaller).FileVersion
-    Require ([version]$previousVersion -lt [version]$Version) 'Upgrade fixture has an actual earlier installer version.'
+    $previousVersion = Get-FixedFileVersion $previousInstaller
+    Require ($previousVersion -lt [version]$Version) 'Upgrade fixture has an actual earlier installer version.'
     Capture-Wizard 'light'
     Capture-Wizard 'dark'
     $ownsFixtures = $true
     $destination = '/DIR="{0}"' -f $installDirectory
     Run-Setup $previousInstaller 'install-previous' @($destination)
-    Require (([Diagnostics.FileVersionInfo]::GetVersionInfo($installedApp).FileVersion) -eq $previousVersion) 'Installed previous payload has its actual earlier file version.'
+    Require ((Get-FixedFileVersion $installedApp) -eq $previousVersion) 'Installed previous payload has its actual earlier file version.'
     Assert-Shortcut $startMenuShortcut
     Require (!(Test-Path -LiteralPath $desktopShortcut)) 'Desktop shortcut is disabled by default.'
     Require ($null -eq (Read-RegistryValue $runKey 'Slightshot')) 'Installation does not enable launch at login.'
@@ -281,7 +286,7 @@ try {
         platform = 'Windows x64 native installer lifecycle'
         version = $Version
         installer_sha256 = (Get-FileHash -LiteralPath $installer -Algorithm SHA256).Hash.ToLowerInvariant()
-        previous_installer_version = [Diagnostics.FileVersionInfo]::GetVersionInfo($previousInstaller).FileVersion
+        previous_installer_version = (Get-FixedFileVersion $previousInstaller).ToString()
         source = 'Actual compiled installer windows and installed executable on an isolated CI runner; no live screenshot or recording capture.'
         checks = @($checks.ToArray())
         failure = $failure

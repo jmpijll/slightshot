@@ -46,7 +46,8 @@ $script = Join-Path $PSScriptRoot '../Windows/Installer/Slightshot.iss'
 & $compiler '/Qp' "/DAppVersion=$Version" "/DAppArchitecture=$architecture" "/DPublishDirectory=$publish" "/DInstallerOutputDirectory=$output" $script
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup compilation failed with exit code $LASTEXITCODE." }
 if (!(Test-Path -LiteralPath $setup -PathType Leaf)) { throw 'Compiler did not create the expected setup executable.' }
-$setupVersion = [Diagnostics.FileVersionInfo]::GetVersionInfo($setup).FileVersion
-if ($setupVersion -ne "$Version.0") { throw "Wrong setup file version: $setupVersion" }
+$setupInfo = [Diagnostics.FileVersionInfo]::GetVersionInfo($setup)
+$setupVersion = [version]::new($setupInfo.FileMajorPart, $setupInfo.FileMinorPart, $setupInfo.FileBuildPart, $setupInfo.FilePrivatePart)
+if ($setupVersion -ne [version]"$Version.0") { throw "Wrong setup file version: $setupVersion" }
 Write-Output "Installer: $setup"
 Write-Output "SHA256: $((Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant())"
