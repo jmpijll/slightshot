@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
@@ -58,13 +59,25 @@ internal static class AppTextSmokeTest
                 }
                 Require(dialog != IntPtr.Zero, "production About menu opens a native MessageBox within ten seconds");
                 await Task.Delay(250);
-                var text = new List<string>();
-                EnumChildWindows(dialog, (child, _) => { if (ClassName(child) == "Static") text.Add(WindowText(child)); return true; }, IntPtr.Zero);
-                Require(text.Any(value => value.Replace("\r\n", "\n") == AppInfo.AboutText),
+                var controls = new List<(IntPtr Handle, string Class, string Text, bool Visible)>();
+                EnumChildWindows(dialog, (child, _) =>
+                {
+                    controls.Add((child, ClassName(child), WindowText(child), IsWindowVisible(child)));
+                    return true;
+                }, IntPtr.Zero);
+                string diagnostics = JsonSerializer.Serialize(controls.Select(control => new
+                {
+                    handle = control.Handle.ToInt64().ToString("X"), className = control.Class,
+                    text = control.Text, visible = control.Visible
+                }), new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(Path.Combine(directory, "about-dialog-controls.json"), diagnostics);
+                Require(controls.Any(control => control.Class == "Static" && control.Text.Replace("\r\n", "\n") == AppInfo.AboutText),
                     "native About dialog contains the exact production version and app description");
-                IntPtr ok = GetDlgItem(dialog, 1);
-                Require(ok != IntPtr.Zero && ClassName(ok) == "Button", "native About dialog has an OK button");
                 CaptureWindow(dialog, Path.Combine(directory, "about-window.png"));
+                var buttons = controls.Where(control => control.Visible && control.Class.Equals("Button", StringComparison.OrdinalIgnoreCase)
+                    && control.Text.Replace("&", "").Trim() == "OK").ToArray();
+                Require(buttons.Length == 1, $"native About dialog has one visible OK button. Child controls:\n{diagnostics}");
+                IntPtr ok = buttons[0].Handle;
                 Require(PostMessage(ok, 0x00F5, IntPtr.Zero, IntPtr.Zero), "automated click reaches the native About OK button");
                 while (IsWindow(dialog) && timeout.Elapsed < TimeSpan.FromSeconds(10)) await Task.Delay(50);
                 Require(!IsWindow(dialog), "native About dialog closes after OK within ten seconds");
@@ -120,7 +133,6 @@ internal static class AppTextSmokeTest
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr handle, StringBuilder text, int capacity);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr handle, StringBuilder text, int capacity);
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr handle, out uint processId);
-    [DllImport("user32.dll")] private static extern IntPtr GetDlgItem(IntPtr dialog, int id);
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool IsWindow(IntPtr handle);
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool IsWindowVisible(IntPtr handle);
