@@ -15,7 +15,7 @@
     "dmg_signature": "Slightshot-1.3.0.dmg: valid on disk\nSlightshot-1.3.0.dmg: satisfies its Designated Requirement",
     "dmg_ticket": "Processing: Slightshot-1.3.0.dmg\nThe validate action worked!",
     "dmg_gatekeeper": "Slightshot-1.3.0.dmg: accepted\nsource=Notarized Developer ID",
-    "app_signature": "--prepared:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\n--prepared:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--validated:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--prepared:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--validated:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--prepared:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--validated:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--prepared:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:/privatemounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\nmounted-image/Slightshot.app: valid on disk\nmounted-image/Slightshot.app: satisfies its Designated Requirement",
+    "app_signature": "--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\n--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\nmounted-image/Slightshot.app: valid on disk\nmounted-image/Slightshot.app: satisfies its Designated Requirement",
     "app_ticket": "Processing: mounted-image/Slightshot.app\nThe validate action worked!",
     "app_gatekeeper": "mounted-image/Slightshot.app: accepted\nsource=Notarized Developer ID",
     "sparkle_signature": "Verified Ed25519 against the public appcast and the downloaded app's embedded key"
@@ -156,5 +156,14 @@
     ],
     "windows_x64": "Native screenshot and recording tests passed in the release workflow, including the extracted portable app.",
     "windows_arm64": "Cross-built; public archive architecture/version/integrity inspected; no native execution."
+  },
+  "homebrew": {
+    "version": "1.3.0",
+    "sha256": "c9d2a9ce1472f2fd859138cedb3e668a2cbbf5d85a65bc1f84660f474c51d2b6",
+    "minimum_macos": "27",
+    "architecture": "arm64",
+    "fetch_and_checksum": "passed",
+    "command": "HOMEBREW_NO_AUTO_UPDATE=1 brew fetch --cask jmpijll/slightshot/slightshot",
+    "verified_at": "2026-10-08T07:38:02.113751+00:00"
   }
 }
