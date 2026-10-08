@@ -110,9 +110,9 @@ enum ScreenCapture {
 
     /// Captures only the display currently under the mouse pointer.
     ///
-    /// Deliberately not `captureAllDisplays().first(where:)` — on a multi-display
-    /// desk that grabs several full-resolution screenshots and discards all but
-    /// one, which is both slow and a lot of memory for a ⌘⇧8.
+    /// Avoids `captureAllDisplays().first(where:)`, which captures every display
+    /// at full resolution and discards all but one. Capturing only the selected
+    /// display saves time and memory for ⌘⇧8.
     static func captureActiveDisplay() async throws -> CapturedDisplay {
         guard ScreenRecordingPermission.isGranted else { throw CaptureError.permissionDenied }
 

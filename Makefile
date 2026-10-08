@@ -1,4 +1,4 @@
-# Slightshot — build, sign and release targets.
+# Build, sign and release Slightshot.
 #
 # Everything runs through Swift Package Manager plus the scripts in Scripts/,
 # so no Xcode project file needs to be kept in sync.
@@ -11,16 +11,16 @@ DMG := build/Slightshot-$(VERSION).dmg
 .PHONY: help build run app dmg notarize release icon lint test clean
 
 help:
-	@echo "make build     — debug build"
-	@echo "make run       — build and launch the app bundle"
-	@echo "make app       — build and sign Slightshot.app  (VERSION=$(VERSION))"
-	@echo "make dmg       — build the signed disk image"
-	@echo "make notarize  — notarise and staple the disk image"
-	@echo "make release   — app + dmg + notarize"
-	@echo "make icon      — regenerate app, menu bar and README artwork"
-	@echo "make test      — verify annotation rendering and video export"
-	@echo "make lint      — run SwiftLint"
-	@echo "make clean     — remove build artefacts"
+	@echo "make build       debug build"
+	@echo "make run         build and launch the app bundle"
+	@echo "make app         build and sign Slightshot.app for version $(VERSION)"
+	@echo "make dmg         build the signed disk image"
+	@echo "make notarize    notarise and staple the disk image"
+	@echo "make release     app + dmg + notarize"
+	@echo "make icon        regenerate app, menu bar and README artwork"
+	@echo "make test        verify annotation rendering and video export"
+	@echo "make lint        run SwiftLint"
+	@echo "make clean       remove build artefacts"
 
 build:
 	swift build

@@ -10,10 +10,10 @@ using Slightshot.Core;
 
 namespace Slightshot;
 
-// Native WPF rendering/export checks run on Windows CI; no real user screenshot is captured.
+// Native WPF checks use synthetic input on the isolated Windows CI desktop.
 internal static class SmokeTest
 {
-    public static void Run(string directory)
+    public static async Task RunAsync(string directory)
     {
         Directory.CreateDirectory(directory);
         var checks = new List<string>();
@@ -72,7 +72,13 @@ internal static class SmokeTest
                 Require(AppInfo.AboutText.StartsWith($"Slightshot {expectedVersion} for Windows\n", StringComparison.Ordinal), "About version matches the running executable");
             }
         }
-        File.WriteAllText(Path.Combine(directory, "validation.json"), JsonSerializer.Serialize(new { platform = "Windows WPF", source = "Synthetic fixture; not a live screen capture or manual interaction recording", checks }, new JsonSerializerOptions { WriteIndented = true }));
+        await AppTextSmokeTest.RunAsync(directory, checks);
+        File.WriteAllText(Path.Combine(directory, "validation.json"), JsonSerializer.Serialize(new
+        {
+            platform = "Windows WPF / native About MessageBox",
+            source = "Automated native CI fixture. General settings and About window captures are cropped desktop pixels; overlay/export inputs and renderer boards are synthetic. No manual interaction recording.",
+            appTextFixture = new { defaultAction = "StayOpen", aboutText = AppInfo.AboutText }, checks
+        }, new JsonSerializerOptions { WriteIndented = true }));
     }
     private static CapturedDisplay Fixture(double scale)
     {

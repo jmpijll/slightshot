@@ -1,7 +1,6 @@
 import AppKit
 
-/// The swatch grid that drops out of the colour well, plus a thickness slider —
-/// the two things you actually change mid-annotation.
+/// A swatch grid and thickness slider opened from the colour well.
 final class PalettePanel: NSView {
     static let swatches: [NSColor] = [
         NSColor(hex: "#FF3B30")!, NSColor(hex: "#FF9500")!, NSColor(hex: "#FFCC00")!,

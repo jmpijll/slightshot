@@ -28,7 +28,7 @@ nonisolated enum DefaultAction: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .copy: "Copy to clipboard"
         case .save: "Save to file"
-        case .stayOpen: "Do nothing (keep editing)"
+        case .stayOpen: "Keep editing"
         }
     }
 }

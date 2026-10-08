@@ -11,7 +11,7 @@ final class UpdaterController: NSObject, SPUUpdaterDelegate {
     /// there is none, so updating is simply disabled rather than crashing.
     func start() {
         guard Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") != nil else {
-            Log.updater.notice("No SUFeedURL in Info.plist — automatic updates disabled")
+            Log.updater.notice("No SUFeedURL in Info.plist. Automatic updates disabled.")
             return
         }
         controller = SPUStandardUpdaterController(startingUpdater: true,

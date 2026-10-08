@@ -1,6 +1,6 @@
 import AppKit
 
-/// The annotation tools, in the same order Lightshot lists them.
+/// The annotation tools in toolbar order.
 nonisolated enum Tool: String, CaseIterable, Identifiable, Sendable {
     case pen, line, arrow, rectangle, marker, text, blur, pixelate, step
 

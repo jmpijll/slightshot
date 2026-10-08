@@ -1,5 +1,5 @@
 // swift-tools-version: 6.2
-// Slightshot — an open-source, native macOS successor to Lightshot.
+// Slightshot is an open-source screenshot and screen recording app for macOS.
 
 import PackageDescription
 

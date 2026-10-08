@@ -4,7 +4,7 @@ cask "slightshot" do
 
   url "https://github.com/jmpijll/slightshot/releases/download/v#{version}/Slightshot-#{version}.dmg"
   name "Slightshot"
-  desc "Native open-source screenshot tool inspired by Lightshot"
+  desc "Native screenshot and screen recording app"
   homepage "https://github.com/jmpijll/slightshot"
 
   livecheck do
