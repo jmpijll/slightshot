@@ -1,7 +1,9 @@
 using System.IO;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Automation;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Slightshot.Core;
@@ -18,6 +20,7 @@ internal static class SmokeTest
         IconSmokeTest.Run(directory, checks);
         RasterEffectSmokeTest.Run(directory, checks);
         ScreenshotRetrySmokeTest.Run(directory, checks);
+        StepSmokeTest.Run(directory, checks);
         foreach (double scale in new[] { 1.0, 1.25, 1.5, 2.0 })
         {
             var display = Fixture(scale);
@@ -28,7 +31,9 @@ internal static class SmokeTest
                 new(Tool.Arrow, [new(400, 270), new(570, 160)], "#FF3B30", 3),
                 new(Tool.Rectangle, [new(130, 130), new(350, 290)], "#34C759", 3),
                 new(Tool.Marker, [new(180, 335), new(320, 335), new(500, 335)], "#FFCC00", 3),
-                new(Tool.Text, [new(390, 300)], "#FFFFFF", 3, 18, "Slightshot")
+                new(Tool.Text, [new(390, 300)], "#FFFFFF", 3, 18, "Slightshot"),
+                new(Tool.Step, [new(150, 175)], "#FF3B30", 3, StepNumber: 1),
+                new(Tool.Step, [new(360, 230)], "#FFCC00", 3, StepNumber: 12)
             ];
             var output = AnnotationRenderer.Flatten(display, selection, annotations, true);
             Require(output.PixelWidth == (int)(560 * scale) && output.PixelHeight == (int)(300 * scale), $"native export size @{scale}");
@@ -59,6 +64,11 @@ internal static class SmokeTest
             {
                 var prefs = new SettingsWindow(new Settings { PlaySound = false }, dark);
                 SaveVisual((FrameworkElement)prefs.Content, 540, 580, Path.Combine(directory, $"settings-{(dark ? "dark" : "light")}-parity.png"));
+                var expectedVersion = FileVersionInfo.GetVersionInfo(Environment.ProcessPath!).ProductVersion!.Split('+')[0];
+                var version = Descendants((DependencyObject)prefs.Content).OfType<TextBlock>()
+                    .Single(block => AutomationProperties.GetName(block) == "Version");
+                Require(version.Text == $"{expectedVersion} · Windows", "Settings version matches the running executable");
+                Require(AppInfo.AboutText.StartsWith($"Slightshot {expectedVersion} for Windows\n", StringComparison.Ordinal), "About version matches the running executable");
             }
         }
         File.WriteAllText(Path.Combine(directory, "validation.json"), JsonSerializer.Serialize(new { platform = "Windows WPF", source = "Synthetic fixture; not a live screen capture or manual interaction recording", checks }, new JsonSerializerOptions { WriteIndented = true }));
@@ -93,4 +103,13 @@ internal static class SmokeTest
         using var stream = File.Create(path); OutputService.Encode(bitmap, ImageFormat.Png, 1).Save(stream);
     }
     private static void Require(bool condition, string check) { if (!condition) throw new InvalidOperationException($"Windows smoke test failed: {check}"); }
+    private static IEnumerable<DependencyObject> Descendants(DependencyObject parent)
+    {
+        for (int index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, index);
+            yield return child;
+            foreach (var descendant in Descendants(child)) yield return descendant;
+        }
+    }
 }

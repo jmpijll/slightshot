@@ -59,7 +59,7 @@ internal sealed class OverlayWindow : Window
     private void MouseDownOnSurface(object sender, MouseButtonEventArgs e)
     {
         takeOver(this); surface.ShowHint = false; CommitText(); var p = Position(e);
-        if (e.ClickCount == 2 && surface.Selection is { } twice && twice.Contains(p)) { DefaultPerform(); return; }
+        if (e.ClickCount == 2 && toolbar.ActiveTool != Tool.Step && surface.Selection is { } twice && twice.Contains(p)) { DefaultPerform(); return; }
         if (surface.Selection is { } selection)
         {
             if (SelectionGeometry.Hit(p, selection) is { } handle) { drag = Drag.ResizeSelection; resizeHandle = handle; resizeOriginal = selection; surface.CaptureMouse(); return; }
@@ -84,6 +84,7 @@ internal sealed class OverlayWindow : Window
                 break;
             case Drag.ResizeSelection: surface.Selection = resizeHandle.Resize(resizeOriginal, p).Clamp(Bounds); break;
             case Drag.Drawing:
+                if (surface.LiveAnnotation is { Tool: Tool.Step }) break;
                 if (surface.Selection is { } drawing) { p = p.Clamp(drawing); points.Add(p); surface.LiveAnnotation = MakeAnnotation(p); }
                 break;
         }
@@ -124,6 +125,7 @@ internal sealed class OverlayWindow : Window
     private Annotation? MakeAnnotation(PointD end)
     {
         if (toolbar.ActiveTool is not { } tool) return null;
+        if (tool == Tool.Step) return new(tool, [anchor], settings.AnnotationColor, settings.LineWidth, StepNumber: Annotation.NextStepNumber(surface.Annotations));
         // The Mac renderer applies the same 45° constraint to line, arrow and rectangle endpoints.
         if (Shift && tool is Tool.Line or Tool.Arrow or Tool.Rectangle) end = SelectionGeometry.AxisLocked(anchor, end);
         return new(tool, tool is Tool.Pen or Tool.Marker ? points.ToArray() : [anchor, end], settings.AnnotationColor, settings.LineWidth, settings.FontSize);

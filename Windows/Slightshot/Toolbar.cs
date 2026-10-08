@@ -84,6 +84,7 @@ internal sealed class Toolbar
         Tool.Arrow => ProductIcon.Arrow, Tool.Rectangle => ProductIcon.Rectangle,
         Tool.Marker => ProductIcon.Marker, Tool.Text => ProductIcon.Text,
         Tool.Blur => ProductIcon.Blur, Tool.Pixelate => ProductIcon.Pixelate,
+        Tool.Step => ProductIcon.Step,
         _ => throw new ArgumentOutOfRangeException(nameof(tool))
     };
 
@@ -93,7 +94,7 @@ internal sealed class Toolbar
         var toolViews = new List<FrameworkElement>();
         foreach (var tool in Enum.GetValues<Tool>())
         {
-            var button = new ToolbarButton(IconForTool(tool), tool.ToString(), () => Select(ActiveTool == tool ? null : tool)) { Accent = settings.AnnotationColor };
+            var button = new ToolbarButton(IconForTool(tool), tool == Tool.Step ? "Numbered steps" : tool.ToString(), () => Select(ActiveTool == tool ? null : tool)) { Accent = settings.AnnotationColor };
             buttons[tool] = button; toolViews.Add(button);
         }
         toolViews.Add(Separator(true));
@@ -167,8 +168,8 @@ internal sealed class Toolbar
         const double width = 156, height = 86;
         double x = toolsRect.Right + 8;
         if (x + width > bounds.Right - 4) x = toolsRect.Left - 8 - width;
-        // The colour button follows six tools and the separator in the vertical bar.
-        double swatchY = toolsRect.Top + 4 + 6 * 32 + 3 + 15;
+        // The colour button follows every tool and the separator in the vertical bar.
+        double swatchY = toolsRect.Top + 4 + Enum.GetValues<Tool>().Length * 32 + 3 + 15;
         palette.Place(new(OverlayStyle.Fit(x, width, bounds.Width), OverlayStyle.Fit(swatchY - height / 2, height, bounds.Height), width, height), display);
     }
     private static StackPanel Stack(IEnumerable<FrameworkElement> views, bool vertical)

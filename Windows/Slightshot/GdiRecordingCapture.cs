@@ -30,8 +30,9 @@ internal sealed class GdiRecordingCapture : IDisposable
         finally { if (screen != IntPtr.Zero) RecordingNative.ReleaseDC(IntPtr.Zero, screen); }
     }
 
-    internal byte[] Capture()
+    internal void Capture(byte[] bytes)
     {
+        if (bytes.Length != checked(width * height * 4)) throw new ArgumentException("The recording buffer has an unexpected size.", nameof(bytes));
         bool connected = false;
         NativeMethods.EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, (IntPtr monitor, IntPtr dc, ref NativeMethods.NativeRect bounds, IntPtr data) =>
         {
@@ -51,11 +52,9 @@ internal sealed class GdiRecordingCapture : IDisposable
         finally { if (screen != IntPtr.Zero) RecordingNative.ReleaseDC(IntPtr.Zero, screen); }
         if (includeCursor) DrawCursor();
         if (!RecordingNative.GdiFlush()) throw new Win32Exception(Marshal.GetLastWin32Error(), "The recording frame could not be completed.");
-        var bytes = new byte[checked(width * height * 4)];
         Marshal.Copy(pixels, bytes, 0, bytes.Length);
         // GDI's reserved alpha is not defined. Video samples must be opaque.
         for (int index = 3; index < bytes.Length; index += 4) bytes[index] = 255;
-        return bytes;
     }
 
     private void DrawCursor()

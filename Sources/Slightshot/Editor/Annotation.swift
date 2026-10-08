@@ -12,6 +12,7 @@ struct Annotation: Identifiable {
         case text(String, origin: CGPoint)
         case blur(CGRect)
         case pixelate(CGRect)
+        case step(number: Int, center: CGPoint)
     }
 
     let id = UUID()
@@ -20,6 +21,21 @@ struct Annotation: Identifiable {
     var lineWidth: CGFloat
     var alpha: CGFloat = 1
     var fontSize: CGFloat = 18
+
+    static func nextStepNumber(in annotations: [Annotation]) -> Int {
+        let numbers = annotations.compactMap { annotation -> Int? in
+            if case .step(let number, _) = annotation.shape { return number }
+            return nil
+        }
+        return (numbers.max() ?? 0) + 1
+    }
+
+    /// Stamp sizing is independent of the pen thickness and text font settings.
+    private static func stepBounds(number: Int, center: CGPoint) -> CGRect {
+        let diameter = max(32, 16 + CGFloat(String(number).count) * 12)
+        return CGRect(x: center.x - diameter / 2, y: center.y - diameter / 2,
+                      width: diameter, height: diameter)
+    }
 
     var rasterEffect: (effect: RasterEffect, rect: CGRect)? {
         switch shape {
@@ -76,9 +92,29 @@ struct Annotation: Identifiable {
             guard !string.isEmpty else { return }
             Self.attributedString(string, color: stroke, size: fontSize)
                 .draw(at: origin)
+        case .step(let number, let center):
+            drawStep(number: number, center: center, fill: stroke)
         case .blur, .pixelate:
             break // Raster effects are composited by Renderer, in annotation order.
         }
+    }
+
+    private func drawStep(number: Int, center: CGPoint, fill: NSColor) {
+        let bounds = Self.stepBounds(number: number, center: center)
+        let circle = NSBezierPath(ovalIn: bounds.insetBy(dx: 0.75, dy: 0.75))
+        fill.setFill()
+        circle.fill()
+        NSColor.white.setStroke()
+        circle.lineWidth = 1.5
+        circle.stroke()
+        let rgb = fill.usingColorSpace(.sRGB) ?? .black
+        let brightness = 0.2126 * rgb.redComponent + 0.7152 * rgb.greenComponent + 0.0722 * rgb.blueComponent
+        let text = NSAttributedString(string: String(number), attributes: [
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 18, weight: .semibold),
+            .foregroundColor: brightness > 0.6 ? NSColor.black : NSColor.white,
+        ])
+        let size = text.size()
+        text.draw(at: CGPoint(x: center.x - size.width / 2, y: center.y - size.height / 2))
     }
 
     private func drawArrow(from a: CGPoint, to b: CGPoint) {
@@ -157,6 +193,8 @@ struct Annotation: Identifiable {
         case .text(let s, let origin):
             let size = Self.attributedString(s, color: .white, size: fontSize).size()
             return CGRect(origin: origin, size: size).insetBy(dx: -pad, dy: -pad)
+        case .step(let number, let center):
+            return Self.stepBounds(number: number, center: center).insetBy(dx: -2, dy: -2)
         }
     }
 }

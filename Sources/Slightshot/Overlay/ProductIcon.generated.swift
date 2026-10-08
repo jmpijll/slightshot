@@ -10,6 +10,7 @@ nonisolated enum ProductIcon: String, CaseIterable, Sendable {
     case text
     case blur
     case pixelate
+    case step
     case undo
     case print
     case copy
@@ -21,7 +22,7 @@ nonisolated enum ProductIcon: String, CaseIterable, Sendable {
     case check
     case warning
 
-    static let sourceHash = "d934be9a9a96579ebf61c63647eda91196beddf0c818b5ba11cfe631085a518b"
+    static let sourceHash = "8115a076e7afad18653074278ce685c5acc5063261ade9fbefe625e09630f238"
     static let size: CGFloat = 18
 
     // Generated exhaustive asset dispatch; no conditional application behavior.
@@ -39,6 +40,7 @@ nonisolated enum ProductIcon: String, CaseIterable, Sendable {
         case .text: drawText(in: context)
         case .blur: drawBlur(in: context)
         case .pixelate: drawPixelate(in: context)
+        case .step: drawStep(in: context)
         case .undo: drawUndo(in: context)
         case .print: drawPrint(in: context)
         case .copy: drawCopy(in: context)
@@ -213,6 +215,34 @@ extension ProductIcon {
         path1.addLine(to: CGPoint(x: 7, y: 15))
         path1.addLine(to: CGPoint(x: 2.5, y: 15))
         path1.closeSubpath()
+        context.addPath(path1)
+        context.drawPath(using: .stroke)
+    }
+
+    nonisolated private func drawStep(in context: CGContext) {
+        let path0 = CGMutablePath()
+        path0.move(to: CGPoint(x: 16, y: 9))
+        path0.addCurve(to: CGPoint(x: 9, y: 16),
+                         control1: CGPoint(x: 16, y: 12.866),
+                         control2: CGPoint(x: 12.866, y: 16))
+        path0.addCurve(to: CGPoint(x: 2, y: 9),
+                         control1: CGPoint(x: 5.134, y: 16),
+                         control2: CGPoint(x: 2, y: 12.866))
+        path0.addCurve(to: CGPoint(x: 9, y: 2),
+                         control1: CGPoint(x: 2, y: 5.134),
+                         control2: CGPoint(x: 5.134, y: 2))
+        path0.addCurve(to: CGPoint(x: 16, y: 9),
+                         control1: CGPoint(x: 12.866, y: 2),
+                         control2: CGPoint(x: 16, y: 5.134))
+        path0.closeSubpath()
+        context.addPath(path0)
+        context.drawPath(using: .stroke)
+        let path1 = CGMutablePath()
+        path1.move(to: CGPoint(x: 7, y: 7))
+        path1.addLine(to: CGPoint(x: 9, y: 5.5))
+        path1.addLine(to: CGPoint(x: 9, y: 12.5))
+        path1.move(to: CGPoint(x: 7, y: 12.5))
+        path1.addLine(to: CGPoint(x: 11, y: 12.5))
         context.addPath(path1)
         context.drawPath(using: .stroke)
     }

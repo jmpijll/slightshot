@@ -22,21 +22,25 @@ internal static class RecordingSmokeTest
         directory = Path.GetFullPath(directory); Directory.CreateDirectory(directory);
         const int width = 1600, height = 900;
         int frame = 0;
-        byte[] Pixels()
+        var buffers = new HashSet<byte[]>();
+        var colors = new byte[][] { [16, 24, 224, 255], [224, 24, 16, 255], [24, 224, 16, 255] };
+        RecordingSession? session = null;
+        void Pixels(byte[] bytes)
         {
-            var bytes = new byte[width * height * 4]; int number = Interlocked.Increment(ref frame);
+            buffers.Add(bytes); int number = Interlocked.Increment(ref frame);
+            byte[] color = colors[Math.Min(2, (int)(session!.Duration.TotalSeconds / 2))];
             for (int y = 0; y < height; y++) for (int x = 0; x < width; x++)
             {
                 int i = (y * width + x) * 4;
-                bytes[i] = (byte)((x * 13 + y * 7 + number * 31) % 256);
-                bytes[i + 1] = (byte)((x * 5 + y * 19 + number * 11) % 256);
-                bytes[i + 2] = (byte)((x * 17 + y * 3 + number * 23) % 256); bytes[i + 3] = 255;
+                // Stable center colors make early buffer reuse observable after
+                // native encode/decode; a moving top stripe keeps frames live.
+                bytes[i] = y < 10 ? (byte)(number % 256) : color[0];
+                bytes[i + 1] = color[1]; bytes[i + 2] = color[2]; bytes[i + 3] = 255;
             }
-            return bytes;
         }
         var checks = new List<string>();
         await ValidateControlsAsync(directory, checks);
-        var session = new RecordingSession(width, height, Pixels);
+        session = new RecordingSession(width, height, Pixels);
         string temporary = session.DirectoryPath;
         try
         {
@@ -46,13 +50,17 @@ internal static class RecordingSmokeTest
             await Task.WhenAny(started.Task, recording).WaitAsync(TimeSpan.FromSeconds(30));
             if (recording.IsCompleted) await recording;
             await started.Task.WaitAsync(TimeSpan.FromSeconds(30));
-            await Task.Delay(1800); session.Stop();
+            await Task.Delay(6200); session.Stop(); session.Stop();
             await recording.WaitAsync(TimeSpan.FromSeconds(30));
-            Require(frame >= 5, "live frame provider was sampled repeatedly");
+            Require(frame >= 30, "live frame provider was sampled repeatedly during the bounded soak");
+            Require(buffers.Count <= 4 && frame > buffers.Count, "native Processed callbacks recycled a bounded set of frame arrays");
             var source = await StorageFile.GetFileFromPathAsync(session.SourcePath);
             var metadata = await source.Properties.GetVideoPropertiesAsync();
             Require(metadata.Width == width && metadata.Height == height && metadata.Duration.TotalSeconds > 0.1, "source contains playable H.264 video at selected dimensions");
-            checks.Add("Native BGRA frames encoded to a playable H.264 MP4 source; Stop finalized the file.");
+            var sourceComposition = new MediaComposition(); sourceComposition.Clips.Add(await MediaClip.CreateFromFileAsync(source));
+            for (int index = 0; index < colors.Length; index++)
+                await RequireDecodedColorAsync(sourceComposition, TimeSpan.FromSeconds(index * 2 + 0.5), colors[index]);
+            checks.Add($"Six-second native soak encoded {frame} frames using {buffers.Count} distinct managed arrays; real Processed callbacks permitted reuse. Decoded source frames retained red/blue/green center colors across reuse, and repeated Stop finalized the MP4.");
             foreach (var quality in Enum.GetValues<RecordingQuality>())
             {
                 string path = Path.Combine(directory, $"recording-{quality.ToString().ToLowerInvariant()}.mp4");
@@ -94,8 +102,57 @@ internal static class RecordingSmokeTest
         }
         finally { session.Dispose(); }
         Require(!Directory.Exists(temporary), "temporary source directory cleaned");
+        await ValidateSessionEndingsAsync(checks);
         checks.Add("Temporary source directory removed after recording/export release their file handles.");
         File.WriteAllText(Path.Combine(directory, "recording-validation.json"), JsonSerializer.Serialize(new { platform = "Windows native WPF / MediaTranscoder", source = "Real recording-control HWNDs plus moving synthetic BGRA video. Native display affinity, UI rendering, media encode/decode and lifecycle evidence; not a manual desktop recording or proof of GDI exclusion.", checks }, new JsonSerializerOptions { WriteIndented = true }));
+    }
+    private static async Task RequireDecodedColorAsync(MediaComposition composition, TimeSpan position, byte[] expected)
+    {
+        using var thumbnail = await composition.GetThumbnailAsync(position, 160, 90, VideoFramePrecision.NearestFrame);
+        var decoder = await Windows.Graphics.Imaging.BitmapDecoder.CreateAsync(thumbnail);
+        var pixels = await decoder.GetPixelDataAsync(Windows.Graphics.Imaging.BitmapPixelFormat.Bgra8, Windows.Graphics.Imaging.BitmapAlphaMode.Ignore,
+            new Windows.Graphics.Imaging.BitmapTransform(), Windows.Graphics.Imaging.ExifOrientationMode.IgnoreExifOrientation,
+            Windows.Graphics.Imaging.ColorManagementMode.DoNotColorManage);
+        byte[] bytes = pixels.DetachPixelData();
+        int center = checked(((int)decoder.PixelHeight / 2 * (int)decoder.PixelWidth + (int)decoder.PixelWidth / 2) * 4);
+        for (int channel = 0; channel < 3; channel++)
+            Require(Math.Abs(bytes[center + channel] - expected[channel]) < 45, $"decoded frame at {position.TotalSeconds:0.0}s retains channel {channel} after pooled buffer reuse");
+    }
+
+    private static async Task ValidateSessionEndingsAsync(List<string> checks)
+    {
+        // Native cancellation can finish before the final Processed callback.
+        // Repeating sessions and disposal exercises those late releases.
+        for (int iteration = 0; iteration < 3; iteration++)
+        {
+            int frames = 0;
+            using var session = new RecordingSession(320, 180, bytes => { bytes.AsSpan().Fill(255); Interlocked.Increment(ref frames); });
+            var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            session.Started += () => started.TrySetResult();
+            Task recording = session.RunAsync();
+            await Task.WhenAny(started.Task, recording).WaitAsync(TimeSpan.FromSeconds(30));
+            if (recording.IsCompleted) await recording;
+            await started.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            await Task.Delay(250);
+            session.Abort(); session.Abort();
+            await ExpectCancellation(() => recording.WaitAsync(TimeSpan.FromSeconds(30)));
+            Require(frames > 0, "abort fixture captured native samples");
+            session.Dispose(); session.Dispose(); session.Stop(); session.Abort();
+            Require(!Directory.Exists(session.DirectoryPath), "repeated abort/dispose cleans the source directory");
+        }
+        using (var session = new RecordingSession(320, 180, _ => throw new IOException("Expected capture failure.")))
+        {
+            try { await session.RunAsync().WaitAsync(TimeSpan.FromSeconds(30)); throw new InvalidOperationException("Capture failure was ignored."); }
+            catch (Exception error) when (error is not TimeoutException && error.ToString().Contains("Expected capture failure.", StringComparison.Ordinal)) { }
+            session.Dispose();
+            Require(!Directory.Exists(session.DirectoryPath), "capture failure cleans rented frames and the source directory");
+        }
+        using (var session = new RecordingSession(320, 180, _ => throw new InvalidOperationException("Pre-start abort captured a frame.")))
+        {
+            session.Abort();
+            await ExpectCancellation(() => session.RunAsync().WaitAsync(TimeSpan.FromSeconds(30)));
+        }
+        checks.Add("Three native sessions captured then aborted, tolerated repeated Abort/Dispose and late completion, and removed their temporary files. Capture failure and pre-start cancellation completed without a stranded buffer wait.");
     }
     private static async Task ValidateControlsAsync(string directory, List<string> checks)
     {
