@@ -118,7 +118,8 @@ public partial class App : System.Windows.Application
     }
     private void ShowSettings()
     {
-        if (overlays?.IsBusy == true || recording?.IsBusy == true || quitting) return;
+        if (overlays?.IsDelivering == true || recording?.IsBusy == true || quitting) return;
+        if (overlays?.IsBusy == true) Dismiss();
         if (preferences == null)
         {
             preferences = new SettingsWindow(settings);

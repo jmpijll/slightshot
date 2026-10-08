@@ -100,8 +100,10 @@ Screenshot output temporarily hides every overlay so native dialogs can take
 focus. Cancelling Save As or Print, or failing a write, restores the same frozen
 display, selection and annotations. Text committed for export remains undoable.
 Retry from the restored toolbar or shortcut; successful output or explicit
-Escape releases the editor. Capture shortcuts and Settings stay blocked while
-the editor is retained, and modal output rejects duplicate actions.
+Escape releases the editor. Capture shortcuts stay blocked while the editor is
+retained. Settings stays blocked during modal output; afterwards it dismisses
+the editor and opens normally, so an invalid save directory can be corrected.
+Modal output rejects duplicate actions.
 
 ## Validation and evidence
 
@@ -130,6 +132,9 @@ capture/output/recording rejection and Escape. Native dialog focus still needs a
 desktop check: annotate a selection, cancel Save As, fail a write to an unwritable
 destination, then Undo and save successfully. Confirm the restored overlay takes
 keyboard focus and another capture shortcut leaves the selection intact.
+The smoke test also exercises the actual Settings route during output and after
+a failed directory write, verifying that the idle editor is dismissed and the
+Output folder chooser remains accessible.
 
 [Saved native Windows review evidence](review/windows-parity/README.md) includes
 the overlay, light/dark settings fixtures, DPI/export results and the successful
