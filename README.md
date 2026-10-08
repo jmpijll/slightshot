@@ -90,6 +90,17 @@ another capture. There is no additional setting or shortcut.
 
 See the [native delayed-capture review evidence](docs/review/delayed-capture/README.md).
 
+## Edit an image from the clipboard
+
+Choose **Edit Image from Clipboard** in the Mac menu bar or Windows tray menu
+to open a copied image in a titled editor window. The editor preserves the
+original pixels and transparency. Use **Fit** to see the whole image or **100%**
+to inspect its pixels, then crop or annotate with the same tools, Undo and Redo
+as a screenshot. Copy, save or print the result. The **Record** button is hidden
+for imported images.
+
+See the [native clipboard-editor review evidence](docs/review/clipboard-editor/README.md).
+
 ## Record an area
 
 Select an area and click the **Record** button underneath it. The frozen
