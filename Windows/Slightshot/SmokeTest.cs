@@ -20,6 +20,7 @@ internal static class SmokeTest
         IconSmokeTest.Run(directory, checks);
         RasterEffectSmokeTest.Run(directory, checks);
         StepSmokeTest.Run(directory, checks);
+        ScreenshotRetrySmokeTest.Run(directory, checks);
         foreach (double scale in new[] { 1.0, 1.25, 1.5, 2.0 })
         {
             var display = Fixture(scale);

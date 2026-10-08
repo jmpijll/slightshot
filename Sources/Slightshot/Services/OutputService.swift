@@ -4,6 +4,24 @@ import UserNotifications
 
 /// Everything that happens *after* a capture: clipboard, disk, printer.
 enum OutputService {
+    /// Returns false when the user cancels or an output operation fails.
+    static func perform(_ action: CaptureAction, image: CGImage) -> Bool {
+        switch action {
+        case .copy:
+            copyToClipboard(image)
+            playShutter()
+            return true
+        case .save:
+            guard save(image) != nil else { return false }
+            playShutter()
+            return true
+        case .saveAs:
+            return saveAs(image) != nil
+        case .print:
+            return print(image)
+        }
+    }
+
     // MARK: - Clipboard
 
     static func copyToClipboard(_ image: CGImage) {
@@ -92,7 +110,8 @@ enum OutputService {
 
     // MARK: - Printing
 
-    static func print(_ image: CGImage) {
+    @discardableResult
+    static func print(_ image: CGImage) -> Bool {
         let nsImage = NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height))
         let view = NSImageView(frame: NSRect(origin: .zero, size: nsImage.size))
         view.image = nsImage
@@ -108,7 +127,7 @@ enum OutputService {
         operation.showsPrintPanel = true
         operation.showsProgressPanel = true
         NSApp.activate(ignoringOtherApps: true)
-        operation.run()
+        return operation.run()
     }
 
     // MARK: - Naming
