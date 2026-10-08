@@ -7,6 +7,15 @@ if CommandLine.arguments.contains("--verify-runtime-linkage") {
     exit(EXIT_SUCCESS)
 }
 
+if CommandLine.arguments.contains("--redo-review") {
+    let app = NSApplication.shared
+    let review = RedoReview()
+    app.delegate = review
+    app.setActivationPolicy(.regular)
+    withExtendedLifetime(review) { app.run() }
+    exit(EXIT_SUCCESS)
+}
+
 let commandInbox: ApplicationCommandInbox
 do {
     commandInbox = try ApplicationCommandInbox(directory: ApplicationCommandInbox.userDirectory())

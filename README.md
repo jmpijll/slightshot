@@ -117,6 +117,10 @@ area as soon as you release the mouse. A selection stays within one display.
 
 ## Shortcuts
 
+Undo and Redo in the toolbar also work with text, blur, pixelation and numbered steps.
+Redo restores the original mark; adding a new annotation or starting a new selection
+clears Redo. While typing, the text field keeps its native Undo and Redo shortcuts.
+
 You can change the three capture shortcuts in Settings.
 
 | Action | macOS | Windows |
@@ -135,6 +139,7 @@ While selecting or annotating:
 | Save as | <kbd>⌘⇧S</kbd> | <kbd>Ctrl+Shift+S</kbd> |
 | Print | <kbd>⌘P</kbd> | <kbd>Ctrl+P</kbd> |
 | Undo the last annotation | <kbd>⌘Z</kbd> | <kbd>Ctrl+Z</kbd> |
+| Redo the last undone annotation | <kbd>⌘⇧Z</kbd> | <kbd>Ctrl+Y</kbd> or <kbd>Ctrl+Shift+Z</kbd> |
 | Confirm, copying by default | <kbd>Return</kbd> | <kbd>Enter</kbd> |
 | Cancel | <kbd>Esc</kbd> or <kbd>⌘X</kbd> | <kbd>Esc</kbd> or <kbd>Ctrl+X</kbd> |
 | Move the selection by one point | Arrow keys | Arrow keys |

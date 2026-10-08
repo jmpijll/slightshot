@@ -1,0 +1,59 @@
+{
+  "date": "2026-10-08",
+  "macos": {
+    "source_commit": "59dc10327e6e0dd81085f94b924e96dc220b1403",
+    "source_kind": "synthetic 1000x700 image in production native editor",
+    "evidence_kind": "CUA screenshots of actual AppKit window; Retina 2000x1464 including title frame",
+    "runtime": "macOS 27, Apple Silicon",
+    "signing": "Developer ID",
+    "checks": [
+      "Cmd+Z removed step 2 and enabled Redo",
+      "Cmd+Shift+Z restored step 2 and disabled exhausted Redo",
+      "Undo then toolbar Redo restored step 2",
+      "Rectangle, pixelation and step 1 remained intact",
+      "Escape closed review fixture"
+    ],
+    "images": {
+      "mac-undone.jpg": "62ef9b1535cab124f218d09c3762dcf4593d0d9dc1640fc3eb0db82dca6bc071",
+      "mac-restored.jpg": "4e5c1d6553aad7b0f434ad6f0757d5b082b34011f2c9e77426a091bf5a5132f1",
+      "mac-before.jpg": "c45c7ad915655de9f57976684f1c97004e730d27d3d70e74b21073cc78c1fc11"
+    }
+  },
+  "local_checks": {
+    "swift_tests": 43,
+    "windows_core_checks": 170,
+    "swiftlint_strict": "pass",
+    "shared_icons": 20,
+    "windows_release_cross_build": "pass; 0 warnings, 0 errors",
+    "python_tests": 14
+  },
+  "windows": {
+    "source_commit": "eb93c1e",
+    "workflow": "https://github.com/jmpijll/slightshot/actions/runs/37775032123",
+    "result": "success",
+    "artifact": "windows-native-parity-evidence",
+    "artifact_id": 11549507203,
+    "platform": "Windows WPF (.NET 10), windows-latest x64 runner",
+    "evidence_kind": "production native WPF overlay/control render over synthetic source; production command handler and native text-input invocation",
+    "scales": [
+      1,
+      1.25,
+      1.5,
+      2
+    ],
+    "checks": [
+      "Undo and Redo toolbar and Ctrl+Z/Y/Shift+Z production handler",
+      "Original raster/vector/text/step object ordering and exact restored export pixels",
+      "Restored preview interior matches export",
+      "Repeated cycles and step numbering",
+      "Native TextBox text-input, undo and redo preserve annotation history",
+      "New committed text/new selection invalidation"
+    ],
+    "scope_limit": "No manual Windows desktop keyboard or physical screen-capture acceptance for this feature.",
+    "images": {
+      "windows-before.png": "9ace90a8b879e8a51f112822b5ac3126df52d17486f20f8a2584886c7da1785c",
+      "windows-undone.png": "6d7c24895a5e70960a636dcb7ab84040c5936432f1f700b2ca8e96729188e41b",
+      "windows-restored.png": "9ace90a8b879e8a51f112822b5ac3126df52d17486f20f8a2584886c7da1785c"
+    }
+  }
+}

@@ -125,6 +125,7 @@ private struct ShortcutsTab: View {
         ("⇧⌘S", "Save as…"),
         ("⌘P", "Print"),
         ("⌘Z", "Undo the last annotation"),
+        ("⌘⇧Z", "Redo the last undone annotation"),
         ("↩", "Confirm"),
         ("⎋", "Cancel"),
         ("⇧drag", "Constrain to a square or 45°"),
