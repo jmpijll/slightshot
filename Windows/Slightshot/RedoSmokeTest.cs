@@ -69,9 +69,12 @@ internal static class RedoSmokeTest
             Invoke(window, "BeginText", new PointD(180, 320));
             var entry = Descendants((DependencyObject)window.Content).OfType<TextBox>().Single();
             Require(!Button(window, RedoTooltip).IsEnabled, "annotation redo is disabled while typing");
-            // SelectedText uses WPF's native selection change block, creating
-            // undo history even in a rendered window without desktop focus.
-            entry.SelectedText = "Draft text";
+            Render(window, display); // Initialize the native TextBox template.
+            var input = new TextCompositionEventArgs(Keyboard.PrimaryDevice,
+                new TextComposition(InputManager.Current, entry, "Draft text"))
+            { RoutedEvent = TextCompositionManager.TextInputEvent };
+            entry.RaiseEvent(input);
+            Require(input.Handled && entry.Text == "Draft text", "draft uses native WPF text input");
             Require(entry.CanUndo, "draft has native text undo history");
             Require(!Shortcut(window, Key.Z, ModifierKeys.Control), "draft Ctrl+Z remains available to the native TextBox");
             entry.Undo();
