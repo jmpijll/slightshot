@@ -61,7 +61,7 @@ internal static class RasterEffectSmokeTest
                 surface.Annotations.Add(effect); surface.LiveAnnotation = null; surface.InvalidateVisual(); surface.UpdateLayout();
                 var committed = new RenderTargetBitmap(width, height, 96 * scale, 96 * scale, PixelFormats.Pbgra32); committed.Render(surface);
                 Require(Pixel(committed, px + (int)(8 * scale), py + (int)(8 * scale)) == after, $"committed {tool} matches live preview @{scale}");
-                surface.Annotations.RemoveAt(surface.Annotations.Count - 1); surface.InvalidateVisual(); surface.UpdateLayout();
+                surface.Annotations.Undo(); surface.InvalidateVisual(); surface.UpdateLayout();
                 var undone = new RenderTargetBitmap(width, height, 96 * scale, 96 * scale, PixelFormats.Pbgra32); undone.Render(surface);
                 Require(Pixel(undone, px + (int)(8 * scale), py + (int)(8 * scale)) == before, $"undo restores pixels after {tool} @{scale}");
                 Require(Bytes(image).SequenceEqual(pixels), $"{tool} keeps frozen source unchanged @{scale}");

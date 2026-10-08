@@ -69,6 +69,7 @@ private final class ClipboardReviewDelegate: NSObject, NSApplicationDelegate {
                 self?.snapshot?.acceptReviewExport(png, wasOwned: owned)
             }
             self?.write(image, png: png, name: "clipboard-review-export")
+            DispatchQueue.main.async { NSApp.terminate(nil) }
         }
         return succeeded
     })
@@ -104,7 +105,7 @@ private final class ClipboardReviewDelegate: NSObject, NSApplicationDelegate {
             try png.write(to: directory.appendingPathComponent(name + ".png"), options: .atomic)
             let bitmap = NSBitmapImageRep(cgImage: image)
             let report: [String: Any] = [
-                "source": "Review-only native AppKit fixture/output PNG; no screen capture or clipboard inspection",
+                "source": "Native review fixture/output PNG; synthetic pixels only; no screen capture",
                 "width": image.width, "height": image.height, "hasAlpha": bitmap.hasAlpha,
                 "cornerAlpha": bitmap.colorAt(x: 0, y: 0)?.alphaComponent ?? -1,
             ]

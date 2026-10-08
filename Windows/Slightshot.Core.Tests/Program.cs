@@ -1,6 +1,8 @@
 using Slightshot.Core;
 
 int checks = 0;
+checks += DelayedCaptureChecks.Run();
+checks += AnnotationHistoryChecks.Run();
 void Equal<T>(T expected, T actual, string message)
 {
     if (!EqualityComparer<T>.Default.Equals(expected, actual)) throw new InvalidOperationException($"{message}: expected {expected}, got {actual}");
@@ -97,13 +99,13 @@ Equal<SelectionHandle?>(SelectionHandle.TopLeft, SelectionGeometry.Hit(new(4, 4)
 var locked = SelectionGeometry.AxisLocked(new(0, 0), new(100, 85)); Near(locked.X, locked.Y, "Shift nearest 45 degrees");
 
 var regular = OverlayStyle.Layout(new(100, 100, 200, 200), bounds);
-Equal(new RectD(308, 100, 38, 361), regular.Tools, "tool bar fits numbered steps on the right");
+Equal(new RectD(308, 100, 38, 393), regular.Tools, "tool bar fits numbered steps and redo on the right");
 Equal(new RectD(131, 308, 169, 38), regular.Actions, "Mac actions with Record below right aligned");
 var edge = OverlayStyle.Layout(new(700, 500, 100, 100), bounds);
-Equal(new RectD(654, 235, 38, 361), edge.Tools, "right edge flips tools to left and clamps vertically");
+Equal(new RectD(654, 203, 38, 393), edge.Tools, "right edge flips tools to left and clamps vertically");
 Equal(new RectD(627, 454, 169, 38), edge.Actions, "bottom edge flips actions above and clamps horizontally");
 var full = OverlayStyle.Layout(bounds, bounds);
-Equal(new RectD(754, 4, 38, 361), full.Tools, "full monitor tucks tools inside");
+Equal(new RectD(754, 4, 38, 393), full.Tools, "full monitor tucks tools inside");
 Equal(new RectD(627, 554, 169, 38), full.Actions, "full monitor tucks actions inside");
 var zoomed = OverlayStyle.Layout(new(-500, -200, 3000, 2000), bounds);
 Equal(true, zoomed.Tools.Left >= 4 && zoomed.Tools.Right <= bounds.Right - 4 && zoomed.Actions.Top >= 4 && zoomed.Actions.Bottom <= bounds.Bottom - 4, "large zoomed clipboard selections keep toolbars inside the viewport");

@@ -131,7 +131,7 @@ internal static class ClipboardEditorSmokeTest
         surface.Annotations.AddRange(history);
         foreach (bool live in new[] { false, true })
         {
-            if (live) { surface.Annotations.RemoveAt(1); surface.LiveAnnotation = history[1]; }
+            if (live) { surface.Annotations.Clear(); surface.Annotations.AddRange([history[0], history[2]]); surface.LiveAnnotation = history[1]; }
             surface.InvalidateVisual();
             surface.Measure(new Size(source.Width, source.Height)); surface.Arrange(new Rect(0, 0, source.Width, source.Height));
             var preview = new RenderTargetBitmap(source.PixelWidth, source.PixelHeight, 96 * scale, 96 * scale, PixelFormats.Pbgra32);

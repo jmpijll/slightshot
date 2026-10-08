@@ -74,6 +74,7 @@ internal sealed class Toolbar
     private readonly Action changed;
     private readonly Dictionary<Tool, ToolbarButton> buttons = [];
     private readonly ToolbarButton colorButton;
+    private readonly ToolbarButton redoButton;
     private readonly FrostedPanel tools, actions;
     private FrostedPanel? palette;
     private RectD toolsRect;
@@ -90,7 +91,7 @@ internal sealed class Toolbar
         _ => throw new ArgumentOutOfRangeException(nameof(tool))
     };
 
-    public Toolbar(Canvas host, EditorImageSource display, Settings settings, Action<Tool?> toolChanged, Action changed, Action undo, Action<CaptureAction> perform, Action close, Action record, bool allowsRecording = true)
+    public Toolbar(Canvas host, EditorImageSource display, Settings settings, Action<Tool?> toolChanged, Action changed, Action undo, Action redo, Action<CaptureAction> perform, Action close, Action record, bool allowsRecording = true)
     {
         this.allowsRecording = allowsRecording;
         this.host = host; this.display = display; this.settings = settings; this.toolChanged = toolChanged; this.changed = changed;
@@ -102,7 +103,9 @@ internal sealed class Toolbar
         }
         toolViews.Add(Separator(true));
         colorButton = new ToolbarButton(null, "Colour", TogglePalette) { Swatch = settings.AnnotationColor };
-        toolViews.Add(colorButton); toolViews.Add(new ToolbarButton(ProductIcon.Undo, "Undo  Ctrl+Z", undo));
+        var undoButton = new ToolbarButton(ProductIcon.Undo, "Undo  Ctrl+Z", undo);
+        redoButton = new ToolbarButton(ProductIcon.Redo, "Redo  Ctrl+Y / Ctrl+Shift+Z", redo) { IsEnabled = false };
+        toolViews.Add(colorButton); toolViews.Add(undoButton); toolViews.Add(redoButton);
         tools = new FrostedPanel(Stack(toolViews, true));
         var actionViews = new List<FrameworkElement> {
             new ToolbarButton(ProductIcon.Print, "Print  Ctrl+P", () => perform(CaptureAction.Print)),
@@ -124,6 +127,10 @@ internal sealed class Toolbar
         toolChanged(tool);
     }
     public void RestoreTool() { if (settings.RememberLastTool && ActiveTool == null && lastTool != null) Select(lastTool); }
+    public void SetRedoAvailability(bool canRedo)
+    {
+        redoButton.IsEnabled = canRedo;
+    }
     public void Layout(RectD? selection, RectD bounds, bool visible)
     {
         visible = visible && (allowsRecording ? selection is { Width: >= 8, Height: >= 8 } : selection is { Width: > 0, Height: > 0 });

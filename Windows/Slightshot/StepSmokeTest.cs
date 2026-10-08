@@ -78,7 +78,7 @@ internal static class StepSmokeTest
             Save(exported, Path.Combine(directory, $"step-failure-export-{display.Scale:0.##}x.png"));
             throw new InvalidOperationException($"Step pixel parity @{display.Scale}, history={string.Join(',', history.Select(annotation => annotation.Tool))}, {differences} mismatches: {string.Join(';', mismatches)}");
         }
-        surface.Annotations.RemoveAt(surface.Annotations.Count - 1); surface.InvalidateVisual(); surface.UpdateLayout();
+        surface.Annotations.Undo(); surface.InvalidateVisual(); surface.UpdateLayout();
         var undone = Render(surface, display);
         var restored = AnnotationRenderer.Flatten(display, selection, history, true);
         int px = (int)((live.Points[0].X + 10 - selection.X) * display.Scale), py = (int)((live.Points[0].Y - selection.Y) * display.Scale);

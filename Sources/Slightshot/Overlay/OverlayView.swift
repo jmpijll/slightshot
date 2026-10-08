@@ -48,6 +48,9 @@ final class OverlayView: NSView {
         }
     }
     private var annotations: [Annotation] = [] { didSet { canvas.annotations = annotations } }
+    private var undoneAnnotations: [Annotation] = [] {
+        didSet { updateRedoAvailability() }
+    }
     private var activeTool: Tool? { toolbars.activeTool }
 
     private var color: NSColor
@@ -177,7 +180,7 @@ final class OverlayView: NSView {
         canvas.showHint = false
         commitTextEntry()
 
-        let point = clampToBounds(location(of: event))
+        let point = location(of: event)
 
         if event.clickCount == 2, activeTool != .step, let selection, selection.contains(point) {
             performDefaultAction()
@@ -198,6 +201,7 @@ final class OverlayView: NSView {
                         canvas.liveAnnotation = makeAnnotation(start: point, current: point,
                                                                points: [point], constrained: false)
                     }
+                    updateRedoAvailability()
                 }
                 return
             }
@@ -210,9 +214,11 @@ final class OverlayView: NSView {
 
         // Anywhere else: start a fresh selection.
         annotations.removeAll()
+        undoneAnnotations.removeAll()
         copyOnRelease = event.modifierFlags.contains(.command)
-        drag = .newSelection(anchor: point)
-        self.selection = CGRect(corner: point, corner: point)
+        let anchor = clampToBounds(point)
+        drag = .newSelection(anchor: anchor)
+        self.selection = CGRect(corner: anchor, corner: anchor)
     }
 
     override func mouseDragged(with event: NSEvent) {
@@ -248,6 +254,7 @@ final class OverlayView: NSView {
             drag = .drawing(start: start, points: points)
             canvas.liveAnnotation = makeAnnotation(start: start, current: confined, points: points,
                                                    constrained: event.modifierFlags.contains(.shift))
+            updateRedoAvailability()
         }
     }
 
@@ -255,7 +262,7 @@ final class OverlayView: NSView {
         switch drag {
         case .drawing:
             if let live = canvas.liveAnnotation {
-                annotations.append(live)
+                commitAnnotation(live)
                 canvas.liveAnnotation = nil
             }
         case .newSelection:
@@ -273,6 +280,7 @@ final class OverlayView: NSView {
             break
         }
         drag = .none
+        updateRedoAvailability()
         copyOnRelease = false
         if selection != nil { hideMagnifier() }
         layoutToolbars()
@@ -339,12 +347,6 @@ final class OverlayView: NSView {
         return CGPoint(x: start.x + cos(angle) * length, y: start.y + sin(angle) * length)
     }
 
-    func undo() {
-        if textEntry != nil { cancelTextEntry(); return }
-        guard !annotations.isEmpty else { return }
-        annotations.removeLast()
-    }
-
     // MARK: - Text tool
 
     private func beginTextEntry(at point: CGPoint) {
@@ -355,6 +357,7 @@ final class OverlayView: NSView {
         entry.onCancel = { [weak self] in self?.cancelTextEntry() }
         addSubview(entry)
         textEntry = entry
+        updateRedoAvailability()
         window?.makeFirstResponder(entry)
     }
 
@@ -371,17 +374,19 @@ final class OverlayView: NSView {
                              y: entry.frame.minY + entry.textContainerInset.height)
         entry.removeFromSuperview()
         textEntry = nil
+        updateRedoAvailability()
         window?.makeFirstResponder(self)
 
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        annotations.append(Annotation(shape: .text(text, origin: origin), color: color,
+        commitAnnotation(Annotation(shape: .text(text, origin: origin), color: color,
                                       lineWidth: lineWidth, alpha: 1, fontSize: fontSize))
     }
 
     private func cancelTextEntry() {
         textEntry?.removeFromSuperview()
         textEntry = nil
+        updateRedoAvailability()
         window?.makeFirstResponder(self)
     }
 
@@ -444,7 +449,7 @@ final class OverlayView: NSView {
             case "c": perform(.copy); return
             case "s": perform(shift ? .saveAs : .save); return
             case "p": perform(.print); return
-            case "z": undo(); return
+            case "z": applyHistoryShortcut(redo: shift); return
             case "x": cancel(); return
             default: break
             }
@@ -460,6 +465,10 @@ final class OverlayView: NSView {
         default:
             break
         }
+    }
+
+    private func applyHistoryShortcut(redo shouldRedo: Bool) {
+        if shouldRedo { redo() } else { undo() }
     }
 
     /// AppKit can deliver Escape as a cancel *command* rather than a raw key,
@@ -483,10 +492,14 @@ final class OverlayView: NSView {
     }
 
     func selectAll() {
+        undoneAnnotations.removeAll()
         canvas.showHint = false
         selection = source.bounds
     }
 
+}
+
+extension OverlayView {
     // MARK: - Actions
 
     private func performDefaultAction() {
@@ -510,9 +523,6 @@ final class OverlayView: NSView {
         delegate?.overlay(self, didComplete: action, image: image)
     }
 
-}
-
-extension OverlayView {
     private var viewingZoom: CGFloat {
         capturedDisplay == nil ? max(0.01, convert(CGRect(x: 0, y: 0, width: 1, height: 1), to: nil).width) : 1
     }
@@ -543,24 +553,43 @@ extension OverlayView: ToolbarControllerDelegate {
         magnifier?.accentColor = newColor
     }
 
-    func toolbarDidChangeLineWidth(_ width: CGFloat) {
-        lineWidth = width
-    }
+    func toolbarDidChangeLineWidth(_ width: CGFloat) { lineWidth = width }
 
-    func toolbarDidRequestUndo() {
-        undo()
-    }
+    func toolbarDidRequestUndo() { undo() }
 
-    func toolbarDidRequest(_ action: CaptureAction) {
-        perform(action)
-    }
+    func toolbarDidRequestRedo() { redo() }
+
+    func toolbarDidRequest(_ action: CaptureAction) { perform(action) }
 
     func toolbarDidRequestRecording() {
         guard capturedDisplay != nil, let selection, selection.width >= 8, selection.height >= 8 else { return }
         delegate?.overlay(self, didRequestRecording: selection)
     }
 
-    func toolbarDidRequestClose() {
-        delegate?.overlayDidCancel(self)
+    func toolbarDidRequestClose() { delegate?.overlayDidCancel(self) }
+}
+
+// MARK: - Annotation history
+
+extension OverlayView {
+    func undo() {
+        if textEntry != nil { cancelTextEntry(); return }
+        guard let annotation = annotations.popLast() else { return }
+        undoneAnnotations.append(annotation)
+    }
+
+    func redo() {
+        guard textEntry == nil, canvas.liveAnnotation == nil,
+              let annotation = undoneAnnotations.popLast() else { return }
+        annotations.append(annotation)
+    }
+
+    private func updateRedoAvailability() {
+        toolbars.setCanRedo(textEntry == nil && canvas.liveAnnotation == nil && !undoneAnnotations.isEmpty)
+    }
+
+    private func commitAnnotation(_ annotation: Annotation) {
+        undoneAnnotations.removeAll()
+        annotations.append(annotation)
     }
 }

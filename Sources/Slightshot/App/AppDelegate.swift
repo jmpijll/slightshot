@@ -7,9 +7,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let inbox: ApplicationCommandInbox
     private var hasFinishedLaunching = false
     private var receivedURLs = false
+    private var countdownPanel: DelayedCapturePanel?
+    private lazy var delayedCapture = DelayedCaptureController(
+        isBusy: { OverlayCoordinator.shared.isBusy || RecordingCoordinator.shared.isBusy },
+        show: { [weak self] seconds in self?.showCountdown(seconds) },
+        hide: { [weak self] in self?.countdownPanel?.close(); self?.countdownPanel = nil },
+        capture: { OverlayCoordinator.shared.beginRegionCapture() }
+    )
     private lazy var commandDispatcher = ApplicationCommandDispatcher(
         isBusy: { OverlayCoordinator.shared.isBusy || RecordingCoordinator.shared.isBusy },
-        capture: Self.capture,
+        capture: { [weak self] command in self?.delayedCapture.cancel(); Self.capture(command) },
         reopen: { PreferencesWindowController.shared.show() }
     )
 
@@ -40,7 +47,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onCaptureArea: { [weak self] in self?.route(.capture(.captureArea)) },
             onSaveFullScreen: { [weak self] in self?.route(.capture(.saveFullScreen)) },
             onCopyFullScreen: { [weak self] in self?.route(.capture(.copyFullScreen)) },
-            onEditClipboard: { OverlayCoordinator.shared.editImageFromClipboard() }
+            onDelayedCapture: { [weak self] in self?.delayedCapture.start() },
+            onEditClipboard: { [weak self] in
+                self?.delayedCapture.cancel()
+                OverlayCoordinator.shared.editImageFromClipboard()
+            }
         )
 
         Settings.shared.onHotKeysChanged = { [weak self] in self?.registerHotKeys() }
@@ -67,6 +78,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .saveFullScreen: OverlayCoordinator.shared.captureFullScreen(.save)
         case .copyFullScreen: OverlayCoordinator.shared.captureFullScreen(.copy)
         }
+    }
+
+    private func showCountdown(_ seconds: Int) {
+        if countdownPanel == nil {
+            countdownPanel = DelayedCapturePanel { [weak self] in self?.delayedCapture.cancel() }
+            countdownPanel?.orderFrontRegardless()
+        }
+        countdownPanel?.update(seconds: seconds)
     }
 
     private func route(_ command: ApplicationCommand) {
@@ -97,6 +116,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard inbox.isOwner else { return .terminateNow }
+        delayedCapture.cancel()
         guard RecordingCoordinator.shared.isBusy else { return .terminateNow }
         Task {
             await RecordingCoordinator.shared.prepareForTermination()
@@ -108,6 +128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         inbox.stopReceiving()
         guard inbox.isOwner else { return }
+        delayedCapture.cancel()
         HotKeyCenter.shared.unregisterAll()
     }
 

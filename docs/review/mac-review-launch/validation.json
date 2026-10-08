@@ -1,0 +1,26 @@
+{
+  "source": "85725c5f6340d687a1d8c13a460b1d37eb981c64",
+  "platform": "macOS 27 arm64",
+  "probe": "Same assembled app and ad-hoc frameworks; before variant reapplies previous Hardened Runtime app flag. Neither probe opens a UI or takes command ownership.",
+  "runs": [
+    {
+      "variant": "before",
+      "returncode": -6,
+      "stdout": "",
+      "stderr": "dyld[84517]: Library not loaded: @rpath/Sparkle.framework/Versions/B/Sparkle\n  Referenced from: <89208176-7484-3FB9-A1FD-5B342B4D2125> /private/tmp/slightshot-runtime-before.app/Contents/MacOS/Slightshot\n  Reason: tried: '/private/tmp/slightshot-runtime-before.app/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle' (code signature in <8F0BCB17-939E-3264-BC61-6FCFE31C57A5> '/private/tmp/slightshot-runtime-before.app/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle' not valid for use in process: mapping process and mapped file (non-platform) have different Team IDs), '/private/tmp/slightshot-runtime-before.app/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle' (code signature in <8F0BCB17-939E-3264-BC61-6FCFE31C57A5> '/private/tmp/slightshot-runtime-before.app/Contents/Frameworks/Sparkle.framework/Versions/B/Sparkle' not valid for use in process: mapping process and mapped file (non-platform) have different Team IDs)"
+    },
+    {
+      "variant": "after",
+      "returncode": 0,
+      "stdout": "Slightshot runtime linkage verified",
+      "stderr": ""
+    }
+  ],
+  "developerIdCheck": {
+    "source": "20fbcf86566ce075cecac9d4bf129029bb853c93",
+    "returncode": 0,
+    "stdout": "Slightshot runtime linkage verified",
+    "signatureFlags": "CodeDirectory v=20500 size=2658 flags=0x10000(runtime) hashes=76+3 location=embedded",
+    "libraryValidationDisabledEntitlementAdded": false
+  }
+}

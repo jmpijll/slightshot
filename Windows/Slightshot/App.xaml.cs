@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Windows;
+using System.Windows.Threading;
 using Slightshot.Core;
 using Forms = System.Windows.Forms;
 
@@ -21,6 +22,8 @@ public partial class App : System.Windows.Application
     private bool ownsInstance;
     private bool capturing;
     private bool quitting;
+    private DelayedCaptureController? delayedCapture;
+    private DelayedCapturePanel? countdownPanel;
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -30,6 +33,14 @@ public partial class App : System.Windows.Application
             string directory = Path.GetFullPath(e.Args.Length > 1 ? e.Args[1] : "artifacts");
             try { await ClipboardEditorSmokeTest.RunAsync(directory); Shutdown(0); }
             catch (Exception ex) { Directory.CreateDirectory(directory); File.WriteAllText(Path.Combine(directory, "clipboard-failure.txt"), ex.ToString()); Shutdown(1); }
+            return;
+        }
+        if (e.Args.Length >= 1 && e.Args[0] == "--delayed-capture-smoke-test")
+        {
+            string directory = Path.GetFullPath(e.Args.Length > 1 ? e.Args[1] : "artifacts");
+            try { await DelayedCaptureSmokeTest.RunAsync(this, directory); Shutdown(0); }
+            catch (Exception ex) { Directory.CreateDirectory(directory); File.WriteAllText(Path.Combine(directory, "delayed-capture-failure.txt"), ex.ToString()); Shutdown(1); }
+
             return;
         }
         if (e.Args.Length >= 1 && e.Args[0] == "--recording-smoke-test")
@@ -60,6 +71,7 @@ public partial class App : System.Windows.Application
         tray.DoubleClick += (_, _) => Dispatcher.InvokeAsync(BeginCapture);
         output = new OutputService(settings, (title, body) => tray.ShowBalloonTip(3000, title, body, Forms.ToolTipIcon.None));
         overlays = new OverlayCoordinator(settings, output.Perform, SaveCaptureSettings, StartRecording);
+        ConfigureDelayedCapture();
         hotKeys = new HotKeyService(id => Dispatcher.InvokeAsync(() => { if (id == 1) BeginCapture(); else FullScreen(id == 2 ? CaptureAction.Save : CaptureAction.Copy); }));
         UpdateSettings();
     }
@@ -69,8 +81,16 @@ public partial class App : System.Windows.Application
         try { settings.Save(); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Error($"Could not save settings.\n\n{ex.Message}"); }
         string[] failures = hotKeys!.Register(settings);
+        var menu = CreateCaptureMenu();
+        var old = tray!.ContextMenuStrip; tray.ContextMenuStrip = menu; old?.Dispose();
+        if (failures.Length > 0) tray.ShowBalloonTip(6000, "Shortcut unavailable", $"Already in use or invalid: {string.Join(", ", failures)}. Capture from the tray or choose another shortcut in Settings.", Forms.ToolTipIcon.Warning);
+    }
+
+    internal Forms.ContextMenuStrip CreateCaptureMenu()
+    {
         var menu = new Forms.ContextMenuStrip();
         Add(menu, $"Capture Area    {settings.CaptureAreaHotKey}", BeginCapture);
+        Add(menu, "Capture Area in 5 Seconds", () => delayedCapture?.Start());
         Add(menu, $"Capture Full Screen    {settings.SaveFullScreenHotKey}", () => FullScreen(CaptureAction.Save));
         Add(menu, $"Copy Full Screen    {settings.CopyFullScreenHotKey}", () => FullScreen(CaptureAction.Copy));
         Add(menu, "Edit Image from Clipboard", EditClipboard);
@@ -81,13 +101,13 @@ public partial class App : System.Windows.Application
         Add(menu, "Download updates…", () => Open(AppInfo.ReleaseUrl));
         Add(menu, "About Slightshot", () => MessageBox.Show(AppInfo.AboutText, "About Slightshot", MessageBoxButton.OK));
         menu.Items.Add(new Forms.ToolStripSeparator()); Add(menu, "Quit Slightshot", Quit);
-        var old = tray!.ContextMenuStrip; tray.ContextMenuStrip = menu; old?.Dispose();
-        if (failures.Length > 0) tray.ShowBalloonTip(6000, "Shortcut unavailable", $"Already in use or invalid: {string.Join(", ", failures)}. Capture from the tray or choose another shortcut in Settings.", Forms.ToolTipIcon.Warning);
+        return menu;
     }
 
     private void Add(Forms.ContextMenuStrip menu, string label, Action action) => menu.Items.Add(label, null, (_, _) => Dispatcher.InvokeAsync(action));
     private void BeginCapture()
     {
+        delayedCapture?.Cancel();
         if (capturing || overlays?.IsBusy == true || recording?.IsBusy == true || quitting) return;
         capturing = true;
         try
@@ -102,6 +122,7 @@ public partial class App : System.Windows.Application
     }
     private void EditClipboard()
     {
+        delayedCapture?.Cancel();
         if (capturing || overlays?.IsBusy == true || recording?.IsBusy == true || quitting) return;
         capturing = true;
         try
@@ -127,6 +148,7 @@ public partial class App : System.Windows.Application
     }
     private void FullScreen(CaptureAction action)
     {
+        delayedCapture?.Cancel();
         if (capturing || overlays?.IsBusy == true || recording?.IsBusy == true || quitting) return;
         capturing = true;
         try
@@ -154,6 +176,7 @@ public partial class App : System.Windows.Application
     {
         if (quitting) return;
         quitting = true; Dismiss();
+        delayedCapture?.Cancel();
         if (recording != null) await recording.ShutdownAsync();
         Shutdown();
     }
@@ -173,7 +196,45 @@ public partial class App : System.Windows.Application
     }
     protected override void OnExit(ExitEventArgs e)
     {
+        delayedCapture?.Cancel();
         hotKeys?.Dispose(); tray?.Dispose(); trayIcon?.Dispose();
         if (ownsInstance) instance?.ReleaseMutex(); instance?.Dispose(); base.OnExit(e);
+    }
+
+    private void ConfigureDelayedCapture()
+    {
+        delayedCapture = new DelayedCaptureController(() => (double)Stopwatch.GetTimestamp() / Stopwatch.Frequency,
+            ScheduleCountdown, () => capturing || overlays?.IsBusy == true || recording?.IsBusy == true || quitting,
+            seconds =>
+            {
+                if (countdownPanel == null)
+                {
+                    countdownPanel = new DelayedCapturePanel(() => delayedCapture?.Cancel());
+                    countdownPanel.Show();
+                }
+                countdownPanel.Update(seconds);
+            }, () =>
+            {
+                if (countdownPanel == null) return;
+                countdownPanel.Close(); countdownPanel = null;
+                // Cancel is also used by ordinary capture shortcuts. Flush here
+                // so every path samples restored target pixels beneath the HUD.
+                NativeMethods.DwmFlush();
+            }, () =>
+            {
+                // Remove an open tray menu and wait for desktop composition so
+                // the screenshot contains neither the countdown nor our menu.
+                tray?.ContextMenuStrip?.Close();
+                NativeMethods.DwmFlush();
+                BeginCapture();
+            });
+    }
+
+    private Action ScheduleCountdown(double seconds, Action callback)
+    {
+        var timer = new DispatcherTimer(DispatcherPriority.Normal, Dispatcher) { Interval = TimeSpan.FromSeconds(seconds) };
+        timer.Tick += (_, _) => { timer.Stop(); callback(); };
+        timer.Start();
+        return timer.Stop;
     }
 }

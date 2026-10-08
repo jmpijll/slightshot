@@ -39,6 +39,10 @@ final class TextEntryView: NSTextView {
 
     override func keyDown(with event: NSEvent) {
         let isCommand = event.modifierFlags.contains(.command)
+        if isCommand, event.charactersIgnoringModifiers?.lowercased() == "z" {
+            if event.modifierFlags.contains(.shift) { undoManager?.redo() } else { undoManager?.undo() }
+            return
+        }
         switch event.keyCode {
         case 53:  // Escape
             onCancel?()
