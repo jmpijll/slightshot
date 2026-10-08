@@ -1,20 +1,65 @@
 # Slightshot for Windows
 
 The Windows app is a native .NET 10 WPF tray application. It starts from the
-current Mac capture workflow and keeps the same floating controls, tool order,
-colours, selection geometry and keyboard interactions. Windows 10 version 2004
-or later, or Windows 11, is required.
+same capture workflow as the Mac app, with floating controls, matching tool
+order, colours, selection geometry and familiar keyboard interactions. Use a
+supported Windows 11 release on x64 or ARM64. The app's Windows API baseline is
+Windows 10 version 2004 (build 19041); that is not a promise of support for every
+Windows 10 edition. Microsoft's [.NET 10 supported operating systems](https://github.com/dotnet/core/blob/main/release-notes/10.0/supported-os.md)
+limit Windows 10 support to certain Enterprise/LTSC editions.
 
-## Download the preview
+## Download and updates
 
-Download the portable [x64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-x64.zip)
-or [ARM64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-arm64.zip)
-from the latest release. Extract the ZIP and double-click its only file,
-`Slightshot.exe`. The .NET runtime is bundled into the executable; you do not
-need to install it. Windows preview binaries are unsigned; updates
-are downloaded manually from Releases. **Download updates…** in the tray menu
-or General settings opens the latest release. About and Settings show the
-version embedded in the running executable.
+Version [1.3.0](https://github.com/jmpijll/slightshot/releases/tag/v1.3.0) offers
+portable [x64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-x64.zip)
+and [ARM64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-arm64.zip)
+downloads. Extract the ZIP and double-click its only file, `Slightshot.exe`.
+The .NET runtime is bundled; you do not need to install it separately.
+
+The next release will also include `Slightshot-windows-x64-setup.exe` and
+`Slightshot-windows-arm64-setup.exe`. Portable ZIPs remain available alongside
+the installers. Choose x64 for an Intel/AMD PC or ARM64 for a Windows on Arm PC.
+The ARM64 payload is cross-built and inspected; it has not yet received native
+ARM64 desktop acceptance.
+
+Windows preview binaries, including setup, are unsigned. An installer does not
+remove Windows security warnings. Updates are downloaded manually from
+[Releases](https://github.com/jmpijll/slightshot/releases).
+**Download updates…** in the tray menu or General settings opens the latest
+release. About and Settings show the version embedded in the running executable.
+
+## Installer
+
+Setup installs to `%LOCALAPPDATA%\Programs\Slightshot` for the current user,
+without administrator rights. It adds a Start menu shortcut and offers an
+optional desktop shortcut. Launch at login remains an opt-in setting inside
+the app; setup does not enable it.
+
+Quit Slightshot from its notification-area menu before installing, upgrading or
+uninstalling. Setup refuses to continue while the app is running, so an active
+screenshot or recording is not forcibly closed. Run a newer setup over the
+existing installation to upgrade. Reinstalling the same version is allowed;
+downgrades are rejected. Settings live separately in
+`%LOCALAPPDATA%\Slightshot\settings.json` and are preserved, as are saved
+screenshots and recordings.
+
+Remove the installed app through **Windows Settings › Apps › Installed apps**.
+Uninstall removes the installed program, its shortcuts and a launch-at-login
+entry that points to that installation. It leaves settings and saved captures
+in place. A launch-at-login entry for a different portable copy is not removed
+or silently moved. When switching from portable to installed, turn launch at
+login off in the portable app before quitting it, then enable it in the
+installed app if desired.
+
+For review before the next release, download the `Slightshot-windows-installers`
+artifact from a successful Windows workflow run. These are the same unsigned
+setup packages that the Release workflow will attach to future version tags.
+Native x64 installation, upgrade and uninstall checks are recorded in the
+`windows-installer-evidence` artifact. The ARM64 installer is built and inspected
+on the x64 runner; running it requires an ARM64 Windows PC.
+
+See the [actual light/dark setup screenshots and lifecycle validation](review/windows-installer/README.md)
+for the reviewed installer build.
 
 ## Run and build
 
@@ -44,10 +89,28 @@ native libraries and .NET runtime. The package script rejects loose dependencies
 missing executables and mismatched architectures before creating a ZIP with that
 one file at its root. CI uses the same profile for review artifacts and releases.
 
-Run `Slightshot.exe` from any folder. No installer or administrator rights are
-needed. On first launch, .NET extracts bundled native libraries into its cache
+The portable `Slightshot.exe` runs from any folder without administrator rights.
+On first launch, .NET extracts bundled native libraries into its cache
 under `%TEMP%/.net`; later launches reuse that cache. Launch at login is available
 in Settings. See [Microsoft's single-file deployment documentation](https://learn.microsoft.com/en-us/dotnet/core/deploying/single-file/overview).
+
+### Build an installer
+
+Install [Inno Setup 7.1.0](https://jrsoftware.org/isdl.php) on Windows and use
+[PowerShell 7](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell-on-windows).
+After the portable publish above, wrap each architecture's executable in setup:
+
+```powershell
+./Scripts/build_windows_installer.ps1 -Runtime win-x64 -Version 1.3.0 -PublishDirectory Windows/artifacts/win-x64 -OutputDirectory Windows/artifacts/installers -CompilerPath 'C:\Program Files\Inno Setup 7\ISCC.exe'
+./Scripts/build_windows_installer.ps1 -Runtime win-arm64 -Version 1.3.0 -PublishDirectory Windows/artifacts/win-arm64 -OutputDirectory Windows/artifacts/installers -CompilerPath 'C:\Program Files\Inno Setup 7\ISCC.exe'
+```
+
+Use the version embedded in the published app; the builder rejects a mismatch.
+Outputs are `Slightshot-windows-x64-setup.exe` and
+`Slightshot-windows-arm64-setup.exe`. CI downloads the exact 7.1.0 compiler,
+checks its SHA-256 and Authenticode signature, and uses this script for review
+and release builds. Setup does not install .NET separately: it packages the same
+self-contained app as the ZIP.
 
 ## Mac parity
 
@@ -179,8 +242,8 @@ and the Windows executable icon is converted from the existing Mac app artwork.
 Windows uses Segoe UI and the same original toolbar glyphs as Mac. The shared
 source is `Resources/UI/icons.json`; Apple's system fonts remain platform-specific. Frosted material and text shadow are
 approximations of AppKit rather than identical OS rendering. Windows update
-delivery is manual; no signing, installer or automatic updater is provided in this
-initial port. GDI screen capture targets the ordinary desktop; protected video
+delivery is manual. Setup packages provide installation and upgrades; code signing
+and an automatic updater are not yet provided. GDI screen capture targets the ordinary desktop; protected video
 and HDR-specific colour management are outside this first version.
 
 ## Screen recording
