@@ -6,6 +6,7 @@ protocol ToolbarControllerDelegate: AnyObject {
     func toolbarDidChangeColor(_ color: NSColor)
     func toolbarDidChangeLineWidth(_ width: CGFloat)
     func toolbarDidRequestUndo()
+    func toolbarDidRequestRedo()
     func toolbarDidRequest(_ action: CaptureAction)
     func toolbarDidRequestRecording()
     func toolbarDidRequestClose()
@@ -23,6 +24,8 @@ final class ToolbarController {
     private var palette: PalettePanel?
     private var toolButtons: [Tool: ToolbarButton] = [:]
     private var colorButton: ColorSwatchButton?
+    private var redoButton: ToolbarButton?
+    private var canRedo = false
 
     private(set) var activeTool: Tool?
     private var color: NSColor
@@ -52,6 +55,11 @@ final class ToolbarController {
         if tool == nil || !usesStyle { hidePalette() }
         if Settings.shared.rememberLastTool { Self.lastTool = tool }
         delegate?.toolbarDidChangeTool(tool)
+    }
+
+    func setCanRedo(_ available: Bool) {
+        canRedo = available
+        redoButton?.isEnabled = available
     }
 
     private func toggle(_ tool: Tool) {
@@ -127,6 +135,13 @@ final class ToolbarController {
         toolViews.append(ToolbarButton(icon: .undo, tooltip: "Undo  ⌘Z") { [weak self] in
             self?.delegate?.toolbarDidRequestUndo()
         })
+
+        let redo = ToolbarButton(icon: .redo, tooltip: "Redo  ⇧⌘Z") { [weak self] in
+            self?.delegate?.toolbarDidRequestRedo()
+        }
+        redo.isEnabled = canRedo
+        redoButton = redo
+        toolViews.append(redo)
 
         let tools = ToolbarPanel(orientation: .vertical, views: toolViews)
         host.addSubview(tools)

@@ -1,9 +1,9 @@
 name: Windows
 on:
   push:
-    paths: ['Windows/**', 'Resources/UI/**', 'Scripts/generate_ui_icons.py', 'Scripts/package_windows.py', 'Tests/test_windows_package.py', '.github/workflows/windows.yml']
+    paths: ['Windows/**', 'Resources/UI/**', 'Scripts/generate_ui_icons.py', 'Scripts/package_windows.py', 'Scripts/build_windows_installer.ps1', 'Scripts/test_windows_installer.ps1', 'Tests/test_windows_package.py', '.github/workflows/windows.yml']
   pull_request:
-    paths: ['Windows/**', 'Resources/UI/**', 'Scripts/generate_ui_icons.py', 'Scripts/package_windows.py', 'Tests/test_windows_package.py', '.github/workflows/windows.yml']
+    paths: ['Windows/**', 'Resources/UI/**', 'Scripts/generate_ui_icons.py', 'Scripts/package_windows.py', 'Scripts/build_windows_installer.ps1', 'Scripts/test_windows_installer.ps1', 'Tests/test_windows_package.py', '.github/workflows/windows.yml']
   workflow_dispatch:
     inputs:
       version:
@@ -15,15 +15,15 @@ on:
       version:
         type: string
         default: ''
-      release_archives:
+      release_assets:
         type: boolean
         default: false
 permissions:
   contents: read
 jobs:
   build-and-render:
-    # Release callers request archives; feature branches use their PR run.
-    if: inputs.release_archives || github.event_name != 'push' || github.ref == 'refs/heads/main'
+    # Release callers request download assets; feature branches use their PR run.
+    if: inputs.release_assets || github.event_name != 'push' || github.ref == 'refs/heads/main'
     runs-on: windows-latest
     timeout-minutes: 25
     steps:
@@ -120,6 +120,49 @@ jobs:
             }
             Get-Content "$output/$($test.Report)"
           }
+      - name: Install pinned Inno Setup compiler
+        shell: pwsh
+        run: |
+          $download = Join-Path $env:RUNNER_TEMP 'innosetup-7.1.0-x64.exe'
+          Invoke-WebRequest 'https://github.com/jrsoftware/issrc/releases/download/is-7_1_0/innosetup-7.1.0-x64.exe' -OutFile $download
+          $expected = '0362a383ed217d4c4239b5933866dd96d3eb2102737da92f80f6057a4b40df2f'
+          if ((Get-FileHash $download -Algorithm SHA256).Hash.ToLowerInvariant() -ne $expected) {
+            throw 'Inno Setup compiler download checksum mismatch'
+          }
+          if ((Get-AuthenticodeSignature $download).Status -ne 'Valid') {
+            throw 'Inno Setup compiler download signature is invalid'
+          }
+          $compilerDir = Join-Path $env:RUNNER_TEMP 'Inno Setup 7'
+          $process = Start-Process $download -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', ('/DIR="{0}"' -f $compilerDir) -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Inno Setup installation failed: $($process.ExitCode)" }
+          $compiler = Join-Path $compilerDir 'ISCC.exe'
+          if (!(Test-Path $compiler)) { throw 'Inno Setup compiler not found' }
+          "INNO_COMPILER=$compiler" >> $env:GITHUB_ENV
+      - name: Build per-user Windows installers
+        shell: pwsh
+        run: |
+          foreach ($arch in @('x64', 'arm64')) {
+            ./Scripts/build_windows_installer.ps1 -Runtime "win-$arch" -Version $env:WINDOWS_VERSION -PublishDirectory "Windows/artifacts/win-$arch" -OutputDirectory Windows/artifacts/installers -CompilerPath $env:INNO_COMPILER
+          }
+      - name: Build older-version fixture for upgrade and downgrade checks
+        shell: pwsh
+        run: |
+          dotnet publish Windows/Slightshot -c Release -r win-x64 -p:PublishProfile=Portable -p:Version=0.0.0 -o Windows/artifacts/installer-upgrade-fixture
+          if ($LASTEXITCODE -ne 0) { throw 'Older-version fixture publish failed' }
+          ./Scripts/build_windows_installer.ps1 -Runtime win-x64 -Version 0.0.0 -PublishDirectory Windows/artifacts/installer-upgrade-fixture -OutputDirectory Windows/artifacts/installer-fixtures -CompilerPath $env:INNO_COMPILER
+      - name: Test installation, upgrade, installed app and uninstallation
+        shell: pwsh
+        run: |
+          ./Scripts/test_windows_installer.ps1 -InstallerPath Windows/artifacts/installers/Slightshot-windows-x64-setup.exe -PreviousInstallerPath Windows/artifacts/installer-fixtures/Slightshot-windows-x64-setup.exe -Version $env:WINDOWS_VERSION -OutputDirectory Windows/artifacts/installer-evidence
+      - name: Stage verified release downloads
+        shell: pwsh
+        run: |
+          $destination = 'Windows/artifacts/release-assets'
+          New-Item -ItemType Directory -Path $destination -Force | Out-Null
+          foreach ($arch in @('x64', 'arm64')) {
+            Copy-Item "Windows/artifacts/Slightshot-windows-$arch.zip" $destination
+            Copy-Item "Windows/artifacts/installers/Slightshot-windows-$arch-setup.exe" $destination
+          }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -128,11 +171,25 @@ jobs:
           path: Windows/artifacts/delayed-capture
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
-        if: inputs.release_archives
+        if: inputs.release_assets
         with:
           retention-days: 7
-          name: Slightshot-windows-release-zips
-          path: Windows/artifacts/Slightshot-windows-*.zip
+          name: Slightshot-windows-release-assets
+          path: Windows/artifacts/release-assets/*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          retention-days: 7
+          name: windows-installer-evidence
+          path: Windows/artifacts/installer-evidence
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: ${{ !inputs.release_assets }}
+        with:
+          retention-days: 7
+          name: Slightshot-windows-installers
+          path: Windows/artifacts/installers/Slightshot-windows-*-setup.exe
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
@@ -149,14 +206,14 @@ jobs:
           path: Windows/artifacts/recording
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
-        if: ${{ !inputs.release_archives }}
+        if: ${{ !inputs.release_assets }}
         with:
           retention-days: 7
           name: Slightshot-windows-x64
           path: Windows/artifacts/win-x64
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
-        if: ${{ !inputs.release_archives }}
+        if: ${{ !inputs.release_assets }}
         with:
           retention-days: 7
           name: Slightshot-windows-arm64

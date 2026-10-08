@@ -71,6 +71,7 @@ jobs:
         run: |
           codesign --verify --deep --strict --verbose=2 build/Slightshot.app
           plutil -lint build/Slightshot.app/Contents/Info.plist
+          build/Slightshot.app/Contents/MacOS/Slightshot --verify-runtime-linkage
 
       - name: SwiftLint
         run: |
