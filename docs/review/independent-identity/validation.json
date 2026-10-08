@@ -34,12 +34,12 @@
   "native_capture": "Existing --delayed-review launcher in an isolated, locally signed copy built from the committed sources. Automated clicks opened production About and General settings; Keep editing verified in the native accessibility menu. No capture was started and settings values were preserved.",
   "documentation_capture": "GitHub Markdown API output of README.md and CONTRIBUTING.md at the recorded source commit, shown in a local in-app browser with presentation CSS and repository images. Browser crops focus on changed text.",
   "screenshots_sha256": {
-    "contributing-principles.png": "3bc4893ac2a01ec037716809957e96f3de44907522e9fa7e17cb455ea9a02250",
-    "macos-about.png": "fffcb5cab81629f3e8eee1523ac3517eb1403e096079c4532de467096d6c6d11",
-    "macos-review-text.png": "72552f5dcdddc78fbe9515b80b1e3cf651d44f1f6bb082f14039470eb6fe381b",
-    "macos-settings.png": "b924704a8ae52cde988daf5e7cf622ac7111bb3df884f9069319d20dec0c872d",
-    "readme-independence.png": "f8c032681de17f01abbbaa2c6f9b102ae27945f93651ea0b69373f489865c320",
-    "readme-intro.png": "dc8552863509a355d0434f3e2275ecdab8e6b7847ac644ee613e1c712c43571b",
+    "contributing-principles.jpg": "b203aa3cd8db2216fc4df0b1d37298c3897eaf48f66c890e1dcb962a6c3ee2c3",
+    "macos-about.jpg": "fffcb5cab81629f3e8eee1523ac3517eb1403e096079c4532de467096d6c6d11",
+    "macos-review-text.jpg": "72552f5dcdddc78fbe9515b80b1e3cf651d44f1f6bb082f14039470eb6fe381b",
+    "macos-settings.jpg": "b924704a8ae52cde988daf5e7cf622ac7111bb3df884f9069319d20dec0c872d",
+    "readme-independence.jpg": "f9bb842c992315f3921a0718bf9b243e7ec3114425fd13d28b441847194046dc",
+    "readme-intro.jpg": "dc8552863509a355d0434f3e2275ecdab8e6b7847ac644ee613e1c712c43571b",
     "windows-about.png": "fc22568e9a7757206017e14367312ecdd98903ad0906ddba0dc275c7109468ea",
     "windows-settings-dark.png": "7326d3e91d556bbe4bf42f8467bbef4e11829f10d727cfe2e9f2468c2144e24a",
     "windows-settings-light.png": "6a0f2122b00fa2fbe7a6e1899425afbdeffc291f1494f553a2db2491a3abca57"

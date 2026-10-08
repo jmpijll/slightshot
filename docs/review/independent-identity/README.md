@@ -13,9 +13,9 @@ signed app copy. Automated clicks opened the production About panel and General
 settings. The native accessibility menu also verified the Keep editing option.
 No capture was started and settings values were preserved.
 
-![macOS About panel](macos-about.png)
-![macOS General settings](macos-settings.png)
-![macOS review launcher text](macos-review-text.png)
+![macOS About panel](macos-about.jpg)
+![macOS General settings](macos-settings.jpg)
+![macOS review launcher text](macos-review-text.jpg)
 
 ## Windows
 
@@ -36,9 +36,9 @@ passed; its native report is preserved in `windows-native-validation.json`.
 The screenshots show the README and contribution guide rendered with GitHub's
 Markdown API in a local browser.
 
-![README introduction](readme-intro.png)
-![README license section](readme-independence.png)
-![Contribution design principles](contributing-principles.png)
+![README introduction](readme-intro.jpg)
+![README license section](readme-independence.jpg)
+![Contribution design principles](contributing-principles.jpg)
 
 ## Checks
 
