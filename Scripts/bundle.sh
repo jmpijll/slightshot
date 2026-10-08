@@ -78,6 +78,15 @@ cat > "$PLIST" <<PLISTEOF
   <key>CFBundlePackageType</key>                <string>APPL</string>
   <key>CFBundleShortVersionString</key>         <string>$VERSION</string>
   <key>CFBundleVersion</key>                    <string>$BUILD</string>
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key>                <string>$BUNDLE_ID.capture</string>
+      <key>CFBundleTypeRole</key>               <string>Viewer</string>
+      <key>CFBundleURLSchemes</key>
+      <array><string>slightshot</string></array>
+    </dict>
+  </array>
   <key>LSApplicationCategoryType</key>          <string>public.app-category.productivity</string>
   <key>LSMinimumSystemVersion</key>             <string>27.0</string>
   <key>LSUIElement</key>                        <true/>
