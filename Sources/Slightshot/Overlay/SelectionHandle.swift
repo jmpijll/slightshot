@@ -21,23 +21,23 @@ nonisolated enum SelectionHandle: CaseIterable {
         }
     }
 
-    func drawRect(in rect: CGRect) -> CGRect {
+    func drawRect(in rect: CGRect, zoom: CGFloat = 1) -> CGRect {
         let p = anchor(in: rect)
-        return CGRect(x: p.x - Self.drawSize / 2, y: p.y - Self.drawSize / 2,
-                      width: Self.drawSize, height: Self.drawSize)
+        return CGRect(x: p.x - Self.drawSize / zoom / 2, y: p.y - Self.drawSize / zoom / 2,
+                      width: Self.drawSize / zoom, height: Self.drawSize / zoom)
     }
 
-    func hitRect(in rect: CGRect) -> CGRect {
+    func hitRect(in rect: CGRect, zoom: CGFloat = 1) -> CGRect {
         let p = anchor(in: rect)
-        return CGRect(x: p.x - Self.hitSize / 2, y: p.y - Self.hitSize / 2,
-                      width: Self.hitSize, height: Self.hitSize)
+        return CGRect(x: p.x - Self.hitSize / zoom / 2, y: p.y - Self.hitSize / zoom / 2,
+                      width: Self.hitSize / zoom, height: Self.hitSize / zoom)
     }
 
-    static func hit(_ point: CGPoint, in rect: CGRect) -> SelectionHandle? {
+    static func hit(_ point: CGPoint, in rect: CGRect, zoom: CGFloat = 1) -> SelectionHandle? {
         // Corners win over edges when the hit areas overlap on a small selection.
         let ordered: [SelectionHandle] = [.topLeft, .topRight, .bottomLeft, .bottomRight,
                                           .top, .bottom, .left, .right]
-        return ordered.first { $0.hitRect(in: rect).contains(point) }
+        return ordered.first { $0.hitRect(in: rect, zoom: zoom).contains(point) }
     }
 
     @MainActor var cursor: NSCursor {

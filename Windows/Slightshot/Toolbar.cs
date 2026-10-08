@@ -55,9 +55,10 @@ internal sealed class FrostedPanel : Grid
         Effect = new DropShadowEffect { BlurRadius = 10, ShadowDepth = 2, Direction = 270, Color = Colors.Black, Opacity = 0.5 };
         SizeChanged += (_, _) => Clip = new RectangleGeometry(new Rect(RenderSize), 9, 9);
     }
-    public void Place(RectD rect, CapturedDisplay display)
+    public void Place(RectD rect, EditorImageSource display, bool showBackdrop = true)
     {
         Canvas.SetLeft(this, rect.X); Canvas.SetTop(this, rect.Y); Width = rect.Width; Height = rect.Height;
+        if (!showBackdrop) { backdrop.Source = null; return; }
         var pixelRect = rect.ToPixels(display.Scale, display.Scale, display.PixelWidth, display.PixelHeight);
         backdrop.Source = new CroppedBitmap(display.Image, new Int32Rect((int)pixelRect.X, (int)pixelRect.Y, (int)pixelRect.Width, (int)pixelRect.Height));
     }
@@ -66,8 +67,9 @@ internal sealed class FrostedPanel : Grid
 internal sealed class Toolbar
 {
     private readonly Canvas host;
-    private readonly CapturedDisplay display;
+    private readonly EditorImageSource display;
     private readonly Settings settings;
+    private readonly bool allowsRecording;
     private readonly Action<Tool?> toolChanged;
     private readonly Action changed;
     private readonly Dictionary<Tool, ToolbarButton> buttons = [];
@@ -88,8 +90,9 @@ internal sealed class Toolbar
         _ => throw new ArgumentOutOfRangeException(nameof(tool))
     };
 
-    public Toolbar(Canvas host, CapturedDisplay display, Settings settings, Action<Tool?> toolChanged, Action changed, Action undo, Action<CaptureAction> perform, Action close, Action record)
+    public Toolbar(Canvas host, EditorImageSource display, Settings settings, Action<Tool?> toolChanged, Action changed, Action undo, Action<CaptureAction> perform, Action close, Action record, bool allowsRecording = true)
     {
+        this.allowsRecording = allowsRecording;
         this.host = host; this.display = display; this.settings = settings; this.toolChanged = toolChanged; this.changed = changed;
         var toolViews = new List<FrameworkElement>();
         foreach (var tool in Enum.GetValues<Tool>())
@@ -101,12 +104,13 @@ internal sealed class Toolbar
         colorButton = new ToolbarButton(null, "Colour", TogglePalette) { Swatch = settings.AnnotationColor };
         toolViews.Add(colorButton); toolViews.Add(new ToolbarButton(ProductIcon.Undo, "Undo  Ctrl+Z", undo));
         tools = new FrostedPanel(Stack(toolViews, true));
-        actions = new FrostedPanel(Stack([
+        var actionViews = new List<FrameworkElement> {
             new ToolbarButton(ProductIcon.Print, "Print  Ctrl+P", () => perform(CaptureAction.Print)),
             new ToolbarButton(ProductIcon.Copy, "Copy  Ctrl+C", () => perform(CaptureAction.Copy)),
             new ToolbarButton(ProductIcon.Save, "Save  Ctrl+S  ·  Save As  Ctrl+Shift+S", () => perform(CaptureAction.Save)),
-            new ToolbarButton(ProductIcon.Record, "Record selected area", record),
-            Separator(false), new ToolbarButton(ProductIcon.Close, "Close  Esc", close)], false));
+            Separator(false), new ToolbarButton(ProductIcon.Close, "Close  Esc", close) };
+        if (allowsRecording) actionViews.Insert(3, new ToolbarButton(ProductIcon.Record, "Record selected area", record));
+        actions = new FrostedPanel(Stack(actionViews, false));
         host.Children.Add(tools); host.Children.Add(actions); SetVisible(false);
     }
 
@@ -122,11 +126,13 @@ internal sealed class Toolbar
     public void RestoreTool() { if (settings.RememberLastTool && ActiveTool == null && lastTool != null) Select(lastTool); }
     public void Layout(RectD? selection, RectD bounds, bool visible)
     {
-        visible = visible && selection is { Width: >= 8, Height: >= 8 };
+        visible = visible && (allowsRecording ? selection is { Width: >= 8, Height: >= 8 } : selection is { Width: > 0, Height: > 0 });
         SetVisible(visible);
         if (!visible || selection == null) return;
         var layout = OverlayStyle.Layout(selection.Value, bounds); toolsRect = layout.Tools;
-        tools.Place(layout.Tools, display); actions.Place(layout.Actions, display); LayoutPalette(bounds);
+        var actionRect = layout.Actions;
+        if (!allowsRecording) actionRect = actionRect with { X = actionRect.X + 32, Width = actionRect.Width - 32 };
+        tools.Place(layout.Tools, display, allowsRecording); actions.Place(actionRect, display, allowsRecording); LayoutPalette(bounds);
     }
     private void SetVisible(bool visible)
     {
@@ -170,7 +176,7 @@ internal sealed class Toolbar
         if (x + width > bounds.Right - 4) x = toolsRect.Left - 8 - width;
         // The colour button follows every tool and the separator in the vertical bar.
         double swatchY = toolsRect.Top + 4 + Enum.GetValues<Tool>().Length * 32 + 3 + 15;
-        palette.Place(new(OverlayStyle.Fit(x, width, bounds.Width), OverlayStyle.Fit(swatchY - height / 2, height, bounds.Height), width, height), display);
+        palette.Place(new(OverlayStyle.Fit(x, width, bounds.Width), OverlayStyle.Fit(swatchY - height / 2, height, bounds.Height), width, height), display, allowsRecording);
     }
     private static StackPanel Stack(IEnumerable<FrameworkElement> views, bool vertical)
     {

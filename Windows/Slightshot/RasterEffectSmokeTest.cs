@@ -52,7 +52,7 @@ internal static class RasterEffectSmokeTest
 
                 // Exercise the exact surface path used while dragging: committed
                 // history comes from the cache and the live ROI draws above it.
-                var surface = new OverlaySurface(display, new Settings { ShowDimensions = false, ShowMagnifier = false }) { Selection = selection, LiveAnnotation = effect };
+                var surface = new OverlaySurface(display.Source, new Settings { ShowDimensions = false, ShowMagnifier = false }) { Selection = selection, LiveAnnotation = effect };
                 surface.Annotations.Add(red);
                 surface.Measure(new Size(120, 100)); surface.Arrange(new Rect(0, 0, 120, 100)); surface.UpdateLayout();
                 var preview = new RenderTargetBitmap(width, height, 96 * scale, 96 * scale, PixelFormats.Pbgra32); preview.Render(surface);
@@ -115,7 +115,7 @@ internal static class RasterEffectSmokeTest
                     else Require(original[offset] == edited[offset], $"fractional {tool} changes outside pixel ({x}, {y}), channel {channel} @{scale}");
                 }
                 Require(changedInside, $"fractional {tool} transforms its ROI @{scale}");
-                var compositor = new AnnotationCompositor(display);
+                var compositor = new AnnotationCompositor(display.Source);
                 var committed = compositor.Committed(selection, history);
                 var visual = new DrawingVisual();
                 using (var dc = visual.RenderOpen())

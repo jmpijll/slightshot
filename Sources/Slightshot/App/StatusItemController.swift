@@ -7,13 +7,16 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let onCaptureArea: () -> Void
     private let onSaveFullScreen: () -> Void
     private let onCopyFullScreen: () -> Void
+    private let onEditClipboard: () -> Void
 
     init(onCaptureArea: @escaping () -> Void,
          onSaveFullScreen: @escaping () -> Void,
-         onCopyFullScreen: @escaping () -> Void) {
+         onCopyFullScreen: @escaping () -> Void,
+         onEditClipboard: @escaping () -> Void) {
         self.onCaptureArea = onCaptureArea
         self.onSaveFullScreen = onSaveFullScreen
         self.onCopyFullScreen = onCopyFullScreen
+        self.onEditClipboard = onEditClipboard
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
 
@@ -45,6 +48,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(item("Capture Area", settings.captureAreaHotKey, #selector(captureArea)))
         menu.addItem(item("Capture Full Screen", settings.saveFullScreenHotKey, #selector(saveFullScreen)))
         menu.addItem(item("Copy Full Screen", settings.copyFullScreenHotKey, #selector(copyFullScreen)))
+        menu.addItem(item("Edit Image from Clipboard", nil, #selector(editClipboard)))
         menu.addItem(.separator())
 
         menu.addItem(item("Open Screenshots Folder", nil, #selector(openFolder)))
@@ -83,6 +87,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     @objc private func captureArea() { onCaptureArea() }
     @objc private func saveFullScreen() { onSaveFullScreen() }
     @objc private func copyFullScreen() { onCopyFullScreen() }
+    @objc private func editClipboard() { onEditClipboard() }
 
     @objc private func openFolder() {
         let directory = Settings.shared.saveDirectory

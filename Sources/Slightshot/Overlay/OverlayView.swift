@@ -18,8 +18,11 @@ protocol OverlayViewDelegate: AnyObject {
 /// is the same space `Annotation` and `Renderer` use, so nothing has to be
 /// converted between drawing on screen and writing the file.
 final class OverlayView: NSView {
-    let display: CapturedDisplay
+    let source: EditorImageSource
+    let capturedDisplay: CapturedDisplay?
     weak var delegate: OverlayViewDelegate?
+
+    private weak var toolbarHost: NSView?
 
     // MARK: Subviews
 
@@ -29,7 +32,8 @@ final class OverlayView: NSView {
     private var magnifier: MagnifierView?
     private var textEntry: TextEntryView?
     private lazy var toolbars: ToolbarController = {
-        let controller = ToolbarController(host: self, color: color, lineWidth: lineWidth)
+        let controller = ToolbarController(host: toolbarHost ?? self, color: color, lineWidth: lineWidth,
+                                           allowsRecording: capturedDisplay != nil)
         controller.delegate = self
         return controller
     }()
@@ -68,25 +72,32 @@ final class OverlayView: NSView {
 
     // MARK: - Init
 
-    init(display: CapturedDisplay) {
-        self.display = display
+    convenience init(display: CapturedDisplay) {
+        self.init(source: display.source, capturedDisplay: display)
+    }
+
+    init(source: EditorImageSource, capturedDisplay: CapturedDisplay? = nil) {
+        self.source = source
+        self.capturedDisplay = capturedDisplay
         let settings = Settings.shared
         self.color = settings.annotationColor
         self.lineWidth = settings.lineWidth
         self.fontSize = settings.fontSize
-        self.screenshotView = ScreenshotView(image: display.image,
-                                             frame: NSRect(origin: .zero, size: display.frame.size))
-        super.init(frame: NSRect(origin: .zero, size: display.frame.size))
+        self.screenshotView = ScreenshotView(image: source.image, frame: source.bounds)
+        let size = capturedDisplay == nil ? CGSize(width: max(640, source.size.width),
+                                                  height: max(460, source.size.height)) : source.size
+        super.init(frame: NSRect(origin: .zero, size: size))
 
         wantsLayer = true
         autoresizesSubviews = false
 
-        screenshotView.frame = bounds
+        screenshotView.frame = source.bounds
         dimView.frame = bounds
         dimView.opacity = settings.dimOpacity
         canvas.frame = bounds
-        canvas.sourceImage = display.image
-        canvas.imageScale = display.scale
+        canvas.sourceImage = source.image
+        canvas.imageScale = source.scale
+        canvas.dimensionScale = capturedDisplay == nil ? source.scale : 1
         canvas.accent = color
         canvas.showDimensions = settings.showDimensions
 
@@ -94,6 +105,9 @@ final class OverlayView: NSView {
         addSubview(dimView)
         addSubview(canvas)
         dimView.update(hole: nil)
+        if capturedDisplay == nil {
+            layer?.backgroundColor = NSColor.windowBackgroundColor.cgColor
+        }
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
@@ -161,7 +175,7 @@ final class OverlayView: NSView {
         canvas.showHint = false
         commitTextEntry()
 
-        let point = location(of: event)
+        let point = clampToBounds(location(of: event))
 
         if event.clickCount == 2, activeTool != .step, let selection, selection.contains(point) {
             performDefaultAction()
@@ -169,7 +183,7 @@ final class OverlayView: NSView {
         }
 
         if let selection {
-            if let handle = SelectionHandle.hit(point, in: selection) {
+            if let handle = SelectionHandle.hit(point, in: selection, zoom: viewingZoom) {
                 drag = .resizeSelection(handle)
                 return
             }
@@ -215,13 +229,13 @@ final class OverlayView: NSView {
         case .moveSelection(let grabOffset):
             guard let current = selection else { break }
             var origin = CGPoint(x: point.x - grabOffset.x, y: point.y - grabOffset.y)
-            origin.x = min(max(0, origin.x), bounds.width - current.width)
-            origin.y = min(max(0, origin.y), bounds.height - current.height)
+            origin.x = min(max(0, origin.x), source.size.width - current.width)
+            origin.y = min(max(0, origin.y), source.size.height - current.height)
             selection = CGRect(origin: origin, size: current.size)
 
         case .resizeSelection(let handle):
             guard let current = selection else { break }
-            selection = handle.resized(current, to: point).clamped(to: bounds)
+            selection = handle.resized(current, to: point).clamped(to: source.bounds)
             updateMagnifier(at: point)
 
         case .drawing(let start, var points):
@@ -268,20 +282,20 @@ final class OverlayView: NSView {
     }
 
     private func clampToBounds(_ point: CGPoint) -> CGPoint {
-        CGPoint(x: min(max(0, point.x), bounds.width),
-                y: min(max(0, point.y), bounds.height))
+        CGPoint(x: min(max(0, point.x), source.size.width),
+                y: min(max(0, point.y), source.size.height))
     }
 
     private func squared(_ rect: CGRect, from anchor: CGPoint, to point: CGPoint) -> CGRect {
         let side = max(abs(point.x - anchor.x), abs(point.y - anchor.y))
         let end = CGPoint(x: anchor.x + (point.x < anchor.x ? -side : side),
                           y: anchor.y + (point.y < anchor.y ? -side : side))
-        return CGRect(corner: anchor, corner: end).clamped(to: bounds)
+        return CGRect(corner: anchor, corner: end).clamped(to: source.bounds)
     }
 
     private func updateCursor(at point: CGPoint) {
         guard let selection else { NSCursor.crosshair.set(); return }
-        if let handle = SelectionHandle.hit(point, in: selection) {
+        if let handle = SelectionHandle.hit(point, in: selection, zoom: viewingZoom) {
             handle.cursor.set()
         } else if activeTool != nil, selection.contains(point) {
             NSCursor.crosshair.set()
@@ -380,7 +394,7 @@ final class OverlayView: NSView {
         if let existing = magnifier {
             loupe = existing
         } else {
-            loupe = MagnifierView(display: display)
+            loupe = MagnifierView(source: source)
             loupe.accentColor = color
             addSubview(loupe)
             magnifier = loupe
@@ -460,14 +474,14 @@ final class OverlayView: NSView {
     private func nudge(dx: CGFloat, dy: CGFloat) {
         guard let current = selection else { return }
         var origin = CGPoint(x: current.minX + dx, y: current.minY + dy)
-        origin.x = min(max(0, origin.x), bounds.width - current.width)
-        origin.y = min(max(0, origin.y), bounds.height - current.height)
+        origin.x = min(max(0, origin.x), source.size.width - current.width)
+        origin.y = min(max(0, origin.y), source.size.height - current.height)
         selection = CGRect(origin: origin, size: current.size)
     }
 
     func selectAll() {
         canvas.showHint = false
-        selection = bounds
+        selection = source.bounds
     }
 
     // MARK: - Actions
@@ -482,19 +496,33 @@ final class OverlayView: NSView {
 
     private func perform(_ action: CaptureAction) {
         commitTextEntry()
-        guard let selection, selection.width >= 1, selection.height >= 1 else { return }
+        guard let selection, selection.width > 0, selection.height > 0 else { return }
         hideMagnifier()
-        guard let image = Renderer.flatten(display: display, selection: selection, annotations: annotations) else {
+        guard let image = Renderer.flatten(image: source.image, scale: source.scale,
+                                           selection: capturedDisplay == nil ? selection : selection.pixelAligned,
+                                           annotations: annotations) else {
             OutputService.presentError("Slightshot could not render the selection.")
             return
         }
         delegate?.overlay(self, didComplete: action, image: image)
     }
 
-    // MARK: - Toolbars
+}
 
-    private func layoutToolbars() {
-        toolbars.layout(around: selection, in: bounds, visible: drag.isNotNewSelection)
+extension OverlayView {
+    private var viewingZoom: CGFloat {
+        capturedDisplay == nil ? max(0.01, convert(CGRect(x: 0, y: 0, width: 1, height: 1), to: nil).width) : 1
+    }
+
+    func prepareClipboardEditor(toolbarHost: NSView) {
+        self.toolbarHost = toolbarHost
+        selectAll()
+    }
+
+    func layoutToolbars() {
+        let host = toolbarHost ?? self
+        let rect = selection.map { convert($0, to: host) }
+        toolbars.layout(around: rect, in: host.bounds, visible: drag.isNotNewSelection)
     }
 }
 
@@ -525,7 +553,7 @@ extension OverlayView: ToolbarControllerDelegate {
     }
 
     func toolbarDidRequestRecording() {
-        guard let selection, selection.width >= 8, selection.height >= 8 else { return }
+        guard capturedDisplay != nil, let selection, selection.width >= 8, selection.height >= 8 else { return }
         delegate?.overlay(self, didRequestRecording: selection)
     }
 

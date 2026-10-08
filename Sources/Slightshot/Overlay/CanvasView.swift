@@ -15,6 +15,7 @@ final class CanvasView: NSView {
     private var livePatch: (image: CGImage, pixels: CGRect)?
     private var livePatchIsValid = false
     var accent: NSColor = .systemRed
+    var dimensionScale: CGFloat = 1
     var showDimensions = true
     var showHint = true { didSet { needsDisplay = true } }
     var hintText = "Drag to select an area  ·  Esc to cancel"
@@ -23,7 +24,7 @@ final class CanvasView: NSView {
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
 
     override func draw(_ dirtyRect: NSRect) {
-        if let selection, selection.width >= 1, selection.height >= 1 {
+        if let selection, selection.width > 0, selection.height > 0 {
             drawAnnotations(clippedTo: selection)
             drawOutline(selection)
             if showDimensions { drawSizeBadge(for: selection) }
@@ -95,8 +96,12 @@ final class CanvasView: NSView {
         context.restoreGState()
     }
 
+    private var viewingZoom: CGFloat {
+        max(0.01, convert(CGRect(x: 0, y: 0, width: 1, height: 1), to: nil).width)
+    }
+
     private func drawOutline(_ selection: CGRect) {
-        let scale = window?.backingScaleFactor ?? 2
+        let scale = (window?.backingScaleFactor ?? 2) * viewingZoom
         let hairline = 1 / scale
 
         let border = NSBezierPath(rect: selection.insetBy(dx: -hairline / 2, dy: -hairline / 2))
@@ -106,7 +111,7 @@ final class CanvasView: NSView {
 
         // Handles: white squares with a dark hairline so they read on any content.
         for handle in SelectionHandle.allCases {
-            let rect = handle.drawRect(in: selection)
+            let rect = handle.drawRect(in: selection, zoom: viewingZoom)
             NSColor.white.setFill()
             NSBezierPath(rect: rect).fill()
             NSColor.black.withAlphaComponent(0.45).setStroke()
@@ -117,14 +122,16 @@ final class CanvasView: NSView {
     }
 
     private func drawSizeBadge(for selection: CGRect) {
-        let text = "\(Int(selection.width.rounded())) × \(Int(selection.height.rounded()))"
+        let width = Int((selection.width * dimensionScale).rounded())
+        let height = Int((selection.height * dimensionScale).rounded())
+        let text = "\(width) × \(height)"
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .medium),
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 11 / viewingZoom, weight: .medium),
             .foregroundColor: NSColor.white,
         ]
         let string = NSAttributedString(string: text, attributes: attributes)
         let textSize = string.size()
-        let padding = CGSize(width: 7, height: 3)
+        let padding = CGSize(width: 7 / viewingZoom, height: 3 / viewingZoom)
         let badgeSize = CGSize(width: textSize.width + padding.width * 2,
                                height: textSize.height + padding.height * 2)
 

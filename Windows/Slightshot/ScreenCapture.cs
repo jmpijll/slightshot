@@ -8,6 +8,7 @@ namespace Slightshot;
 
 public sealed record CapturedDisplay(BitmapSource Image, int Left, int Top, int PixelWidth, int PixelHeight, double Scale)
 {
+    public EditorImageSource Source => new(Image, Scale);
     public double Width => PixelWidth / Scale;
     public double Height => PixelHeight / Scale;
 }

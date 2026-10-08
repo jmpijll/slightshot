@@ -39,7 +39,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem = StatusItemController(
             onCaptureArea: { [weak self] in self?.route(.capture(.captureArea)) },
             onSaveFullScreen: { [weak self] in self?.route(.capture(.saveFullScreen)) },
-            onCopyFullScreen: { [weak self] in self?.route(.capture(.copyFullScreen)) }
+            onCopyFullScreen: { [weak self] in self?.route(.capture(.copyFullScreen)) },
+            onEditClipboard: { OverlayCoordinator.shared.editImageFromClipboard() }
         )
 
         Settings.shared.onHotKeysChanged = { [weak self] in self?.registerHotKeys() }

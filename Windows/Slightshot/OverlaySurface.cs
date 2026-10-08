@@ -5,7 +5,7 @@ using Slightshot.Core;
 
 namespace Slightshot;
 
-internal sealed class OverlaySurface(CapturedDisplay display, Settings settings) : FrameworkElement
+internal sealed class OverlaySurface(EditorImageSource display, Settings settings, bool showPixelDimensions = false) : FrameworkElement
 {
     private readonly AnnotationCompositor compositor = new(display);
     public RectD? Selection { get; set; }
@@ -15,12 +15,18 @@ internal sealed class OverlaySurface(CapturedDisplay display, Settings settings)
     public PointD? MagnifierPoint { get; set; }
     protected override void OnRender(DrawingContext dc)
     {
-        double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
-        dc.DrawImage(display.Image, new Rect(0, 0, ActualWidth, ActualHeight));
+        double zoom = 1;
+        if (showPixelDimensions && Window.GetWindow(this) is { } window)
+        {
+            var origin = TranslatePoint(new Point(0, 0), window);
+            zoom = Math.Max(0.01, TranslatePoint(new Point(1, 0), window).X - origin.X);
+        }
+        double scale = VisualTreeHelper.GetDpi(this).DpiScaleX * zoom;
+        dc.DrawImage(display.Image, new Rect(0, 0, display.Width, display.Height));
         Geometry veil = new RectangleGeometry(new Rect(0, 0, ActualWidth, ActualHeight));
         if (Selection is { } selection) veil = new CombinedGeometry(GeometryCombineMode.Exclude, veil, new RectangleGeometry(AnnotationRenderer.Rect(selection)));
         dc.DrawGeometry(AnnotationRenderer.Brush("#000000", settings.DimOpacity), null, veil);
-        if (Selection is { Width: >= 1, Height: >= 1 } r)
+        if (Selection is { Width: > 0, Height: > 0 } r)
         {
             dc.PushClip(new RectangleGeometry(AnnotationRenderer.Rect(r)));
             if (Annotations.Any(a => a.IsRasterEffect || a.Tool == Tool.Step) ||
@@ -41,16 +47,16 @@ internal sealed class OverlaySurface(CapturedDisplay display, Settings settings)
             foreach (var handle in Enum.GetValues<SelectionHandle>())
             {
                 var anchor = handle.Anchor(r);
-                dc.DrawRectangle(Brushes.White, new Pen(AnnotationRenderer.Brush("#000000", 0.45), 1 / scale), new Rect(anchor.X - 3.5, anchor.Y - 3.5, 7, 7));
+                dc.DrawRectangle(Brushes.White, new Pen(AnnotationRenderer.Brush("#000000", 0.45), 1 / scale), new Rect(anchor.X - 3.5 / zoom, anchor.Y - 3.5 / zoom, 7 / zoom, 7 / zoom));
             }
             if (settings.ShowDimensions)
             {
-                var text = AnnotationRenderer.Text($"{Math.Round(r.Width)} × {Math.Round(r.Height)}", 11, Brushes.White, scale, true);
-                double width = text.Width + 14, height = text.Height + 6;
+                var text = AnnotationRenderer.Text($"{Math.Round(r.Width * (showPixelDimensions ? display.Scale : 1))} × {Math.Round(r.Height * (showPixelDimensions ? display.Scale : 1))}", 11 / zoom, Brushes.White, scale, true);
+                double width = text.Width + 14 / zoom, height = text.Height + 6 / zoom;
                 double x = OverlayStyle.Fit(r.Left, width, ActualWidth, 2), y = r.Top - height - 5;
                 if (y < 2) y = r.Top + 5;
                 dc.DrawRoundedRectangle(AnnotationRenderer.Brush("#000000", 0.72), null, new Rect(x, y, width, height), 4, 4);
-                dc.DrawText(text, new(x + 7, y + 3));
+                dc.DrawText(text, new(x + 7 / zoom, y + 3 / zoom));
             }
         }
         else if (ShowHint)

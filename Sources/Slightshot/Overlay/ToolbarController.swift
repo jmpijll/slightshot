@@ -27,14 +27,16 @@ final class ToolbarController {
     private(set) var activeTool: Tool?
     private var color: NSColor
     private var lineWidth: CGFloat
+    private let allowsRecording: Bool
 
     /// Survives between captures so "remember last tool" works without touching disk.
     private static var lastTool: Tool?
 
-    init(host: NSView, color: NSColor, lineWidth: CGFloat) {
+    init(host: NSView, color: NSColor, lineWidth: CGFloat, allowsRecording: Bool = true) {
         self.host = host
         self.color = color
         self.lineWidth = lineWidth
+        self.allowsRecording = allowsRecording
     }
 
     // MARK: - Tools
@@ -63,7 +65,8 @@ final class ToolbarController {
     /// Positions both bars around `selection`, or hides them when there is
     /// nothing to act on yet.
     func layout(around selection: CGRect?, in bounds: CGRect, visible: Bool) {
-        guard visible, let selection, selection.width >= 8, selection.height >= 8 else {
+        guard visible, let selection, selection.width > (allowsRecording ? 7 : 0),
+              selection.height > (allowsRecording ? 7 : 0) else {
             toolPanel?.isHidden = true
             actionPanel?.isHidden = true
             palette?.isHidden = true
@@ -87,6 +90,7 @@ final class ToolbarController {
             toolX = selection.minX - gap - toolSize.width
         }
         if toolX < margin { toolX = max(margin, selection.maxX - toolSize.width - gap) }
+        toolX = min(max(margin, toolX), bounds.maxX - toolSize.width - margin)
         let toolY = min(max(margin, selection.minY), bounds.maxY - toolSize.height - margin)
         tools.frame = CGRect(origin: CGPoint(x: toolX, y: toolY), size: toolSize)
 
@@ -97,6 +101,7 @@ final class ToolbarController {
             actionY = selection.minY - gap - actionSize.height
         }
         if actionY < margin { actionY = max(margin, selection.maxY - actionSize.height - gap) }
+        actionY = min(max(margin, actionY), bounds.maxY - actionSize.height - margin)
         let actionX = min(max(margin, selection.maxX - actionSize.width),
                           bounds.maxX - actionSize.width - margin)
         actions.frame = CGRect(origin: CGPoint(x: actionX, y: actionY), size: actionSize)
@@ -132,7 +137,7 @@ final class ToolbarController {
         host.addSubview(tools)
         toolPanel = tools
 
-        let actions = ToolbarPanel(orientation: .horizontal, views: [
+        var actionViews: [NSView] = [
             ToolbarButton(icon: .print, tooltip: "Print  ⌘P") { [weak self] in
                 self?.delegate?.toolbarDidRequest(.print)
             },
@@ -142,14 +147,17 @@ final class ToolbarController {
             ToolbarButton(icon: .save, tooltip: "Save  ⌘S  ·  Save As  ⇧⌘S") { [weak self] in
                 self?.delegate?.toolbarDidRequest(.save)
             },
-            ToolbarButton(icon: .record, tooltip: "Record selected area") { [weak self] in
-                self?.delegate?.toolbarDidRequestRecording()
-            },
             ToolbarPanel.separator(orientation: .horizontal),
             ToolbarButton(icon: .close, tooltip: "Close  Esc") { [weak self] in
                 self?.delegate?.toolbarDidRequestClose()
             },
-        ])
+        ]
+        if allowsRecording {
+            actionViews.insert(ToolbarButton(icon: .record, tooltip: "Record selected area") { [weak self] in
+                self?.delegate?.toolbarDidRequestRecording()
+            }, at: 3)
+        }
+        let actions = ToolbarPanel(orientation: .horizontal, views: actionViews)
         host.addSubview(actions)
         actionPanel = actions
 

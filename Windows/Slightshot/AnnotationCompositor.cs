@@ -7,7 +7,7 @@ namespace Slightshot;
 
 // One native-resolution selection cache. Pointer movement only processes the
 // live effect's pixels; history and selection changes rebuild the composition.
-internal sealed class AnnotationCompositor(CapturedDisplay display)
+internal sealed class AnnotationCompositor(EditorImageSource display)
 {
     private RectD? cachedSelection;
     private Annotation[] cachedHistory = [];

@@ -1,5 +1,10 @@
 import AppKit
 
+if CommandLine.arguments.contains("--clipboard-review") {
+    ClipboardReview.run()
+    exit(EXIT_SUCCESS)
+}
+
 let commandInbox: ApplicationCommandInbox
 do {
     commandInbox = try ApplicationCommandInbox(directory: ApplicationCommandInbox.userDirectory())

@@ -12,7 +12,7 @@ enum Renderer {
     }
 
     static func flatten(image: CGImage, scale: CGFloat, selection: CGRect, annotations: [Annotation]) -> CGImage? {
-        let rect = selection.pixelAligned
+        let rect = selection
         let pixels = CGRect(x: rect.minX * scale, y: rect.minY * scale,
                             width: rect.width * scale, height: rect.height * scale).pixelAligned
             .intersection(CGRect(x: 0, y: 0, width: image.width, height: image.height))

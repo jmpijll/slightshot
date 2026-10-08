@@ -42,12 +42,12 @@ public static class SelectionGeometry
         SelectionHandle.BottomRight => new(r.Right, r.Bottom), SelectionHandle.Bottom => new(r.MidX, r.Bottom),
         SelectionHandle.BottomLeft => new(r.Left, r.Bottom), _ => new(r.Left, r.MidY)
     };
-    public static SelectionHandle? Hit(PointD p, RectD r)
+    public static SelectionHandle? Hit(PointD p, RectD r, double zoom = 1)
     {
         foreach (var handle in HitOrder)
         {
             var anchor = handle.Anchor(r);
-            if (Math.Abs(p.X - anchor.X) <= HitSize / 2 && Math.Abs(p.Y - anchor.Y) <= HitSize / 2) return handle;
+            if (Math.Abs(p.X - anchor.X) <= HitSize / zoom / 2 && Math.Abs(p.Y - anchor.Y) <= HitSize / zoom / 2) return handle;
         }
         return null;
     }

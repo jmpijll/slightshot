@@ -81,7 +81,7 @@ internal static class AnnotationRenderer
 
     public static BitmapSource Flatten(CapturedDisplay display, RectD selection, IEnumerable<Annotation> annotations, bool nativeResolution)
     {
-        var composed = new AnnotationCompositor(display).Committed(selection, annotations.ToArray());
+        var composed = new AnnotationCompositor(display.Source).Committed(selection, annotations.ToArray());
         if (nativeResolution) return composed;
         int width = Math.Max(1, (int)Math.Round(selection.Width)), height = Math.Max(1, (int)Math.Round(selection.Height));
         var visual = new DrawingVisual();
@@ -90,4 +90,12 @@ internal static class AnnotationRenderer
         var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(visual); bitmap.Freeze(); return bitmap;
     }
+
+    public static BitmapSource Flatten(EditorImageSource source, RectD selection, IEnumerable<Annotation> annotations)
+    {
+        var pixels = selection.ToPixels(source.Scale, source.Scale, source.PixelWidth, source.PixelHeight);
+        var aligned = new RectD(pixels.X / source.Scale, pixels.Y / source.Scale, pixels.Width / source.Scale, pixels.Height / source.Scale);
+        return new AnnotationCompositor(source).Committed(aligned, annotations.ToArray());
+    }
+
 }

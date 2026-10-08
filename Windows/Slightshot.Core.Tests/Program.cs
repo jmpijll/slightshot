@@ -11,6 +11,13 @@ void Near(double expected, double actual, string message)
     if (Math.Abs(expected - actual) > 0.001) throw new InvalidOperationException($"{message}: expected {expected}, got {actual}"); checks++;
 }
 
+Near(1, ImageEditorGeometry.FitScale(320, 240, 1000, 700), "small clipboard images keep one pixel per point");
+var fitScale = ImageEditorGeometry.FitScale(2003, 1001, 600, 400);
+Near(600, 2003 / fitScale, "large clipboard image fits width without changing pixels");
+Equal(true, 1001 / fitScale < 400, "fit preserves source aspect ratio");
+Equal(new RectD(0, 0, 2003, 1001), new RectD(0, 0, 2003 / fitScale, 1001 / fitScale).ToPixels(fitScale, fitScale, 2003, 1001), "fit selection covers the complete source");
+Equal<SelectionHandle?>(null, SelectionGeometry.Hit(new(12, 12), new(0, 0, 200, 100), 4), "zoomed selection handles retain their viewport hit size");
+Near(4, ImageEditorGeometry.FitScale(1000, 4000, 600, 1000), "portrait clipboard images fit height");
 var bounds = new RectD(0, 0, 800, 600);
 // Export must retain the editor across cancellation/write failure and reject
 // reentrant capture, output, and close while the modal boundary is running.
@@ -98,6 +105,8 @@ Equal(new RectD(627, 454, 169, 38), edge.Actions, "bottom edge flips actions abo
 var full = OverlayStyle.Layout(bounds, bounds);
 Equal(new RectD(754, 4, 38, 361), full.Tools, "full monitor tucks tools inside");
 Equal(new RectD(627, 554, 169, 38), full.Actions, "full monitor tucks actions inside");
+var zoomed = OverlayStyle.Layout(new(-500, -200, 3000, 2000), bounds);
+Equal(true, zoomed.Tools.Left >= 4 && zoomed.Tools.Right <= bounds.Right - 4 && zoomed.Actions.Top >= 4 && zoomed.Actions.Bottom <= bounds.Bottom - 4, "large zoomed clipboard selections keep toolbars inside the viewport");
 Equal(12, OverlayStyle.Swatches.Length, "same twelve Mac swatches");
 Equal("#FF3B30", OverlayStyle.Swatches[0], "Mac default red");
 Equal(new RectD(12, 25, 26, 38), new RectD(10, 20, 20, 30).ToPixels(1.25, 1.25, 100, 100), "fractional DPI covers selected pixels");

@@ -25,6 +25,13 @@ public partial class App : System.Windows.Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        if (e.Args.Length >= 1 && e.Args[0] == "--clipboard-smoke-test")
+        {
+            string directory = Path.GetFullPath(e.Args.Length > 1 ? e.Args[1] : "artifacts");
+            try { await ClipboardEditorSmokeTest.RunAsync(directory); Shutdown(0); }
+            catch (Exception ex) { Directory.CreateDirectory(directory); File.WriteAllText(Path.Combine(directory, "clipboard-failure.txt"), ex.ToString()); Shutdown(1); }
+            return;
+        }
         if (e.Args.Length >= 1 && e.Args[0] == "--recording-smoke-test")
         {
             string directory = Path.GetFullPath(e.Args.Length > 1 ? e.Args[1] : "artifacts");
@@ -66,6 +73,7 @@ public partial class App : System.Windows.Application
         Add(menu, $"Capture Area    {settings.CaptureAreaHotKey}", BeginCapture);
         Add(menu, $"Capture Full Screen    {settings.SaveFullScreenHotKey}", () => FullScreen(CaptureAction.Save));
         Add(menu, $"Copy Full Screen    {settings.CopyFullScreenHotKey}", () => FullScreen(CaptureAction.Copy));
+        Add(menu, "Edit Image from Clipboard", EditClipboard);
         menu.Items.Add(new Forms.ToolStripSeparator());
         Add(menu, "Open Screenshots Folder", () => { try { Directory.CreateDirectory(settings.SaveDirectory); Open(settings.SaveDirectory); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Error(ex.Message); } });
         menu.Items.Add(new Forms.ToolStripSeparator());
@@ -90,6 +98,20 @@ public partial class App : System.Windows.Application
             overlays!.Present(displays, active);
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or ArgumentException or OutOfMemoryException) { Dismiss(); Error(ex.Message); }
+        finally { capturing = false; }
+    }
+    private void EditClipboard()
+    {
+        if (capturing || overlays?.IsBusy == true || recording?.IsBusy == true || quitting) return;
+        capturing = true;
+        try
+        {
+            var bitmap = ClipboardImage.Read();
+            if (bitmap == null) { Error("The clipboard does not contain an image. Copy an image and try again."); return; }
+            preferences?.Hide();
+            overlays!.PresentClipboardImage(bitmap);
+        }
+        catch (Exception ex) when (ex is System.Runtime.InteropServices.ExternalException or IOException or InvalidOperationException or ArgumentException or NotSupportedException or OutOfMemoryException) { Dismiss(); Error(ex.Message); }
         finally { capturing = false; }
     }
     private void StartRecording(CapturedDisplay display, RectD selection)

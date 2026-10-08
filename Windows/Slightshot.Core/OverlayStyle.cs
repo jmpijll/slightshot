@@ -21,10 +21,12 @@ public static class OverlayStyle
         double toolX = selection.Right + SelectionGap;
         if (toolX + ToolsWidth > bounds.Right - DisplayMargin) toolX = selection.Left - SelectionGap - ToolsWidth;
         if (toolX < DisplayMargin) toolX = Math.Max(DisplayMargin, selection.Right - ToolsWidth - SelectionGap);
+        toolX = Fit(toolX, ToolsWidth, bounds.Width);
         double toolY = Fit(selection.Top, ToolsHeight, bounds.Height);
         double actionY = selection.Bottom + SelectionGap;
         if (actionY + ActionsHeight > bounds.Bottom - DisplayMargin) actionY = selection.Top - SelectionGap - ActionsHeight;
         if (actionY < DisplayMargin) actionY = Math.Max(DisplayMargin, selection.Bottom - ActionsHeight - SelectionGap);
+        actionY = Fit(actionY, ActionsHeight, bounds.Height);
         return (new(toolX, toolY, ToolsWidth, ToolsHeight), new(Fit(selection.Right - ActionsWidth, ActionsWidth, bounds.Width), actionY, ActionsWidth, ActionsHeight));
     }
 

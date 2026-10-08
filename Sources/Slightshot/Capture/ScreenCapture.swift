@@ -13,6 +13,8 @@ struct CapturedDisplay {
     /// The display's frame in Cocoa global coordinates (origin bottom-left).
     var frame: CGRect { screen.frame }
 
+    var source: EditorImageSource { EditorImageSource(image: image, scale: scale, size: frame.size) }
+
     /// Converts a rect in top-left-origin view points to image pixels.
     func pixelRect(for rect: CGRect) -> CGRect {
         CGRect(x: rect.minX * scale, y: rect.minY * scale,
