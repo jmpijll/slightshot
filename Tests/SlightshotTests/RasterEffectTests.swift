@@ -34,6 +34,34 @@ struct RasterEffectTests {
         #expect(pixel(result, x: 15, y: 42) == pixel(source, x: 23, y: 46))
     }
 
+    @Test func pixelationKeepsDistinctChannelsAndPartialBlockAverages() throws {
+        var bytes = [UInt8]()
+        for _ in 0..<2 {
+            for x in 0..<14 {
+                let color: [UInt8] = x < 12
+                    ? (x.isMultiple(of: 2) ? [10, 20, 40, 255] : [50, 60, 100, 255])
+                    : (x == 12 ? [90, 120, 150, 255] : [110, 160, 210, 255])
+                bytes.append(contentsOf: color)
+            }
+        }
+        let provider = try #require(CGDataProvider(data: Data(bytes) as CFData))
+        let source = try #require(CGImage(width: 14, height: 2, bitsPerComponent: 8, bitsPerPixel: 32,
+            bytesPerRow: 56, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+            bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+            provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent))
+        let result = try #require(RasterEffects.render(.pixelate, image: source,
+            pixels: CGRect(x: 0, y: 0, width: 14, height: 2), scale: 1))
+        // Compare stored sRGB channels directly; NSBitmapImageRep.colorAt can
+        // reinterpret them using the desktop's display colour profile.
+        let stored = try #require(result.dataProvider?.data)
+        let channels = try #require(CFDataGetBytePtr(stored))
+        for (x, y, expected) in [(0, 0, [30, 40, 70, 255]), (11, 1, [30, 40, 70, 255]),
+                                 (12, 0, [100, 140, 180, 255]), (13, 1, [100, 140, 180, 255])] {
+            let offset = y * result.bytesPerRow + x * 4
+            #expect((0..<4).map { Int(channels[offset + $0]) } == expected)
+        }
+    }
+
     @Test func effectsRespectAnnotationOrderAndUndoRestoresTheSource() throws {
         let source = try fixture(scale: 1)
         let selection = CGRect(x: 0, y: 0, width: 80, height: 64)
