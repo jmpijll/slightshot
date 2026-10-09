@@ -53,6 +53,16 @@ jobs:
         run: dotnet run --project Windows/Slightshot.Core.Tests -c Release
       - name: Build native app with warnings as errors
         run: dotnet build Windows/Slightshot -c Release -p:Version="$env:WINDOWS_VERSION"
+      - name: Test Windows shortcuts through native keyboard input and global registration
+        shell: pwsh
+        run: |
+          $env:SLIGHTSHOT_SOURCE_COMMIT = git rev-parse HEAD
+          $app = Resolve-Path Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe
+          $output = Join-Path $PWD Windows/artifacts/shortcuts
+          $process = Start-Process $app -ArgumentList '--shortcut-smoke-test', $output -PassThru
+          if (!$process.WaitForExit(45000)) { $process.Kill(); throw 'Windows shortcut smoke test timed out' }
+          if ($process.ExitCode -ne 0) { Get-Content "$output/shortcut-failure.txt" -ErrorAction SilentlyContinue; throw "Windows shortcut smoke test failed: $($process.ExitCode)" }
+          Get-Content "$output/shortcut-validation.json"
       - name: Render native WPF parity fixtures and test image export
         shell: pwsh
         run: |
@@ -117,6 +127,7 @@ jobs:
           $app = Resolve-Path 'Windows/artifacts/extracted x64/Slightshot.exe'
           $tests = @(
             @{ Argument = '--smoke-test'; Directory = 'parity/portable'; Report = 'validation.json'; Failure = 'failure.txt' },
+            @{ Argument = '--shortcut-smoke-test'; Directory = 'shortcuts/portable'; Report = 'shortcut-validation.json'; Failure = 'shortcut-failure.txt' },
             @{ Argument = '--recording-smoke-test'; Directory = 'recording/portable'; Report = 'recording-validation.json'; Failure = 'recording-failure.txt' }
           )
           foreach ($test in $tests) {
@@ -172,6 +183,13 @@ jobs:
             Copy-Item "Windows/artifacts/Slightshot-windows-$arch.zip" $destination
             Copy-Item "Windows/artifacts/installers/Slightshot-windows-$arch-setup.exe" $destination
           }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          retention-days: 7
+          name: windows-native-shortcut-evidence
+          path: Windows/artifacts/shortcuts
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
         with:

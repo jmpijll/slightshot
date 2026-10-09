@@ -1,0 +1,15 @@
+{
+  "platform": "Windows / native WPF Settings",
+  "sourceCommit": "8ea2f650467e658183035e841bbb5c628c8fa219",
+  "source": "Automated SendInput on the real Shortcuts tab; cropped composed desktop pixels.",
+  "input": "Left Windows \u002B F13",
+  "expected": "Win\u002BF13",
+  "observed": "Win\u002BF13",
+  "recorded": {
+    "Key": 124,
+    "Modifiers": 8,
+    "IsEmpty": false,
+    "IsValid": true
+  },
+  "passed": true
+}

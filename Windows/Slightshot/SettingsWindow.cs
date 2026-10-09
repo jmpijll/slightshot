@@ -64,7 +64,10 @@ internal sealed class SettingsWindow : Window
         field.PreviewKeyDown += (_, e) =>
         {
             var key = e.Key == Key.System ? e.SystemKey : e.Key;
-            var hotKey = HotKey.FromKey(key, Keyboard.Modifiers);
+            // WPF's Keyboard.Modifiers omits the Windows keys.
+            var modifiers = Keyboard.Modifiers;
+            if (Keyboard.IsKeyDown(Key.LWin) || Keyboard.IsKeyDown(Key.RWin)) modifiers |= ModifierKeys.Windows;
+            var hotKey = HotKey.FromKey(key, modifiers);
             e.Handled = true;
             if (hotKey == null) return;
             if (!hotKey.IsEmpty && new[] { settings.CaptureAreaHotKey, settings.SaveFullScreenHotKey, settings.CopyFullScreenHotKey }.Any(existing => existing == hotKey && existing != get()))

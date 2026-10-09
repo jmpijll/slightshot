@@ -1,0 +1,4 @@
+System.InvalidOperationException: Windows shortcut smoke test failed: left Windows key is recorded by the real field
+   at Slightshot.ShortcutSmokeTest.Require(Boolean condition, String check) in D:\a\slightshot\slightshot\Windows\Slightshot\ShortcutSmokeTest.cs:line 177
+   at Slightshot.ShortcutSmokeTest.RunAsync(String directory) in D:\a\slightshot\slightshot\Windows\Slightshot\ShortcutSmokeTest.cs:line 54
+   at Slightshot.App.OnStartup(StartupEventArgs e) in D:\a\slightshot\slightshot\Windows\Slightshot\App.xaml.cs:line 34
