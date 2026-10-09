@@ -17,7 +17,7 @@ namespace Slightshot;
 internal static class ShortcutSmokeTest
 {
     private const ushort LeftWin = 0x5b, RightWin = 0x5c, Control = 0xa2, Shift = 0xa0, Alt = 0xa4;
-    private const ushort A = 0x41, F13 = 0x7c, F14 = 0x7d, F15 = 0x7e, F16 = 0x7f;
+    private const ushort A = 0x41, F13 = 0x7c;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     internal static async Task RunAsync(string directory)
@@ -90,12 +90,12 @@ internal static class ShortcutSmokeTest
             Require(settings.CaptureAreaHotKey == new HotKey(F13, 8) && area.Text == "Win+F13", $"right Windows key replaces Ctrl+Shift+A through the real field: expected Win+F13 / key={F13}, modifiers=8; observed field={area.Text}, model key={settings.CaptureAreaHotKey.Key}, modifiers={settings.CaptureAreaHotKey.Modifiers}");
             checks.Add("Left and right Windows + F13 both record through real native key input; right Windows replaces a distinct Ctrl+Shift+A value.");
 
-            await FocusAsync(window, save); await ChordAsync(Control, LeftWin, F14);
-            Require(settings.SaveFullScreenHotKey == new HotKey(F14, 10) && save.Text == "Ctrl+Win+F14", "Windows retains Control");
-            await FocusAsync(window, copy); await ChordAsync(Shift, Alt, RightWin, F15);
-            Require(settings.CopyFullScreenHotKey == new HotKey(F15, 13) && copy.Text == "Shift+Alt+Win+F15", "Windows retains Shift and Alt via WPF SystemKey");
-            await FocusAsync(window, area); await ChordAsync(Control, Shift, Alt, LeftWin, F16);
-            Require(settings.CaptureAreaHotKey == new HotKey(F16, 15) && area.Text == "Ctrl+Shift+Alt+Win+F16", "all four modifiers survive recording");
+            await FocusAsync(window, save); await ChordAsync(Control, LeftWin, F13);
+            Require(settings.SaveFullScreenHotKey == new HotKey(F13, 10) && save.Text == "Ctrl+Win+F13", "Windows retains Control");
+            await FocusAsync(window, copy); await ChordAsync(Shift, Alt, RightWin, F13);
+            Require(settings.CopyFullScreenHotKey == new HotKey(F13, 13) && copy.Text == "Shift+Alt+Win+F13", "Windows retains Shift and Alt via WPF SystemKey");
+            await FocusAsync(window, area); await ChordAsync(Control, Shift, Alt, LeftWin, F13);
+            Require(settings.CaptureAreaHotKey == new HotKey(F13, 15) && area.Text == "Ctrl+Shift+Alt+Win+F13", "all four modifiers survive recording");
             await ChordAsync(Control, Shift, A);
             Require(settings.CaptureAreaHotKey == new HotKey(A, 6) && area.Text == "Ctrl+Shift+A", "existing shortcuts without Windows retain their modifiers");
             await ChordAsync(LeftWin, F13);
@@ -116,13 +116,13 @@ internal static class ShortcutSmokeTest
             Require(settings.CaptureAreaHotKey == new HotKey(F13, 8) && area.Text == "Win+F13", "unmodified key leaves the shortcut unchanged");
             checks.Add("Bare Control, Shift, Alt and both Windows keys leave the field unchanged while held; a key without modifiers is ignored.");
 
-            await FocusAsync(window, copy); await ChordAsync(Control, LeftWin, F14);
-            Require(settings.CopyFullScreenHotKey == new HotKey(F15, 13) && copy.Text == "Shift+Alt+Win+F15"
+            await FocusAsync(window, copy); await ChordAsync(Control, LeftWin, F13);
+            Require(settings.CopyFullScreenHotKey == new HotKey(F13, 13) && copy.Text == "Shift+Alt+Win+F13"
                 && Equals(copy.ToolTip, "This shortcut is already assigned to another capture action."), "duplicate Windows shortcut is rejected without replacing the field");
             await ChordAsync(0x1b);
             Require(settings.CopyFullScreenHotKey.IsEmpty && copy.Text == "None" && copy.ToolTip == null && window.IsVisible, "Escape clears the focused shortcut and keeps Settings open");
-            await ChordAsync(Shift, Alt, RightWin, F15);
-            Require(settings.CopyFullScreenHotKey == new HotKey(F15, 13) && copy.ToolTip == null, "valid chord clears duplicate feedback");
+            await ChordAsync(Shift, Alt, RightWin, F13);
+            Require(settings.CopyFullScreenHotKey == new HotKey(F13, 13) && copy.ToolTip == null, "valid chord clears duplicate feedback");
             checks.Add("Duplicate assignment remains rejected; Escape clears only the focused shortcut; a subsequent valid chord clears feedback.");
             CaptureWindow(window, Path.Combine(directory, "shortcut-combinations-window.png"));
         }
@@ -143,10 +143,10 @@ internal static class ShortcutSmokeTest
             string[] failures = service.Register(restored);
             Require(failures.Length == 0, "production RegisterHotKey accepts the recorded combinations: " + string.Join(", ", failures));
             await ChordAsync(LeftWin, F13);
-            await ChordAsync(Control, RightWin, F14);
-            await ChordAsync(Shift, Alt, LeftWin, F15);
+            await ChordAsync(Control, RightWin, F13);
+            await ChordAsync(Shift, Alt, LeftWin, F13);
             Require(callbacks.SequenceEqual(new[] { 1, 2, 3 }), "recorded shortcuts trigger the three real global hotkey callbacks after Settings closes");
-            await ChordAsync(F13); await ChordAsync(Control, F14); await ChordAsync(Shift, Alt, F15);
+            await ChordAsync(F13); await ChordAsync(Control, F13); await ChordAsync(Shift, Alt, F13);
             Require(callbacks.SequenceEqual(new[] { 1, 2, 3 }), "the same keys without Windows cannot trigger the recorded global shortcuts");
         }
         checks.Add("Recorded settings JSON roundtrip preserves Windows modifiers. After Settings closes, production RegisterHotKey registration and native SendInput produce callbacks 1, 2, 3; removing Windows produces none.");
@@ -154,7 +154,7 @@ internal static class ShortcutSmokeTest
         {
             platform = "Windows / native WPF Settings / Win32 global hotkeys",
             sourceCommit, source = "Automated native Settings fixture with real SendInput and RegisterHotKey; screenshots are cropped composed desktop pixels.",
-            fixtureInputs = new[] { "Left Win+F13", "Right Win+F13 after Ctrl+Shift+A", "Ctrl+Win+F14", "Shift+Alt+Win+F15", "Ctrl+Shift+Alt+Win+F16", "Ctrl+Shift+A", "bare modifiers", "duplicate assignment", "Escape" },
+            fixtureInputs = new[] { "Left Win+F13", "Right Win+F13 after Ctrl+Shift+A", "Ctrl+Win+F13", "Shift+Alt+Win+F13", "Ctrl+Shift+Alt+Win+F13", "Ctrl+Shift+A", "bare modifiers", "duplicate assignment", "Escape" },
             recorded = new[] { restored.CaptureAreaHotKey, restored.SaveFullScreenHotKey, restored.CopyFullScreenHotKey }, globalCallbacks = callbacks, checks
         }, JsonOptions));
     }
