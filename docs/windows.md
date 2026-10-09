@@ -10,15 +10,15 @@ limit Windows 10 support to certain Enterprise/LTSC editions.
 
 ## Download and updates
 
-Version [1.4.1](https://github.com/jmpijll/slightshot/releases/tag/v1.4.1) offers
-[x64 setup](https://github.com/jmpijll/slightshot/releases/download/v1.4.1/Slightshot-windows-x64-setup.exe)
-and [ARM64 setup](https://github.com/jmpijll/slightshot/releases/download/v1.4.1/Slightshot-windows-arm64-setup.exe).
+Version [1.4.2](https://github.com/jmpijll/slightshot/releases/tag/v1.4.2) offers
+[x64 setup](https://github.com/jmpijll/slightshot/releases/download/v1.4.2/Slightshot-windows-x64-setup.exe)
+and [ARM64 setup](https://github.com/jmpijll/slightshot/releases/download/v1.4.2/Slightshot-windows-arm64-setup.exe).
 Choose x64 for an Intel/AMD PC or ARM64 for a Windows on Arm PC, quit any running
 Slightshot copy, then run setup. See [Installer](#installer) for upgrades and
 switching from portable to installed.
 
-Portable [x64 ZIP](https://github.com/jmpijll/slightshot/releases/download/v1.4.1/Slightshot-windows-x64.zip)
-and [ARM64 ZIP](https://github.com/jmpijll/slightshot/releases/download/v1.4.1/Slightshot-windows-arm64.zip)
+Portable [x64 ZIP](https://github.com/jmpijll/slightshot/releases/download/v1.4.2/Slightshot-windows-x64.zip)
+and [ARM64 ZIP](https://github.com/jmpijll/slightshot/releases/download/v1.4.2/Slightshot-windows-arm64.zip)
 downloads remain available. Extract the ZIP and double-click its only file,
 `Slightshot.exe`. Setup and the portable app both bundle the .NET runtime;
 you do not need to install it separately.
@@ -80,6 +80,12 @@ Slightshot appears in the notification area. Double-click its icon or press
 pointer; **Ctrl+Shift+7** copies it. These shortcuts can be changed in Settings.
 If another app owns a shortcut, the tray reports it and remains available.
 
+To change a global shortcut, click its field in **Settings → Shortcuts** and
+press a key with Ctrl, Shift, Alt or Win. Both Windows keys work, and modifiers
+can be combined. Close Settings to activate the new shortcuts. Escape clears
+the focused field; pressing a modifier alone keeps the existing assignment.
+Windows-reserved combinations may remain unavailable.
+
 Create a portable app that includes its runtime:
 
 ```powershell
@@ -106,8 +112,8 @@ Install [Inno Setup 7.1.0](https://jrsoftware.org/isdl.php) on Windows and use
 After the portable publish above, wrap each architecture's executable in setup:
 
 ```powershell
-./Scripts/build_windows_installer.ps1 -Runtime win-x64 -Version 1.4.1 -PublishDirectory Windows/artifacts/win-x64 -OutputDirectory Windows/artifacts/installers -CompilerPath 'C:\Program Files\Inno Setup 7\ISCC.exe'
-./Scripts/build_windows_installer.ps1 -Runtime win-arm64 -Version 1.4.1 -PublishDirectory Windows/artifacts/win-arm64 -OutputDirectory Windows/artifacts/installers -CompilerPath 'C:\Program Files\Inno Setup 7\ISCC.exe'
+./Scripts/build_windows_installer.ps1 -Runtime win-x64 -Version 1.4.2 -PublishDirectory Windows/artifacts/win-x64 -OutputDirectory Windows/artifacts/installers -CompilerPath 'C:\Program Files\Inno Setup 7\ISCC.exe'
+./Scripts/build_windows_installer.ps1 -Runtime win-arm64 -Version 1.4.2 -PublishDirectory Windows/artifacts/win-arm64 -OutputDirectory Windows/artifacts/installers -CompilerPath 'C:\Program Files\Inno Setup 7\ISCC.exe'
 ```
 
 Use the version embedded in the published app; the builder rejects a mismatch.
@@ -194,6 +200,7 @@ dotnet run --project Windows/Slightshot.Core.Tests -c Release
 dotnet build Windows/Slightshot -c Release
 Start-Process Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe -ArgumentList '--smoke-test', 'Windows/artifacts/parity' -Wait
 Start-Process Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe -ArgumentList '--recording-smoke-test', 'Windows/artifacts/recording' -Wait
+Start-Process Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe -ArgumentList '--shortcut-smoke-test', 'Windows/artifacts/shortcuts' -Wait
 ```
 
 The Windows workflow builds with warnings treated as errors, checks selection and
@@ -203,9 +210,16 @@ decodes PNG/JPEG/TIFF output. It uploads the
 rendered images, a validation report and portable x64/ARM64 executables. For each
 architecture, it creates and extracts the release ZIP, checks that it contains
 only `Slightshot.exe`, and verifies the executable's architecture and version.
-It runs both screenshot and recording smoke tests against the extracted x64 app
+It runs screenshot, recording and global-shortcut smoke tests against the extracted x64 app
 from a folder containing spaces. ARM64 is cross-built and inspected, but is not
 executed by the x64 CI runner.
+
+The shortcut fixture sends native keyboard input to the real Settings fields,
+checking both Windows keys, Ctrl/Shift/Alt combinations, bare modifiers,
+duplicates and Escape. It roundtrips the settings JSON, closes Settings and
+verifies production global hotkey callbacks, including no activation when Win
+is omitted. [Saved shortcut screenshots and native/portable reports](review/windows-key-shortcuts/README.md)
+identify the fixture inputs, platform and exact source commit.
 
 The screenshot smoke test also drives the retained-session coordinator, real
 WPF text/export/Undo paths and image output service through Save As cancellation,

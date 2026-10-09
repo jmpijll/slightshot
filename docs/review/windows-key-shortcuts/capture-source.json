@@ -15,6 +15,20 @@
       "workflow_url": "https://github.com/jmpijll/slightshot/actions/runs/37987549878",
       "automated_input": "Left Win+F13; fixed recorder displays Win+F13",
       "sha256": "0e457a9678e3a12b91754699f4bfb91f4a513cb3186a2a9dfa97f13ba5e4b49a"
+    },
+    {
+      "file": "windows-combinations.png",
+      "source_commit": "b25fd6c98b3289430cdec3088558f77e967c70ae",
+      "workflow_url": "https://github.com/jmpijll/slightshot/actions/runs/37989426323",
+      "automated_input": "Native SendInput records Win+F13, Ctrl+Win+F13 and Shift+Alt+Win+F13; Escape and duplicate checks complete",
+      "sha256": "a8763e5946f617990c8084ac5938fcb674b18c62f85a3bf1030ced06affd8f4f"
+    },
+    {
+      "file": "windows-right-win.png",
+      "source_commit": "b25fd6c98b3289430cdec3088558f77e967c70ae",
+      "workflow_url": "https://github.com/jmpijll/slightshot/actions/runs/37989426323",
+      "automated_input": "Right Win+F13 replaces Ctrl+Shift+A",
+      "sha256": "20d9826c6768cab48407e8c191b3085c98b48ef117cd5f40e66845aadcdcfb01"
     }
   ]
 }

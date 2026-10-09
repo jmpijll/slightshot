@@ -2,21 +2,27 @@
 
 ## Current status
 
-Version [1.4.1](https://github.com/jmpijll/slightshot/releases/tag/v1.4.1) is live
+Version [1.4.2](https://github.com/jmpijll/slightshot/releases/tag/v1.4.2) is live
 with a signed, Apple-notarised Mac DMG and unsigned Windows x64/ARM64 setup and
-portable previews. This patch updates the app and repository text to describe
-Slightshot's own capture and recording features. The README explains its original
-application code and independent development.
+portable previews. This patch lets Windows shortcut fields record the left and
+right Windows keys, including combinations with Ctrl, Shift and Alt. Recorded
+shortcuts activate the three capture actions after Settings closes.
+
+The exact-tag native x64 and extracted portable app checks use real keyboard
+input and production global hotkey registration. Both validate the release
+source and callbacks for Capture area, Save full screen and Copy full screen.
+See the [published-file validation](review/releases/v1.4.2-validation.json) for
+signatures, tickets, Gatekeeper checks, package contents, checksums and native
+shortcut results, and the [release review](review/releases/v1.4.2/README.md)
+for the measured summary.
 
 Version 1.4.0 added clipboard image editing, five-second area capture,
 annotation Redo and per-user Windows installers. Each Windows ZIP contains one
 `Slightshot.exe`, with its runtime and dependencies bundled; setup packages wrap
-the same executable. Sparkle uses build 10, following 1.4.0's build 9.
+the same executable. Sparkle uses build 11, following 1.4.1's build 10.
 The public Sparkle feed and Homebrew cask point to the final Mac download.
 Windows updates remain manual. ARM64 is cross-built and inspected, with native
 desktop acceptance still pending.
-See the [published-file validation](review/releases/v1.4.1-validation.json) for
-signatures, tickets, Gatekeeper checks, package contents and checksums.
 Versions 1.0.0 and 1.0.1 remain unnotarised pre-releases. The local Developer ID
 certificate, Sparkle keys and `slightshot` notarisation profile are configured.
 
@@ -86,7 +92,7 @@ Run the Release workflow from the branch to check, using the next unpublished
 version and leaving **publish** disabled:
 
 ```bash
-gh workflow run release.yml --ref BRANCH -f version=1.4.2 -F publish=false
+gh workflow run release.yml --ref BRANCH -f version=1.4.3 -F publish=false
 ```
 
 A successful run confirms certificate import, app and DMG notarisation,
@@ -124,8 +130,8 @@ Apple signing secrets. See [Windows installation and local builds](windows.md#in
 Commit and push the release changes to `main`, then create a new version tag:
 
 ```bash
-git tag v1.4.2
-git push origin v1.4.2
+git tag v1.4.3
+git push origin v1.4.3
 ```
 
 Use a new version for every published binary. Do not replace an existing download
@@ -146,7 +152,7 @@ push workflow. See [GitHub's workflow event rules](https://docs.github.com/en/ac
 ### Local release
 
 ```bash
-NOTARY_PROFILE=slightshot make release VERSION=1.4.2
+NOTARY_PROFILE=slightshot make release VERSION=1.4.3
 ```
 
 This produces a signed, notarised disk image locally. It does not publish a
@@ -179,7 +185,7 @@ After the release is live, update `version` and `sha256` in
 [Casks/slightshot.rb](../Casks/slightshot.rb) using the final stapled disk image:
 
 ```bash
-shasum -a 256 build/Slightshot-1.4.2.dmg
+shasum -a 256 build/Slightshot-1.4.3.dmg
 ```
 
 ## Check release scripts

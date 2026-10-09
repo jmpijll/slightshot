@@ -1,0 +1,59 @@
+{
+  "source_commit": "211cb1a10c2f1218e429edda419d8d696adceda4",
+  "renderer": "GitHub Markdown API, GFM; actual source excerpts displayed in a local browser",
+  "source_files": {
+    "docs/RELEASING.md": "87fba14fd39b22b53252da37ffc39e681402cba4d64d2c4ecf71ca5e280cd68e",
+    "docs/windows.md": "035b3d94f0f7912a79441396d9d24b62069b6024e9c5fd0415645b93383cf86a",
+    "docs/review/windows-key-shortcuts/README.md": "e91a3116ebe05322b89216ff00741322a1ed28055777804389e8d7f6ee036560",
+    "docs/review/releases/v1.4.2/README.md": "0cd372c1cfaf0891df02733b24dffd14dbbe482713d0ac8dca65201b37d041dd",
+    "docs/review/releases/v1.4.2-validation.json": "b2fc0a372381722b4be750d49c59ec9fd157c500402132183835b30b723aa8de",
+    "Casks/slightshot.rb": "ddeb1ad9dec0dd25e6b6a0547abc36b02e8085bbc29dca9996480b67cf166a5c"
+  },
+  "rendered_files": {
+    "release-status.html": "375f32aacfdf87181696a44bbf72b4d787bb58759d5a35ad256981eb4ffc15db",
+    "windows-downloads.html": "d92531b7d0d9d2b8eed2a4fd4be7d4bc98bbf0e8e71309d4deacb4bd5588f7f6",
+    "windows-shortcuts.html": "f9cae33bf1879eacae689346feae36b2d60444e749d42f22eabe11a732aba8d9",
+    "windows-shortcut-validation.html": "f4974355e01edeae3817a84cc4786d3f818198d1e3b39c8ff43e3c72117b59f4",
+    "windows-validation.html": "e1a88fb156e1505dca0c1c1e4db5669687c2eefa71a95e1a6d631a7b4a4966c2",
+    "published-validation.html": "bed4afb2c5697fcd1688d84a5b65a7586e150d6e175b06dd2d2d7170fa821dc7"
+  },
+  "rendering_note": "PowerShell command lines wrap in the validation capture so the full arguments remain visible.",
+  "captured_at_utc": "2026-10-09T21:06:14.183089+00:00",
+  "platform": {
+    "os": "macOS",
+    "version": "27.0",
+    "browser": "Codex In-app Browser"
+  },
+  "captures": {
+    "published-validation.jpg": {
+      "sha256": "2bee08afa52d022f236eb161ff7e300e05d30986312154c6c7a91d629de4f248",
+      "format": "JPEG",
+      "bytes": 163228
+    },
+    "release-status.jpg": {
+      "sha256": "c017ddc03c000e5672d1b8fafcb197dee4ea3a81791760735be67e69daa16fd2",
+      "format": "JPEG",
+      "bytes": 123765
+    },
+    "windows-downloads.jpg": {
+      "sha256": "a5d445a2da8abb5e8e0bb77943e3074c523352aeb48fe07a3abc7138956495ba",
+      "format": "JPEG",
+      "bytes": 101429
+    },
+    "windows-shortcut-validation.jpg": {
+      "sha256": "b545044f8e9cc9f624d9d441f8a9d9c5281add8e15a90aada612c7c113bb5dc8",
+      "format": "JPEG",
+      "bytes": 57246
+    },
+    "windows-shortcuts.jpg": {
+      "sha256": "10f4b768be582bd1675750d37e2aab15e2d77e1036263ee1bdd5b400f4fd85c8",
+      "format": "JPEG",
+      "bytes": 52009
+    },
+    "windows-validation.jpg": {
+      "sha256": "c5375fddcc55970f4d48cda90571184b1edfb0522bfd81f83fcf2293f92266db",
+      "format": "JPEG",
+      "bytes": 125269
+    }
+  }
+}
