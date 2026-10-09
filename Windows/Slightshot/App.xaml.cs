@@ -28,6 +28,13 @@ public partial class App : System.Windows.Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        if (e.Args.Length >= 1 && e.Args[0] == "--shortcut-smoke-test")
+        {
+            string directory = Path.GetFullPath(e.Args.Length > 1 ? e.Args[1] : "artifacts");
+            try { await ShortcutSmokeTest.RunAsync(directory); Shutdown(0); }
+            catch (Exception ex) { Directory.CreateDirectory(directory); File.WriteAllText(Path.Combine(directory, "shortcut-failure.txt"), ex.ToString()); Shutdown(1); }
+            return;
+        }
         if (e.Args.Length >= 1 && e.Args[0] == "--clipboard-smoke-test")
         {
             string directory = Path.GetFullPath(e.Args.Length > 1 ? e.Args[1] : "artifacts");
