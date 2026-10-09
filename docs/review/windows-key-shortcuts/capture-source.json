@@ -1,0 +1,20 @@
+{
+  "platform": "Windows Server 2025 / native WPF Settings",
+  "capture": "Automated SendInput in the production Shortcuts fields; real composed desktop pixels cropped to the Settings HWND. Isolated fixture settings; no personal settings read or saved.",
+  "screenshots": [
+    {
+      "file": "windows-before.png",
+      "source_commit": "3f0cccd655ab1e6bebdcb771260df5a699ac964a",
+      "workflow_url": "https://github.com/jmpijll/slightshot/actions/runs/37987335398",
+      "automated_input": "Left Win+F13; existing recorder leaves Ctrl+Shift+9 unchanged",
+      "sha256": "310cfd68147a14f6c277e7bc4db9ed3badf54f9be17d4a494eb1ca572dcc7c6c"
+    },
+    {
+      "file": "windows-after.png",
+      "source_commit": "8ea2f650467e658183035e841bbb5c628c8fa219",
+      "workflow_url": "https://github.com/jmpijll/slightshot/actions/runs/37987549878",
+      "automated_input": "Left Win+F13; fixed recorder displays Win+F13",
+      "sha256": "0e457a9678e3a12b91754699f4bfb91f4a513cb3186a2a9dfa97f13ba5e4b49a"
+    }
+  ]
+}
