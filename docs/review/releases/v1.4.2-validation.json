@@ -1,0 +1,467 @@
+{
+  "version": "1.4.2",
+  "build": "11",
+  "team": "PAW49RLWAA",
+  "mac_architecture": "arm64",
+  "minimum_macos": "27.0",
+  "sha256": "83e49fa6d2f27ae6f973fbbfe0840790a7fc163bc71a8884b164b01a7af8e737",
+  "bytes": 2076701,
+  "dmg_url": "https://github.com/jmpijll/slightshot/releases/download/v1.4.2/Slightshot-1.4.2.dmg",
+  "checks": {
+    "image": "Controlegetal berekenen van 'Protective Master Boot Record (MBR : 0)'\u2026\nProtective Master Boot Record (MBR :: Geverifieerd: CRC32 $BC804160\nControlegetal berekenen van 'GPT Header (Primary GPT Header : 1)'\u2026\n GPT Header (Primary GPT Header : 1): Geverifieerd: CRC32 $E0BDE59E\nControlegetal berekenen van 'GPT Partition Data (Primary GPT Table : 2)'\u2026\nGPT Partition Data (Primary GPT Tabl: Geverifieerd: CRC32 $538E6E8B\nControlegetal berekenen van ' (Apple_Free : 3)'\u2026\n                    (Apple_Free : 3): Geverifieerd: CRC32 $00000000\nControlegetal berekenen van 'disk image (Apple_APFS : 4)'\u2026\n         disk image (Apple_APFS : 4): Geverifieerd: CRC32 $FC02A8A9\nControlegetal berekenen van ' (Apple_Free : 5)'\u2026\n                    (Apple_Free : 5): Geverifieerd: CRC32 $00000000\nControlegetal berekenen van 'GPT Partition Data (Backup GPT Table : 6)'\u2026\nGPT Partition Data (Backup GPT Table: Geverifieerd: CRC32 $538E6E8B\nControlegetal berekenen van 'GPT Header (Backup GPT Header : 7)'\u2026\n  GPT Header (Backup GPT Header : 7): Geverifieerd: CRC32 $9EB0A5D9\nGeverifieerd: CRC32 $AE74BB77\nhdiutil: verify: checksum of \"Slightshot-1.4.2.dmg\" is VALID",
+    "dmg_signature": "Slightshot-1.4.2.dmg: valid on disk\nSlightshot-1.4.2.dmg: satisfies its Designated Requirement",
+    "dmg_ticket": "Processing: Slightshot-1.4.2.dmg\nThe validate action worked!",
+    "dmg_gatekeeper": "Slightshot-1.4.2.dmg: accepted\nsource=Notarized Developer ID",
+    "app_signature": "--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\n--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\nmounted-image/Slightshot.app: valid on disk\nmounted-image/Slightshot.app: satisfies its Designated Requirement",
+    "app_ticket": "Processing: mounted-image/Slightshot.app\nThe validate action worked!",
+    "app_gatekeeper": "mounted-image/Slightshot.app: accepted\nsource=Notarized Developer ID",
+    "app_runtime_linkage": "Slightshot runtime linkage verified",
+    "sparkle_signature": "Verified Ed25519 against the live public appcast and the downloaded app embedded key; the key matches previous releases."
+  },
+  "feed_url": "https://jmpijll.github.io/slightshot/appcast.xml",
+  "feed_sha256": "5bde74690519d38f9522d1da2935fd3e6d7ccc070d9ca7d58c6e18f94c438c63",
+  "feed_versions": [
+    "1.4.2",
+    "1.4.1",
+    "1.4.0"
+  ],
+  "github_digest_verified": true,
+  "github_size_verified": true,
+  "source_commit": "b25fd6c98b3289430cdec3088558f77e967c70ae",
+  "release_url": "https://github.com/jmpijll/slightshot/releases/tag/v1.4.2",
+  "published_at_utc": "2026-10-09T20:58:04Z",
+  "verified_at": "2026-10-09T20:59:32.474448+00:00",
+  "run_url": "https://github.com/jmpijll/slightshot/actions/runs/37989426323",
+  "pages_run_url": "https://github.com/jmpijll/slightshot/actions/runs/37990485558",
+  "release_checks": {
+    "source_commit": "b25fd6c98b3289430cdec3088558f77e967c70ae",
+    "run_url": "https://github.com/jmpijll/slightshot/actions/runs/37989426323",
+    "status": "passed",
+    "jobs": [
+      {
+        "name": "Windows preview and native checks / build-and-render",
+        "conclusion": "success"
+      },
+      {
+        "name": "Build, notarise and publish",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "pages_checks": {
+    "source_commit": "c9a407f3c783ee854fe3dacc6ed9e5a1342ade35",
+    "run_url": "https://github.com/jmpijll/slightshot/actions/runs/37990485558",
+    "status": "passed",
+    "jobs": [
+      {
+        "name": "deploy",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "windows": {
+    "checked_at_utc": "2026-10-09T20:59:25.172417+00:00",
+    "repository": "jmpijll/slightshot",
+    "expected_version": "1.4.2",
+    "source": "GitHub release API and downloaded published files",
+    "source_commit": "b25fd6c98b3289430cdec3088558f77e967c70ae",
+    "release_url": "https://github.com/jmpijll/slightshot/releases/tag/v1.4.2",
+    "published_at_utc": "2026-10-09T20:58:04Z",
+    "assets": [
+      {
+        "asset": "Slightshot-windows-x64.zip",
+        "url": "https://github.com/jmpijll/slightshot/releases/download/v1.4.2/Slightshot-windows-x64.zip",
+        "github_asset_digest": "sha256:c92c337456c2d5f17aca97a3885696218553a3272663f74f5fbf6b6339affe65",
+        "github_digest_matches": true,
+        "github_size_matches": true,
+        "status": "passed",
+        "architecture": "x64",
+        "archive_bytes": 75741915,
+        "archive_sha256": "c92c337456c2d5f17aca97a3885696218553a3272663f74f5fbf6b6339affe65",
+        "archive_entries": [
+          "Slightshot.exe"
+        ],
+        "zip_crc_verified": true,
+        "executable_bytes": 198801759,
+        "executable_sha256": "c1775d971993bc0861567b30dfdf8a7cd446ec20fbdc84b3f89f842db6b363f5",
+        "pe_machine": "0x8664",
+        "pe_format": "PE32+",
+        "product_version_source_commit": "b25fd6c98b3289430cdec3088558f77e967c70ae",
+        "product_version_source_commit_matches": true,
+        "version_strings": [
+          {
+            "CompanyName": "Slightshot",
+            "FileDescription": "Slightshot",
+            "FileVersion": "1.4.2.0",
+            "InternalName": "Slightshot.dll",
+            "LegalCopyright": "",
+            "OriginalFilename": "Slightshot.dll",
+            "ProductName": "Slightshot",
+            "ProductVersion": "1.4.2+b25fd6c98b3289430cdec3088558f77e967c70ae",
+            "Assembly Version": "1.4.2.0"
+          }
+        ],
+        "raw_version_strings": [
+          {
+            "CompanyName": "Slightshot",
+            "FileDescription": "Slightshot",
+            "FileVersion": "1.4.2.0",
+            "InternalName": "Slightshot.dll",
+            "LegalCopyright": " ",
+            "OriginalFilename": "Slightshot.dll",
+            "ProductName": "Slightshot",
+            "ProductVersion": "1.4.2+b25fd6c98b3289430cdec3088558f77e967c70ae",
+            "Assembly Version": "1.4.2.0"
+          }
+        ],
+        "fixed_versions": [
+          {
+            "product": "1.4.2.0",
+            "file": "1.4.2.0"
+          }
+        ]
+      },
+      {
+        "asset": "Slightshot-windows-arm64.zip",
+        "url": "https://github.com/jmpijll/slightshot/releases/download/v1.4.2/Slightshot-windows-arm64.zip",
+        "github_asset_digest": "sha256:23c6cbe94f29f5e5aaaf846a1f775d0b0ad79c1b37b739ee7f17be048b453336",
+        "github_digest_matches": true,
+        "github_size_matches": true,
+        "status": "passed",
+        "architecture": "arm64",
+        "archive_bytes": 70839306,
+        "archive_sha256": "23c6cbe94f29f5e5aaaf846a1f775d0b0ad79c1b37b739ee7f17be048b453336",
+        "archive_entries": [
+          "Slightshot.exe"
+        ],
+        "zip_crc_verified": true,
+        "executable_bytes": 212654300,
+        "executable_sha256": "babd28853e00800abec5f8fe71ce8d8967936613598c790a4bea88ad90f14679",
+        "pe_machine": "0xaa64",
+        "pe_format": "PE32+",
+        "product_version_source_commit": "b25fd6c98b3289430cdec3088558f77e967c70ae",
+        "product_version_source_commit_matches": true,
+        "version_strings": [
+          {
+            "CompanyName": "Slightshot",
+            "FileDescription": "Slightshot",
+            "FileVersion": "1.4.2.0",
+            "InternalName": "Slightshot.dll",
+            "LegalCopyright": "",
+            "OriginalFilename": "Slightshot.dll",
+            "ProductName": "Slightshot",
+            "ProductVersion": "1.4.2+b25fd6c98b3289430cdec3088558f77e967c70ae",
+            "Assembly Version": "1.4.2.0"
+          }
+        ],
+        "raw_version_strings": [
+          {
+            "CompanyName": "Slightshot",
+            "FileDescription": "Slightshot",
+            "FileVersion": "1.4.2.0",
+            "InternalName": "Slightshot.dll",
+            "LegalCopyright": " ",
+            "OriginalFilename": "Slightshot.dll",
+            "ProductName": "Slightshot",
+            "ProductVersion": "1.4.2+b25fd6c98b3289430cdec3088558f77e967c70ae",
+            "Assembly Version": "1.4.2.0"
+          }
+        ],
+        "fixed_versions": [
+          {
+            "product": "1.4.2.0",
+            "file": "1.4.2.0"
+          }
+        ]
+      }
+    ],
+    "installer_assets": [
+      {
+        "asset": "Slightshot-windows-x64-setup.exe",
+        "url": "https://github.com/jmpijll/slightshot/releases/download/v1.4.2/Slightshot-windows-x64-setup.exe",
+        "github_asset_digest": "sha256:662da074a4d20445b888e622b20c8fff60998d7df30e594a1e14fc28ef6fcab8",
+        "github_digest_matches": true,
+        "github_size_matches": true,
+        "status": "passed",
+        "bytes": 55900037,
+        "sha256": "662da074a4d20445b888e622b20c8fff60998d7df30e594a1e14fc28ef6fcab8",
+        "bootstrapper_architecture": "x86",
+        "bootstrapper_pe_machine": "0x014c",
+        "bootstrapper_pe_format": "PE32",
+        "target_architecture": "x64",
+        "target_architecture_source": "Published asset name and reviewed Inno Setup architecture selection; corresponding native payload is checked in its portable archive.",
+        "payload_inspected": false,
+        "native_execution_rerun": false,
+        "version_strings": [
+          {
+            "Comments": "This installation was built with Inno Setup.",
+            "CompanyName": "Jamie van der Pijll",
+            "FileDescription": "Slightshot installer",
+            "FileVersion": "1.4.2.0",
+            "LegalCopyright": "",
+            "OriginalFileName": "",
+            "ProductName": "Slightshot",
+            "ProductVersion": "1.4.2"
+          }
+        ],
+        "raw_version_strings": [
+          {
+            "Comments": "This installation was built with Inno Setup.",
+            "CompanyName": "Jamie van der Pijll                                         ",
+            "FileDescription": "Slightshot installer                                        ",
+            "FileVersion": "1.4.2.0             ",
+            "LegalCopyright": "                                                                                                    ",
+            "OriginalFileName": "                                                  ",
+            "ProductName": "Slightshot                                                  ",
+            "ProductVersion": "1.4.2                                             "
+          }
+        ],
+        "fixed_versions": [
+          {
+            "product": "1.4.2.0",
+            "file": "1.4.2.0"
+          }
+        ]
+      },
+      {
+        "asset": "Slightshot-windows-arm64-setup.exe",
+        "url": "https://github.com/jmpijll/slightshot/releases/download/v1.4.2/Slightshot-windows-arm64-setup.exe",
+        "github_asset_digest": "sha256:be96dd3fceeaa1c015c845fb8872c42e47ce82565ef10d39a651369d5286d6d3",
+        "github_digest_matches": true,
+        "github_size_matches": true,
+        "status": "passed",
+        "bytes": 49776870,
+        "sha256": "be96dd3fceeaa1c015c845fb8872c42e47ce82565ef10d39a651369d5286d6d3",
+        "bootstrapper_architecture": "x86",
+        "bootstrapper_pe_machine": "0x014c",
+        "bootstrapper_pe_format": "PE32",
+        "target_architecture": "arm64",
+        "target_architecture_source": "Published asset name and reviewed Inno Setup architecture selection; corresponding native payload is checked in its portable archive.",
+        "payload_inspected": false,
+        "native_execution_rerun": false,
+        "version_strings": [
+          {
+            "Comments": "This installation was built with Inno Setup.",
+            "CompanyName": "Jamie van der Pijll",
+            "FileDescription": "Slightshot installer",
+            "FileVersion": "1.4.2.0",
+            "LegalCopyright": "",
+            "OriginalFileName": "",
+            "ProductName": "Slightshot",
+            "ProductVersion": "1.4.2"
+          }
+        ],
+        "raw_version_strings": [
+          {
+            "Comments": "This installation was built with Inno Setup.",
+            "CompanyName": "Jamie van der Pijll                                         ",
+            "FileDescription": "Slightshot installer                                        ",
+            "FileVersion": "1.4.2.0             ",
+            "LegalCopyright": "                                                                                                    ",
+            "OriginalFileName": "                                                  ",
+            "ProductName": "Slightshot                                                  ",
+            "ProductVersion": "1.4.2                                             "
+          }
+        ],
+        "fixed_versions": [
+          {
+            "product": "1.4.2.0",
+            "file": "1.4.2.0"
+          }
+        ]
+      }
+    ],
+    "native_execution": {
+      "rerun": false,
+      "release_workflow_url": "https://github.com/jmpijll/slightshot/actions/runs/37989426323",
+      "native_x64": "Exact-source native Windows workflow checks passed; public-file validator does not rerun native execution.",
+      "native_arm64": "Not performed; cross-built package inspection only."
+    },
+    "native_execution_provenance": {
+      "release_workflow_url": "https://github.com/jmpijll/slightshot/actions/runs/37989426323",
+      "source_commit": "b25fd6c98b3289430cdec3088558f77e967c70ae",
+      "run_number": 11,
+      "release_run_status_at_validation": "completed",
+      "release_run_conclusion_at_validation": "success",
+      "job": "Windows preview and native checks / build-and-render",
+      "job_url": "https://github.com/jmpijll/slightshot/actions/runs/37989426323/job/114019507028",
+      "job_conclusion": "success",
+      "native_checks": [
+        {
+          "step": "Test selection, layout and output geometry",
+          "conclusion": "success"
+        },
+        {
+          "step": "Build native app with warnings as errors",
+          "conclusion": "success"
+        },
+        {
+          "step": "Render native WPF parity fixtures and test image export",
+          "conclusion": "success"
+        },
+        {
+          "step": "Test clipboard image editor, native window, original pixels and output retry",
+          "conclusion": "success"
+        },
+        {
+          "step": "Test native video recording, export quality, cancellation and retry",
+          "conclusion": "success"
+        },
+        {
+          "step": "Test delayed capture on the real Windows desktop",
+          "conclusion": "success"
+        },
+        {
+          "step": "Package and verify single-file archives",
+          "conclusion": "success"
+        },
+        {
+          "step": "Test the extracted x64 app from a path containing spaces",
+          "conclusion": "success"
+        },
+        {
+          "step": "Build per-user Windows installers",
+          "conclusion": "success"
+        },
+        {
+          "step": "Test installation, upgrade, installed app and uninstallation",
+          "conclusion": "success"
+        },
+        {
+          "step": "Test Windows shortcuts through native keyboard input and global registration",
+          "conclusion": "success"
+        }
+      ],
+      "native_x64_installer_execution": "Passed installation, upgrade, running-app/downgrade guards and uninstall in the exact-tag release workflow; not rerun by this public-file validator.",
+      "native_arm64_installer_execution": "Not performed; ARM64 installer and native payload are cross-built and inspected. Native ARM64 desktop acceptance remains pending."
+    },
+    "native_shortcut_fixture": [
+      {
+        "target": "native x64 app",
+        "validation": {
+          "platform": "Windows / native WPF Settings / Win32 global hotkeys",
+          "sourceCommit": "b25fd6c98b3289430cdec3088558f77e967c70ae",
+          "source": "Automated native Settings fixture with real SendInput and RegisterHotKey; screenshots are cropped composed desktop pixels.",
+          "fixtureInputs": [
+            "Left Win+F13",
+            "Right Win+F13 after Ctrl+Shift+A",
+            "Ctrl+Win+F13",
+            "Shift+Alt+Win+F13",
+            "Ctrl+Shift+Alt+Win+F13",
+            "Ctrl+Shift+A",
+            "bare modifiers",
+            "duplicate assignment",
+            "Escape"
+          ],
+          "recorded": [
+            {
+              "Key": 124,
+              "Modifiers": 8,
+              "IsEmpty": false,
+              "IsValid": true
+            },
+            {
+              "Key": 124,
+              "Modifiers": 10,
+              "IsEmpty": false,
+              "IsValid": true
+            },
+            {
+              "Key": 124,
+              "Modifiers": 13,
+              "IsEmpty": false,
+              "IsValid": true
+            }
+          ],
+          "globalCallbacks": [
+            1,
+            2,
+            3
+          ],
+          "checks": [
+            "Left and right Windows + F13 both record through real native key input; right Windows replaces a distinct Ctrl+Shift+A value.",
+            "Windows with Control, Shift, Alt and all modifiers retains the full modifier mask; an existing Ctrl+Shift shortcut still records correctly.",
+            "Bare Control, Shift, Alt and both Windows keys leave the field unchanged while held; a key without modifiers is ignored.",
+            "Duplicate assignment remains rejected; Escape clears only the focused shortcut; a subsequent valid chord clears feedback.",
+            "Recorded settings JSON roundtrip preserves Windows modifiers. After Settings closes, production RegisterHotKey registration and native SendInput produce callbacks 1, 2, 3; removing Windows produces none."
+          ]
+        },
+        "source_artifact_report_sha256": "0e2edf7a8cf85ab4c8fcd75270a6c5af8f4f06fa282fd41f6c1750c132ae9400",
+        "durable_report_file": "docs/review/windows-key-shortcuts/native-shortcut-validation.json",
+        "durable_report_sha256": "27e99de48efde50875d12919a4590d9d9c08dcca3720833cf06b793b7746231f",
+        "line_endings": "Source artifact uses CRLF; durable JSON uses LF. Parsed validation values are identical."
+      },
+      {
+        "target": "extracted portable x64",
+        "validation": {
+          "platform": "Windows / native WPF Settings / Win32 global hotkeys",
+          "sourceCommit": "b25fd6c98b3289430cdec3088558f77e967c70ae",
+          "source": "Automated native Settings fixture with real SendInput and RegisterHotKey; screenshots are cropped composed desktop pixels.",
+          "fixtureInputs": [
+            "Left Win+F13",
+            "Right Win+F13 after Ctrl+Shift+A",
+            "Ctrl+Win+F13",
+            "Shift+Alt+Win+F13",
+            "Ctrl+Shift+Alt+Win+F13",
+            "Ctrl+Shift+A",
+            "bare modifiers",
+            "duplicate assignment",
+            "Escape"
+          ],
+          "recorded": [
+            {
+              "Key": 124,
+              "Modifiers": 8,
+              "IsEmpty": false,
+              "IsValid": true
+            },
+            {
+              "Key": 124,
+              "Modifiers": 10,
+              "IsEmpty": false,
+              "IsValid": true
+            },
+            {
+              "Key": 124,
+              "Modifiers": 13,
+              "IsEmpty": false,
+              "IsValid": true
+            }
+          ],
+          "globalCallbacks": [
+            1,
+            2,
+            3
+          ],
+          "checks": [
+            "Left and right Windows + F13 both record through real native key input; right Windows replaces a distinct Ctrl+Shift+A value.",
+            "Windows with Control, Shift, Alt and all modifiers retains the full modifier mask; an existing Ctrl+Shift shortcut still records correctly.",
+            "Bare Control, Shift, Alt and both Windows keys leave the field unchanged while held; a key without modifiers is ignored.",
+            "Duplicate assignment remains rejected; Escape clears only the focused shortcut; a subsequent valid chord clears feedback.",
+            "Recorded settings JSON roundtrip preserves Windows modifiers. After Settings closes, production RegisterHotKey registration and native SendInput produce callbacks 1, 2, 3; removing Windows produces none."
+          ]
+        },
+        "source_artifact_report_sha256": "0e2edf7a8cf85ab4c8fcd75270a6c5af8f4f06fa282fd41f6c1750c132ae9400",
+        "durable_report_file": "docs/review/windows-key-shortcuts/portable-shortcut-validation.json",
+        "durable_report_sha256": "27e99de48efde50875d12919a4590d9d9c08dcca3720833cf06b793b7746231f",
+        "line_endings": "Source artifact uses CRLF; durable JSON uses LF. Parsed validation values are identical."
+      }
+    ],
+    "status": "passed"
+  },
+  "feature_verification": "Windows Win-key shortcut recording and activation tested by the exact-tag native regression fixture; durable feature captures in docs/review/windows-key-shortcuts.",
+  "status": "passed",
+  "homebrew": {
+    "version": "1.4.2",
+    "sha256": "83e49fa6d2f27ae6f973fbbfe0840790a7fc163bc71a8884b164b01a7af8e737",
+    "source": "Candidate repository cask fetched against the final published disk image.",
+    "fetch_status": "passed",
+    "verified_at": "2026-10-09T21:00:04.488192+00:00",
+    "command": "HOMEBREW_NO_AUTO_UPDATE=1 brew fetch --cask codex/slightshot-validation-1-4-2/slightshot",
+    "candidate_cask_sha256": "ddeb1ad9dec0dd25e6b6a0547abc36b02e8085bbc29dca9996480b67cf166a5c",
+    "ruby_syntax": "Syntax OK",
+    "cached_download_sha256_matches": true,
+    "cached_download_size_matches": true,
+    "temporary_tap": "Local validation copy of the candidate cask; removed after the check."
+  }
+}

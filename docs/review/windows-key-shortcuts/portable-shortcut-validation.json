@@ -1,0 +1,48 @@
+{
+  "platform": "Windows / native WPF Settings / Win32 global hotkeys",
+  "sourceCommit": "b25fd6c98b3289430cdec3088558f77e967c70ae",
+  "source": "Automated native Settings fixture with real SendInput and RegisterHotKey; screenshots are cropped composed desktop pixels.",
+  "fixtureInputs": [
+    "Left Win\u002BF13",
+    "Right Win\u002BF13 after Ctrl\u002BShift\u002BA",
+    "Ctrl\u002BWin\u002BF13",
+    "Shift\u002BAlt\u002BWin\u002BF13",
+    "Ctrl\u002BShift\u002BAlt\u002BWin\u002BF13",
+    "Ctrl\u002BShift\u002BA",
+    "bare modifiers",
+    "duplicate assignment",
+    "Escape"
+  ],
+  "recorded": [
+    {
+      "Key": 124,
+      "Modifiers": 8,
+      "IsEmpty": false,
+      "IsValid": true
+    },
+    {
+      "Key": 124,
+      "Modifiers": 10,
+      "IsEmpty": false,
+      "IsValid": true
+    },
+    {
+      "Key": 124,
+      "Modifiers": 13,
+      "IsEmpty": false,
+      "IsValid": true
+    }
+  ],
+  "globalCallbacks": [
+    1,
+    2,
+    3
+  ],
+  "checks": [
+    "Left and right Windows \u002B F13 both record through real native key input; right Windows replaces a distinct Ctrl\u002BShift\u002BA value.",
+    "Windows with Control, Shift, Alt and all modifiers retains the full modifier mask; an existing Ctrl\u002BShift shortcut still records correctly.",
+    "Bare Control, Shift, Alt and both Windows keys leave the field unchanged while held; a key without modifiers is ignored.",
+    "Duplicate assignment remains rejected; Escape clears only the focused shortcut; a subsequent valid chord clears feedback.",
+    "Recorded settings JSON roundtrip preserves Windows modifiers. After Settings closes, production RegisterHotKey registration and native SendInput produce callbacks 1, 2, 3; removing Windows produces none."
+  ]
+}
