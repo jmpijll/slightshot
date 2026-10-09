@@ -68,9 +68,9 @@ source excerpts rendered with the GitHub Markdown API in a local browser.
 The documentation source commit, file hashes and capture hashes are recorded
 in [capture-source.json](capture-source.json).
 
-![Current release status](release-status.png)
-![Windows download instructions](windows-downloads.png)
-![Windows shortcut instructions](windows-shortcuts.png)
-![Windows validation instructions](windows-validation.png)
-![Exact-release shortcut validation record](windows-shortcut-validation.png)
-![Published-file validation results](published-validation.png)
+![Current release status](release-status.jpg)
+![Windows download instructions](windows-downloads.jpg)
+![Windows shortcut instructions](windows-shortcuts.jpg)
+![Windows validation instructions](windows-validation.jpg)
+![Exact-release shortcut validation record](windows-shortcut-validation.jpg)
+![Published-file validation results](published-validation.jpg)
