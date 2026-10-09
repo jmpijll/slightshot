@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using Forms = System.Windows.Forms;
@@ -25,6 +26,7 @@ internal static class ShortcutSmokeTest
         string sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT")
             ?? Environment.GetEnvironmentVariable("GITHUB_SHA") ?? "local source commit not supplied";
         var checks = new List<string>();
+        var keyEvents = new List<object>();
         var settings = new Settings { PlaySound = false };
         var window = new SettingsWindow(settings, false) { Title = "Slightshot Settings · automated shortcut fixture" };
         try
@@ -37,6 +39,26 @@ internal static class ShortcutSmokeTest
             var fields = Descendants((DependencyObject)window.Content).OfType<TextBox>()
                 .ToDictionary(field => AutomationProperties.GetName(field));
             TextBox area = fields["Capture area"], save = fields["Capture full screen"], copy = fields["Copy full screen"];
+            void ObserveKey(string phase, KeyEventArgs e)
+            {
+                var field = Keyboard.FocusedElement as TextBox;
+                keyEvents.Add(new
+                {
+                    phase, key = e.Key.ToString(), systemKey = e.SystemKey.ToString(), handled = e.Handled,
+                    modifiers = Keyboard.Modifiers.ToString(), leftWinDown = Keyboard.IsKeyDown(Key.LWin), rightWinDown = Keyboard.IsKeyDown(Key.RWin),
+                    nativeLeftWinDown = (GetKeyState(LeftWin) & 0x8000) != 0, nativeRightWinDown = (GetKeyState(RightWin) & 0x8000) != 0,
+                    asyncLeftWinDown = (GetAsyncKeyState(LeftWin) & 0x8000) != 0, asyncRightWinDown = (GetAsyncKeyState(RightWin) & 0x8000) != 0,
+                    focusedField = field == null ? null : AutomationProperties.GetName(field), fieldText = field?.Text,
+                    area = settings.CaptureAreaHotKey, save = settings.SaveFullScreenHotKey, copy = settings.CopyFullScreenHotKey,
+                    foreground = GetForegroundWindow().ToInt64().ToString("X"), settingsHandle = new WindowInteropHelper(window).Handle.ToInt64().ToString("X")
+                });
+            }
+            // The Window preview route observes state before the production field
+            // handler. These handlers were added after the production handler and
+            // also run when it marks the event handled, exposing its actual result.
+            window.AddHandler(Keyboard.PreviewKeyDownEvent, new KeyEventHandler((_, e) => ObserveKey("window-before-field", e)), true);
+            foreach (var field in new[] { area, save, copy })
+                field.AddHandler(Keyboard.PreviewKeyDownEvent, new KeyEventHandler((_, e) => ObserveKey("field-after-recording", e)), true);
             await FocusAsync(window, area);
             CaptureWindow(window, Path.Combine(directory, "shortcut-before-window.png"));
 
@@ -53,7 +75,14 @@ internal static class ShortcutSmokeTest
             }, JsonOptions));
             Require(settings.CaptureAreaHotKey == new HotKey(F13, 8) && area.Text == "Win+F13", "left Windows key is recorded by the real field");
             await ChordAsync(RightWin, F18);
-            Require(settings.CaptureAreaHotKey == new HotKey(F18, 8) && area.Text == "Win+F18", "right Windows key records a different shortcut through the real field");
+            File.WriteAllText(Path.Combine(directory, "shortcut-key-events.json"), JsonSerializer.Serialize(new
+            {
+                sourceCommit, input = "Right Windows + F18", expected = "Win+F18", observed = area.Text,
+                recorded = settings.CaptureAreaHotKey, sendInput = new { windowsScan = 0, windowsFlags = "KEYEVENTF_EXTENDEDKEY", rightWinVirtualKey = RightWin, mainVirtualKey = F18 },
+                keyEvents
+            }, JsonOptions));
+            CaptureWindow(window, Path.Combine(directory, "shortcut-right-win-window.png"));
+            Require(settings.CaptureAreaHotKey == new HotKey(F18, 8) && area.Text == "Win+F18", $"right Windows key records a different shortcut through the real field: expected Win+F18 / key={F18}, modifiers=8; observed field={area.Text}, model key={settings.CaptureAreaHotKey.Key}, modifiers={settings.CaptureAreaHotKey.Modifiers}");
             checks.Add("Left Windows + F13 and right Windows + F18 record distinct shortcuts through real native key input.");
 
             await FocusAsync(window, save); await ChordAsync(Control, LeftWin, F14);
@@ -185,4 +214,6 @@ internal static class ShortcutSmokeTest
     [StructLayout(LayoutKind.Sequential)] private struct MouseInput { public int X, Y; public uint Data, Flags, Time; public UIntPtr ExtraInfo; }
     [DllImport("user32.dll", SetLastError = true)] private static extern uint SendInput(uint count, Input[] inputs, int size);
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] private static extern short GetKeyState(int key);
+    [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int key);
 }
