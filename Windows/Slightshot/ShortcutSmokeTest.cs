@@ -17,7 +17,7 @@ namespace Slightshot;
 internal static class ShortcutSmokeTest
 {
     private const ushort LeftWin = 0x5b, RightWin = 0x5c, Control = 0xa2, Shift = 0xa0, Alt = 0xa4;
-    private const ushort F13 = 0x7c, F14 = 0x7d, F15 = 0x7e, F16 = 0x7f, F17 = 0x80, F18 = 0x81, F24 = 0x87;
+    private const ushort A = 0x41, F13 = 0x7c, F14 = 0x7d, F15 = 0x7e, F16 = 0x7f;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     internal static async Task RunAsync(string directory)
@@ -74,16 +74,21 @@ internal static class ShortcutSmokeTest
                 recorded = settings.CaptureAreaHotKey, passed = settings.CaptureAreaHotKey == new HotKey(F13, 8)
             }, JsonOptions));
             Require(settings.CaptureAreaHotKey == new HotKey(F13, 8) && area.Text == "Win+F13", "left Windows key is recorded by the real field");
-            await ChordAsync(RightWin, F18);
+            // F18 was accepted by SendInput on the CI desktop but never reached
+            // WPF. Reuse the proven F13 input after first changing the model so
+            // a dropped right-Windows chord cannot pass through an unchanged field.
+            await ChordAsync(Control, Shift, A);
+            Require(settings.CaptureAreaHotKey == new HotKey(A, 6) && area.Text == "Ctrl+Shift+A", "ordinary chord changes the field before testing right Windows");
+            await ChordAsync(RightWin, F13);
             File.WriteAllText(Path.Combine(directory, "shortcut-key-events.json"), JsonSerializer.Serialize(new
             {
-                sourceCommit, input = "Right Windows + F18", expected = "Win+F18", observed = area.Text,
-                recorded = settings.CaptureAreaHotKey, sendInput = new { windowsScan = 0, windowsFlags = "KEYEVENTF_EXTENDEDKEY", rightWinVirtualKey = RightWin, mainVirtualKey = F18 },
+                sourceCommit, input = "Right Windows + F13 after Ctrl+Shift+A", expected = "Win+F13", observed = area.Text,
+                recorded = settings.CaptureAreaHotKey, sendInput = new { windowsScan = 0, windowsFlags = "KEYEVENTF_EXTENDEDKEY", rightWinVirtualKey = RightWin, mainVirtualKey = F13 },
                 keyEvents
             }, JsonOptions));
             CaptureWindow(window, Path.Combine(directory, "shortcut-right-win-window.png"));
-            Require(settings.CaptureAreaHotKey == new HotKey(F18, 8) && area.Text == "Win+F18", $"right Windows key records a different shortcut through the real field: expected Win+F18 / key={F18}, modifiers=8; observed field={area.Text}, model key={settings.CaptureAreaHotKey.Key}, modifiers={settings.CaptureAreaHotKey.Modifiers}");
-            checks.Add("Left Windows + F13 and right Windows + F18 record distinct shortcuts through real native key input.");
+            Require(settings.CaptureAreaHotKey == new HotKey(F13, 8) && area.Text == "Win+F13", $"right Windows key replaces Ctrl+Shift+A through the real field: expected Win+F13 / key={F13}, modifiers=8; observed field={area.Text}, model key={settings.CaptureAreaHotKey.Key}, modifiers={settings.CaptureAreaHotKey.Modifiers}");
+            checks.Add("Left and right Windows + F13 both record through real native key input; right Windows replaces a distinct Ctrl+Shift+A value.");
 
             await FocusAsync(window, save); await ChordAsync(Control, LeftWin, F14);
             Require(settings.SaveFullScreenHotKey == new HotKey(F14, 10) && save.Text == "Ctrl+Win+F14", "Windows retains Control");
@@ -91,8 +96,8 @@ internal static class ShortcutSmokeTest
             Require(settings.CopyFullScreenHotKey == new HotKey(F15, 13) && copy.Text == "Shift+Alt+Win+F15", "Windows retains Shift and Alt via WPF SystemKey");
             await FocusAsync(window, area); await ChordAsync(Control, Shift, Alt, LeftWin, F16);
             Require(settings.CaptureAreaHotKey == new HotKey(F16, 15) && area.Text == "Ctrl+Shift+Alt+Win+F16", "all four modifiers survive recording");
-            await ChordAsync(Control, Shift, F17);
-            Require(settings.CaptureAreaHotKey == new HotKey(F17, 6) && area.Text == "Ctrl+Shift+F17", "existing shortcuts without Windows retain their modifiers");
+            await ChordAsync(Control, Shift, A);
+            Require(settings.CaptureAreaHotKey == new HotKey(A, 6) && area.Text == "Ctrl+Shift+A", "existing shortcuts without Windows retain their modifiers");
             await ChordAsync(LeftWin, F13);
             checks.Add("Windows with Control, Shift, Alt and all modifiers retains the full modifier mask; an existing Ctrl+Shift shortcut still records correctly.");
 
@@ -101,13 +106,13 @@ internal static class ShortcutSmokeTest
                 HotKey previous = settings.CaptureAreaHotKey;
                 SendKey(modifier, false); await Task.Delay(80);
                 Require(settings.CaptureAreaHotKey == previous && area.Text == previous.ToString(), $"bare modifier 0x{modifier:X2} does not replace the shortcut");
-                // A bare Win release opens Start. Complete an unused chord after
-                // the assertion so the following native field keeps its focus.
-                if (modifier is LeftWin or RightWin) { SendKey(F24, false); await Task.Delay(80); SendKey(F24, true); }
+                // A bare Win release opens Start. Complete the proven F13 chord
+                // after the assertion so the following native field keeps focus.
+                if (modifier is LeftWin or RightWin) { SendKey(F13, false); await Task.Delay(80); SendKey(F13, true); }
                 SendKey(modifier, true); await Task.Delay(80);
                 if (modifier is LeftWin or RightWin) await ChordAsync(LeftWin, F13);
             }
-            await ChordAsync(F18);
+            await ChordAsync(A);
             Require(settings.CaptureAreaHotKey == new HotKey(F13, 8) && area.Text == "Win+F13", "unmodified key leaves the shortcut unchanged");
             checks.Add("Bare Control, Shift, Alt and both Windows keys leave the field unchanged while held; a key without modifiers is ignored.");
 
@@ -123,6 +128,7 @@ internal static class ShortcutSmokeTest
         }
         finally
         {
+            File.WriteAllText(Path.Combine(directory, "shortcut-all-key-events.json"), JsonSerializer.Serialize(new { sourceCommit, keyEvents }, JsonOptions));
             // Release injected modifiers even when the baseline regression fails.
             foreach (ushort modifier in new[] { Control, Shift, Alt, LeftWin, RightWin }) SendKey(modifier, true);
             window.Close();
@@ -148,7 +154,7 @@ internal static class ShortcutSmokeTest
         {
             platform = "Windows / native WPF Settings / Win32 global hotkeys",
             sourceCommit, source = "Automated native Settings fixture with real SendInput and RegisterHotKey; screenshots are cropped composed desktop pixels.",
-            fixtureInputs = new[] { "Left Win+F13", "Right Win+F18", "Ctrl+Win+F14", "Shift+Alt+Win+F15", "Ctrl+Shift+Alt+Win+F16", "Ctrl+Shift+F17", "bare modifiers", "duplicate assignment", "Escape" },
+            fixtureInputs = new[] { "Left Win+F13", "Right Win+F13 after Ctrl+Shift+A", "Ctrl+Win+F14", "Shift+Alt+Win+F15", "Ctrl+Shift+Alt+Win+F16", "Ctrl+Shift+A", "bare modifiers", "duplicate assignment", "Escape" },
             recorded = new[] { restored.CaptureAreaHotKey, restored.SaveFullScreenHotKey, restored.CopyFullScreenHotKey }, globalCallbacks = callbacks, checks
         }, JsonOptions));
     }
