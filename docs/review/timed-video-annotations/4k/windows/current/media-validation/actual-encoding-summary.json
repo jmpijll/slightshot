@@ -1,0 +1,123 @@
+{
+  "sourceCommit": "e28601319e3107e8681c2af2bea6b8312c5cd1ff",
+  "prHeadCommit": "0d96e8eece5bcdfc8f24074b61126b230e0dccb0",
+  "githubRunId": "38085300980",
+  "scope": "Observations from actual decoded ffprobe frame records and stream metadata for High/Balanced/Step. Bitrate and compression metadata are measured outputs, not a claim that encoding choices or hardware processing are unchanged. A final partial frame makes average frame rate differ from the otherwise constant PTS cadence. The three original acceptance validators and their tolerances remain unchanged.",
+  "streams": {
+    "high": {
+      "file": "video-editor-4k-high.mp4",
+      "codec": "h264",
+      "profile": "Main",
+      "level": 51,
+      "pixelFormat": "yuv420p",
+      "width": 3840,
+      "height": 2160,
+      "actualVideoStreamBitrateBitsPerSecond": 5071147,
+      "ffprobeNominalFrameRate": "30/1",
+      "ffprobeAverageFrameRate": "1470000/48737",
+      "actualDecodedFrames": 49,
+      "sourceDurationExpectedFrameCount": 49,
+      "actualFirstPresentationSeconds": 0.0,
+      "actualLastPresentationSeconds": 1.6,
+      "actualFinalSampleDurationSeconds": 0.024566666666666667,
+      "actualDecodedCoverageEndSeconds": 1.6245666666666667,
+      "sourceDurationSeconds": 1.6245666666666667,
+      "actualContainerTrackDurationSeconds": 1.6245333333333334,
+      "actualGapHistogramSeconds": {
+        "1/30": 48
+      },
+      "actualPictureTypeHistogram": {
+        "I": 2,
+        "P": 47
+      },
+      "actualHasBFrames": 0,
+      "actualColorRange": "tv",
+      "actualColorMatrix": "bt709",
+      "actualColorPrimaries": "bt709",
+      "actualColorTransfer": "bt709",
+      "observations": {
+        "countMatchesSourceDurationCeiling": true,
+        "firstPTSIsZeroWithin100ns": true,
+        "gapsMatchConfiguredCadenceWithin100ns": true,
+        "decodedCoverageMatchesSourceWithin1ms": true
+      }
+    },
+    "balanced": {
+      "file": "video-editor-4k-balanced.mp4",
+      "codec": "h264",
+      "profile": "Main",
+      "level": 40,
+      "pixelFormat": "yuv420p",
+      "width": 1920,
+      "height": 1080,
+      "actualVideoStreamBitrateBitsPerSecond": 836253,
+      "ffprobeNominalFrameRate": "24/1",
+      "ffprobeAverageFrameRate": "93600/3899",
+      "actualDecodedFrames": 39,
+      "sourceDurationExpectedFrameCount": 39,
+      "actualFirstPresentationSeconds": 0.0,
+      "actualLastPresentationSeconds": 1.5833333333333333,
+      "actualFinalSampleDurationSeconds": 0.04125,
+      "actualDecodedCoverageEndSeconds": 1.6245833333333333,
+      "sourceDurationSeconds": 1.6245666666666667,
+      "actualContainerTrackDurationSeconds": 1.6245416666666668,
+      "actualGapHistogramSeconds": {
+        "1/24": 38
+      },
+      "actualPictureTypeHistogram": {
+        "I": 2,
+        "P": 37
+      },
+      "actualHasBFrames": 0,
+      "actualColorRange": "tv",
+      "actualColorMatrix": "bt709",
+      "actualColorPrimaries": "bt709",
+      "actualColorTransfer": "bt709",
+      "observations": {
+        "countMatchesSourceDurationCeiling": true,
+        "firstPTSIsZeroWithin100ns": true,
+        "gapsMatchConfiguredCadenceWithin100ns": true,
+        "decodedCoverageMatchesSourceWithin1ms": true
+      }
+    },
+    "step": {
+      "file": "video-editor-4k-step.mp4",
+      "codec": "h264",
+      "profile": "Main",
+      "level": 51,
+      "pixelFormat": "yuv420p",
+      "width": 3840,
+      "height": 2160,
+      "actualVideoStreamBitrateBitsPerSecond": 5302864,
+      "ffprobeNominalFrameRate": "30/1",
+      "ffprobeAverageFrameRate": "1470000/48737",
+      "actualDecodedFrames": 49,
+      "sourceDurationExpectedFrameCount": 49,
+      "actualFirstPresentationSeconds": 0.0,
+      "actualLastPresentationSeconds": 1.6,
+      "actualFinalSampleDurationSeconds": 0.024566666666666667,
+      "actualDecodedCoverageEndSeconds": 1.6245666666666667,
+      "sourceDurationSeconds": 1.6245666666666667,
+      "actualContainerTrackDurationSeconds": 1.6245333333333334,
+      "actualGapHistogramSeconds": {
+        "1/30": 48
+      },
+      "actualPictureTypeHistogram": {
+        "I": 2,
+        "P": 47
+      },
+      "actualHasBFrames": 0,
+      "actualColorRange": "tv",
+      "actualColorMatrix": "bt709",
+      "actualColorPrimaries": "bt709",
+      "actualColorTransfer": "bt709",
+      "observations": {
+        "countMatchesSourceDurationCeiling": true,
+        "firstPTSIsZeroWithin100ns": true,
+        "gapsMatchConfiguredCadenceWithin100ns": true,
+        "decodedCoverageMatchesSourceWithin1ms": true
+      }
+    }
+  },
+  "nativePerformanceAcceptanceFailures": []
+}

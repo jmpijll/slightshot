@@ -10,13 +10,15 @@ using Slightshot.Core;
 
 namespace Slightshot;
 
-// Windows' media pipeline requests one BGRA frame at a time and encodes it to
-// H.264. Capture is paced against a monotonic clock, with no frame backlog.
+// Windows' media pipeline requests one limited-range BT.709 NV12 frame at a
+// time. One BGRA capture scratch is converted before submission; only NV12
+// sample storage stays rented until Processed. Capture has no frame backlog.
 internal sealed class RecordingSession : IDisposable
 {
     private readonly Action<byte[]> captureFrame;
     private IDisposable? captureResource;
     private readonly RecordingFrameBuffers frameBuffers;
+    private byte[]? capturePixels;
     private readonly object lifetime = new();
     private TaskCompletionSource? callbacksDrained;
     private int activeCallbacks;
@@ -39,8 +41,11 @@ internal sealed class RecordingSession : IDisposable
 
     internal RecordingSession(int width, int height, Action<byte[]> captureFrame, IDisposable? captureResource = null)
     {
+        if (width <= 0 || height <= 0 || (width & 1) != 0 || (height & 1) != 0) throw new ArgumentOutOfRangeException(nameof(width));
         Width = width; Height = height; this.captureFrame = captureFrame; this.captureResource = captureResource;
-        frameBuffers = new(checked(width * height * 4));
+        int area = checked(width * height);
+        capturePixels = new byte[checked(area * 4)];
+        frameBuffers = new(checked(area + area / 2));
         Directory.CreateDirectory(DirectoryPath);
     }
 
@@ -68,9 +73,7 @@ internal sealed class RecordingSession : IDisposable
 
     private async Task EncodeAsync()
     {
-        var properties = VideoEncodingProperties.CreateUncompressed(MediaEncodingSubtypes.Bgra8, (uint)Width, (uint)Height);
-        properties.FrameRate.Numerator = 30; properties.FrameRate.Denominator = 1;
-        properties.PixelAspectRatio.Numerator = properties.PixelAspectRatio.Denominator = 1;
+        var properties = RecordingExport.FrameProperties(Width, Height, 30);
         var source = new MediaStreamSource(new VideoStreamDescriptor(properties)) { BufferTime = TimeSpan.Zero, CanSeek = false, IsLive = true };
         source.Starting += SourceStarting;
         source.SampleRequested += SampleRequested;
@@ -105,6 +108,7 @@ internal sealed class RecordingSession : IDisposable
             // for every admitted callback before releasing capture resources.
             await drained;
             frameBuffers.Dispose();
+            capturePixels = null;
             Interlocked.Exchange(ref captureResource, null)?.Dispose();
         }
     }
@@ -139,7 +143,12 @@ internal sealed class RecordingSession : IDisposable
             if (due > TimeSpan.Zero) await Task.Delay(due, stopSignal.Token);
             if (Volatile.Read(ref stopping) != 0) return;
             frame = await frameBuffers.RentAsync(stopSignal.Token);
-            captureFrame(frame.Pixels);
+            // The samples semaphore serializes this scratch. Native samples
+            // retain their separate NV12 leases, never the mutable BGRA input.
+            var captured = capturePixels ?? throw new ObjectDisposedException(nameof(RecordingSession));
+            captureFrame(captured);
+            if (Volatile.Read(ref stopping) != 0) return;
+            BgraToNv12.Convert(captured, frame.Pixels, Width, Height);
             if (Volatile.Read(ref stopping) != 0) return;
             long timestamp = frames == 0 ? 0 : Math.Max(nextTimestamp, clock.Elapsed.Ticks);
             sample = MediaStreamSample.CreateFromBuffer(frame.Pixels.AsBuffer(), TimeSpan.FromTicks(timestamp));
@@ -189,6 +198,7 @@ internal sealed class RecordingSession : IDisposable
             if (completion is { IsCompleted: false }) throw new InvalidOperationException("Wait for recording completion before disposing the session.");
             disposed = true; acceptingSamples = false;
             frameBuffers.Dispose();
+            capturePixels = null;
             Interlocked.Exchange(ref captureResource, null)?.Dispose();
             stopSignal.Dispose(); abortSignal.Dispose(); samples.Dispose();
         }

@@ -1,0 +1,421 @@
+{
+  "sourceCommit": "75e6eee2179c0e6e8296cdeb2f747d3485b49dbc",
+  "prHeadCommit": "d2902cb1a83c36a2653a8c84d01e69fae1208388",
+  "githubRunId": "38083618317",
+  "method": "Actual ffprobe container tags and every ffmpeg decoded RGB crop from real native synthetic640 source. Solid interior source patches are compared against known nominal input with unchanged native tolerance8. A second explicit601 conversion is diagnostic only; agreement with that assumption does not override actual source tags or acceptance.",
+  "actualSourceTags": {
+    "color_range": "tv",
+    "color_space": "bt709",
+    "color_primaries": "bt709",
+    "color_transfer": "bt709"
+  },
+  "actualDecodedSourceFrames": 115,
+  "sourceRawFirstPTSSeconds": 0.03333333333333333,
+  "checks": [
+    {
+      "patch": "Red",
+      "requestedNormalizedSeconds": 0.5,
+      "actualRawPTSSeconds": 0.5473,
+      "actualNormalizedPTSSeconds": 0.5139666666666667,
+      "decodedFrameIndex": 14,
+      "nominalRGB": [
+        255,
+        0,
+        0
+      ],
+      "actualTaggedMeanRGB": [
+        253.0,
+        0.0,
+        0.0
+      ],
+      "meanAbsoluteRGBChannelDelta": [
+        2.0,
+        0.0,
+        0.0
+      ],
+      "nominalPassWithinNativeToleranceEight": true,
+      "forced601DiagnosticMeanRGB": [
+        231.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "patch": "Green",
+      "requestedNormalizedSeconds": 0.5,
+      "actualRawPTSSeconds": 0.5473,
+      "actualNormalizedPTSSeconds": 0.5139666666666667,
+      "decodedFrameIndex": 14,
+      "nominalRGB": [
+        0,
+        255,
+        0
+      ],
+      "actualTaggedMeanRGB": [
+        0.0,
+        253.95454545454547,
+        0.0
+      ],
+      "meanAbsoluteRGBChannelDelta": [
+        0.0,
+        1.0454545454545325,
+        0.0
+      ],
+      "nominalPassWithinNativeToleranceEight": true,
+      "forced601DiagnosticMeanRGB": [
+        18.09090909090909,
+        255.0,
+        8.0
+      ]
+    },
+    {
+      "patch": "Blue",
+      "requestedNormalizedSeconds": 0.5,
+      "actualRawPTSSeconds": 0.5473,
+      "actualNormalizedPTSSeconds": 0.5139666666666667,
+      "decodedFrameIndex": 14,
+      "nominalRGB": [
+        0,
+        0,
+        255
+      ],
+      "actualTaggedMeanRGB": [
+        0.0,
+        0.0,
+        253.0
+      ],
+      "meanAbsoluteRGBChannelDelta": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "nominalPassWithinNativeToleranceEight": true,
+      "forced601DiagnosticMeanRGB": [
+        1.0,
+        0.0,
+        243.0
+      ]
+    },
+    {
+      "patch": "Neutral",
+      "requestedNormalizedSeconds": 0.5,
+      "actualRawPTSSeconds": 0.5473,
+      "actualNormalizedPTSSeconds": 0.5139666666666667,
+      "decodedFrameIndex": 14,
+      "nominalRGB": [
+        96,
+        96,
+        96
+      ],
+      "actualTaggedMeanRGB": [
+        94.0,
+        94.0,
+        94.0
+      ],
+      "meanAbsoluteRGBChannelDelta": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "nominalPassWithinNativeToleranceEight": true,
+      "forced601DiagnosticMeanRGB": [
+        94.0,
+        94.0,
+        94.0
+      ]
+    },
+    {
+      "patch": "Red",
+      "requestedNormalizedSeconds": 2,
+      "actualRawPTSSeconds": 2.0427333333333335,
+      "actualNormalizedPTSSeconds": 2.0094,
+      "decodedFrameIndex": 54,
+      "nominalRGB": [
+        255,
+        0,
+        0
+      ],
+      "actualTaggedMeanRGB": [
+        253.0,
+        0.0,
+        0.0
+      ],
+      "meanAbsoluteRGBChannelDelta": [
+        2.0,
+        0.0,
+        0.0
+      ],
+      "nominalPassWithinNativeToleranceEight": true,
+      "forced601DiagnosticMeanRGB": [
+        231.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "patch": "Green",
+      "requestedNormalizedSeconds": 2,
+      "actualRawPTSSeconds": 2.0427333333333335,
+      "actualNormalizedPTSSeconds": 2.0094,
+      "decodedFrameIndex": 54,
+      "nominalRGB": [
+        0,
+        255,
+        0
+      ],
+      "actualTaggedMeanRGB": [
+        0.0,
+        253.95454545454547,
+        0.0
+      ],
+      "meanAbsoluteRGBChannelDelta": [
+        0.0,
+        1.0454545454545325,
+        0.0
+      ],
+      "nominalPassWithinNativeToleranceEight": true,
+      "forced601DiagnosticMeanRGB": [
+        18.09090909090909,
+        255.0,
+        8.0
+      ]
+    },
+    {
+      "patch": "Blue",
+      "requestedNormalizedSeconds": 2,
+      "actualRawPTSSeconds": 2.0427333333333335,
+      "actualNormalizedPTSSeconds": 2.0094,
+      "decodedFrameIndex": 54,
+      "nominalRGB": [
+        0,
+        0,
+        255
+      ],
+      "actualTaggedMeanRGB": [
+        0.0,
+        0.0,
+        253.0
+      ],
+      "meanAbsoluteRGBChannelDelta": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "nominalPassWithinNativeToleranceEight": true,
+      "forced601DiagnosticMeanRGB": [
+        1.0,
+        0.0,
+        243.0
+      ]
+    },
+    {
+      "patch": "Neutral",
+      "requestedNormalizedSeconds": 2,
+      "actualRawPTSSeconds": 2.0427333333333335,
+      "actualNormalizedPTSSeconds": 2.0094,
+      "decodedFrameIndex": 54,
+      "nominalRGB": [
+        96,
+        96,
+        96
+      ],
+      "actualTaggedMeanRGB": [
+        94.0,
+        94.0,
+        94.0
+      ],
+      "meanAbsoluteRGBChannelDelta": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "nominalPassWithinNativeToleranceEight": true,
+      "forced601DiagnosticMeanRGB": [
+        94.0,
+        94.0,
+        94.0
+      ]
+    },
+    {
+      "patch": "Red",
+      "requestedNormalizedSeconds": 3.5,
+      "actualRawPTSSeconds": 3.5389333333333335,
+      "actualNormalizedPTSSeconds": 3.5056,
+      "decodedFrameIndex": 93,
+      "nominalRGB": [
+        255,
+        0,
+        0
+      ],
+      "actualTaggedMeanRGB": [
+        253.0,
+        0.0,
+        0.0
+      ],
+      "meanAbsoluteRGBChannelDelta": [
+        2.0,
+        0.0,
+        0.0
+      ],
+      "nominalPassWithinNativeToleranceEight": true,
+      "forced601DiagnosticMeanRGB": [
+        231.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "patch": "Green",
+      "requestedNormalizedSeconds": 3.5,
+      "actualRawPTSSeconds": 3.5389333333333335,
+      "actualNormalizedPTSSeconds": 3.5056,
+      "decodedFrameIndex": 93,
+      "nominalRGB": [
+        0,
+        255,
+        0
+      ],
+      "actualTaggedMeanRGB": [
+        0.0,
+        254.0,
+        0.0
+      ],
+      "meanAbsoluteRGBChannelDelta": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "nominalPassWithinNativeToleranceEight": true,
+      "forced601DiagnosticMeanRGB": [
+        18.0,
+        255.0,
+        8.0
+      ]
+    },
+    {
+      "patch": "Blue",
+      "requestedNormalizedSeconds": 3.5,
+      "actualRawPTSSeconds": 3.5389333333333335,
+      "actualNormalizedPTSSeconds": 3.5056,
+      "decodedFrameIndex": 93,
+      "nominalRGB": [
+        0,
+        0,
+        255
+      ],
+      "actualTaggedMeanRGB": [
+        0.0,
+        0.0,
+        253.0
+      ],
+      "meanAbsoluteRGBChannelDelta": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "nominalPassWithinNativeToleranceEight": true,
+      "forced601DiagnosticMeanRGB": [
+        1.0,
+        0.0,
+        243.0
+      ]
+    },
+    {
+      "patch": "Neutral",
+      "requestedNormalizedSeconds": 3.5,
+      "actualRawPTSSeconds": 3.5389333333333335,
+      "actualNormalizedPTSSeconds": 3.5056,
+      "decodedFrameIndex": 93,
+      "nominalRGB": [
+        96,
+        96,
+        96
+      ],
+      "actualTaggedMeanRGB": [
+        94.0,
+        94.0,
+        94.0
+      ],
+      "meanAbsoluteRGBChannelDelta": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "nominalPassWithinNativeToleranceEight": true,
+      "forced601DiagnosticMeanRGB": [
+        94.0,
+        94.0,
+        94.0
+      ]
+    }
+  ],
+  "actualTaggedSourceRetainsKnownNominalRGB": true,
+  "nativeNominalColorValidationPassed": false,
+  "nativeEvidence": [
+    {
+      "Seconds": 0.5,
+      "Patch": "Red",
+      "Comparison": "Known nominal fixture input vs native source preview",
+      "ReferenceMeanRGB": [
+        255,
+        0,
+        0
+      ],
+      "ActualMeanRGB": [
+        233,
+        0,
+        2.047348484848485
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        22,
+        0,
+        2.047348484848485
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Red",
+      "Comparison": "Known nominal fixture input vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        255,
+        0,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Red",
+      "Comparison": "Native source preview vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        233,
+        0,
+        2.047348484848485
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        22,
+        1,
+        2.047348484848485
+      ]
+    }
+  ],
+  "limits": [
+    "Native preview agreement alone cannot validate nominal input colors or correct source metadata.",
+    "The forced601 conversion is an explicit alternative hypothesis, not discovered source metadata.",
+    "Interior RGB comparison permits codec quantization; exact byte equality is not required."
+  ]
+}

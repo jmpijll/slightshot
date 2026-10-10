@@ -1,0 +1,2313 @@
+{
+  "platform": "macOS arm64 .NET 10 CPU comparison",
+  "baselineCommit": "c5c2efc",
+  "source": "Deterministic premultiplied BGRA, alpha 0/64/128/255, asymmetric channel pattern",
+  "comparison": "Exact SHA256 of every output byte; legacy column-order kernel vs contiguous-row kernel",
+  "passedCases": 288,
+  "results": [
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 0,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 2.0147,
+      "currentMilliseconds": 0.3033
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 1,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.1859,
+      "currentMilliseconds": 0.4507
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 2,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0021,
+      "currentMilliseconds": 0.0022
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 3,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0016,
+      "currentMilliseconds": 0.0017
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 4,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0018,
+      "currentMilliseconds": 0.0019
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 5,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0022,
+      "currentMilliseconds": 0.0021
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 6,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0025,
+      "currentMilliseconds": 0.0023
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 7,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0028,
+      "currentMilliseconds": 0.0026
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 8,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0029,
+      "currentMilliseconds": 0.0028
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 9,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0031,
+      "currentMilliseconds": 0.0029
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 10,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0033,
+      "currentMilliseconds": 0.003
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 11,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0037,
+      "currentMilliseconds": 0.0033
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 12,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.004,
+      "currentMilliseconds": 0.0036
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 13,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0042,
+      "currentMilliseconds": 0.0039
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 14,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0044,
+      "currentMilliseconds": 0.0039
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 15,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0047,
+      "currentMilliseconds": 0.0042
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 16,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0052,
+      "currentMilliseconds": 0.0042
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 17,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0055,
+      "currentMilliseconds": 0.0044
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 18,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0059,
+      "currentMilliseconds": 0.0047
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 19,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0124,
+      "currentMilliseconds": 0.0051
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 20,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0133,
+      "currentMilliseconds": 0.0053
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 21,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0132,
+      "currentMilliseconds": 0.0054
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 22,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0145,
+      "currentMilliseconds": 0.0055
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 23,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.015,
+      "currentMilliseconds": 0.0058
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 24,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0149,
+      "currentMilliseconds": 0.0059
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 25,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0158,
+      "currentMilliseconds": 0.0062
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 26,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0165,
+      "currentMilliseconds": 0.0075
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 27,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0142,
+      "currentMilliseconds": 0.0111
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 28,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0138,
+      "currentMilliseconds": 0.0113
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 29,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0139,
+      "currentMilliseconds": 0.0115
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 30,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.014,
+      "currentMilliseconds": 0.0122
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 31,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0144,
+      "currentMilliseconds": 0.0121
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 32,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0147,
+      "currentMilliseconds": 0.0124
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 46,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.0245,
+      "currentMilliseconds": 0.0182
+    },
+    {
+      "Width": 1,
+      "Height": 1,
+      "radius": 256,
+      "sha256": "DF3F619804A92FDB4057192DC43DD748EA778ADC52BC498CE80524C014B81119",
+      "legacyMilliseconds": 0.8966,
+      "currentMilliseconds": 0.1021
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 0,
+      "sha256": "DA2C62CEE62BFD2DD6EA55FB4AD1B785867CCEF920D7CE62A0D2F7FB48DA3C16",
+      "legacyMilliseconds": 0.04,
+      "currentMilliseconds": 0.0005
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 1,
+      "sha256": "6B1814405B772D4890A165496F429CC2EEB16AE4BF09A52710FBC34705345BE6",
+      "legacyMilliseconds": 0.0317,
+      "currentMilliseconds": 1.3592
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 2,
+      "sha256": "D609527E93BB48472098D245549971BAFACB92DAC4C9AE998AE0504B820BC8DC",
+      "legacyMilliseconds": 0.0893,
+      "currentMilliseconds": 0.0881
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 3,
+      "sha256": "5B21071D1366609686F633B344CDB922A87A6A0CCCCBD3E3909E2BFFAB622E00",
+      "legacyMilliseconds": 0.1099,
+      "currentMilliseconds": 0.1132
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 4,
+      "sha256": "3721BF376FA147702D6F3BED60A5F4F2A828A2C605B893D7C2975FE5B1913C63",
+      "legacyMilliseconds": 0.6859,
+      "currentMilliseconds": 2.6906
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 5,
+      "sha256": "32B9A32AC7F10477912FD162FC1E1B80F33DB8B32FE43F2C73B48C2978DEDA28",
+      "legacyMilliseconds": 0.1814,
+      "currentMilliseconds": 0.1682
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 6,
+      "sha256": "6347991A940BFB44A3A4B7B407B07F6E8949203FBB0A80610B0C76EBF662AF80",
+      "legacyMilliseconds": 0.1539,
+      "currentMilliseconds": 0.1491
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 7,
+      "sha256": "ABFD663C32D0DCD4BCD66BED3F0DCFCE75FC9D9DF62C642DD69F84907CD968A3",
+      "legacyMilliseconds": 0.1569,
+      "currentMilliseconds": 0.157
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 8,
+      "sha256": "71CDA88A25DD6EB14A3AEFB0DD04F0E8637EB779DE456555F9C11D058111045E",
+      "legacyMilliseconds": 0.1642,
+      "currentMilliseconds": 0.1585
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 9,
+      "sha256": "4E25527C099E2B7C1801F703218950E64C841CAC9DB6CFF32682558DD29AC4A0",
+      "legacyMilliseconds": 0.1709,
+      "currentMilliseconds": 0.1628
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 10,
+      "sha256": "F86C8B67E490AFBE4B657C93C9EC6D339E1F274360C3D8971DAB06A6CFAC0023",
+      "legacyMilliseconds": 0.1762,
+      "currentMilliseconds": 0.1684
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 11,
+      "sha256": "46E9901D93F05E0B94DF6522A9A5F292F350FFC598B27B837095AF099394EBB5",
+      "legacyMilliseconds": 0.1819,
+      "currentMilliseconds": 0.173
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 12,
+      "sha256": "FE352EF7F114868684D715E7BE8721B71DF1651CEE44F38BF3FADFCDAFB1BEE2",
+      "legacyMilliseconds": 0.1832,
+      "currentMilliseconds": 0.182
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 13,
+      "sha256": "53CAF92785B2858E78BAE92ED50AC3392FABC9920A90E07783AD2FC5203C9B9D",
+      "legacyMilliseconds": 0.2059,
+      "currentMilliseconds": 0.21
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 14,
+      "sha256": "6840F8737755E6A4B0711D777250D6283784F88A36B126711ED8EA2B638BB837",
+      "legacyMilliseconds": 0.2037,
+      "currentMilliseconds": 0.2111
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 15,
+      "sha256": "7352E8A0FD52E79CC85D295B419E5EF8A769C57FC1138600E06D7C78CBBFDA02",
+      "legacyMilliseconds": 0.2135,
+      "currentMilliseconds": 0.2123
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 16,
+      "sha256": "0ADBDCB4E90D9B16D18F5268F424C483E22603CBC8E59810D7E83D619492F094",
+      "legacyMilliseconds": 0.2205,
+      "currentMilliseconds": 0.2213
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 17,
+      "sha256": "F929987D993781488A755AA36EF80945A8221EDDACE39DC8C5B24B94327F88C6",
+      "legacyMilliseconds": 0.2301,
+      "currentMilliseconds": 0.2259
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 18,
+      "sha256": "006DFF132806A7C6BCEF281A5AAE0A8022D3CFAFF719039541C2D39B42AC8EE3",
+      "legacyMilliseconds": 0.2365,
+      "currentMilliseconds": 0.2307
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 19,
+      "sha256": "699C43C4A602F5DFA25913D2A5B3463C8BE03E95C3A124C3CE76470C4591ED18",
+      "legacyMilliseconds": 0.241,
+      "currentMilliseconds": 0.2461
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 20,
+      "sha256": "D19B1B2F8049C610268E06843BA18D268789461EE77CB2271E3C0B158BEAA4F1",
+      "legacyMilliseconds": 0.2612,
+      "currentMilliseconds": 1.2744
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 21,
+      "sha256": "B780B1ADE1D9B057626D9622D1EAB53A82036B917C9A1F22DF0D7E4CA14A30C3",
+      "legacyMilliseconds": 0.2625,
+      "currentMilliseconds": 0.2457
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 22,
+      "sha256": "BA3226CC5F8C6002CE9F1C2A3EDAD4ACC6A04910E2F21DD7DBD6F96227A95C0C",
+      "legacyMilliseconds": 0.2592,
+      "currentMilliseconds": 0.2544
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 23,
+      "sha256": "DA57441CD1713B8F9B0E5A28F44D8448E9A7C3FCAA5A794C9DA21A2C98B4259E",
+      "legacyMilliseconds": 0.2642,
+      "currentMilliseconds": 0.2665
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 24,
+      "sha256": "8F2D2A54B2D4F142DEC850832693ED4C23F524BF398924BBA92DE092D37D63FD",
+      "legacyMilliseconds": 0.2694,
+      "currentMilliseconds": 0.2762
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 25,
+      "sha256": "35A711540A769E4742F1EA9F49BDD7FE45BB4BC6468FECBFB378C4221903775D",
+      "legacyMilliseconds": 0.2818,
+      "currentMilliseconds": 0.2957
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 26,
+      "sha256": "30234396488C4F1864A15CDAACB4972C799A4D57704E6E2E29CB428C3D0259E6",
+      "legacyMilliseconds": 0.7572,
+      "currentMilliseconds": 1.1779
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 27,
+      "sha256": "BD2067FC76C5BC2C2D9711FFE8C5D44C1792FA0BE4F060AD60133F03C84566B8",
+      "legacyMilliseconds": 0.2861,
+      "currentMilliseconds": 0.2868
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 28,
+      "sha256": "43D70FFA04735BAE4EA6DDB952169579D00B374FA2463D47770C969255352AB9",
+      "legacyMilliseconds": 0.2949,
+      "currentMilliseconds": 0.2925
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 29,
+      "sha256": "B2F40D949BA276F3F2FF8CCAEBFA0B2B9A97AC8959134FB9C6491A3B77CF9DA2",
+      "legacyMilliseconds": 0.2977,
+      "currentMilliseconds": 0.2987
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 30,
+      "sha256": "3AAF006A17767C925A2CB09C4D2EF1728477303B0E4A9F201210C61441A6B5C8",
+      "legacyMilliseconds": 0.304,
+      "currentMilliseconds": 0.3049
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 31,
+      "sha256": "765A1033A1D7E9FFD734D9AC9DCFD9BE785816237EABF3A65CE2A395837F431A",
+      "legacyMilliseconds": 0.3219,
+      "currentMilliseconds": 0.3115
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 32,
+      "sha256": "7F876FD281F04DD76B6CA671E92A134BCC180DE223E766FBFE4F447B7D5D8C94",
+      "legacyMilliseconds": 0.3397,
+      "currentMilliseconds": 0.3215
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 46,
+      "sha256": "50B43F3248486FFDD50EA8EE43C3580407D8FF0EB9D452111EE104A2BEC9E933",
+      "legacyMilliseconds": 0.4226,
+      "currentMilliseconds": 0.4199
+    },
+    {
+      "Width": 1,
+      "Height": 257,
+      "radius": 256,
+      "sha256": "C9653AA0B19C38E566EA38DDE3A27D18075FE864CB500C9B1C379F069E975D11",
+      "legacyMilliseconds": 1.8909,
+      "currentMilliseconds": 1.9125
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 0,
+      "sha256": "DA2C62CEE62BFD2DD6EA55FB4AD1B785867CCEF920D7CE62A0D2F7FB48DA3C16",
+      "legacyMilliseconds": 0.0006,
+      "currentMilliseconds": 0.0005
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 1,
+      "sha256": "6B1814405B772D4890A165496F429CC2EEB16AE4BF09A52710FBC34705345BE6",
+      "legacyMilliseconds": 0.0346,
+      "currentMilliseconds": 0.0528
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 2,
+      "sha256": "D609527E93BB48472098D245549971BAFACB92DAC4C9AE998AE0504B820BC8DC",
+      "legacyMilliseconds": 0.104,
+      "currentMilliseconds": 2.4747
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 3,
+      "sha256": "5B21071D1366609686F633B344CDB922A87A6A0CCCCBD3E3909E2BFFAB622E00",
+      "legacyMilliseconds": 0.115,
+      "currentMilliseconds": 0.1393
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 4,
+      "sha256": "3721BF376FA147702D6F3BED60A5F4F2A828A2C605B893D7C2975FE5B1913C63",
+      "legacyMilliseconds": 0.1226,
+      "currentMilliseconds": 2.393
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 5,
+      "sha256": "32B9A32AC7F10477912FD162FC1E1B80F33DB8B32FE43F2C73B48C2978DEDA28",
+      "legacyMilliseconds": 0.133,
+      "currentMilliseconds": 0.1346
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 6,
+      "sha256": "6347991A940BFB44A3A4B7B407B07F6E8949203FBB0A80610B0C76EBF662AF80",
+      "legacyMilliseconds": 0.1386,
+      "currentMilliseconds": 0.1303
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 7,
+      "sha256": "ABFD663C32D0DCD4BCD66BED3F0DCFCE75FC9D9DF62C642DD69F84907CD968A3",
+      "legacyMilliseconds": 0.1454,
+      "currentMilliseconds": 0.1234
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 8,
+      "sha256": "71CDA88A25DD6EB14A3AEFB0DD04F0E8637EB779DE456555F9C11D058111045E",
+      "legacyMilliseconds": 0.1474,
+      "currentMilliseconds": 0.1219
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 9,
+      "sha256": "4E25527C099E2B7C1801F703218950E64C841CAC9DB6CFF32682558DD29AC4A0",
+      "legacyMilliseconds": 0.1577,
+      "currentMilliseconds": 0.1236
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 10,
+      "sha256": "F86C8B67E490AFBE4B657C93C9EC6D339E1F274360C3D8971DAB06A6CFAC0023",
+      "legacyMilliseconds": 0.1688,
+      "currentMilliseconds": 0.125
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 11,
+      "sha256": "46E9901D93F05E0B94DF6522A9A5F292F350FFC598B27B837095AF099394EBB5",
+      "legacyMilliseconds": 0.1704,
+      "currentMilliseconds": 0.1217
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 12,
+      "sha256": "FE352EF7F114868684D715E7BE8721B71DF1651CEE44F38BF3FADFCDAFB1BEE2",
+      "legacyMilliseconds": 0.1821,
+      "currentMilliseconds": 0.1185
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 13,
+      "sha256": "53CAF92785B2858E78BAE92ED50AC3392FABC9920A90E07783AD2FC5203C9B9D",
+      "legacyMilliseconds": 0.1924,
+      "currentMilliseconds": 0.1173
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 14,
+      "sha256": "6840F8737755E6A4B0711D777250D6283784F88A36B126711ED8EA2B638BB837",
+      "legacyMilliseconds": 0.1984,
+      "currentMilliseconds": 0.1195
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 15,
+      "sha256": "7352E8A0FD52E79CC85D295B419E5EF8A769C57FC1138600E06D7C78CBBFDA02",
+      "legacyMilliseconds": 0.2039,
+      "currentMilliseconds": 0.1212
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 16,
+      "sha256": "0ADBDCB4E90D9B16D18F5268F424C483E22603CBC8E59810D7E83D619492F094",
+      "legacyMilliseconds": 0.2088,
+      "currentMilliseconds": 0.1234
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 17,
+      "sha256": "F929987D993781488A755AA36EF80945A8221EDDACE39DC8C5B24B94327F88C6",
+      "legacyMilliseconds": 0.216,
+      "currentMilliseconds": 0.1247
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 18,
+      "sha256": "006DFF132806A7C6BCEF281A5AAE0A8022D3CFAFF719039541C2D39B42AC8EE3",
+      "legacyMilliseconds": 0.2234,
+      "currentMilliseconds": 0.1267
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 19,
+      "sha256": "699C43C4A602F5DFA25913D2A5B3463C8BE03E95C3A124C3CE76470C4591ED18",
+      "legacyMilliseconds": 0.2289,
+      "currentMilliseconds": 0.1288
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 20,
+      "sha256": "D19B1B2F8049C610268E06843BA18D268789461EE77CB2271E3C0B158BEAA4F1",
+      "legacyMilliseconds": 0.2362,
+      "currentMilliseconds": 0.1316
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 21,
+      "sha256": "B780B1ADE1D9B057626D9622D1EAB53A82036B917C9A1F22DF0D7E4CA14A30C3",
+      "legacyMilliseconds": 0.2412,
+      "currentMilliseconds": 0.1418
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 22,
+      "sha256": "BA3226CC5F8C6002CE9F1C2A3EDAD4ACC6A04910E2F21DD7DBD6F96227A95C0C",
+      "legacyMilliseconds": 0.249,
+      "currentMilliseconds": 0.1339
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 23,
+      "sha256": "DA57441CD1713B8F9B0E5A28F44D8448E9A7C3FCAA5A794C9DA21A2C98B4259E",
+      "legacyMilliseconds": 0.2552,
+      "currentMilliseconds": 0.1366
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 24,
+      "sha256": "8F2D2A54B2D4F142DEC850832693ED4C23F524BF398924BBA92DE092D37D63FD",
+      "legacyMilliseconds": 0.2633,
+      "currentMilliseconds": 0.1348
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 25,
+      "sha256": "35A711540A769E4742F1EA9F49BDD7FE45BB4BC6468FECBFB378C4221903775D",
+      "legacyMilliseconds": 0.269,
+      "currentMilliseconds": 0.1346
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 26,
+      "sha256": "30234396488C4F1864A15CDAACB4972C799A4D57704E6E2E29CB428C3D0259E6",
+      "legacyMilliseconds": 0.2816,
+      "currentMilliseconds": 0.1397
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 27,
+      "sha256": "BD2067FC76C5BC2C2D9711FFE8C5D44C1792FA0BE4F060AD60133F03C84566B8",
+      "legacyMilliseconds": 0.2827,
+      "currentMilliseconds": 0.1389
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 28,
+      "sha256": "43D70FFA04735BAE4EA6DDB952169579D00B374FA2463D47770C969255352AB9",
+      "legacyMilliseconds": 0.2893,
+      "currentMilliseconds": 0.141
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 29,
+      "sha256": "B2F40D949BA276F3F2FF8CCAEBFA0B2B9A97AC8959134FB9C6491A3B77CF9DA2",
+      "legacyMilliseconds": 0.2981,
+      "currentMilliseconds": 0.1418
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 30,
+      "sha256": "3AAF006A17767C925A2CB09C4D2EF1728477303B0E4A9F201210C61441A6B5C8",
+      "legacyMilliseconds": 0.3029,
+      "currentMilliseconds": 0.1443
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 31,
+      "sha256": "765A1033A1D7E9FFD734D9AC9DCFD9BE785816237EABF3A65CE2A395837F431A",
+      "legacyMilliseconds": 0.3088,
+      "currentMilliseconds": 0.1459
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 32,
+      "sha256": "7F876FD281F04DD76B6CA671E92A134BCC180DE223E766FBFE4F447B7D5D8C94",
+      "legacyMilliseconds": 0.3159,
+      "currentMilliseconds": 0.1501
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 46,
+      "sha256": "50B43F3248486FFDD50EA8EE43C3580407D8FF0EB9D452111EE104A2BEC9E933",
+      "legacyMilliseconds": 0.4189,
+      "currentMilliseconds": 0.175
+    },
+    {
+      "Width": 257,
+      "Height": 1,
+      "radius": 256,
+      "sha256": "C9653AA0B19C38E566EA38DDE3A27D18075FE864CB500C9B1C379F069E975D11",
+      "legacyMilliseconds": 1.8939,
+      "currentMilliseconds": 0.5679
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 0,
+      "sha256": "FC024C7A7E99DCA128161784F59CA3C739C542FC75BA1F92960C1481EC2F38B5",
+      "legacyMilliseconds": 0.0006,
+      "currentMilliseconds": 0.0005
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 1,
+      "sha256": "9F211FB7F9610A41CF73E24D071A0A47B29CB1F326E738EE9D053B81D3AD876B",
+      "legacyMilliseconds": 0.0035,
+      "currentMilliseconds": 0.0041
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 2,
+      "sha256": "05CBB6A70C41D7EE7B22CC4797F36E29B8995827CCD13EB5C9A445FC6675FA03",
+      "legacyMilliseconds": 0.0088,
+      "currentMilliseconds": 0.0082
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 3,
+      "sha256": "5F6E456CDF786D1ED68460D0915DB411A50E17E113BCA0C8BA09304F60FD83BF",
+      "legacyMilliseconds": 0.0102,
+      "currentMilliseconds": 0.0165
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 4,
+      "sha256": "C67E0EF8265798D5E6B68533CF8F272465670BD4A12ACE44045AD393C1D514DD",
+      "legacyMilliseconds": 0.011,
+      "currentMilliseconds": 0.0101
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 5,
+      "sha256": "A0737AD01483F79693ED27073DCC05543B81D817797B41C381E366C2B0F01679",
+      "legacyMilliseconds": 0.0124,
+      "currentMilliseconds": 0.0116
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 6,
+      "sha256": "A9F344A3598815575E21E371BD1A53B9E347A2628A9E140371F0D05A4BC236A6",
+      "legacyMilliseconds": 0.0137,
+      "currentMilliseconds": 0.0127
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 7,
+      "sha256": "D62F132C1CE1A45CCB8F695C088FA4176509AE48F44A82D0B3EAB7C4D88DD672",
+      "legacyMilliseconds": 0.0145,
+      "currentMilliseconds": 0.0139
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 8,
+      "sha256": "6239DE16635F31051A1362070F7EBB6CC23FA2F9CBEB4466C6C6C9243935E60D",
+      "legacyMilliseconds": 0.0155,
+      "currentMilliseconds": 0.014
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 9,
+      "sha256": "B30F067B351DC31190662A4D6D02BE02F1A1DC39655238C2A93C537D24A41E1B",
+      "legacyMilliseconds": 0.0167,
+      "currentMilliseconds": 0.0149
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 10,
+      "sha256": "5C7E1D56465C2365802E61FEFF941683ABA9588CB5777AAE19CD617F71BE0B42",
+      "legacyMilliseconds": 0.0182,
+      "currentMilliseconds": 0.0162
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 11,
+      "sha256": "BA075BC27F88B93AD8F52C901E9F1D59929646D8C12133E005FF4E5EFC35D08A",
+      "legacyMilliseconds": 0.0192,
+      "currentMilliseconds": 0.0173
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 12,
+      "sha256": "7A8AD1D5D284BC0C4971DC2851FDDE32AD367BC53AE437CC27FA4569AA0779B9",
+      "legacyMilliseconds": 0.0207,
+      "currentMilliseconds": 0.0184
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 13,
+      "sha256": "836FB05B21AA58B413F8853F16978EE0A6B188A7D5C86A3C0DB7BCCE2292EC00",
+      "legacyMilliseconds": 0.0205,
+      "currentMilliseconds": 0.0192
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 14,
+      "sha256": "93DEFB512C648CC1DD98CCC129DB25181E9DAB9FD235515DD744B74CF9029041",
+      "legacyMilliseconds": 0.021,
+      "currentMilliseconds": 0.0197
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 15,
+      "sha256": "49A23566787F113B065550493E2E0238FB036F8F27DBDE8CD190E7AD5F07443C",
+      "legacyMilliseconds": 0.0227,
+      "currentMilliseconds": 0.0214
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 16,
+      "sha256": "F8D14E661AEA244A174144605D973C9E589E227F8C42D6715E5D6781E19D1BE6",
+      "legacyMilliseconds": 0.0243,
+      "currentMilliseconds": 0.022
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 17,
+      "sha256": "AC54EB0E99229E65AD0C0136A27AC85E5142848E69FCC9ADF2A27488562B4A84",
+      "legacyMilliseconds": 0.0256,
+      "currentMilliseconds": 0.0222
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 18,
+      "sha256": "0DE044E8F05D238B1B31C917D9E2C1FC3A40AE5B90C33C5B3F16735C9DD8E437",
+      "legacyMilliseconds": 0.0268,
+      "currentMilliseconds": 0.0232
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 19,
+      "sha256": "4C16B182B9E5D28020B9C39BCA5DA358FB7C0F9E4CC1AF364C470C7E295E3BDF",
+      "legacyMilliseconds": 0.0272,
+      "currentMilliseconds": 0.0237
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 20,
+      "sha256": "2FF632C8078B33F19E6A518988C28E9CA6214532B37E87699C1BADD1FD991E6E",
+      "legacyMilliseconds": 0.0281,
+      "currentMilliseconds": 0.0244
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 21,
+      "sha256": "9491CC95008B17EAD0F8B7C341553ED4037C8417D85B7D35CE190A2254330891",
+      "legacyMilliseconds": 0.0291,
+      "currentMilliseconds": 0.026
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 22,
+      "sha256": "F79F770E64BF93D10FE801499423DB4735D059BF9ECDC2A46012E971D1FAE64C",
+      "legacyMilliseconds": 0.0378,
+      "currentMilliseconds": 0.0354
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 23,
+      "sha256": "F79F770E64BF93D10FE801499423DB4735D059BF9ECDC2A46012E971D1FAE64C",
+      "legacyMilliseconds": 0.0515,
+      "currentMilliseconds": 0.0481
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 24,
+      "sha256": "2BEA727FB6E2634DF789226691E71327EAE212B6DBF258115F2C5EA3731E5B4D",
+      "legacyMilliseconds": 0.0522,
+      "currentMilliseconds": 0.0486
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 25,
+      "sha256": "D234055A1B2B168B3CC206FEB706725067CC2413C398555120E06C0B29A7D54E",
+      "legacyMilliseconds": 0.0525,
+      "currentMilliseconds": 0.0487
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 26,
+      "sha256": "D234055A1B2B168B3CC206FEB706725067CC2413C398555120E06C0B29A7D54E",
+      "legacyMilliseconds": 0.0528,
+      "currentMilliseconds": 0.049
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 27,
+      "sha256": "AEDB489370A99D9B3DCDA74DFF33D443923A2927773A1AEC7786F681CFAAA22B",
+      "legacyMilliseconds": 0.0559,
+      "currentMilliseconds": 0.0489
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 28,
+      "sha256": "809A36214E2B31C033CE1018D6589D4E999F7C68D75AB3EEC470A4A62C2ECCAD",
+      "legacyMilliseconds": 0.0541,
+      "currentMilliseconds": 0.0492
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 29,
+      "sha256": "7CC27497FBF104E15EF6C27625CFDED26727A487B55838F5711EB58BE21F8A54",
+      "legacyMilliseconds": 0.0541,
+      "currentMilliseconds": 0.0496
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 30,
+      "sha256": "8C28481CBB9332B2381F7E40C603A776D035FD3F0E081604DE200B903B38B8C4",
+      "legacyMilliseconds": 0.055,
+      "currentMilliseconds": 0.0503
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 31,
+      "sha256": "8C28481CBB9332B2381F7E40C603A776D035FD3F0E081604DE200B903B38B8C4",
+      "legacyMilliseconds": 0.0554,
+      "currentMilliseconds": 0.0505
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 32,
+      "sha256": "8C28481CBB9332B2381F7E40C603A776D035FD3F0E081604DE200B903B38B8C4",
+      "legacyMilliseconds": 0.0558,
+      "currentMilliseconds": 0.0508
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 46,
+      "sha256": "257CC93674FC3E0A0B35CFCE0B6CCAB1A4655D30EC9DFBD7C08C5527E63A6029",
+      "legacyMilliseconds": 0.0803,
+      "currentMilliseconds": 0.0562
+    },
+    {
+      "Width": 3,
+      "Height": 5,
+      "radius": 256,
+      "sha256": "AF133A8EF469DF269FF7ACCA60D4E4914370A5A2D40CBBE504C424D4EAD84241",
+      "legacyMilliseconds": 0.1273,
+      "currentMilliseconds": 0.117
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 0,
+      "sha256": "D11AAB6E3DD8EBDEAFD113BEFC4C052FBA001A6951C2D086F0FBFB29ADC85B09",
+      "legacyMilliseconds": 0.0004,
+      "currentMilliseconds": 0.0005
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 1,
+      "sha256": "995AC5BA67A6AD1C4CE3DE9351EC34078AA0E2C86EF94445F23C40A5807A4746",
+      "legacyMilliseconds": 0.008,
+      "currentMilliseconds": 0.0079
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 2,
+      "sha256": "E98BBEA87AEE12D04A41908051C58E34787BE4A21E89C5194B0697FF40D4EA2B",
+      "legacyMilliseconds": 0.0233,
+      "currentMilliseconds": 0.0212
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 3,
+      "sha256": "345F087DFE7B08BF3CBE4F27B3BDCD67CD164491971E1F2C7CAEF1B3AF6E949C",
+      "legacyMilliseconds": 0.026,
+      "currentMilliseconds": 0.0237
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 4,
+      "sha256": "04BD21FD0E6F196BFDDC13A8566F627AE956E2F19231BBDE74F1001F49BF4B4A",
+      "legacyMilliseconds": 0.0289,
+      "currentMilliseconds": 0.0261
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 5,
+      "sha256": "AFCB207154673388537CE2A8EF74C3ED8FD1334731C7BDBFB1425AEDB870F1D7",
+      "legacyMilliseconds": 0.0302,
+      "currentMilliseconds": 0.0267
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 6,
+      "sha256": "93D6C67795CF5ACF5DF07134FB45FC858AE2E42D06310D98E9736011DD50F0A2",
+      "legacyMilliseconds": 0.0324,
+      "currentMilliseconds": 0.028
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 7,
+      "sha256": "8AA293FAA4C69152050D6BADE9B87642DC59069E1332AEE1141FB726F81C2ABA",
+      "legacyMilliseconds": 0.035,
+      "currentMilliseconds": 0.0314
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 8,
+      "sha256": "9BDD177A8FA6BFC07604A0B3A41134A499BB918BF9EA188701A614BDC37BC3BA",
+      "legacyMilliseconds": 0.0367,
+      "currentMilliseconds": 0.0346
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 9,
+      "sha256": "7AC7106C56FD76AD74BD97CB05BC83BE9B89F55054D202B21BC523F833664AB0",
+      "legacyMilliseconds": 0.0467,
+      "currentMilliseconds": 0.0412
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 10,
+      "sha256": "5612AFF45E9CCC4A9C05B35C57D89643A8F692AAED26911089080C6E87FD1543",
+      "legacyMilliseconds": 0.0606,
+      "currentMilliseconds": 0.0555
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 11,
+      "sha256": "D10A807C25642F477F4EB931E38EC2BD1810463D19F6E71B6CB89D84E461E35B",
+      "legacyMilliseconds": 0.064,
+      "currentMilliseconds": 0.0558
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 12,
+      "sha256": "BE123E1C3CAE6EE2129CFAD3C5F8CCC9A4E658F8EF6692737FDE084BAB245F53",
+      "legacyMilliseconds": 0.0689,
+      "currentMilliseconds": 0.0576
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 13,
+      "sha256": "578D3D39711AD856655147DA95FF10D229E162D3BC786F380BC7482B0B642B9C",
+      "legacyMilliseconds": 0.0829,
+      "currentMilliseconds": 0.0578
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 14,
+      "sha256": "C43AD8279B59C6A48D7D1F2074F5E90D0C144FF58F1AC08BDC298B32159DA4C3",
+      "legacyMilliseconds": 0.0825,
+      "currentMilliseconds": 0.0586
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 15,
+      "sha256": "5117BCB6D7D25443A336C545E349D2AB15332F7E14734E54566F234674CD8F80",
+      "legacyMilliseconds": 0.0842,
+      "currentMilliseconds": 0.0618
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 16,
+      "sha256": "1C1CE4E72AAD6042AA5239DD30FF70362331C1756B52FACCCA6C5B5AD3D12208",
+      "legacyMilliseconds": 0.0855,
+      "currentMilliseconds": 0.061
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 17,
+      "sha256": "951FB4A77CB6E79BD103C536ECE84F8F1754E47A9FEF719F63306CB0637C1DAB",
+      "legacyMilliseconds": 0.0885,
+      "currentMilliseconds": 0.0612
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 18,
+      "sha256": "C6747BEAB64CBD1B4A5A80D8B407475872360B4A129714F4A071399619445451",
+      "legacyMilliseconds": 0.0856,
+      "currentMilliseconds": 0.0614
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 19,
+      "sha256": "6127E5C284D670722D549767394E1FC2C910A514031A4E560321E08B80886298",
+      "legacyMilliseconds": 0.0855,
+      "currentMilliseconds": 0.0617
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 20,
+      "sha256": "E6FFD132549ADBF7F37F2933E3BA15E0C150C938CFC840448EF77443DE23E8BB",
+      "legacyMilliseconds": 0.0854,
+      "currentMilliseconds": 0.0615
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 21,
+      "sha256": "C794BBF05FE5C974B00F74215E9C9037BDAB4EC3D945355B72E2496CF74A7603",
+      "legacyMilliseconds": 0.0861,
+      "currentMilliseconds": 0.0618
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 22,
+      "sha256": "EADAA0DC9F2E91E10D18FF4DC6BC5729F7378B82D8674457B8EF388A4D23F6CE",
+      "legacyMilliseconds": 0.0863,
+      "currentMilliseconds": 0.0628
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 23,
+      "sha256": "BCC969A63DB7907306824963888B6898D2FE48ED4B019BA30E71C3FCC9C8C929",
+      "legacyMilliseconds": 0.0867,
+      "currentMilliseconds": 0.0637
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 24,
+      "sha256": "675C8DFE576B63F660B4E106B2397BF4F7E35757F16FC37FC66C5E2E6E5F2305",
+      "legacyMilliseconds": 0.0861,
+      "currentMilliseconds": 0.0709
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 25,
+      "sha256": "1B18B03F04817362D6886A2022D02E11803775CBC6036734C0BE9DC08AAE6702",
+      "legacyMilliseconds": 0.0868,
+      "currentMilliseconds": 0.0866
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 26,
+      "sha256": "C1016A090926776908B38E18FF72EF3792DC6FEAE1EE275C36F6FA0F5662F64F",
+      "legacyMilliseconds": 0.0867,
+      "currentMilliseconds": 0.0852
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 27,
+      "sha256": "6E21C6EEF660A4CEBF330C1AC6E9771BD5EEF269600C767C3A5DB8EBBE9DF561",
+      "legacyMilliseconds": 0.0875,
+      "currentMilliseconds": 0.0847
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 28,
+      "sha256": "B8814DF37436BD54C59418A3A24226AA8F5488A3A4B67AD5EC099F0FAFF1583D",
+      "legacyMilliseconds": 0.0877,
+      "currentMilliseconds": 0.0845
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 29,
+      "sha256": "882E8A377B2F9414A467FFF59470BB56C4EAAA81ACA20DA62A8174480B7BEA96",
+      "legacyMilliseconds": 0.0883,
+      "currentMilliseconds": 0.0842
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 30,
+      "sha256": "CFC2B0594F4F09311DDE4CED6A2B3CF3D720D32A3F048111ADA3B50511D628BC",
+      "legacyMilliseconds": 0.0882,
+      "currentMilliseconds": 0.0848
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 31,
+      "sha256": "BD06220BA1F2CF867244D4751D2FE88F254B4A7AF6D22E0059754DE91F1D1926",
+      "legacyMilliseconds": 0.0887,
+      "currentMilliseconds": 0.085
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 32,
+      "sha256": "A4537ED3555B0AE657EF9571C960FFA7FB685497F017A683477A64536863FD5E",
+      "legacyMilliseconds": 0.0891,
+      "currentMilliseconds": 0.0855
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 46,
+      "sha256": "3F80876DE07F1CE806B968D6136CB501A561B8CC063ED0461B7CF877770CA89F",
+      "legacyMilliseconds": 0.097,
+      "currentMilliseconds": 0.0905
+    },
+    {
+      "Width": 7,
+      "Height": 9,
+      "radius": 256,
+      "sha256": "3595311BA45D1221895FFDBBCBD56EA2585C9863B68AD2D7632570F31186F44E",
+      "legacyMilliseconds": 0.1835,
+      "currentMilliseconds": 0.1601
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 0,
+      "sha256": "B52A5F1006353996EF0B8D4A0B839A1F1FB15185367849D437AEC18B829FF2BB",
+      "legacyMilliseconds": 0.0027,
+      "currentMilliseconds": 0.0004
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 1,
+      "sha256": "D96614A64CB5F0E3AE0DBBB27C6C82246763B58C89B19BC6D5B5F78113CE9F13",
+      "legacyMilliseconds": 0.0726,
+      "currentMilliseconds": 0.0625
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 2,
+      "sha256": "FB6C6B872A279304D9AA9F0B7465A638CCB833C282FA1EA945BACF6B8ECA696F",
+      "legacyMilliseconds": 0.2129,
+      "currentMilliseconds": 0.1837
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 3,
+      "sha256": "37DD96E0EDA1020BCD8DCDD377ED7BE5A3C83D3A1431635137A4757251862AFD",
+      "legacyMilliseconds": 0.2138,
+      "currentMilliseconds": 0.1852
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 4,
+      "sha256": "B93DD1A80EE1A55892F0CB552194EBDDD1E9D8052413BA0BF7E127D4734AE075",
+      "legacyMilliseconds": 0.2175,
+      "currentMilliseconds": 0.1855
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 5,
+      "sha256": "381E24B0847778F98543A4E41EA3676885C96D77E8B9633DD9CBD9A3A111E8DE",
+      "legacyMilliseconds": 0.2146,
+      "currentMilliseconds": 0.1847
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 6,
+      "sha256": "DF5058E53D9994268943F28FFE50AAC8C22873C81EE7B4AB18989A6D54E3FBF3",
+      "legacyMilliseconds": 0.2098,
+      "currentMilliseconds": 0.1884
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 7,
+      "sha256": "C7443B26244FA0E4EFE63631BDB727BA53FFCDF7B7FC1F79CCD823214CDB77E8",
+      "legacyMilliseconds": 0.2138,
+      "currentMilliseconds": 0.1929
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 8,
+      "sha256": "9658E5F6B690BFD23338BCFA796DC9E0673C9BA0210FF3741559AC426DC80C26",
+      "legacyMilliseconds": 0.2149,
+      "currentMilliseconds": 0.188
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 9,
+      "sha256": "EF35E4867D605304A5EDADC31AFF11F581C4B2B90A4E814704ABEEA949BB223B",
+      "legacyMilliseconds": 0.2195,
+      "currentMilliseconds": 0.1866
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 10,
+      "sha256": "66C6D099B49B6D08DC66FF69E10DB565C9F06092FD013D542AA97597E608BFE0",
+      "legacyMilliseconds": 0.2206,
+      "currentMilliseconds": 0.1907
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 11,
+      "sha256": "C0BD8BC4111D90380A21EDDCB5200721D55CE37FF11DB5145EA12AB7BFE8E11F",
+      "legacyMilliseconds": 0.225,
+      "currentMilliseconds": 0.1859
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 12,
+      "sha256": "17A03FF15477C5982A5059E83E9366E0A371DEE9ABB38B882840DC395D18EFBC",
+      "legacyMilliseconds": 0.2283,
+      "currentMilliseconds": 0.1844
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 13,
+      "sha256": "63E19ED99A60245171D8AF60763AA5165DF62258A4AB4378C91169B455157CFA",
+      "legacyMilliseconds": 0.2305,
+      "currentMilliseconds": 0.1837
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 14,
+      "sha256": "131D32EF0404D91DA0C32B10ED784893575F195775DC3D662ED405C2572674DD",
+      "legacyMilliseconds": 0.2365,
+      "currentMilliseconds": 0.1892
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 15,
+      "sha256": "9DA4FBFA2D8B9050AFAE0EBD841CA54BFB38FAB7594A845D2102C391A04520A2",
+      "legacyMilliseconds": 0.2364,
+      "currentMilliseconds": 0.1909
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 16,
+      "sha256": "B0CB0F4D4D7D25F11BA1B567E6E2F87EBB8B38444CBED50C47B40381CC19029D",
+      "legacyMilliseconds": 0.236,
+      "currentMilliseconds": 0.1888
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 17,
+      "sha256": "0E32BF298972B78DDCF1404061FEBFBA96F44917472729B2FD96742BC9C3586D",
+      "legacyMilliseconds": 0.2418,
+      "currentMilliseconds": 0.1945
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 18,
+      "sha256": "3958ADA19870BA8856AD9321AA1784B9D4B3D8DA51CDE8944C3699A266CABDC1",
+      "legacyMilliseconds": 0.2343,
+      "currentMilliseconds": 0.1922
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 19,
+      "sha256": "0E68319E52F3C5D7C227750E09116FA522EFDA7CB03966F28A934F55ADB4738A",
+      "legacyMilliseconds": 0.2367,
+      "currentMilliseconds": 0.1914
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 20,
+      "sha256": "0FA36DE0F34E0C23DC03AD65E8B8058876346A77DC165952C750F4E106E7D06D",
+      "legacyMilliseconds": 0.2394,
+      "currentMilliseconds": 0.1952
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 21,
+      "sha256": "94D98505B22D5DD1A96032C93D48B1A71BF91FBDF8B6BB4B839A54D17BA63B54",
+      "legacyMilliseconds": 0.2386,
+      "currentMilliseconds": 0.1962
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 22,
+      "sha256": "4BA4362EC32397DC3F221E28EBBC5C6A2DD0132E05BA7177B7F9278460F72291",
+      "legacyMilliseconds": 0.2373,
+      "currentMilliseconds": 0.1958
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 23,
+      "sha256": "069C4758552BCDFE25C380F6EB9FCFFECF0C3AC0A9A21DC6798859C2159D1DA0",
+      "legacyMilliseconds": 0.2408,
+      "currentMilliseconds": 0.2013
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 24,
+      "sha256": "61FB1FD20F7B9C71795E6009F5D0CAAE7C1750E96BA4831B35111FE558D2F577",
+      "legacyMilliseconds": 0.2468,
+      "currentMilliseconds": 0.2037
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 25,
+      "sha256": "0E95AFFD296263A20B31EE5C552EA1239C2DF8B55A52CF7CCE6393F7654375FC",
+      "legacyMilliseconds": 0.2442,
+      "currentMilliseconds": 0.203
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 26,
+      "sha256": "5100642F207121E3A5C614D56878FE659815FE9A2D8470F0D259C63CB10F4D20",
+      "legacyMilliseconds": 0.2426,
+      "currentMilliseconds": 0.2002
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 27,
+      "sha256": "BAB80F98A339CD62FBED31B375ADD41AD8C4B160B960BE3B0BEFB569481AB173",
+      "legacyMilliseconds": 0.2438,
+      "currentMilliseconds": 0.2009
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 28,
+      "sha256": "77330946381933242D11E2270A49D60AE6D998BA4C57619EF587F2CF7551092E",
+      "legacyMilliseconds": 0.3124,
+      "currentMilliseconds": 0.2785
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 29,
+      "sha256": "99C44AB756FF8A78037EAF1C4FC819431360E84CCF0287A6B9CB4D7CB3958DE6",
+      "legacyMilliseconds": 0.2757,
+      "currentMilliseconds": 0.2163
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 30,
+      "sha256": "FE2102FB9E71D95B23D271C153EFAACFC639A769E755717C29B8CDDBF41E37FF",
+      "legacyMilliseconds": 0.2518,
+      "currentMilliseconds": 0.215
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 31,
+      "sha256": "F5CA890E6FC5668E786BB8BAA5048EEC04AB96216C8D236D30A4D3D6B8090E45",
+      "legacyMilliseconds": 0.2479,
+      "currentMilliseconds": 0.2121
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 32,
+      "sha256": "DD96E9826B4D7130407F98F3C179D099BBCD16E9538077CBFFD592BE2CDF4EF3",
+      "legacyMilliseconds": 0.2495,
+      "currentMilliseconds": 0.2135
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 46,
+      "sha256": "8CD0BB63782F70F5086C4B2CB2266173C31DDF7BE3E25BB9C65B5664B2960F25",
+      "legacyMilliseconds": 0.277,
+      "currentMilliseconds": 0.2333
+    },
+    {
+      "Width": 41,
+      "Height": 41,
+      "radius": 256,
+      "sha256": "8F704A17E53AC8F67738164BA0D5370DAB24FFE5CFC7608433CFCE1EF0A78C72",
+      "legacyMilliseconds": 0.7497,
+      "currentMilliseconds": 0.5796
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 0,
+      "sha256": "67441D408AFD160CE89E27FD05CA5A7AF54A6785E4F2A51C8A0AECFBB0FE5FB1",
+      "legacyMilliseconds": 0.0068,
+      "currentMilliseconds": 0.0017
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 1,
+      "sha256": "CD0C9FF0AF6452751719E75C599EF1BDAA044026AD5AB82AA18D62451704C2C0",
+      "legacyMilliseconds": 1.8675,
+      "currentMilliseconds": 1.4621
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 2,
+      "sha256": "BE99EE0934CA05165EDD0E45FC8F3032DA0A4CF3EBF67DC482CCD82C1D4EA49E",
+      "legacyMilliseconds": 5.519,
+      "currentMilliseconds": 4.375
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 3,
+      "sha256": "9401ACA1AF571BDE69D163E1AE4C3C70769DD676EF34D2F680AB5BCDEB98C822",
+      "legacyMilliseconds": 5.5617,
+      "currentMilliseconds": 4.3823
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 4,
+      "sha256": "ED1DC0A0ECCE798B4D03A568AB2685CACFD0ED9E6CEA5196D0BBBE5B9F47C240",
+      "legacyMilliseconds": 5.5697,
+      "currentMilliseconds": 4.3966
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 5,
+      "sha256": "E1F3B75DC3351E19302FBD24974C55661562AD738357F1F78E09CB425192968C",
+      "legacyMilliseconds": 5.6056,
+      "currentMilliseconds": 4.3872
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 6,
+      "sha256": "FFE2DFE03ABAA451EB10B0F6B9FFD2CA8C65C4D174D48B80E0DA8527C47EC0C9",
+      "legacyMilliseconds": 5.6426,
+      "currentMilliseconds": 4.4127
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 7,
+      "sha256": "AD48029F53ACB3AC2C707BC3458C048A5471B1C5EC6AE15C3316F73C00F8A9AC",
+      "legacyMilliseconds": 5.6642,
+      "currentMilliseconds": 4.4396
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 8,
+      "sha256": "EA630797DEBDC65C92BE8BDF6D794E358DF724DB47B0F5662A322E99CB286ECB",
+      "legacyMilliseconds": 5.7171,
+      "currentMilliseconds": 4.4585
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 9,
+      "sha256": "54FA6D17A4724483FC0333DCD0B0EBDB9A4C4A7D602FDDADE3398247E392777F",
+      "legacyMilliseconds": 5.757,
+      "currentMilliseconds": 4.4562
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 10,
+      "sha256": "B73FAA7CB28A2865EE5618E7D52503FBD4F4E02C99B8E6DEA44DE49372E8E600",
+      "legacyMilliseconds": 5.7873,
+      "currentMilliseconds": 4.4655
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 11,
+      "sha256": "8639B724D8C8B343E2A67847F4F646634A795BA4F3684BB6802186C0382DE2A3",
+      "legacyMilliseconds": 5.8263,
+      "currentMilliseconds": 4.473
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 12,
+      "sha256": "BC88EC2035A80DB147E030A42CDBC8A747F73AA36757B4A1240026C13A0E2B54",
+      "legacyMilliseconds": 5.8302,
+      "currentMilliseconds": 4.4847
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 13,
+      "sha256": "9B5E667FB8FED5DD90711471EC52E0BCFE0FD4F9CB726F58FC46A8BCFBBB3553",
+      "legacyMilliseconds": 5.8277,
+      "currentMilliseconds": 4.5086
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 14,
+      "sha256": "140C58819BD74101DA77D63F370E07B7A49CEE3ADED0391B23B40C09323FF7F4",
+      "legacyMilliseconds": 5.8481,
+      "currentMilliseconds": 4.5079
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 15,
+      "sha256": "F929E64A377AAB3868401F1D6CBA77CBC5E235291C65339052D80E45714AEC2B",
+      "legacyMilliseconds": 5.8644,
+      "currentMilliseconds": 4.5195
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 16,
+      "sha256": "1DD3390D51CF9C92E2F5A76D9BA4B12BF24EAF34F845E1158DC7DED0456F162C",
+      "legacyMilliseconds": 5.8889,
+      "currentMilliseconds": 4.5087
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 17,
+      "sha256": "6AEE9E80371B71A250F0F6FCE772499ED363681679B28A92FE54AD245B435DDE",
+      "legacyMilliseconds": 5.9146,
+      "currentMilliseconds": 4.5312
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 18,
+      "sha256": "7A089D0D3629F885C6B987AD0525B4E3049AF5AC6141D1FC2480BA4CFC3A50A0",
+      "legacyMilliseconds": 5.9374,
+      "currentMilliseconds": 4.5359
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 19,
+      "sha256": "A6796A4AE81983833602868CA05E25DF1757CDFAA2BB4E3A0CAE4A3B5514F7B1",
+      "legacyMilliseconds": 5.9429,
+      "currentMilliseconds": 4.5456
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 20,
+      "sha256": "0D7DBD7AD65CD37DE1B40E02D13D2C9B6F0F113DE8039505518D43D27F671E7A",
+      "legacyMilliseconds": 5.948,
+      "currentMilliseconds": 4.5692
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 21,
+      "sha256": "55DBCAE29E2108E5B9AB3423F08FEB7A8EA4EC06A3CC533C310D3199BE08350F",
+      "legacyMilliseconds": 5.9721,
+      "currentMilliseconds": 4.5652
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 22,
+      "sha256": "FD81ECD8D1D0D26C96D6B935915E34FC033FB0E9D4767540B3F6943C21CCBF1D",
+      "legacyMilliseconds": 5.9925,
+      "currentMilliseconds": 4.5783
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 23,
+      "sha256": "537CECFCC447E615B66799AE1384CC3E80EEF027BF81E9FC9BE321431D2CE060",
+      "legacyMilliseconds": 6.037,
+      "currentMilliseconds": 4.5895
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 24,
+      "sha256": "C679ACCB98F5640F08635645E40D1F82DA87EED9FD36353E07FAC0BDF326A8D6",
+      "legacyMilliseconds": 6.0755,
+      "currentMilliseconds": 4.613
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 25,
+      "sha256": "6A36FA6BF54844EF91AC79774E0FDEDFE23A5DB4DF25818AC457877CB7DDEFE2",
+      "legacyMilliseconds": 6.1132,
+      "currentMilliseconds": 6.0095
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 26,
+      "sha256": "A761EA15E16758377D74A541DE5F9591A68E8B84F64B35C6FE611C22C8C4E328",
+      "legacyMilliseconds": 6.0272,
+      "currentMilliseconds": 4.4708
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 27,
+      "sha256": "8178B85BA936D40ACF54C3304241D4D3A0441C5BA193B756FC261D3A56C3E668",
+      "legacyMilliseconds": 6.0367,
+      "currentMilliseconds": 4.4629
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 28,
+      "sha256": "489493A56CD426EC32DC5F5E803DBE59E172691A7E90D774F3A7B77EDAD03B63",
+      "legacyMilliseconds": 6.0728,
+      "currentMilliseconds": 4.4875
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 29,
+      "sha256": "63E7F71150A2276976A26D62BFAAB75AC9BA9641036E354138C18FF32D0CC818",
+      "legacyMilliseconds": 6.2305,
+      "currentMilliseconds": 4.4855
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 30,
+      "sha256": "0774289BA6F4FECD33FF87A6A4438FFFAE43B3815CA5956DB6EE236DF882FAC8",
+      "legacyMilliseconds": 6.2,
+      "currentMilliseconds": 4.5009
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 31,
+      "sha256": "251ADED39D2BC54E0F315D8FBE3CD1F8D55D022B1A7A23883FDA51AC4AF8C23A",
+      "legacyMilliseconds": 6.2344,
+      "currentMilliseconds": 4.5504
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 32,
+      "sha256": "67B6785E10FBA57579C0800E05BAF8F9A4325F142F90251AA7C544A3888979A4",
+      "legacyMilliseconds": 6.0317,
+      "currentMilliseconds": 4.5633
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 46,
+      "sha256": "8C8B0039A8BFBDECC3AE334AA05AF5C6080D6076F1DFB81752B8A59AF42C2FC2",
+      "legacyMilliseconds": 6.3641,
+      "currentMilliseconds": 4.6977
+    },
+    {
+      "Width": 400,
+      "Height": 200,
+      "radius": 256,
+      "sha256": "2B59EC9014803D31A2CF81A84FB478217132F9BE2C83227E27DB1CDC00F925FF",
+      "legacyMilliseconds": 9.7077,
+      "currentMilliseconds": 6.461
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 0,
+      "sha256": "B4D02725B51B6E83FDE4ED7924ABA3408D1EE18AAD70E55DFE9A7712AF72BAF7",
+      "legacyMilliseconds": 0.0097,
+      "currentMilliseconds": 0.001
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 1,
+      "sha256": "4F9CDC28250CE44D7A3774FAF040E1D13BC498C5205F84E790ABA0DB4032B5EB",
+      "legacyMilliseconds": 1.7187,
+      "currentMilliseconds": 1.1967
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 2,
+      "sha256": "B26938407F661D6D8E1B7DAEC349F8EDA5BAE20C4F292E4250AB982DC18ABE70",
+      "legacyMilliseconds": 4.7441,
+      "currentMilliseconds": 3.5796
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 3,
+      "sha256": "D857D4E0158C0EDA812782BDB5420AC407476252E97D1924899F34030D9E8A94",
+      "legacyMilliseconds": 4.7916,
+      "currentMilliseconds": 3.586
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 4,
+      "sha256": "705C8C5E3F40FE463A38C4BE6502E0B5B2C837DBA3988E7964FA762B60C4A858",
+      "legacyMilliseconds": 4.865,
+      "currentMilliseconds": 3.5725
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 5,
+      "sha256": "AA593D00BBC94841CA44DBA36607850A0689EFE28DBCE1152665CBE163F15F20",
+      "legacyMilliseconds": 4.8242,
+      "currentMilliseconds": 3.623
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 6,
+      "sha256": "BE4C596AB1CF52D14DA758FA0A6D391C67C2F16F556453DA32EFF1E3E35304D4",
+      "legacyMilliseconds": 4.82,
+      "currentMilliseconds": 3.62
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 7,
+      "sha256": "002354795E1F866A8A82FA4D89C8713D929A3EFD3F44A6E65CE13C192CC97705",
+      "legacyMilliseconds": 5.0075,
+      "currentMilliseconds": 3.599
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 8,
+      "sha256": "453405D21A85CA8F9FFC01EFAA3582FCB96B78D4C7E51DEC1AEC08C724F86A05",
+      "legacyMilliseconds": 4.9145,
+      "currentMilliseconds": 3.5945
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 9,
+      "sha256": "DEB5B1772B8AB012FE5B86DF884595EE9F0E089D35EEDBCC325EB0D8181EDF21",
+      "legacyMilliseconds": 4.9042,
+      "currentMilliseconds": 3.608
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 10,
+      "sha256": "8F7FBDFE0511C25D4A9319E331FC94589DD60810D195AECA401FC09FA083C8FA",
+      "legacyMilliseconds": 5.1396,
+      "currentMilliseconds": 3.6179
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 11,
+      "sha256": "2CCF487AB2F03D83BADC2D4C393066135AEE308906AE0D663D77AF800985B074",
+      "legacyMilliseconds": 4.9352,
+      "currentMilliseconds": 3.7018
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 12,
+      "sha256": "FF658B7A5902F231EC83C17BB1B99059575B25B6AFE1634C89E1A18C79ABBA07",
+      "legacyMilliseconds": 4.9831,
+      "currentMilliseconds": 3.6732
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 13,
+      "sha256": "4227B2F1B695B7287E427803DCD332AFE85B7501CD55ADC4C74E56AA60D145F1",
+      "legacyMilliseconds": 4.985,
+      "currentMilliseconds": 3.6878
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 14,
+      "sha256": "5D12EE9CD396C6C5C9F9CB215B944B9D9C343416B66096640C8B096CB6940F92",
+      "legacyMilliseconds": 5.0857,
+      "currentMilliseconds": 3.721
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 15,
+      "sha256": "C31ACDC6A571887FE2B39D26A1BC9E11E135C1487E7F4F9E16C345508C67042A",
+      "legacyMilliseconds": 5.0105,
+      "currentMilliseconds": 3.7257
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 16,
+      "sha256": "6F96D2CC826C52FC218F02004885408E995BEB35FD0F4A28A013AED64587C154",
+      "legacyMilliseconds": 5.1799,
+      "currentMilliseconds": 3.7281
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 17,
+      "sha256": "7E32D3DF4A17073F1C6FBB2D33FC858DB360E73F8A14D46F8331C7C80297ED41",
+      "legacyMilliseconds": 5.3786,
+      "currentMilliseconds": 3.7208
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 18,
+      "sha256": "07AEAB3281B897394A61FC3B449EFFF96ACB76C95A87A3429D8FE85B1A1A698F",
+      "legacyMilliseconds": 5.0807,
+      "currentMilliseconds": 3.7953
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 19,
+      "sha256": "D701B3E2E4308CEA347C8BB2C60E90CBE1B4C687C21FE0C5A8AF6DF85062094F",
+      "legacyMilliseconds": 5.0755,
+      "currentMilliseconds": 3.7393
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 20,
+      "sha256": "8D6B223DDBE1B626BF84E9974B045D37C56AE28BFEA332680B029127263E3386",
+      "legacyMilliseconds": 5.0751,
+      "currentMilliseconds": 3.754
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 21,
+      "sha256": "D57BDB44183135BE02F0F09164E9DC6154B29891848F70415B3E4190E989D145",
+      "legacyMilliseconds": 5.2193,
+      "currentMilliseconds": 3.7617
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 22,
+      "sha256": "069F6B7C285B267081CFAD60C955963382480C10D6F805516DD6C6E17E921D97",
+      "legacyMilliseconds": 5.1714,
+      "currentMilliseconds": 3.7706
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 23,
+      "sha256": "1AE3236DFCE0947E9D08FC1F403459D3F2D687D7C07D8E179E9AB96796760A15",
+      "legacyMilliseconds": 5.3167,
+      "currentMilliseconds": 3.7777
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 24,
+      "sha256": "F7AD77F63E0C82DB0A7F8D0FC02F17992409A95444DA2F93BE2EE9CE9C18451E",
+      "legacyMilliseconds": 5.3765,
+      "currentMilliseconds": 3.7605
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 25,
+      "sha256": "E212608E2432A9E389C983B04C94705CEA36107AE30EB4C244DAB006A3C73344",
+      "legacyMilliseconds": 5.2592,
+      "currentMilliseconds": 3.7742
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 26,
+      "sha256": "492C2B14CB4C1B7BECAC8AC290596A543153F2920043B5E4873C5C3045ED48FF",
+      "legacyMilliseconds": 5.2954,
+      "currentMilliseconds": 3.7613
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 27,
+      "sha256": "37F287053C2C3E9366D59CF69B23461CD8C18B262C1E2812E6DF773EC035AD04",
+      "legacyMilliseconds": 5.276,
+      "currentMilliseconds": 3.7892
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 28,
+      "sha256": "2BD7C047B4AA2478D00EC663FE95152F072E6ACB4B5C7CB118834A27C14E4369",
+      "legacyMilliseconds": 5.3898,
+      "currentMilliseconds": 3.8201
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 29,
+      "sha256": "27238BE0DECEA65206603F5D232F578DA83F4216D2AA488FFC62F70EF74EB0B9",
+      "legacyMilliseconds": 5.3609,
+      "currentMilliseconds": 3.8188
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 30,
+      "sha256": "63FAE9883A58866E5DD0B8FF94C4C2B297F313A213D3E809D2E30D87ABC37BAE",
+      "legacyMilliseconds": 5.5537,
+      "currentMilliseconds": 3.8285
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 31,
+      "sha256": "68A5E4A130A182DA726D0B8A658031DE18B37632000F1F9D48D7C68F63EA960C",
+      "legacyMilliseconds": 5.5827,
+      "currentMilliseconds": 3.8378
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 32,
+      "sha256": "D2B740CA9700FB7906FF05839AB430D0B05B60394BA3337A9FED751088B4F8E2",
+      "legacyMilliseconds": 5.3827,
+      "currentMilliseconds": 3.8562
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 46,
+      "sha256": "EE212F22BF59B82206E214F4528BB03F50FB6D5F0A1AF5924808D0EE3A47328D",
+      "legacyMilliseconds": 5.663,
+      "currentMilliseconds": 4.0055
+    },
+    {
+      "Width": 256,
+      "Height": 257,
+      "radius": 256,
+      "sha256": "728E8BB11F2EA2929455A43D6D9D159888C635C0AE245778CCA9FB66D142A739",
+      "legacyMilliseconds": 8.1215,
+      "currentMilliseconds": 5.7941
+    },
+    {
+      "Width": 1000,
+      "Height": 1040,
+      "radius": 0,
+      "sha256": "3E45C5D25946E1D501E9B6E1D14D5C09A46774809DAE651A281815FC3E19EE9D",
+      "legacyMilliseconds": 0.0099,
+      "currentMilliseconds": 0.0019
+    },
+    {
+      "Width": 1000,
+      "Height": 1040,
+      "radius": 8,
+      "sha256": "A506A485049FC39C2141DE53E3E8F7264F7B062075ECA8E429F0126F7B99865E",
+      "legacyMilliseconds": 73.1272,
+      "currentMilliseconds": 55.7711
+    },
+    {
+      "Width": 1000,
+      "Height": 1040,
+      "radius": 46,
+      "sha256": "782AEF26764251BD3DCDA0CA4FF62D947FC384EC74A00C9BF75127C0AFFD7091",
+      "legacyMilliseconds": 75.0844,
+      "currentMilliseconds": 57.3724
+    },
+    {
+      "Width": 1000,
+      "Height": 1040,
+      "radius": 256,
+      "sha256": "18FF251C5160C35574FB3F46B3FBDAD07A2FBAF936FD19B569FC086E070E8088",
+      "legacyMilliseconds": 89.8538,
+      "currentMilliseconds": 66.356
+    },
+    {
+      "Width": 3840,
+      "Height": 2160,
+      "radius": 0,
+      "sha256": "8BAACE4A74A239BD8766E3333FA2EE1069E491882CA15267D72AB14BF8F869F3",
+      "legacyMilliseconds": 0.4423,
+      "currentMilliseconds": 0.0043
+    },
+    {
+      "Width": 3840,
+      "Height": 2160,
+      "radius": 8,
+      "sha256": "E27776AA28B4DC08D89F7A9612B857A7767DEAA3FEC88D0C64C9293F100D879E",
+      "legacyMilliseconds": 1448.4276,
+      "currentMilliseconds": 444.9785
+    },
+    {
+      "Width": 3840,
+      "Height": 2160,
+      "radius": 46,
+      "sha256": "BE746A23DBA1E93F4EE748849050DC45386C3CC30617CD9CBDE4B97FA5282951",
+      "legacyMilliseconds": 1240.3332,
+      "currentMilliseconds": 444.3402
+    },
+    {
+      "Width": 3840,
+      "Height": 2160,
+      "radius": 256,
+      "sha256": "645D0858FB253F226FA69D2B79B924E15E4640A607C6EFD19CD00E92304A560E",
+      "legacyMilliseconds": 1411.264,
+      "currentMilliseconds": 475.394
+    }
+  ]
+}

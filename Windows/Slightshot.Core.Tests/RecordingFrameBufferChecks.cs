@@ -22,7 +22,7 @@ internal static class RecordingFrameBufferChecks
                 frame.Pixels.AsSpan().Fill((byte)(index + 1));
                 frames.Add(frame);
             }
-            Require(frames.All(frame => frame.Pixels.Length == 16), "frames have the exact BGRA byte count");
+            Require(frames.All(frame => frame.Pixels.Length == 16), "frames have the exact native sample byte count");
             Require(frames.Select(frame => frame.Pixels).Distinct().Count() == 4, "outstanding frames never share pixel storage");
             Task<RecordingFrame> pending = buffers.RentAsync(CancellationToken.None).AsTask();
             Require(!pending.IsCompleted, "a fifth live frame waits instead of allocating a backlog");
@@ -90,7 +90,7 @@ internal static class RecordingFrameBufferChecks
             checks++;
         }
 
-        const int frameLength = 3840 * 2160 * 4;
+        const int frameLength = 3840 * 2160 * 3 / 2;
         const int measuredFrames = 30;
         long before = GC.GetAllocatedBytesForCurrentThread();
         byte[]? baseline = null;
@@ -109,7 +109,7 @@ internal static class RecordingFrameBufferChecks
             long reusedBytes = GC.GetAllocatedBytesForCurrentThread() - before;
             Require(baselineBytes >= (long)measuredFrames * frameLength, "allocation baseline includes every full-sized frame array");
             Require(reusedBytes < frameLength, "steady-state capture allocates less than one frame across thirty frames");
-            Console.WriteLine($"Recording buffers: 4K × {measuredFrames} frames, per-frame arrays {baselineBytes:N0} B; warmed reuse {reusedBytes:N0} B ({100.0 * (1 - (double)reusedBytes / baselineBytes):F4}% less); at most four {frameLength:N0}-byte arrays per session.");
+            Console.WriteLine($"Recording NV12 sample buffers: 4K × {measuredFrames} frames, per-frame arrays {baselineBytes:N0} B; warmed reuse {reusedBytes:N0} B ({100.0 * (1 - (double)reusedBytes / baselineBytes):F4}% less); at most four {frameLength:N0}-byte submitted arrays plus one BGRA capture scratch per session.");
         }
         return checks;
     }

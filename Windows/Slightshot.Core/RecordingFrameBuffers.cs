@@ -1,6 +1,6 @@
 namespace Slightshot.Core;
 
-// Exact-sized BGRA storage for one recording. A frame stays rented until the
+// Exact-sized native sample storage for one recording. A frame stays rented until the
 // native media sample signals Processed; closing never reclaims a live frame.
 public sealed class RecordingFrameBuffers(int byteCount) : IDisposable
 {

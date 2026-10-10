@@ -1,0 +1,22 @@
+{
+  "annotationCount" : 6,
+  "file" : "mac-4k-step.png",
+  "interaction" : "Native Numbered steps toolbar click and mouse down\/up at source (2200,1680)",
+  "measurementScope" : "Added after the identical five-mark benchmark and cancellation workload completed.",
+  "platform" : "macOS",
+  "requestedTimeSeconds" : 1,
+  "source" : "ScreenCaptureKit screenshot of the running native VideoEditorWindow; synthetic source movie.",
+  "sourceCommit" : "3885ab05d1358839068d9ee9bb05d0c6c688853d",
+  "stepAnnotation" : {
+    "alpha" : 1,
+    "endSeconds" : 1.3999999999999999,
+    "fontSizeSourcePixels" : 99.310344827586206,
+    "lineWidthSourcePixels" : 16.551724137931036,
+    "rasterScale" : 1,
+    "shape" : "step(number: 1, center: (2200.0, 1680.0))",
+    "startSeconds" : 0.59999999999999998,
+    "stepScale" : 4.1379310344827589
+  },
+  "stepDirtyBoundsWidthInCanvasPoints" : 36.000000000000007,
+  "verifiedPlayheadSeconds" : 1
+}

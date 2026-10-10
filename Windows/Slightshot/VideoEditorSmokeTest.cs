@@ -1,0 +1,539 @@
+using System.Diagnostics;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Windows;
+using System.Windows.Automation;
+using System.Windows.Controls;
+using System.Windows.Interop;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using Slightshot.Core;
+
+namespace Slightshot;
+
+// Native HWNDs and actual pointer/slider/button interaction, using a synthetic
+// moving video to avoid capturing personal desktop content in review evidence.
+internal static class VideoEditorSmokeTest
+{
+    internal static async Task RunAsync(string directory)
+    {
+        directory = Path.GetFullPath(directory); Directory.CreateDirectory(directory);
+        const int width = 640, height = 360;
+        var checks = new List<string>(); int count = 0;
+        var sourceColors = new List<SourceColorEvidence>();
+        (string Name, Int32Rect Region, double[] Nominal)[] colorRegions =
+        [
+            ("Red", new(28, 32, 44, 24), [255, 0, 0]), ("Green", new(103, 32, 44, 24), [0, 255, 0]),
+            ("Blue", new(178, 32, 44, 24), [0, 0, 255]), ("Neutral", new(253, 32, 24, 24), [96, 96, 96])
+        ];
+        for (int iteration = 0; iteration < 5; iteration++) { using var worker = new VideoRenderWorker(); }
+        checks.Add("Five immediate compositor-worker startup/shutdown cycles complete without joining a live dispatcher, covering cancellation before its first frame.");
+        using var session = new RecordingSession(width, height, pixels =>
+        {
+            int number = Interlocked.Increment(ref count);
+            for (int y = 0; y < height; y++) for (int x = 0; x < width; x++)
+            {
+                int offset = (y * width + x) * 4;
+                bool pattern = y is >= 175 and < 315 && x is >= 20 and < 280;
+                byte shade = pattern ? ((x / 4 + y / 4) % 2 == 0 ? (byte)25 : (byte)230) : (byte)238;
+                pixels[offset] = y < 12 ? (byte)(number % 200) : shade;
+                pixels[offset + 1] = shade; pixels[offset + 2] = shade; pixels[offset + 3] = 255;
+                if (y is >= 24 and < 64)
+                {
+                    if (x is >= 20 and < 80) { pixels[offset] = 0; pixels[offset + 1] = 0; pixels[offset + 2] = 255; }
+                    else if (x is >= 95 and < 155) { pixels[offset] = 0; pixels[offset + 1] = 255; pixels[offset + 2] = 0; }
+                    else if (x is >= 170 and < 230) { pixels[offset] = 255; pixels[offset + 1] = 0; pixels[offset + 2] = 0; }
+                    else if (x is >= 245 and < 285) { pixels[offset] = 96; pixels[offset + 1] = 96; pixels[offset + 2] = 96; }
+                    else if (x is >= 300 and < 524)
+                    {
+                        byte bit = (number & (1 << ((x - 300) / 28))) == 0 ? (byte)30 : (byte)220;
+                        pixels[offset] = bit; pixels[offset + 1] = bit; pixels[offset + 2] = bit;
+                    }
+                }
+            }
+        });
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        session.Started += () => started.TrySetResult();
+        Task recording = session.RunAsync();
+        await Task.WhenAny(started.Task, recording).WaitAsync(TimeSpan.FromSeconds(30));
+        if (recording.IsCompleted) await recording;
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(30));
+        await Task.Delay(4300); session.Stop(); await recording.WaitAsync(TimeSpan.FromSeconds(30));
+        Require(count > 30, "synthetic source recorded actual moving frames");
+        Require(count < 256, "bounded source frame counter fits its eight high-contrast binary cells");
+        File.Copy(session.SourcePath, Path.Combine(directory, "video-editor-source.mp4"), true);
+        var source = await VideoFrameSource.OpenAsync(session.SourcePath);
+        int saveAttempts = 0;
+        var editor = new VideoEditorWindow(source, new Settings { AnnotationColor = "#FF3B30", LineWidth = 5, FontSize = 24 }, _ => { saveAttempts++; return Task.FromResult(false); }, true);
+        Task? closingPreview = null;
+        try
+        {
+            editor.Show(); editor.Activate(); await editor.InitializeAsync(); await Task.Delay(200); editor.UpdateLayout();
+            Require(editor.IsVisible && editor.Surface.CurrentFrame is { PixelWidth: width, PixelHeight: height }, "native editor displays full-resolution source pixels");
+            var top = new byte[4]; var bottom = new byte[4];
+            editor.Surface.CurrentFrame!.CopyPixels(new Int32Rect(5, 5, 1, 1), top, 4, 0);
+            editor.Surface.CurrentFrame.CopyPixels(new Int32Rect(5, height - 5, 1, 1), bottom, 4, 0);
+            Require(bottom[0] - top[0] > 30, "native BGRA source keeps the moving stripe at the top (positive media stride)");
+            foreach (var tool in Enum.GetValues<Tool>())
+                Require(Buttons(editor).Any(button => Equals(button.ToolTip, tool == Tool.Step ? "Numbered steps" : tool.ToString())), "screenshot tool available: " + tool);
+            var from = Descendants((DependencyObject)editor.Content).OfType<TextBox>().Single(field => AutomationProperties.GetName(field) == "Annotation start time in seconds");
+            var until = Descendants((DependencyObject)editor.Content).OfType<TextBox>().Single(field => AutomationProperties.GetName(field) == "Annotation end time in seconds");
+            var range = Descendants((DependencyObject)editor.Content).OfType<VideoRangeSlider>().Single();
+            void EnterTime(TextBox field, string value)
+            {
+                field.Text = value; field.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(field)!, 0, Key.Enter) { RoutedEvent = Keyboard.PreviewKeyDownEvent });
+            }
+            void ExactTiming()
+            {
+                EnterTime(from, "1"); EnterTime(until, "3");
+            }
+            void Add(Annotation annotation)
+            {
+                editor.AddAnnotation(annotation);
+                Require(editor.History.Selected!.Begin == TimeSpan.Zero && editor.History.Selected.End == source.Duration, "new mark defaults to the whole clip");
+                ExactTiming();
+            }
+            Add(new(Tool.Blur, [new(28, 183), new(138, 305)], "#FF3B30", 5));
+            Add(new(Tool.Pixelate, [new(158, 183), new(270, 305)], "#FF3B30", 5));
+            Guid pixelate = editor.History.SelectedId!.Value;
+            Add(new(Tool.Text, [new(305, 75)], "#0A84FF", 5, 34, "Only 1–3 seconds"));
+            Add(new(Tool.Pen, [new(330, 320), new(390, 300), new(450, 320), new(530, 300)], "#34C759", 7));
+            Add(new(Tool.Rectangle, [new(300, 135), new(590, 285)], "#FF9500", 4));
+            Add(new(Tool.Marker, [new(330, 118), new(560, 118)], "#FFCC00", 3));
+            Add(new(Tool.Step, [new(585, 40)], "#FF3B30", 3, StepNumber: 1));
+            Add(new(Tool.Line, [new(330, 330), new(550, 330)], "#5E5CE6", 4));
+            int fixtureMarks = editor.History.Items.Count;
+            ClickTooltip(editor, "Arrow");
+            await DragAsync(editor.Surface, new(350, 250), new(480, 175));
+            Require(editor.History.Items.Count == fixtureMarks + 1 && editor.History.Selected!.Annotation.Tool == Tool.Arrow, "real native pointer drag creates an arrow through the production tool");
+            var arrowPoints = editor.History.Selected!.Annotation.Points;
+            Require(Math.Abs(arrowPoints[0].X - 350) < 3 && Math.Abs(arrowPoints[0].Y - 250) < 3 && Math.Abs(arrowPoints[^1].X - 480) < 3 && Math.Abs(arrowPoints[^1].Y - 175) < 3, "native Viewbox interaction maps pointer positions to source pixels");
+            await DragAsync(range, range.HandleCenter(true), range.PositionAt(1));
+            await DragAsync(range, range.HandleCenter(false), range.PositionAt(3));
+            Require(Math.Abs(editor.History.Selected!.Begin.TotalSeconds - 1) < 0.08 && Math.Abs(editor.History.Selected.End.TotalSeconds - 3) < 0.08, "two native interval handles change the selected annotation period");
+            var originalTiming = editor.History.Selected!;
+            TimeSpan? precisionEndpoint = null;
+            for (long ticks = 20_000_001; ticks <= 20_065_536; ticks++)
+            {
+                var candidate = TimeSpan.FromTicks(ticks);
+                if (TimeSpan.FromSeconds(candidate.TotalSeconds) != candidate) { precisionEndpoint = candidate; break; }
+            }
+            Require(precisionEndpoint is { } found && found < source.Duration, "fixture finds an endpoint with fractional seconds whose double-seconds roundtrip changes its exact ticks");
+            var exactEndpoint = precisionEndpoint!.Value;
+            editor.SetSelectedTiming(TimeSpan.Zero, exactEndpoint);
+            EnterTime(from, "1");
+            var afterPrecisionStart = editor.History.Selected!;
+            File.WriteAllText(Path.Combine(directory, "video-editor-timing-precision-validation.json"), JsonSerializer.Serialize(new
+            {
+                sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
+                sourceDurationTicks = source.Duration.Ticks,
+                untouchedEndpointTicks = exactEndpoint.Ticks,
+                doubleSecondsRoundtripTicks = TimeSpan.FromSeconds(exactEndpoint.TotalSeconds).Ticks,
+                actualBeginTicks = afterPrecisionStart.Begin.Ticks,
+                actualEndTicks = afterPrecisionStart.End.Ticks,
+                passed = afterPrecisionStart.Begin == TimeSpan.FromSeconds(1) && afterPrecisionStart.End == exactEndpoint,
+                method = "The actual native start-time field is committed with Enter. Its untouched end must retain its original TimeSpan ticks; the fixture endpoint deliberately exposes double-seconds roundtrip loss. Original annotation timing is then restored."
+            }, new JsonSerializerOptions { WriteIndented = true }));
+            Require(afterPrecisionStart.Begin == TimeSpan.FromSeconds(1) && afterPrecisionStart.End == exactEndpoint,
+                "editing the real native start-time field preserves the untouched endpoint's exact ticks");
+            editor.SetSelectedTiming(originalTiming.Begin, originalTiming.End);
+            editor.SetSelectedTiming(TimeSpan.Zero, source.Duration);
+            var beforeExactFields = editor.History.Selected!;
+            EnterTime(from, "1"); var afterStartField = editor.History.Selected!;
+            EnterTime(until, "3"); var afterEndField = editor.History.Selected!;
+            ClickTooltip(editor, "Undo  Ctrl+Z");
+            var afterTimingUndo = editor.History.Selected!;
+            File.WriteAllText(Path.Combine(directory, "video-editor-timing-undo-validation.json"), JsonSerializer.Serialize(new
+            {
+                sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
+                sourceDurationTicks = source.Duration.Ticks,
+                beforeExactFields = new { beginTicks = beforeExactFields.Begin.Ticks, endTicks = beforeExactFields.End.Ticks },
+                afterStartField = new { beginTicks = afterStartField.Begin.Ticks, endTicks = afterStartField.End.Ticks },
+                afterEndField = new { beginTicks = afterEndField.Begin.Ticks, endTicks = afterEndField.End.Ticks },
+                afterUndo = new { beginTicks = afterTimingUndo.Begin.Ticks, endTicks = afterTimingUndo.End.Ticks },
+                passed = afterTimingUndo.End == source.Duration
+            }, new JsonSerializerOptions { WriteIndented = true }));
+            Require(editor.History.Selected!.End == source.Duration, "real Undo reverses annotation timing");
+            ClickTooltip(editor, "Redo  Ctrl+Y / Ctrl+Shift+Z");
+            Require(editor.History.Selected!.End == TimeSpan.FromSeconds(3), "real Redo restores annotation timing");
+            ClickContent(editor, "Delete annotation");
+            Require(editor.History.Items.Count == fixtureMarks, "native delete removes selected mark");
+            ClickTooltip(editor, "Undo  Ctrl+Z");
+            Require(editor.History.Items.Count == fixtureMarks + 1, "Undo restores deleted mark");
+            editor.SelectAnnotation(pixelate);
+            checks.Add("Actual WPF tool icons, native pointer-drawn arrow, automated annotation fixtures for every tool, two native range handles and exact time fields, exact untouched-endpoint ticks, timing Undo/Redo and Delete/Undo passed. Marks cover 1–3 seconds at fixed source coordinates.");
+            await editor.SeekAsync(TimeSpan.FromSeconds(0.5));
+            TimeSpan position = editor.Position; editor.Play(); await Task.Delay(450); editor.Pause();
+            Require(editor.Position > position, "Play advances the native preview");
+            await editor.SeekAsync(TimeSpan.FromSeconds(0.5));
+            var playhead = Sliders(editor).Single(slider => AutomationProperties.GetName(slider) == "Recording playhead");
+            playhead.Value = 2; await editor.SeekAsync(TimeSpan.FromSeconds(2));
+            Require(editor.Position == TimeSpan.FromSeconds(2), "native playhead scrubs to a chosen frame");
+            checks.Add("Play/Pause advances moving source frames, and the accessible native playhead slider scrubs to the requested time.");
+            var snapshot = editor.History.ExportSnapshot();
+            var previews = new Dictionary<string, BitmapSource>();
+            foreach (var point in new[] { (Name: "before", Seconds: 0.5), (Name: "during", Seconds: 2.0), (Name: "after", Seconds: 3.5) })
+            {
+                await editor.SeekAsync(TimeSpan.FromSeconds(point.Seconds));
+                Require(editor.Surface.CurrentFrame != null, "preview decoded " + point.Name);
+                var rendered = VideoAnnotationRenderer.Render(editor.Surface.CurrentFrame!, editor.Position, snapshot);
+                previews.Add(point.Name, rendered);
+                Save(rendered, Path.Combine(directory, "video-editor-preview-" + point.Name + ".png"));
+                await Task.Delay(180); editor.UpdateLayout(); NativeMethods.DwmFlush();
+                CaptureWindow(editor, Path.Combine(directory, "video-editor-" + point.Name + ".png"));
+                if (point.Name == "during")
+                {
+                    double blurDelta = Delta(editor.Surface.CurrentFrame!, rendered, new Int32Rect(40, 195, 85, 95));
+                    double pixelDelta = Delta(editor.Surface.CurrentFrame!, rendered, new Int32Rect(170, 195, 85, 95));
+                    Require(blurDelta > 40, $"blur changes real preview pixels during its interval (mean delta {blurDelta:0.00})");
+                    Require(pixelDelta > 40, $"pixelation changes real preview pixels during its interval (mean delta {pixelDelta:0.00})");
+                }
+                else Require(Delta(editor.Surface.CurrentFrame!, rendered, new Int32Rect(20, 70, 590, 250)) == 0, "annotations absent from preview " + point.Name + " their interval");
+            }
+            checks.Add("Focused composed-desktop screenshots capture the real editor before, during and after the interval. Pixel checks show Blur/Pixelate change the source only inside the interval; all annotations disappear outside it.");
+            int marksBeforeCancel = editor.History.Items.Count;
+            ClickContent(editor, "Save MP4…"); await Task.Delay(50);
+            Require(saveAttempts == 1 && editor.IsVisible && editor.History.Items.Count == marksBeforeCancel && File.Exists(session.SourcePath), "cancelled Save returns to the same video and annotations");
+            using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
+            string preserved = Path.Combine(directory, "preserved.mp4"); byte[] original = [11, 22, 33, 44]; File.WriteAllBytes(preserved, original);
+            byte[] retainedSource = System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(session.SourcePath));
+            foreach (string alias in new[] { session.SourcePath, Path.Combine(Path.GetDirectoryName(session.SourcePath)!, ".", Path.GetFileName(session.SourcePath).ToUpperInvariant()) })
+            {
+                foreach (Func<Task> operation in new Func<Task>[]
+                {
+                    () => VideoAnnotationExport.SaveAsync(session.SourcePath, alias, RecordingQuality.High, width, height, snapshot, CancellationToken.None),
+                    () => VideoAnnotationExport.SaveAsync(session.SourcePath, alias, RecordingQuality.High, width, height, [], CancellationToken.None),
+                    () => RecordingExport.SaveAsync(session.SourcePath, alias, RecordingQuality.High, width, height, CancellationToken.None)
+                })
+                {
+                    bool rejected = false;
+                    try { await operation(); }
+                    catch (InvalidOperationException error) when (error.Message.StartsWith("Choose a save location", StringComparison.Ordinal)) { rejected = true; }
+                    Require(rejected, "same-source destination rejected before staging, including normalized case-insensitive aliases");
+                }
+            }
+            Require(retainedSource.SequenceEqual(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(session.SourcePath))) && File.ReadAllBytes(preserved).SequenceEqual(original), "same-source rejection preserves original video and existing destination bytes");
+            Require(!Directory.EnumerateFiles(session.DirectoryPath, ".slightshot-*").Any(), "same-source rejection creates no temporary staging file");
+            checks.Add("Annotated, empty-annotation and plain recording exports reject exact and normalized/case-insensitive source-path destinations before staging; SHA-256 confirms the source is unchanged and existing destination bytes are retained.");
+            var rawSourceCadence = await VideoSequentialDecoder.InspectAsync(session.SourcePath, width, height);
+            int sourceFirstCounter, sourceFinalCounter;
+            using (var endpointSource = await VideoSequentialDecoder.OpenAsync(session.SourcePath, width, height))
+            {
+                var pixels = new byte[width * height * 4];
+                await endpointSource.GetFrameAsync(TimeSpan.Zero, pixels, CancellationToken.None);
+                sourceFirstCounter = FrameCounter(pixels, width);
+                // A position at the final raw source PTS reaches the actual
+                // last sample with either raw or normalized reader scheduling.
+                // This endpoint reference cannot share an off-by-one tail hold.
+                await endpointSource.GetFrameAsync(TimeSpan.FromTicks(rawSourceCadence.LastPresentationTicks), pixels, CancellationToken.None);
+                sourceFinalCounter = FrameCounter(pixels, width);
+            }
+            Require(sourceFirstCounter != sourceFinalCounter, "actual source endpoints have distinct high-contrast frame counters");
+            File.WriteAllText(Path.Combine(directory, "video-editor-source-endpoints.json"), JsonSerializer.Serialize(new
+            {
+                actualRawSourceCadence = rawSourceCadence, sourceFirstCounter, sourceFinalCounter,
+                sourceSha256 = Convert.ToHexString(retainedSource),
+                method = "Eight unannotated gray binary cells identify actual source frames. First is read at zero; final at the last raw decoded source PTS, which forces the actual final sample before or after origin normalization. Raw inspection PTS and source bytes are unchanged."
+            }, new JsonSerializerOptions { WriteIndented = true }));
+            var sourceReferenceCounters = new Dictionary<long, int>();
+            using (var sequentialSource = await VideoSequentialDecoder.OpenAsync(session.SourcePath, width, height))
+            {
+                var sourcePixels = new byte[width * height * 4];
+                foreach (double seconds in new[] { .5, 2, 3.5 })
+                {
+                    var positionAt = TimeSpan.FromSeconds(seconds);
+                    var nativeFrame = await source.GetFrameAsync(positionAt);
+                    await sequentialSource.GetFrameAsync(positionAt, sourcePixels, CancellationToken.None);
+                    sourceReferenceCounters[positionAt.Ticks] = FrameCounter(sourcePixels, width);
+                    var sequentialFrame = BitmapSource.Create(width, height, 96, 96, PixelFormats.Pbgra32, null, sourcePixels, width * 4);
+                    sequentialFrame.Freeze();
+                    foreach (var patch in colorRegions)
+                    {
+                        var nativeRgb = MeanRgb(nativeFrame, patch.Region); var sequentialRgb = MeanRgb(sequentialFrame, patch.Region);
+                        var nativeInputErrors = patch.Nominal.Zip(nativeRgb, (first, second) => Math.Abs(first - second)).ToArray();
+                        var sequentialInputErrors = patch.Nominal.Zip(sequentialRgb, (first, second) => Math.Abs(first - second)).ToArray();
+                        var errors = nativeRgb.Zip(sequentialRgb, (first, second) => Math.Abs(first - second)).ToArray();
+                        sourceColors.Add(new(seconds, patch.Name, "Known nominal fixture input vs native editor source preview (MF NV12+Core)", patch.Nominal, nativeRgb, nativeInputErrors));
+                        sourceColors.Add(new(seconds, patch.Name, "Known nominal fixture input vs sequential BGRA", patch.Nominal, sequentialRgb, sequentialInputErrors));
+                        sourceColors.Add(new(seconds, patch.Name, "Native editor source preview (MF NV12+Core) vs sequential BGRA", nativeRgb, sequentialRgb, errors));
+                        if (new[] { nativeInputErrors.Max(), sequentialInputErrors.Max(), errors.Max() }.Max() > 8) SaveSourceColors(directory, sourceColors);
+                        Require(nativeInputErrors.Max() <= 8, "native source preserves known nominal " + patch.Name + " input RGB at " + seconds + "s");
+                        Require(sequentialInputErrors.Max() <= 8, "sequential source preserves known nominal " + patch.Name + " input RGB at " + seconds + "s");
+                        Require(errors.Max() <= 8, "sequential source decoder preserves native preview solid " + patch.Name + " RGB at " + seconds + "s");
+                    }
+                }
+            }
+            SaveSourceColors(directory, sourceColors);
+            checks.Add("Solid source red/green/blue/neutral interiors outside all annotation regions retain their known nominal fixture RGB in both native editor source preview (MF NV12+Core) and sequential BGRA, and agree with each other at 0.5/2/3.5 seconds within 8 mean values per RGB channel. Eight-pixel margins exclude chroma interpolation at patch edges; independent nominal comparisons reject consistently mislabeled matrix/range colors.");
+            var seekEvidence = new List<object>();
+            void SaveSeekEvidence()
+            {
+                File.WriteAllText(Path.Combine(directory, "video-editor-random-seek-validation.json"), JsonSerializer.Serialize(new
+                {
+                    sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
+                    method = "Native editor backward/forward/end seeks are checked against separately decoded forward-only source counters. End is checked against the actual final source sample forced using raw last PTS; the next backward seek covers terminal-cache recovery. Known nominal source RGB remains the independent color truth.",
+                    evidence = seekEvidence
+                }, new JsonSerializerOptions { WriteIndented = true }));
+            }
+            foreach (var target in new[] { TimeSpan.FromSeconds(.5), TimeSpan.FromSeconds(3.5), TimeSpan.FromSeconds(.5), TimeSpan.FromSeconds(2), source.Duration, TimeSpan.FromSeconds(.5) })
+            {
+                double seconds = target.TotalSeconds;
+                int expectedCounter = target == source.Duration ? sourceFinalCounter : sourceReferenceCounters[target.Ticks];
+                try { await editor.SeekAsync(target); }
+                catch (Exception error)
+                {
+                    seekEvidence.Add(new { requestedSeconds = seconds, expectedCounterFromIndependentForwardOnlyReader = expectedCounter, error = error.ToString() });
+                    SaveSeekEvidence(); throw;
+                }
+                var currentFrame = editor.Surface.CurrentFrame!;
+                var pixels = new byte[width * height * 4]; currentFrame.CopyPixels(pixels, width * 4, 0);
+                int actualCounter = FrameCounter(pixels, width);
+                seekEvidence.Add(new { requestedSeconds = seconds, actualEditorPositionSeconds = editor.Position.TotalSeconds,
+                    expectedCounterFromIndependentForwardOnlyReader = expectedCounter, actualNativePreviewCounter = actualCounter });
+                SaveSeekEvidence();
+                Require(editor.Position == target && actualCounter == expectedCounter, "native backward/forward seek returns the correct source-frame counter at " + seconds + "s");
+                foreach (var patch in colorRegions)
+                {
+                    var rgb = MeanRgb(currentFrame, patch.Region);
+                    var errors = patch.Nominal.Zip(rgb, (first, second) => Math.Abs(first - second)).ToArray();
+                    sourceColors.Add(new(seconds, patch.Name, "Known nominal fixture input vs native editor preview after random seek", patch.Nominal, rgb, errors));
+                    if (errors.Max() > 8) SaveSourceColors(directory, sourceColors);
+                    Require(errors.Max() <= 8, "native backward/forward seek preserves nominal " + patch.Name + " RGB at " + seconds + "s");
+                }
+            }
+            SaveSourceColors(directory, sourceColors);
+            checks.Add("Native editor seeks 0.5→3.5→0.5→2→source end→0.5 seconds return exact binary source-frame counters from a separate forward-only reader and preserve known nominal RGB, covering backward/large forward/end native seeks and terminal decoder-cache recovery.");
+            await editor.PrepareExportAsync();
+            var recoveryPosition = TimeSpan.FromSeconds(1.7);
+            string retainedEdits = JsonSerializer.Serialize(snapshot);
+            Task pendingPreview = editor.SeekAsync(recoveryPosition);
+            Require(!pendingPreview.IsCompleted, "export preparation starts with a real in-flight native preview request");
+            await editor.PrepareExportAsync(); await pendingPreview;
+            BitmapSource frozenPreview = editor.Surface.CurrentFrame!;
+            Require(frozenPreview.IsFrozen && editor.Position == recoveryPosition, "export preparation drains preview and retains its frozen frame and position");
+            void RetainedPreview(string outcome)
+            {
+                Require(editor.IsVisible && editor.Position == recoveryPosition && ReferenceEquals(editor.Surface.CurrentFrame, frozenPreview), outcome + " retains the same frozen preview and playhead");
+                Require(JsonSerializer.Serialize(editor.History.ExportSnapshot()) == retainedEdits &&
+                    retainedSource.SequenceEqual(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(session.SourcePath))), outcome + " retains exact source bytes and all timed annotations");
+            }
+            async Task RecoverPreview(string outcome)
+            {
+                await editor.SeekAsync(recoveryPosition);
+                Require(editor.Position == recoveryPosition && Delta(frozenPreview, editor.Surface.CurrentFrame!, new Int32Rect(0, 0, width, height)) == 0,
+                    outcome + " lazily reopens the same source frame at the retained position");
+                editor.Play(); await Task.Delay(350); await editor.PrepareExportAsync();
+                Require(editor.Position > recoveryPosition, outcome + " resumes actual preview playback after lazy decoder recreation");
+                await editor.SeekAsync(recoveryPosition); await editor.PrepareExportAsync();
+                frozenPreview = editor.Surface.CurrentFrame!;
+                RetainedPreview(outcome + " recovery");
+            }
+            await ExpectCancellation(() => VideoAnnotationExport.SaveAsync(session.SourcePath, preserved, RecordingQuality.High, width, height, snapshot, cancellation.Token));
+            Require(File.ReadAllBytes(preserved).SequenceEqual(original), "early export cancellation preserves destination");
+            RetainedPreview("Early cancellation");
+            using (var activeCancellation = new CancellationTokenSource())
+            {
+                var progress = new CancelOnProgress(activeCancellation);
+                await editor.PrepareExportAsync();
+                await ExpectCancellation(() => VideoAnnotationExport.SaveAsync(session.SourcePath, preserved, RecordingQuality.High, width, height, snapshot, activeCancellation.Token, progress));
+                Require(progress.Called && File.ReadAllBytes(preserved).SequenceEqual(original), "active annotated export cancellation preserves destination");
+            }
+            Require(!Directory.EnumerateFiles(directory, ".slightshot-*").Any() && File.Exists(session.SourcePath), "cancellation cleans staging and retains source");
+            RetainedPreview("Active cancellation"); await RecoverPreview("Active cancellation");
+            try
+            {
+                await editor.PrepareExportAsync();
+                await VideoAnnotationExport.SaveAsync(session.SourcePath, Path.Combine(directory, "missing", "edited.mp4"), RecordingQuality.High, width, height, snapshot, CancellationToken.None);
+                throw new InvalidOperationException("Missing export folder did not fail.");
+            }
+            catch (Exception error) when (error is not InvalidOperationException) { }
+            Require(editor.History.Items.Count == marksBeforeCancel && File.Exists(session.SourcePath), "failed export retains video and all edits");
+            RetainedPreview("Failed destination"); await RecoverPreview("Failed destination");
+            checks.Add("Save callback cancellation, early/active native export cancellation and a real failed destination preserve source, edits and an existing destination; cancelled staging files are removed.");
+            checks.Add("The production PrepareExportAsync drains a real in-flight preview and releases its native graph while retaining the frozen bitmap, position, source SHA-256 and timed edits. After active cancellation and a failed destination, seeking recreates identical preview pixels and Play advances the source; subsequent exports reuse the same recording.");
+            File.Delete(preserved);
+            foreach (var quality in Enum.GetValues<RecordingQuality>())
+            {
+                var sourceStripe = new List<double>(); var outputStripe = new List<double>();
+                string output = Path.Combine(directory, "video-editor-" + quality.ToString().ToLowerInvariant() + ".mp4");
+                var watch = Stopwatch.StartNew();
+                await editor.PrepareExportAsync();
+                await VideoAnnotationExport.SaveAsync(session.SourcePath, output, quality, width, height, snapshot, CancellationToken.None);
+                using var decoded = await VideoFrameSource.OpenAsync(output);
+                Require(decoded.Width == width && decoded.Height == height, "edited export retains dimensions " + quality);
+                Require(Math.Abs(decoded.Duration.TotalSeconds - source.Duration.TotalSeconds) < 0.2, "edited export retains duration " + quality);
+                var cadence = await VideoSequentialDecoder.InspectAsync(output, decoded.Width, decoded.Height);
+                long expectedFrames = (source.Duration.Ticks * quality.FramesPerSecond() + TimeSpan.TicksPerSecond - 1) / TimeSpan.TicksPerSecond;
+                File.WriteAllText(Path.Combine(directory, "video-editor-" + quality.ToString().ToLowerInvariant() + "-cadence-validation.json"),
+                    JsonSerializer.Serialize(new { quality, expectedFrames, actualDecoded = cadence }, new JsonSerializerOptions { WriteIndented = true }));
+                Require(cadence.Frames == expectedFrames, "actual MP4 decodes every planned frame including its final partial frame " + quality);
+                Require(Math.Abs(cadence.FirstPresentationTicks) <= 1, "actual MP4 starts at time zero " + quality);
+                long interval = TimeSpan.TicksPerSecond / quality.FramesPerSecond();
+                Require(cadence.PresentationTicks.Zip(cadence.PresentationTicks.Skip(1), (first, second) => second - first)
+                    .All(gap => gap > 0 && Math.Abs(gap - interval) <= 1), "actual MP4 preserves constant output cadence " + quality);
+                Require(cadence.LastDurationTicks > 0 && Math.Abs(cadence.LastPresentationTicks + cadence.LastDurationTicks - source.Duration.Ticks) <= interval + 10000,
+                    "actual MP4 final frame retains the source endpoint within one output frame " + quality);
+                int outputFirstCounter, outputFinalCounter;
+                using (var endpoints = await VideoSequentialDecoder.OpenAsync(output, width, height))
+                {
+                    var pixels = new byte[width * height * 4];
+                    await endpoints.GetFrameAsync(TimeSpan.Zero, pixels, CancellationToken.None);
+                    outputFirstCounter = FrameCounter(pixels, width);
+                    await endpoints.GetFrameAsync(TimeSpan.FromTicks(cadence.LastPresentationTicks), pixels, CancellationToken.None);
+                    outputFinalCounter = FrameCounter(pixels, width);
+                }
+                bool reachesSourceFinal = cadence.LastPresentationTicks + 1 >= rawSourceCadence.LastPresentationTicks - rawSourceCadence.FirstPresentationTicks;
+                File.WriteAllText(Path.Combine(directory, "video-editor-" + quality.ToString().ToLowerInvariant() + "-endpoint-validation.json"), JsonSerializer.Serialize(new
+                {
+                    quality, rawSourceCadence, actualOutputCadence = cadence,
+                    sourceFirstCounter, sourceFinalCounter, outputFirstCounter, outputFinalCounter,
+                    lastScheduledOutputReachesNormalizedSourceFinal = reachesSourceFinal,
+                    firstCounterMatches = outputFirstCounter == sourceFirstCounter,
+                    finalCounterMatches = outputFinalCounter == sourceFinalCounter,
+                    method = "Actual decoded first/final output samples carry high-contrast source-frame counter bits, independent of low-gradient moving-stripe quantization. Final source reference was forced using its raw final PTS."
+                }, new JsonSerializerOptions { WriteIndented = true }));
+                Require(outputFirstCounter == sourceFirstCounter, "actual output starts with the first source frame counter " + quality);
+                if (quality == RecordingQuality.High)
+                    Require(reachesSourceFinal, "High output scheduling reaches the normalized final source sample");
+                if (reachesSourceFinal)
+                    Require(outputFinalCounter == sourceFinalCounter, "actual output retains the final source frame counter " + quality);
+                checks.Add($"{quality.Title()}: decoded first/final binary source-frame IDs {sourceFirstCounter}/{sourceFinalCounter}; actual output IDs {outputFirstCounter}/{outputFinalCounter}. First-source identity passed; final-source identity is required when the planned output cadence reaches that source sample.");
+                foreach (var point in new[] { (Name: "before", Seconds: 0.5), (Name: "during", Seconds: 2.0), (Name: "after", Seconds: 3.5) })
+                {
+                    var frame = await decoded.GetFrameAsync(TimeSpan.FromSeconds(point.Seconds));
+                    var originalFrame = await source.GetFrameAsync(TimeSpan.FromSeconds(point.Seconds));
+                    foreach (var patch in colorRegions)
+                    {
+                        var nativeRgb = MeanRgb(originalFrame, patch.Region); var outputRgb = MeanRgb(frame, patch.Region);
+                        var errors = nativeRgb.Zip(outputRgb, (first, second) => Math.Abs(first - second)).ToArray();
+                        sourceColors.Add(new(point.Seconds, patch.Name, quality + " actual encoded MP4 vs native editor source preview (MF NV12+Core)", nativeRgb, outputRgb, errors));
+                        if (errors.Max() > 8) SaveSourceColors(directory, sourceColors);
+                        Require(errors.Max() <= 8, "actual MP4 preserves unannotated source solid " + patch.Name + " RGB " + point.Name + " " + quality);
+                    }
+                    sourceStripe.Add(MeanBlue(originalFrame, new Int32Rect(30, 3, 570, 6)));
+                    outputStripe.Add(MeanBlue(frame, new Int32Rect(30, 3, 570, 6)));
+                    Require(Math.Abs(sourceStripe[^1] - outputStripe[^1]) < 20, "actual MP4 moving top stripe matches its source timestamp/orientation " + point.Name + " " + quality);
+                    double blur = Delta(originalFrame, frame, new Int32Rect(40, 195, 85, 95));
+                    double pixel = Delta(originalFrame, frame, new Int32Rect(170, 195, 85, 95));
+                    if (point.Name == "during")
+                    {
+                        Require(blur > 35 && pixel > 35, "decoded MP4 contains Blur/Pixelate only during interval " + quality);
+                        Require(Delta(originalFrame, frame, new Int32Rect(305, 75, 270, 48)) > 10, "decoded MP4 contains timed text " + quality);
+                        Require(Delta(originalFrame, frame, new Int32Rect(345, 165, 145, 95)) > 4, "decoded MP4 contains native pointer arrow " + quality);
+                    }
+                    else Require(blur < 25 && pixel < 25, "decoded MP4 excludes effects " + point.Name + " interval " + quality);
+                    Require(Delta(previews[point.Name], frame, new Int32Rect(20, 70, 590, 250)) < 30, "preview/export composition agrees within H.264 compression " + point.Name + " " + quality);
+                    Save(frame, Path.Combine(directory, $"video-editor-output-{quality.ToString().ToLowerInvariant()}-{point.Name}.png"));
+                }
+                Require(outputStripe[1] - outputStripe[0] > 15 && outputStripe[2] - outputStripe[1] > 15, "actual MP4 source frames advance between all three timestamps " + quality);
+                checks.Add($"{quality.Title()}: source/output moving top-stripe blue means {string.Join("/", sourceStripe.Select(value => value.ToString("0.0")))}/{string.Join("/", outputStripe.Select(value => value.ToString("0.0")))}; timestamp and vertical orientation checks passed.");
+                checks.Add($"{quality.Title()}: actual edited MP4 decoded before/in/after interval; text, pointer arrow, drawings, blur and pixelation match preview within codec tolerance. Native export took {watch.Elapsed.TotalSeconds:0.0}s for {source.Duration.TotalSeconds:0.0}s of {width}×{height} video.");
+                SaveSourceColors(directory, sourceColors);
+            }
+            Require(File.Exists(session.SourcePath), "successful export leaves source available until editor closes");
+            closingPreview = editor.SeekAsync(TimeSpan.FromSeconds(.85));
+        }
+        finally
+        {
+            editor.CloseForShutdown(); await editor.Completion.WaitAsync(TimeSpan.FromSeconds(30));
+            if (closingPreview != null) await closingPreview.WaitAsync(TimeSpan.FromSeconds(30));
+        }
+        session.Dispose();
+        Require(!Directory.Exists(session.DirectoryPath), "closing the native editor releases its decoder and removes temporary source files");
+        checks.Add("The production shutdown close with a newly requested preview drains or cancels that request within 30 seconds, releases its lazily reopened decoder, and RecordingSession disposal removes the temporary source directory.");
+        File.WriteAllText(Path.Combine(directory, "video-editor-validation.json"), JsonSerializer.Serialize(new
+        {
+            platform = "Windows native WPF / Media Foundation",
+            sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
+            source = "Moving synthetic BGRA recording. Real native editor HWND captured from composed desktop pixels. Arrow uses native automated pointer input; other annotations use labelled fixture inputs. Native sliders and buttons are operated automatically. MP4 is encoded and decoded through the production export path.",
+            checks, sourceColorEvidence = sourceColors
+        }, new JsonSerializerOptions { WriteIndented = true }));
+    }
+    private sealed record SourceColorEvidence(double Seconds, string Patch, string Comparison,
+        double[] ReferenceMeanRGB, double[] ActualMeanRGB, double[] MeanAbsoluteRGBChannelDelta);
+    private static void SaveSourceColors(string directory, List<SourceColorEvidence> evidence)
+    {
+        File.WriteAllText(Path.Combine(directory, "video-editor-source-color-validation.json"), JsonSerializer.Serialize(new
+        {
+            sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
+            maximumMeanRGBChannelDelta = 8,
+            passed = evidence.All(value => value.MeanAbsoluteRGBChannelDelta.Max() <= 8),
+            evidence
+        }, new JsonSerializerOptions { WriteIndented = true }));
+    }
+    private static double[] MeanRgb(BitmapSource bitmap, Int32Rect region)
+    {
+        int stride = region.Width * 4; var pixels = new byte[stride * region.Height]; bitmap.CopyPixels(region, pixels, stride, 0);
+        long red = 0, green = 0, blue = 0;
+        for (int index = 0; index < pixels.Length; index += 4) { blue += pixels[index]; green += pixels[index + 1]; red += pixels[index + 2]; }
+        double area = region.Width * region.Height; return [red / area, green / area, blue / area];
+    }
+    private static int FrameCounter(byte[] pixels, int width)
+    {
+        int counter = 0;
+        for (int bit = 0; bit < 8; bit++)
+        {
+            long brightness = 0;
+            for (int y = 32; y < 56; y++) for (int x = 308 + bit * 28; x < 320 + bit * 28; x++)
+                brightness += pixels[(y * width + x) * 4];
+            if (brightness > 125L * 12 * 24) counter |= 1 << bit;
+        }
+        return counter;
+    }
+    private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
+    {
+        for (int index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+        {
+            var child = VisualTreeHelper.GetChild(root, index); yield return child;
+            foreach (var nested in Descendants(child)) yield return nested;
+        }
+    }
+    private static IEnumerable<Button> Buttons(Window window) => Descendants((DependencyObject)window.Content).OfType<Button>();
+    private static IEnumerable<Slider> Sliders(Window window) => Descendants((DependencyObject)window.Content).OfType<Slider>();
+    internal static void ClickTooltip(Window window, string tooltip) => Buttons(window).Single(button => Equals(button.ToolTip, tooltip)).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+    private static void ClickContent(Window window, string content) => Buttons(window).Single(button => Equals(button.Content, content)).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+    internal static async Task DragAsync(FrameworkElement surface, Point start, Point end)
+    {
+        var first = surface.PointToScreen(start); var last = surface.PointToScreen(end);
+        Require(SetCursorPos((int)first.X, (int)first.Y), "native pointer moves to annotation start"); await Task.Delay(50);
+        MouseEvent(0x0002, 0, 0, 0, UIntPtr.Zero); await Task.Delay(50);
+        Require(SetCursorPos((int)last.X, (int)last.Y), "native pointer moves to annotation endpoint"); await Task.Delay(50);
+        MouseEvent(0x0004, 0, 0, 0, UIntPtr.Zero); await Task.Delay(100);
+    }
+    internal static void CaptureWindow(Window window, string path)
+    {
+        Require(RecordingNative.GetWindowRect(new WindowInteropHelper(window).Handle, out var rect), "native editor screenshot bounds");
+        using var bitmap = new System.Drawing.Bitmap(rect.Right - rect.Left, rect.Bottom - rect.Top);
+        using var graphics = System.Drawing.Graphics.FromImage(bitmap); graphics.CopyFromScreen(rect.Left, rect.Top, 0, 0, bitmap.Size);
+        bitmap.Save(path, System.Drawing.Imaging.ImageFormat.Png);
+    }
+    internal static void Save(BitmapSource bitmap, string path) { using var stream = File.Create(path); OutputService.Encode(bitmap, ImageFormat.Png, 1).Save(stream); }
+    internal static double Delta(BitmapSource first, BitmapSource second, Int32Rect region)
+    {
+        int stride = region.Width * 4; var a = new byte[stride * region.Height]; var b = new byte[a.Length];
+        first.CopyPixels(region, a, stride, 0); second.CopyPixels(region, b, stride, 0);
+        long sum = 0; for (int index = 0; index < a.Length; index++) if (index % 4 != 3) sum += Math.Abs(a[index] - b[index]);
+        return (double)sum / (region.Width * region.Height * 3);
+    }
+    internal static double MeanBlue(BitmapSource bitmap, Int32Rect region)
+    {
+        int stride = region.Width * 4; var pixels = new byte[stride * region.Height]; bitmap.CopyPixels(region, pixels, stride, 0);
+        long sum = 0; for (int index = 0; index < pixels.Length; index += 4) sum += pixels[index];
+        return (double)sum / (region.Width * region.Height);
+    }
+    private sealed class CancelOnProgress(CancellationTokenSource cancellation) : IProgress<double>
+    {
+        internal bool Called { get; private set; }
+        public void Report(double value) { Called = true; cancellation.Cancel(); }
+    }
+    private static async Task ExpectCancellation(Func<Task> operation)
+    {
+        try { await operation(); throw new InvalidOperationException("Annotated export ignored cancellation."); }
+        catch (OperationCanceledException) { }
+    }
+    private static void Require(bool condition, string check) { if (!condition) throw new InvalidOperationException("Video editor smoke test failed: " + check); }
+    [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll", EntryPoint = "mouse_event")] private static extern void MouseEvent(uint flags, uint x, uint y, uint data, UIntPtr extra);
+}

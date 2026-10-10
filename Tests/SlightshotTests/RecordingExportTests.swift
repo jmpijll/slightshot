@@ -42,6 +42,23 @@ struct RecordingExportTests {
             .contains(where: { $0.hasPrefix(".slightshot-") }) == false)
     }
 
+    @MainActor @Test(arguments: [false, true])
+    func highExportPreservesSlowerSourceCadence(annotated: Bool) async throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("source.mp4")
+        try await createMovingVideo(at: source, frameRate: 24)
+        let destination = directory.appendingPathComponent("high.mp4")
+        let annotations = annotated ? [VideoAnnotation(annotation: Annotation(
+            shape: .line(from: CGPoint(x: 100, y: 100), to: CGPoint(x: 300, y: 100)),
+            color: .red, lineWidth: 8), start: 0.5, end: 1.5)] : []
+        try await RecordingExport.save(source: source, to: destination, quality: .high, annotations: annotations)
+        let asset = AVURLAsset(url: destination)
+        let track = try #require(try await asset.loadTracks(withMediaType: .video).first)
+        try await verifyFrameCadence(asset: asset, track: track, quality: .high,
+                                    duration: asset.load(.duration), sourceFramesPerSecond: 24)
+    }
+
     @Test func cancellationAndBadSourcePreserveExistingDestination() async throws {
         let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -104,8 +121,10 @@ struct RecordingExportTests {
     /// Container nominalFrameRate can include a short boundary sample and vary
     /// with the encoder used by a hosted macOS runner. Inspect the encoded video
     /// samples instead: a broken fps choice must fail even if metadata looks right.
-    private func verifyFrameCadence(asset: AVAsset, track: AVAssetTrack, quality: RecordingQuality,
-                                    duration: CMTime) async throws {
+    nonisolated(nonsending) private func verifyFrameCadence(
+        asset: AVAsset, track: AVAssetTrack, quality: RecordingQuality,
+        duration: CMTime, sourceFramesPerSecond: Double? = nil
+    ) async throws {
         let reader = try AVAssetReader(asset: asset)
         let output = AVAssetReaderTrackOutput(track: track, outputSettings: nil)
         let provider = reader.outputProvider(for: output)
@@ -118,7 +137,7 @@ struct RecordingExportTests {
             timestamps.append(sample.presentationTimeStamp.seconds)
         }
         timestamps.sort() // H.264 may store frames in decode order.
-        let fps = Double(quality.framesPerSecond)
+        let fps = min(Double(quality.framesPerSecond), sourceFramesPerSecond ?? Double(quality.framesPerSecond))
         let interval = 1 / fps
         let expectedCount = Int((duration.seconds * fps).rounded())
         #expect(abs(timestamps.count - expectedCount) <= 1,
@@ -144,7 +163,7 @@ struct RecordingExportTests {
 
     /// A moving, detailed fixture catches an ineffective quality slider and
     /// wrong fps/duration without needing Screen Recording permission or a UI.
-    private func createMovingVideo(at url: URL) async throws {
+    private func createMovingVideo(at url: URL, frameRate: Int32 = 30) async throws {
         let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
             AVVideoCodecKey: AVVideoCodecType.h264,
@@ -156,7 +175,7 @@ struct RecordingExportTests {
         let receiver = writer.inputPixelBufferReceiver(for: input, pixelBufferAttributes: attributes)
         try writer.start()
         writer.startSession(atSourceTime: .zero)
-        for frame in 0..<60 {
+        for frame in 0..<(Int(frameRate) * 2) {
             let pixel = try CVMutablePixelBuffer(attributes)
             pixel.withUnsafeBuffer { buffer in
                 CVPixelBufferLockBaseAddress(buffer, [])
@@ -175,7 +194,10 @@ struct RecordingExportTests {
                     }
                 }
             }
-            try await receiver.append(CVReadOnlyPixelBuffer(pixel), with: CMTime(value: Int64(frame), timescale: 30))
+            let buffer = CVReadOnlyPixelBuffer(pixel)
+            try await RecordingExport.appendWhenReady {
+                try receiver.appendImmediately(buffer, with: CMTime(value: Int64(frame), timescale: frameRate))
+            }
         }
         receiver.finish()
         writer.endSession(atSourceTime: CMTime(value: 2, timescale: 1))

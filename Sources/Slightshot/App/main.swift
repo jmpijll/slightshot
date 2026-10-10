@@ -6,6 +6,11 @@ if CommandLine.arguments.contains("--verify-runtime-linkage") {
     exit(EXIT_SUCCESS)
 }
 
+if CommandLine.arguments.contains("--video-editor-review") {
+    VideoEditorReview.run()
+    exit(EXIT_SUCCESS)
+}
+
 if CommandLine.arguments.contains("--redo-review") {
     let app = NSApplication.shared
     let review = RedoReview()

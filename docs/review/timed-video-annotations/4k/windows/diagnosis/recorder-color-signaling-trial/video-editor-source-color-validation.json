@@ -1,0 +1,67 @@
+{
+  "sourceCommit": "ed6c20b1826dfb1ef64b0874d0ccd12138c036b4",
+  "maximumMeanRGBChannelDelta": 8,
+  "passed": false,
+  "evidence": [
+    {
+      "Seconds": 0.5,
+      "Patch": "Red",
+      "Comparison": "Known nominal fixture input vs native source preview",
+      "ReferenceMeanRGB": [
+        255,
+        0,
+        0
+      ],
+      "ActualMeanRGB": [
+        254.95454545454547,
+        1,
+        3.087121212121212
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.045454545454532536,
+        1,
+        3.087121212121212
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Red",
+      "Comparison": "Known nominal fixture input vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        255,
+        0,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        24.924242424242426,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        24.924242424242426,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Red",
+      "Comparison": "Native source preview vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        254.95454545454547,
+        1,
+        3.087121212121212
+      ],
+      "ActualMeanRGB": [
+        255,
+        24.924242424242426,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.045454545454532536,
+        23.924242424242426,
+        3.087121212121212
+      ]
+    }
+  ]
+}

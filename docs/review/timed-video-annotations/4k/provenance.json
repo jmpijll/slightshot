@@ -1,0 +1,230 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Durable review record: native application captures, actual encoded media, independently decoded validation and separate automated checks.",
+  "inputs": "Synthetic moving movies, invented names/accounts/codes; no personal recordings.",
+  "macOS": {
+    "captureSourceCommit": "3885ab05d1358839068d9ee9bb05d0c6c688853d",
+    "baselineProductCommit": "b6d8535ea1c5195a454530b82f14c686d7470949",
+    "fixtureInstrumentationSHA256": "ae195ac7077359627e5b8e89614c9955eba303628d43dcae8370a5323d5b32d2",
+    "baselineFixtureInstrumentationSHA256": "b70aa5b02653f9443b3a98da634c1e19ac514f70d7cac249f42f3e2d06056ae5",
+    "sourceMovieSHA256": "8f3798dfc34dd3fdfcba54f6277b90fbb884eb18eff8767b457f51a5ce0c5f5d",
+    "sameSourceMovieAsBaseline": true,
+    "machine": "macOS 27, Apple M4 Mac16,13, 16 GiB RAM",
+    "captureMethod": "Actual isolated ad-hoc signed AppKit window; ScreenCaptureKit screenshot; automated toolbar/NSEvent/timing/seek input.",
+    "input": "3840 \u00d7 2160 / 24 fps / 2 s / 48 decoded frames. Five annotations during 0.6\u20131.4 s; separate Step after performance/cancel.",
+    "memory": "Process resident bytes sampled every 50 ms during individual exports; no shader-cache reset.",
+    "sourceDestinationGuardValidation": {
+      "sourceCommit": "94d3c5797bfdfe60c9b2ab6d0768f0620c0c3b83",
+      "file": "mac/source-destination-validation.md",
+      "swiftTests": 59,
+      "swiftSuites": 16,
+      "fullTestSeconds": 9.344,
+      "strictLint": "pass",
+      "warningFreeReleaseSeconds": 17.64
+    }
+  },
+  "Windows": {
+    "baselineCaptureSourceCommit": "d3af788ff1d13d06094485bf2b7c219dbbb4c300",
+    "baselineRun": "https://github.com/jmpijll/slightshot/actions/runs/38072734298",
+    "baselineArtifact": "windows-native-4k-benchmark-evidence",
+    "captureMethod": "Actual native WPF HWND pixels; automated native pointer blur/pixelation and Step click, fixture caption/range/seek input.",
+    "input": "3840 \u00d7 2160 moving real native recording, three main marks during 0.35\u20131.1 s; current adds invented readable text to the original checker; separate Balanced and Step scenarios.",
+    "memory": "Process private bytes sampled every 40 ms across the entire fixture, separate phase peaks. The 16 ms dispatcher timer covers editor/primary High export; Balanced has a separate export timer.",
+    "diagnosticCaptures": [
+      {
+        "file": "windows/diagnosis/native-export-memory.json",
+        "run": "https://github.com/jmpijll/slightshot/actions/runs/38075229717",
+        "captureSourceCommit": "a60433f3b734e7b3c0cc93e129da45c2b54b9258",
+        "prSourceHead": "14bc8e758ff27c9c4f8269b24d8b26139f2e6ddd"
+      },
+      {
+        "file": "windows/diagnosis/classic-decoder-memory.json",
+        "run": "https://github.com/jmpijll/slightshot/actions/runs/38075904511",
+        "captureSourceCommit": "0968685ef77a06b0ce439761edb4b273797e9c8e",
+        "prSourceHead": "a0fd2c9d165da37c2048a868ed2f92e092c1e1c1"
+      },
+      {
+        "file": "windows/diagnosis/direct-writer-memory.json",
+        "run": "https://github.com/jmpijll/slightshot/actions/runs/38076809919",
+        "prSourceHead": "2a9a8bdcc1098d584d07f455d7d0f52d71b5a712",
+        "captureSourceCommit": "a172991245a3086fff2a8c778ba1a0c98c38e611"
+      },
+      {
+        "file": "windows/diagnosis/zero-bframes-tail/video-editor-4k-balanced-validation.json",
+        "captureSourceCommit": "35f115a4573995d3c575f94cea658c035d35aaa9",
+        "prSourceHead": "bdceb3ab0254b22cb9bf37a5a07d346ca15b9233",
+        "run": "https://github.com/jmpijll/slightshot/actions/runs/38077559563",
+        "scope": "B0+worker2 native readback and High cadence pass; Balanced partial tail fails. Fullfixture memory acceptance not reached."
+      },
+      {
+        "file": "windows/diagnosis/frc-fixed-native-memory.json",
+        "captureSourceCommit": "25f3d561d34376c6b2622cf1d5fb4020e1f5d1ee",
+        "prSourceHead": "a008e5c4dd30b815c163cac511845289ff977ad1",
+        "run": "https://github.com/jmpijll/slightshot/actions/runs/38078134025",
+        "scope": "Verified processor disableFRC, worker2/B0; true High/Balanced cadence/tail/pixels pass, fullfixture memory fails."
+      },
+      {
+        "file": "windows/diagnosis/nv12-encoder-memory.json",
+        "captureSourceCommit": "7500d6cef05d859638fd303c0ad4008bf5162110",
+        "prSourceHead": "f1bab14012af0303e0ded426636fae78f243cbd4",
+        "run": "https://github.com/jmpijll/slightshot/actions/runs/38078894384",
+        "scope": "Direct NV12 removes RGB video processor; media and performance pass but complete-fixture private memory fails. Writer release still frees about 785 MiB."
+      },
+      {
+        "file": "windows/diagnosis/encoder-one-worker-memory.json",
+        "captureSourceCommit": "2bb43e2dfea52a6ff1ca46bb80a00c7514fd5a3c",
+        "prSourceHead": "1c6416f3cb64d00fdb6d17da36cd3c3812bf2960",
+        "run": "https://github.com/jmpijll/slightshot/actions/runs/38079192577",
+        "scope": "Encoder one-worker readback correct, High phase within budget but complete fixture fails during active cancel and Step. Pixel/timing/source guard passes; throughput falls to8.26fps."
+      },
+      {
+        "file": "windows/diagnosis/decoder-one-worker-memory.json",
+        "captureSourceCommit": "082b955a0a35c2646b08148205f7b4a671d0ef96",
+        "prSourceHead": "2c4b8d784d1914ec599d10a539f654ad0c800d3e",
+        "run": "https://github.com/jmpijll/slightshot/actions/runs/38079594260",
+        "scope": "Decoder configured one-worker via documented attributes, encoder actualtwo; improves fullfixture memory1599MiB and11.4fps but stillfails1536MiB gate. Readback is configured attribute, not observed native threadcount."
+      },
+      {
+        "file": "windows/diagnosis/combined-one-worker-memory.json",
+        "captureSourceCommit": "8bddaa2acfe74185b9fe5ceca07f687af58896e1",
+        "prSourceHead": "f809ed20408193f2d9102109d917436292203c8f",
+        "run": "https://github.com/jmpijll/slightshot/actions/runs/38079943828",
+        "scope": "One configured decoder-worker + one actual encoder-worker stillfails fullfixture memory1614MiB. All media/native source-guard checks pass. No workload/gate changes."
+      },
+      {
+        "file": "windows/diagnosis/suspended-preview-memory.json",
+        "captureSourceCommit": "9b0e1b4d58fba495c6c6402b4d4ae06912edcfba",
+        "prSourceHead": "0b55b4a8730c0e6fd8ca340478627517b762f929",
+        "run": "https://github.com/jmpijll/slightshot/actions/runs/38080787221",
+        "scope": "Production preview graph suspension improves primary High export to 17.82 fps / 1350.54 MiB. Complete fixture still fails unchanged 1536 MiB memory gate at 1684.36 MiB during separate Step after full-resolution media validation; active cancellation reaches 1538.63 MiB. Native preview/cancel/failure/seek/play/shutdown checks pass. No forced GC or workload changes."
+      },
+      {
+        "file": "windows/diagnosis/low-latency-memory.json",
+        "captureSourceCommit": "a98318cd1b6e50f34a80f9acfe37384c100c1c8f",
+        "prSourceHead": "cbc978b816427ff686cda03cb3ba1c2800659bd4",
+        "run": "https://github.com/jmpijll/slightshot/actions/runs/38081303639",
+        "scope": "Supported H.264 encoder low-latency control reads false before / true after. Complete-fixture memory still fails at 1564.90 MiB; Step writer release still frees about 751 MiB, so the lower full peak cannot be attributed to a smaller encoder pool. Native media, timing, pixels, Step and recovery checks pass; compression choices may differ at the same requested profile/bitrate."
+      },
+      {
+        "file": "windows/diagnosis/exact-buffer-reuse-memory.json",
+        "captureSourceCommit": "55f891162e7d28dd1cb5307647f60e89095f4c0f",
+        "prSourceHead": "2bf1000446330500239a4d28bc74dfb27b5f5a1b",
+        "run": "https://github.com/jmpijll/slightshot/actions/runs/38081733795",
+        "scope": "Three exact-size product frame leases reduce cumulative managed allocation by 284.54 MiB versus the preceding run; managed committed heap and native processor/encoder memory still exceed whole-fixture gate at 1613.92 MiB. Media/performance/Step/recovery checks pass at 8.06 fps. Step decoder warmup adds 214.13 MiB with near-zero managed allocation, motivating direct native NV12 input conversion rather than another RGB conversion graph."
+      },
+      {
+        "file": "windows/diagnosis/native-nv12-source-trial/video-editor-4k-validation.json",
+        "captureSourceCommit": "f63936ff6e38fa47664ae2a8eceea4aceb2675df",
+        "prSourceHead": "57084d8e47249eb41d3cdd3a3630150e0874af07",
+        "run": "https://github.com/jmpijll/slightshot/actions/runs/38082754091",
+        "scope": "All unchanged native 4K gates pass; separate actual source primary-color comparison fails, so final native CI acceptance is not established. Both original reports are preserved."
+      },
+      {
+        "file": "windows/diagnosis/recorder-color-signaling-trial/video-editor-4k-validation.json",
+        "captureSourceCommit": "ed6c20b1826dfb1ef64b0874d0ccd12138c036b4",
+        "prSourceHead": "f9ac4ea860607316a9bf961cd71bd383a4ae5498",
+        "run": "https://github.com/jmpijll/slightshot/actions/runs/38083248389",
+        "scope": "Native complete 4K gates pass; known original RGB source comparison still fails despite actual bt709 container tags. Original failing color report and independent source probe preserved."
+      },
+      {
+        "file": "windows/diagnosis/explicit-nv12-recording-trial/video-editor-4k-validation.json",
+        "captureSourceCommit": "75e6eee2179c0e6e8296cdeb2f747d3485b49dbc",
+        "prSourceHead": "d2902cb1a83c36a2653a8c84d01e69fae1208388",
+        "run": "https://github.com/jmpijll/slightshot/actions/runs/38083618317",
+        "scope": "Native source NV12 pixels now nominal-correct; WinRT thumbnail colors still fail. Complete 4K memory fails at active cancel1587.22MiB, other performance/pixel checks pass. Original reports preserved."
+      },
+      {
+        "file": "windows/diagnosis/end-seek/README.md",
+        "captureSourceCommit": "66253c3cae32f5db6364e96fc61059f711cf3e88",
+        "prSourceHead": "4245a0811bb1a82f2b3df9e9411532450a62e202",
+        "run": "https://github.com/jmpijll/slightshot/actions/runs/38084660019",
+        "scope": "Exact editor-end seek retained earlier counter53 instead of independently decoded final114. Known nominal source color and 4K export gates passed; final native six-seek record must verify exact end and backward recovery."
+      }
+    ],
+    "sourceFrameSelectionDiagnosis": {
+      "file": "windows/diagnosis/frame-selection/pre-normalization-moving-stripe.json",
+      "prSourceHead": "2bf1000446330500239a4d28bc74dfb27b5f5a1b",
+      "captureSourceCommit": "55f891162e7d28dd1cb5307647f60e89095f4c0f",
+      "run": "https://github.com/jmpijll/slightshot/actions/runs/38081733795",
+      "limits": "Affine motion correlation with quantized plateaus, not exact individual-frame identity."
+    },
+    "captureSourceCommit": "e28601319e3107e8681c2af2bea6b8312c5cd1ff",
+    "prSourceHead": "0d96e8eece5bcdfc8f24074b61126b230e0dccb0",
+    "run": "https://github.com/jmpijll/slightshot/actions/runs/38085300980",
+    "sourceMovieSHA256": "3aa1d3a61b23ff3d429011f2235085081c39209cb812d1d05b41c2bc1e07e75e",
+    "sourceDurationSeconds": 1.6245666,
+    "nativeAcceptanceFailures": [],
+    "independentMediaChecks": "current/media-validation/",
+    "decoderDiagnostics": {
+      "WorkerThreadControlAvailable": true,
+      "WorkerThreadControlApplied": true,
+      "ConfiguredWorkerThreads": 1,
+      "PreviousWorkerThreads": -1,
+      "TransformCategory": "d6c02d4b-6833-45b4-971a-05a4b04bab91",
+      "ClassId": "00000000-0000-0000-0000-000000000000",
+      "ConfigurationMethod": "IMFTransform.Attributes",
+      "Color": {
+        "NegotiatedMatrix": 1,
+        "NegotiatedRange": 2,
+        "NegotiatedPrimaries": 2,
+        "NegotiatedTransfer": 5,
+        "EffectiveMatrix": "Bt709",
+        "FullRange": false,
+        "MatrixInterpretation": "Negotiated MF matrix",
+        "RangeInterpretation": "Negotiated MF nominal range"
+      },
+      "SourceOriginTicks": 333333
+    },
+    "encoderDiagnostics": {
+      "WorkerThreadControlSupported": true,
+      "WorkerThreadControlApplied": true,
+      "ActualWorkerThreads": 2,
+      "ActualBFrames": 0,
+      "SamplesReceived": 49,
+      "SamplesEncoded": 49,
+      "SamplesProcessed": 49,
+      "Transforms": [
+        {
+          "Index": 0,
+          "Category": "f79eac7d-e545-4387-bdee-d647d7bde42a",
+          "ClassId": "00000000-0000-0000-0000-000000000000",
+          "DisableFrameRateConversionApplied": false,
+          "ActualFrameRateConversionDisabled": null
+        }
+      ],
+      "LowLatencyControlSupported": true,
+      "LowLatencyControlApplied": true,
+      "PreviousLowLatency": false,
+      "ActualLowLatency": true
+    },
+    "nativeSourceValidation": "current/native-source-validation/",
+    "sourceMotionCorrelation": "current/media-validation/moving-stripe-identity-diagnostic.json",
+    "checks": {
+      "portableCore": 422,
+      "macSwift": 59,
+      "macSuites": 16
+    },
+    "nativePortableAudit": "current/native-source-validation/native-fixture-evidence-audit.json",
+    "nativePortableSourceSHA256": {
+      "native": "601fed93f02cde2d329047b52a26c2b5bcbe25b73465509ce838cbff9516f7b9",
+      "portable": "20d48862011083dc56317e5a35d85789765e4baf22186fb3fcded7b5e47ace1b"
+    }
+  },
+  "documentation": [
+    {
+      "file": "documentation/mac-results.png",
+      "document": "README.md",
+      "sourceCommit": "6c17c925e95a6abea541bddabec82dd05769cfcc",
+      "sourceDocumentSHA256": "0321ba72d1ffe1ee59b850346ca331d0dfe6509c232c836a6c8a4addcc7a3141",
+      "rendering": "GitHub Markdown API, gfm, jmpijll/slightshot context; served locally with readable CSS and actual repository native images; Chromium/Playwright screenshot at 1400 \u00d7 1000 CSS pixels."
+    },
+    {
+      "file": "documentation/windows-results.png",
+      "document": "README.md",
+      "sourceCommit": "e81e3147401764bfd451d82187d10ddcf1e345e3",
+      "sourceDocumentSHA256": "e36fc1c7c4c5a5146d1800b0b9e14266a89c9a35f5edcdfd139e5e759a297a96",
+      "rendering": "GitHub Markdown API, gfm, jmpijll/slightshot context; served locally with readable CSS and repository native images; Chromium/Playwright screenshot at 1400 \u00d7 1000 CSS pixels."
+    }
+  ],
+  "inventory": "SHA256SUMS contains hashes relative to this directory, excluding itself."
+}

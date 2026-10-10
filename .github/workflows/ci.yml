@@ -62,6 +62,8 @@ jobs:
         run: swift build -c release
 
       - name: Test recording export
+        env:
+          NSUnbufferedIO: 'YES'
         run: swift test
 
       - name: Assemble app bundle (ad-hoc signed)

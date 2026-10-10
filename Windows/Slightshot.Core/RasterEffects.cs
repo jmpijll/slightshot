@@ -68,6 +68,7 @@ public static class RasterEffects
 
     private static void BoxPass(byte[] source, byte[] target, int width, int height, int radius, bool horizontal)
     {
+        if (!horizontal) { VerticalBoxPass(source, target, width, height, radius); return; }
         int length = horizontal ? width : height, rows = horizontal ? height : width;
         int step = horizontal ? 4 : width * 4, rowStep = horizontal ? width * 4 : 4;
         int count = radius * 2 + 1;
@@ -83,5 +84,34 @@ public static class RasterEffects
                     - source[start + Math.Clamp(position - radius, 0, length - 1) * step];
             }
         }
+    }
+
+    private static void VerticalBoxPass(byte[] source, byte[] target, int width, int height, int radius)
+    {
+        // Keep running sums for a scanline and walk memory in row order. The
+        // previous column walk missed CPU caches on every 4K pixel/scanline.
+        // Integer rounding and clamped edges remain exactly the same.
+        int stride = width * 4, count = radius * 2 + 1;
+        int[] sums = ArrayPool<int>.Shared.Rent(stride);
+        try
+        {
+            for (int index = 0; index < stride; index++) sums[index] = source[index] * (radius + 1);
+            for (int row = 1; row <= radius; row++)
+            {
+                int offset = Math.Min(row, height - 1) * stride;
+                for (int index = 0; index < stride; index++) sums[index] += source[offset + index];
+            }
+            for (int row = 0; row < height; row++)
+            {
+                int offset = row * stride;
+                int add = Math.Min(row + radius + 1, height - 1) * stride, remove = Math.Max(row - radius, 0) * stride;
+                for (int index = 0; index < stride; index++)
+                {
+                    target[offset + index] = (byte)((sums[index] + count / 2) / count);
+                    sums[index] += source[add + index] - source[remove + index];
+                }
+            }
+        }
+        finally { ArrayPool<int>.Shared.Return(sums); }
     }
 }

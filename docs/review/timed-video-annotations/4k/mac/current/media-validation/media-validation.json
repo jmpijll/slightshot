@@ -1,0 +1,558 @@
+{
+  "sourceCommit": "3885ab05d1358839068d9ee9bb05d0c6c688853d",
+  "method": "ffprobe decoded presentation timestamps for every video frame; ffmpeg RGB PNG extraction by exact zero-based frame indices 6, 24, 42 (0.25, 1, 1.75 seconds). Qualities have a maximum cadence and preserve this slower 24 fps source.",
+  "tools": {
+    "ffprobe": "ffprobe version 8.1.2 Copyright (c) 2007-2026 the FFmpeg developers",
+    "ffmpeg": "ffmpeg version 8.1.2 Copyright (c) 2000-2026 the FFmpeg developers"
+  },
+  "videos": {
+    "source": {
+      "file": "docs/review/timed-video-annotations/4k/mac/current/fixture-source.mp4",
+      "sha256": "8f3798dfc34dd3fdfcba54f6277b90fbb884eb18eff8767b457f51a5ce0c5f5d",
+      "stream": {
+        "width": 3840,
+        "height": 2160,
+        "r_frame_rate": "24/1",
+        "avg_frame_rate": "24/1",
+        "time_base": "1/600",
+        "duration": "2.000000",
+        "nb_frames": "48",
+        "nb_read_frames": "48",
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0,
+          "multilayer": 0
+        },
+        "tags": {
+          "creation_time": "2026-10-10T17:45:00.000000Z",
+          "language": "und",
+          "handler_name": "Core Media Video"
+        }
+      },
+      "decodedFrameCount": 48,
+      "presentationTimesSeconds": [
+        0.0,
+        0.041667,
+        0.083333,
+        0.125,
+        0.166667,
+        0.208333,
+        0.25,
+        0.291667,
+        0.333333,
+        0.375,
+        0.416667,
+        0.458333,
+        0.5,
+        0.541667,
+        0.583333,
+        0.625,
+        0.666667,
+        0.708333,
+        0.75,
+        0.791667,
+        0.833333,
+        0.875,
+        0.916667,
+        0.958333,
+        1.0,
+        1.041667,
+        1.083333,
+        1.125,
+        1.166667,
+        1.208333,
+        1.25,
+        1.291667,
+        1.333333,
+        1.375,
+        1.416667,
+        1.458333,
+        1.5,
+        1.541667,
+        1.583333,
+        1.625,
+        1.666667,
+        1.708333,
+        1.75,
+        1.791667,
+        1.833333,
+        1.875,
+        1.916667,
+        1.958333
+      ],
+      "gapHistogramSeconds": {
+        "0.041667": 31,
+        "0.041666": 16
+      },
+      "maximumDeviationFromUniform24FPSSeconds": 6.666666666627075e-07,
+      "uniform24FPSWithinOneMicrosecond": true,
+      "extractedFrames": [
+        {
+          "frameIndex": 6,
+          "presentationTimeSeconds": 0.25,
+          "file": "source-01.png"
+        },
+        {
+          "frameIndex": 24,
+          "presentationTimeSeconds": 1.0,
+          "file": "source-02.png"
+        },
+        {
+          "frameIndex": 42,
+          "presentationTimeSeconds": 1.75,
+          "file": "source-03.png"
+        }
+      ]
+    },
+    "high": {
+      "file": "docs/review/timed-video-annotations/4k/mac/current/edited-4k-2.mp4",
+      "sha256": "c750287aacc554eb1162f273356b8be282e2681f7225c06879725e0b8dc2cc71",
+      "stream": {
+        "width": 3840,
+        "height": 2160,
+        "r_frame_rate": "24/1",
+        "avg_frame_rate": "24/1",
+        "time_base": "1/600",
+        "duration": "2.000000",
+        "nb_frames": "48",
+        "nb_read_frames": "48",
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0,
+          "multilayer": 0
+        },
+        "tags": {
+          "creation_time": "2026-10-10T18:21:18.000000Z",
+          "language": "und",
+          "handler_name": "Core Media Video"
+        }
+      },
+      "decodedFrameCount": 48,
+      "presentationTimesSeconds": [
+        0.0,
+        0.041667,
+        0.083333,
+        0.125,
+        0.166667,
+        0.208333,
+        0.25,
+        0.291667,
+        0.333333,
+        0.375,
+        0.416667,
+        0.458333,
+        0.5,
+        0.541667,
+        0.583333,
+        0.625,
+        0.666667,
+        0.708333,
+        0.75,
+        0.791667,
+        0.833333,
+        0.875,
+        0.916667,
+        0.958333,
+        1.0,
+        1.041667,
+        1.083333,
+        1.125,
+        1.166667,
+        1.208333,
+        1.25,
+        1.291667,
+        1.333333,
+        1.375,
+        1.416667,
+        1.458333,
+        1.5,
+        1.541667,
+        1.583333,
+        1.625,
+        1.666667,
+        1.708333,
+        1.75,
+        1.791667,
+        1.833333,
+        1.875,
+        1.916667,
+        1.958333
+      ],
+      "gapHistogramSeconds": {
+        "0.041667": 31,
+        "0.041666": 16
+      },
+      "maximumDeviationFromUniform24FPSSeconds": 6.666666666627075e-07,
+      "uniform24FPSWithinOneMicrosecond": true,
+      "extractedFrames": [
+        {
+          "frameIndex": 6,
+          "presentationTimeSeconds": 0.25,
+          "file": "high-01.png"
+        },
+        {
+          "frameIndex": 24,
+          "presentationTimeSeconds": 1.0,
+          "file": "high-02.png"
+        },
+        {
+          "frameIndex": 42,
+          "presentationTimeSeconds": 1.75,
+          "file": "high-03.png"
+        }
+      ]
+    },
+    "balanced": {
+      "file": "docs/review/timed-video-annotations/4k/mac/current/edited-4k-1.mp4",
+      "sha256": "933f3dd8baa89826d099abac9bc109769ac45e836972a5a6e618c813ce8acd2b",
+      "stream": {
+        "width": 1920,
+        "height": 1080,
+        "r_frame_rate": "24/1",
+        "avg_frame_rate": "24/1",
+        "time_base": "1/600",
+        "duration": "2.000000",
+        "nb_frames": "48",
+        "nb_read_frames": "48",
+        "disposition": {
+          "default": 1,
+          "dub": 0,
+          "original": 0,
+          "comment": 0,
+          "lyrics": 0,
+          "karaoke": 0,
+          "forced": 0,
+          "hearing_impaired": 0,
+          "visual_impaired": 0,
+          "clean_effects": 0,
+          "attached_pic": 0,
+          "timed_thumbnails": 0,
+          "non_diegetic": 0,
+          "captions": 0,
+          "descriptions": 0,
+          "metadata": 0,
+          "dependent": 0,
+          "still_image": 0,
+          "multilayer": 0
+        },
+        "tags": {
+          "creation_time": "2026-10-10T18:21:21.000000Z",
+          "language": "und",
+          "handler_name": "Core Media Video"
+        }
+      },
+      "decodedFrameCount": 48,
+      "presentationTimesSeconds": [
+        0.0,
+        0.041667,
+        0.083333,
+        0.125,
+        0.166667,
+        0.208333,
+        0.25,
+        0.291667,
+        0.333333,
+        0.375,
+        0.416667,
+        0.458333,
+        0.5,
+        0.541667,
+        0.583333,
+        0.625,
+        0.666667,
+        0.708333,
+        0.75,
+        0.791667,
+        0.833333,
+        0.875,
+        0.916667,
+        0.958333,
+        1.0,
+        1.041667,
+        1.083333,
+        1.125,
+        1.166667,
+        1.208333,
+        1.25,
+        1.291667,
+        1.333333,
+        1.375,
+        1.416667,
+        1.458333,
+        1.5,
+        1.541667,
+        1.583333,
+        1.625,
+        1.666667,
+        1.708333,
+        1.75,
+        1.791667,
+        1.833333,
+        1.875,
+        1.916667,
+        1.958333
+      ],
+      "gapHistogramSeconds": {
+        "0.041667": 31,
+        "0.041666": 16
+      },
+      "maximumDeviationFromUniform24FPSSeconds": 6.666666666627075e-07,
+      "uniform24FPSWithinOneMicrosecond": true,
+      "extractedFrames": [
+        {
+          "frameIndex": 6,
+          "presentationTimeSeconds": 0.25,
+          "file": "balanced-01.png"
+        },
+        {
+          "frameIndex": 24,
+          "presentationTimeSeconds": 1.0,
+          "file": "balanced-02.png"
+        },
+        {
+          "frameIndex": 42,
+          "presentationTimeSeconds": 1.75,
+          "file": "balanced-03.png"
+        }
+      ]
+    }
+  },
+  "timingPassed": true,
+  "limits": [
+    "This 2 second synthetic constant-rate recording does not establish arbitrary variable-rate input behavior.",
+    "Compressed video pixels include H.264 quantization and YUV-to-RGB conversion; privacy pixel validation is a separate comparison, not exact byte equality."
+  ],
+  "productionRendererSourceHashes": {
+    "Sources/Slightshot/Editor/Renderer.swift": "17c7b64579680e41565535a8001e7479e0b34a4931621a78774feaf9fa568c45",
+    "Sources/Slightshot/Editor/Annotation.swift": "e9c752479454a4e0288ad9a82993040c5cbb586a4306653d48e930eb5782e5ed",
+    "Sources/Slightshot/Editor/RasterEffect.swift": "8e1497c47f9331d4f17fa78cf16f55c755c23fdc84bd0745137ebf2ae5aa9fb9",
+    "Sources/Slightshot/Support/Geometry.swift": "995bf5deb2e1c634e1bf88557838ab8a3cd6eeded90c90fe5de938bbb87b6a2e"
+  },
+  "privacyValidation": {
+    "coordinateSpace": "Source pixels, top-left origin. Rectangles are from actual native gesture report.",
+    "rectangles": {
+      "blur": [
+        1000,
+        760,
+        2050,
+        885
+      ],
+      "pixelate": [
+        1000,
+        968,
+        2650,
+        1093
+      ]
+    },
+    "intervalSeconds": [
+      0.6,
+      1.4
+    ],
+    "creationCanvasFitScale": 0.24166666666666667,
+    "storedRasterScale": 4.137931034482759,
+    "fullSourceBlurRadiusPixels": 33.10344827586207,
+    "fullSourcePixelBlockSizePixels": 50,
+    "screenshotReference": "Actual production Renderer.flatten + RasterEffects compiled directly from source commit. Unmodified source at t=1 resized to 928\u00d7522 with CGContext high interpolation, then privacy rectangles in displayed canvas coordinates with default screenshot rasterScale=1.",
+    "sourcePixelReference": "Actual production Renderer.flatten on the decoded 3840\u00d72160 source frame at t=1, source-coordinate privacy rectangles and stored rasterScale=4.137931; no vector annotations overlap these privacy rectangles.",
+    "nativeResolutionMetrics": {
+      "high": {
+        "blur": {
+          "before": {
+            "meanAbsoluteRGBDifferenceFromSameSourceFrame": 5.65625018484671,
+            "sourceMeanAbsoluteLuminanceGradient": 3.238897992373648,
+            "exportMeanAbsoluteLuminanceGradient": 3.2635681431634485,
+            "gradientRatioExportToSource": 1.0076168347530208
+          },
+          "during": {
+            "meanAbsoluteRGBDifferenceFromSameSourceFrame": 25.914195635843107,
+            "sourceMeanAbsoluteLuminanceGradient": 3.2335000406690066,
+            "exportMeanAbsoluteLuminanceGradient": 0.15838356945073,
+            "gradientRatioExportToSource": 0.04898208364270212,
+            "meanAbsoluteRGBDifferenceFromSourcePixelRendererReference": 5.379358685429347
+          },
+          "after": {
+            "meanAbsoluteRGBDifferenceFromSameSourceFrame": 5.677547483422947,
+            "sourceMeanAbsoluteLuminanceGradient": 3.1419406648784367,
+            "exportMeanAbsoluteLuminanceGradient": 3.1717986564098686,
+            "gradientRatioExportToSource": 1.0095030411825383
+          }
+        },
+        "pixelate": {
+          "before": {
+            "meanAbsoluteRGBDifferenceFromSameSourceFrame": 5.529299031662792,
+            "sourceMeanAbsoluteLuminanceGradient": 2.6897679603518974,
+            "exportMeanAbsoluteLuminanceGradient": 2.6603021193282688,
+            "gradientRatioExportToSource": 0.9890452107921704
+          },
+          "during": {
+            "meanAbsoluteRGBDifferenceFromSameSourceFrame": 19.894953941285902,
+            "sourceMeanAbsoluteLuminanceGradient": 2.6602143893086794,
+            "exportMeanAbsoluteLuminanceGradient": 0.2725468195349303,
+            "gradientRatioExportToSource": 0.10245295290119762,
+            "meanAbsoluteRGBDifferenceFromSourcePixelRendererReference": 5.482982044400526
+          },
+          "after": {
+            "meanAbsoluteRGBDifferenceFromSameSourceFrame": 5.56330125505785,
+            "sourceMeanAbsoluteLuminanceGradient": 2.6389653411656777,
+            "exportMeanAbsoluteLuminanceGradient": 2.6131192367214027,
+            "gradientRatioExportToSource": 0.9902059704835463
+          }
+        }
+      },
+      "balanced": {
+        "blur": {
+          "before": {
+            "meanAbsoluteRGBDifferenceFromSameSourceFrame": 6.076462019724431,
+            "sourceMeanAbsoluteLuminanceGradient": 6.886693595565042,
+            "exportMeanAbsoluteLuminanceGradient": 6.589527466402693,
+            "gradientRatioExportToSource": 0.9568492303253159
+          },
+          "during": {
+            "meanAbsoluteRGBDifferenceFromSameSourceFrame": 25.431060009074194,
+            "sourceMeanAbsoluteLuminanceGradient": 6.900828743313757,
+            "exportMeanAbsoluteLuminanceGradient": 0.3051352634123218,
+            "gradientRatioExportToSource": 0.0442171911175116,
+            "meanAbsoluteRGBDifferenceFromSourcePixelRendererReference": 5.42514984358956
+          },
+          "after": {
+            "meanAbsoluteRGBDifferenceFromSameSourceFrame": 6.081811017981231,
+            "sourceMeanAbsoluteLuminanceGradient": 6.763392442776858,
+            "exportMeanAbsoluteLuminanceGradient": 6.388296940667905,
+            "gradientRatioExportToSource": 0.9445403316039207
+          }
+        },
+        "pixelate": {
+          "before": {
+            "meanAbsoluteRGBDifferenceFromSameSourceFrame": 6.033221512005682,
+            "sourceMeanAbsoluteLuminanceGradient": 5.623701807205947,
+            "exportMeanAbsoluteLuminanceGradient": 5.365328047326704,
+            "gradientRatioExportToSource": 0.954056283790123
+          },
+          "during": {
+            "meanAbsoluteRGBDifferenceFromSameSourceFrame": 19.19748553122686,
+            "sourceMeanAbsoluteLuminanceGradient": 5.5554099419405905,
+            "exportMeanAbsoluteLuminanceGradient": 0.5754717287733396,
+            "gradientRatioExportToSource": 0.10358762625757163,
+            "meanAbsoluteRGBDifferenceFromSourcePixelRendererReference": 5.464753615304411
+          },
+          "after": {
+            "meanAbsoluteRGBDifferenceFromSameSourceFrame": 6.053644015292322,
+            "sourceMeanAbsoluteLuminanceGradient": 5.592722075658755,
+            "exportMeanAbsoluteLuminanceGradient": 5.340708784986603,
+            "gradientRatioExportToSource": 0.9549390641510703
+          }
+        }
+      }
+    },
+    "displayed928x522Metrics": {
+      "high": {
+        "blur": {
+          "meanAbsoluteRGBDifferenceFromScreenshotStrengthReference": 5.465245597775718,
+          "exportGradientRatioToUnmodifiedSource": 0.05418779006897954,
+          "screenshotReferenceGradientRatioToUnmodifiedSource": 0.05248208971921907
+        },
+        "pixelate": {
+          "meanAbsoluteRGBDifferenceFromScreenshotStrengthReference": 7.6904204086945205,
+          "exportGradientRatioToUnmodifiedSource": 0.12854079042480987,
+          "screenshotReferenceGradientRatioToUnmodifiedSource": 0.12487325469082897
+        }
+      },
+      "balanced": {
+        "blur": {
+          "meanAbsoluteRGBDifferenceFromScreenshotStrengthReference": 5.460869117495624,
+          "exportGradientRatioToUnmodifiedSource": 0.054147034247697706,
+          "screenshotReferenceGradientRatioToUnmodifiedSource": 0.05248208971921907
+        },
+        "pixelate": {
+          "meanAbsoluteRGBDifferenceFromScreenshotStrengthReference": 7.696667968241572,
+          "exportGradientRatioToUnmodifiedSource": 0.132670447959811,
+          "screenshotReferenceGradientRatioToUnmodifiedSource": 0.12487325469082897
+        }
+      }
+    },
+    "checks": {
+      "high-blur-inactive-interval-unmodified-with-codec-tolerance": true,
+      "high-blur-active-shows-visible-pixel-change": true,
+      "high-blur-active-matches-source-renderer-reference": true,
+      "high-blur-active-reduces-fine-edges": true,
+      "high-blur-fit-matches-screenshot-strength": true,
+      "high-pixelate-inactive-interval-unmodified-with-codec-tolerance": true,
+      "high-pixelate-active-shows-visible-pixel-change": true,
+      "high-pixelate-active-matches-source-renderer-reference": true,
+      "high-pixelate-active-reduces-fine-edges": true,
+      "high-pixelate-fit-matches-screenshot-strength": true,
+      "balanced-blur-inactive-interval-unmodified-with-codec-tolerance": true,
+      "balanced-blur-active-shows-visible-pixel-change": true,
+      "balanced-blur-active-matches-source-renderer-reference": true,
+      "balanced-blur-active-reduces-fine-edges": true,
+      "balanced-blur-fit-matches-screenshot-strength": true,
+      "balanced-pixelate-inactive-interval-unmodified-with-codec-tolerance": true,
+      "balanced-pixelate-active-shows-visible-pixel-change": true,
+      "balanced-pixelate-active-matches-source-renderer-reference": true,
+      "balanced-pixelate-active-reduces-fine-edges": true,
+      "balanced-pixelate-fit-matches-screenshot-strength": true
+    },
+    "allChecksPassed": true,
+    "thresholdRationale": "Inactive and source-renderer comparisons allow <8 average RGB levels for H.264/YUV conversion and resampling. Active patches must change >5 RGB levels and reduce fine-edge mean gradient by at least 40%. Screenshot-size reference allows <15 levels because effect crop/block quantization occurs at different resolutions.",
+    "limits": [
+      "These are image change/strength checks, not a proof of anonymity or an OCR adversary test. Users must review their exported redactions.",
+      "Resizing before versus after raster effects and integer pixel-block rounding can shift block boundaries and edge pixels; screenshot strength is comparable, not byte-identical.",
+      "Before/during/after video frames validate visible interval behavior at sampled times; automated tests separately validate exact half-open boundaries and fresh source frames."
+    ]
+  },
+  "validationPassed": true,
+  "validationFileHashes": {
+    "source-fit.png": "3409e6a75ec26d8752928e4019a630c732bba488c1d873af5fb6da344def5bc8",
+    "source-01.png": "3d8dea723975a1a502c1f12f4a25e57c7d1c195b482d4aaa3e9a471ddf67142a",
+    "high-01.png": "b717f860d27332cc59e026ce9079009b31c510f70adf03c440e1fc657c149b1c",
+    "source-rendered-reference-fit.png": "a1f820a755ee0bb28772c4af6c574b0eb271ccacb693fe9101786f11438806c1",
+    "source-02.png": "1a880897a69a04ced18c80c76fa32281543bcf8246f43629f5c9eec1395dc9c8",
+    "high-02.png": "de1ff26c789cb898597d7f7d197f253425596f6124ab306aa7094710808bd660",
+    "high-03.png": "110f25d2180b7a3127dbe000081a77fa891d2c72473be2c6738324901fde9d35",
+    "source-03.png": "66949e7855df22c8ab9fd24caba50727ff5f4d462c8584f3aae43ca1c9b7b94b",
+    "source-rendered-reference.png": "c34bdff6abf1136a1f17abc5ebd5331309893cb9b79150f9f69e455e4fb4d489",
+    "balanced-01.png": "788b7d109a705dd6389c18e199c36f2e198ec684252aa0598d80e115c88c8b4e",
+    "balanced-02.png": "0dccc16e16be835fa8a0310387e5df7a423448615bad6434ec6df7456608b3f9",
+    "balanced-03.png": "cd96ce3b531a3682f84ecd927a75540a6c3cf83af5e8d568ef410c4a50960b7c",
+    "privacy-before-during-after.png": "0f7ff7adf3e3b9cb19220f4d3e970f07e41d2c835991a1aa9c09f7d66100213e",
+    "high-03-fit.png": "364ac47b255b4ed9132a39322e03f12a67cdb1baf0ef613deafdee196714bd7e",
+    "high-02-fit.png": "b3be452b3937448fb0a7a2ee5dc42bd7725a734d923736f6d555f080ba04b2bd",
+    "balanced-01-fit.png": "02db80982d0f3146c4fa30c93f5c1f3da6e59073e7603ad1a6237cec626a118f",
+    "balanced-03-fit.png": "bea64c6a853b45a7157203d1f8d8b0816ec6722ec7faf0f5953333e666c4768d",
+    "screenshot-strength-reference.png": "45a5bc5bb7d627dd9f35dc67fb92a6f2e84c3d7dfbb13399d7d6de5e14c4e015",
+    "balanced-02-fit.png": "83f2dc2c02dd20ae9d3df75d4b80787131716b749d1c6260c3cb2fee0a1e1a19",
+    "high-01-fit.png": "ae90f3fff14b68400350f10a75f457f31b229265589d3cebb1f48807abda4962"
+  }
+}

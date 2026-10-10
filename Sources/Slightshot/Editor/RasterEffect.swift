@@ -1,16 +1,39 @@
 import AppKit
 import CoreImage.CIFilterBuiltins
 
-nonisolated enum RasterEffect {
+nonisolated enum RasterEffect: Sendable {
     case blur, pixelate
 }
 
 /// Processes only the requested pixels. Reusing the Core Image context avoids
 /// rebuilding its GPU resources for every pointer update.
-enum RasterEffects {
+nonisolated enum RasterEffects {
     private static let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
     private static let imageContext = CIContext(options: [.workingColorSpace: colorSpace,
                                                          .cacheIntermediates: false])
+
+    /// Call on a worker before interaction, so Core Image's context and first
+    /// blur pipeline are prepared without making the initial pointer drag wait.
+    static func prewarmBlur(scale: CGFloat) {
+        guard scale.isFinite, scale > 0, Float(8 * scale).isFinite,
+              let context = CGContext(data: nil, width: 32, height: 32, bitsPerComponent: 8,
+                bytesPerRow: 32 * 4, space: colorSpace,
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
+              let data = context.data else { return }
+        let bytes = data.bindMemory(to: UInt8.self, capacity: 32 * 32 * 4)
+        for y in 0..<32 {
+            for x in 0..<32 {
+                let offset = (y * 32 + x) * 4
+                let shade: UInt8 = (x / 4 + y / 4).isMultiple(of: 2) ? 25 : 230
+                bytes[offset] = shade
+                bytes[offset + 1] = shade
+                bytes[offset + 2] = shade
+                bytes[offset + 3] = 255
+            }
+        }
+        guard let image = context.makeImage() else { return }
+        _ = render(.blur, image: image, pixels: CGRect(x: 8, y: 8, width: 16, height: 16), scale: scale)
+    }
 
     static func render(_ effect: RasterEffect, image: CGImage, pixels: CGRect, scale: CGFloat) -> CGImage? {
         switch effect {
