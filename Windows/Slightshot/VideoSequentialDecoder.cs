@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
+using Slightshot.Core;
 
 namespace Slightshot;
 
@@ -75,16 +76,22 @@ internal sealed class VideoSequentialDecoder : IDisposable
         private nint source;
         private readonly int width, height;
         private int defaultStride, decodedWidth, decodedHeight, cropX, cropY;
-        private byte[] current, next;
+        private byte[] current = [], next = [];
+        private ExactSizeBufferPool.BufferLease? currentLease, nextLease;
         private long nextTime;
         private bool hasCurrent, hasNext, ended;
         internal NativeReader(string path, int width, int height, bool metadataOnly, VideoExportMetrics? metrics)
         {
             this.width = width; this.height = height;
-            current = metadataOnly ? [] : new byte[checked(width * height * 4)]; next = new byte[current.Length];
             nint attributes = 0, mediaType = 0;
             try
             {
+                if (!metadataOnly)
+                {
+                    int byteCount = checked(width * height * 4);
+                    currentLease = VideoPixelBuffers.Shared.Rent(byteCount); current = currentLease.Pixels;
+                    nextLease = VideoPixelBuffers.Shared.Rent(byteCount); next = nextLease.Pixels;
+                }
                 Check(MFCreateAttributes(out attributes, 2));
                 // Advanced processing uses the optimized RGB32 converter;
                 // native measurements isolate decoder warmup from encoding.
@@ -278,7 +285,14 @@ internal sealed class VideoSequentialDecoder : IDisposable
         private static void SetGuid(nint attributes, Guid key, Guid value) => Check(((delegate* unmanaged[Stdcall]<nint, Guid*, Guid*, int>)Slot(attributes, 24))(attributes, &key, &value));
         internal static void Check(int result) => Marshal.ThrowExceptionForHR(result);
         private static void Release(nint instance) { if (instance != 0) Marshal.Release(instance); }
-        public void Dispose() { Release(source); source = 0; }
+        public void Dispose()
+        {
+            Release(source); source = 0;
+            // Called on the owned MTA after all queued requests finish. Neither
+            // decoder nor native buffer can still access returned pixel storage.
+            currentLease?.Dispose(); currentLease = null;
+            nextLease?.Dispose(); nextLease = null; current = next = [];
+        }
         [DllImport("mfplat.dll")] private static extern int MFCreateAttributes(out nint attributes, uint size);
         [DllImport("mfplat.dll")] private static extern int MFCreateMediaType(out nint mediaType);
         [DllImport("mfreadwrite.dll", CharSet = CharSet.Unicode)] private static extern int MFCreateSourceReaderFromURL(string path, nint attributes, out nint sourceReader);

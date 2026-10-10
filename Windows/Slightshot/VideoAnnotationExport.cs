@@ -27,10 +27,13 @@ internal static class VideoAnnotationExport
             TimeSpan duration = metadata.Duration;
             if (sourceWidth <= 0 || sourceHeight <= 0 || duration <= TimeSpan.Zero) throw new InvalidOperationException("This recording has no playable video frames.");
             metrics?.RecordMemory("metadataReady");
+            // Declared before worker leases, so disposal returns these mutable
+            // pixels only after encoder, renderer and decoder have drained.
+            using var pixelLease = VideoPixelBuffers.Shared.Rent(checked(sourceWidth * sourceHeight * 4));
             using var sequential = await VideoSequentialDecoder.OpenAsync(source, sourceWidth, sourceHeight, metrics);
             metrics?.RecordMemory("sequentialReaderReady");
             using var renderer = new VideoRenderWorker();
-            byte[] pixels = new byte[checked(sourceWidth * sourceHeight * 4)];
+            byte[] pixels = pixelLease.Pixels;
             // Source warmup finishes before encoder creation, so instrumentation
             // attributes their native memory separately and reuses the first frame.
             long measured = Stopwatch.GetTimestamp();
