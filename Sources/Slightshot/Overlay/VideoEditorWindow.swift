@@ -84,7 +84,12 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
         clock.widthAnchor.constraint(equalToConstant: 120).isActive = true
         let annotationControls = makeAnnotationControls()
         range.duration = duration
-        range.onBeginChange = { [weak self] in self?.pause(); self?.rememberChange() }
+        range.onBeginChange = { [weak self] in
+            guard let self else { return }
+            self.canvas.commitTextEntry()
+            self.pause()
+            self.rememberChange()
+        }
         range.onChange = { [weak self] start, end in self?.updateRange(start: start, end: end) }
         range.toolTip = "Drag the left and right handles to choose when the selected annotation appears."
         range.heightAnchor.constraint(equalToConstant: 36).isActive = true
@@ -164,7 +169,7 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
             formatter.minimumFractionDigits = 2
             field.formatter = formatter
             field.target = self
-            field.action = #selector(timeChanged)
+            field.action = #selector(timeChanged(_:))
             field.widthAnchor.constraint(equalToConstant: 70).isActive = true
         }
         fromField.setAccessibilityLabel("Annotation start in seconds")
@@ -287,9 +292,14 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
         select(annotations[index].id)
     }
 
-    @objc private func timeChanged() {
+    @objc private func timeChanged(_ sender: NSTextField) {
+        let enteredTime = sender.doubleValue
+        canvas.commitTextEntry()
         rememberChange()
-        updateRange(start: fromField.doubleValue, end: toField.doubleValue)
+        // Committing a caption selects it and refreshes both fields. Preserve
+        // the entered endpoint, while its other endpoint comes from that caption.
+        updateRange(start: sender === fromField ? enteredTime : fromField.doubleValue,
+                    end: sender === toField ? enteredTime : toField.doubleValue)
     }
 
     private func updateRange(start: TimeInterval, end: TimeInterval) {
@@ -302,12 +312,14 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
     }
 
     @objc private func wholeVideo() {
+        canvas.commitTextEntry()
         guard selectedID != nil else { return }
         rememberChange()
         updateRange(start: 0, end: duration)
     }
 
     @objc private func deleteAnnotation() {
+        canvas.commitTextEntry()
         guard selectedID != nil else { return }
         rememberChange()
         annotations.removeAll { $0.id == selectedID }

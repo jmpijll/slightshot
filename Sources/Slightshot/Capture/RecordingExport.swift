@@ -133,56 +133,122 @@ nonisolated enum RecordingExport {
         let writer = try AVAssetWriter(outputURL: staged, fileType: .mp4)
         writer.shouldOptimizeForNetworkUse = true
         let input = encodingInput(size: size, quality: quality)
+        let cancellation = ExportCancellation(reader: reader, writer: writer)
         do {
-            // Reader and writer providers each apply backpressure. A single
-            // source frame and a recycled encoder buffer are in flight at once.
-            let receiver = annotations.isEmpty ? writer.inputReceiver(for: input) : nil
-            let attributes = CVPixelBufferCreationAttributes(
-                pixelFormatType: .init(rawValue: kCVPixelFormatType_32BGRA),
-                size: .init(width: Int(size.width), height: Int(size.height)))
-            let pixels = annotations.isEmpty ? nil
-                : writer.inputPixelBufferReceiver(for: input, pixelBufferAttributes: attributes)
-            let processor = annotations.isEmpty ? nil
-                : try FrameProcessor(sourceSize: sourceSize, outputSize: size, annotations: annotations)
-            try reader.start()
-            try writer.start()
-            writer.startSession(atSourceTime: .zero)
-            var frameCount = 0
-            while let sample = try await provider.next() {
+            try await withTaskCancellationHandler {
                 try Task.checkCancellation()
-                if let receiver {
-                    try await receiver.append(sample)
-                } else if let pixels, let processor,
-                          let pixelSample = CMReadySampleBuffer<CVReadOnlyPixelBuffer>(sample),
-                          sample.presentationTimeStamp.isNumeric {
-                    guard let pool = pixels.pixelBufferPool else {
-                        throw RecordingError.failed("The video encoder buffer pool is unavailable.")
+                // Reader and writer providers each apply backpressure. A single
+                // source frame and a recycled encoder buffer are in flight at once.
+                let receiver = annotations.isEmpty ? writer.inputReceiver(for: input) : nil
+                let attributes = CVPixelBufferCreationAttributes(
+                    pixelFormatType: .init(rawValue: kCVPixelFormatType_32BGRA),
+                    size: .init(width: Int(size.width), height: Int(size.height)))
+                let pixels = annotations.isEmpty ? nil
+                    : writer.inputPixelBufferReceiver(for: input, pixelBufferAttributes: attributes)
+                let processor = annotations.isEmpty ? nil
+                    : try FrameProcessor(sourceSize: sourceSize, outputSize: size, annotations: annotations)
+                try cancellation.start()
+                var frameCount = 0
+                while let sample = try await provider.next() {
+                    try Task.checkCancellation()
+                    if let receiver {
+                        try await receiver.append(sample)
+                    } else if let pixels, let processor,
+                              let pixelSample = CMReadySampleBuffer<CVReadOnlyPixelBuffer>(sample),
+                              sample.presentationTimeStamp.isNumeric {
+                        guard let pool = pixels.pixelBufferPool else {
+                            throw RecordingError.failed("The video encoder buffer pool is unavailable.")
+                        }
+                        let buffer = try processor.render(pixelSample, pool: pool)
+                        try await pixels.append(CVReadOnlyPixelBuffer(buffer), with: sample.presentationTimeStamp)
+                    } else {
+                        continue // Stream boundary markers contain no image.
                     }
-                    let buffer = try processor.render(pixelSample, pool: pool)
-                    try await pixels.append(CVReadOnlyPixelBuffer(buffer), with: sample.presentationTimeStamp)
-                } else {
-                    continue // Stream boundary markers contain no image.
+                    frameCount += 1
                 }
-                frameCount += 1
-            }
-            guard frameCount > 0 else { throw RecordingError.empty }
-            receiver?.finish()
-            pixels?.finish()
-            writer.endSession(atSourceTime: duration)
-            await writer.finishWriting()
-            try Task.checkCancellation()
-            guard writer.status == .completed else {
-                throw writer.error ?? RecordingError.failed("Video encoding failed.")
-            }
-            if FileManager.default.fileExists(atPath: destination.path) {
-                _ = try FileManager.default.replaceItemAt(destination, withItemAt: staged)
-            } else {
-                try FileManager.default.moveItem(at: staged, to: destination)
+                guard frameCount > 0 else { throw RecordingError.empty }
+                try cancellation.beginFinishing(at: duration) {
+                    receiver?.finish()
+                    pixels?.finish()
+                }
+                try await finishAndCommit(writer: writer, staged: staged, destination: destination)
+            } onCancel: {
+                // Native backpressure can suspend next()/append(). Cancelling
+                // their owners wakes those waits instead of waiting for a frame.
+                // cancelWriting() blocks until native cleanup finishes, so keep
+                // that work off the caller of the editor's Cancel action.
+                DispatchQueue.global(qos: .userInitiated).async { cancellation.cancel() }
             }
         } catch {
-            reader.cancelReading()
-            if writer.status == .writing { writer.cancelWriting() }
+            cancellation.cancel()
+            // Native providers can report an interrupted media operation when
+            // cancellation wakes their wait. Keep the editor's Cancel behavior.
+            if Task.isCancelled { throw CancellationError() }
             throw error
+        }
+    }
+
+    private static func finishAndCommit(writer: AVAssetWriter, staged: URL, destination: URL) async throws {
+        await writer.finishWriting()
+        try Task.checkCancellation()
+        guard writer.status == .completed else {
+            throw writer.error ?? RecordingError.failed("Video encoding failed.")
+        }
+        if FileManager.default.fileExists(atPath: destination.path) {
+            _ = try FileManager.default.replaceItemAt(destination, withItemAt: staged)
+        } else {
+            try FileManager.default.moveItem(at: staged, to: destination)
+        }
+    }
+
+    /// The ownership is immutable; only AVFoundation's thread-safe cancellation
+    /// entry points run concurrently with the worker's normal sequential calls.
+    private enum ExportPhase { case configuring, writing, finishing, cancelled }
+
+    private final class ExportCancellation: @unchecked Sendable {
+        let reader: AVAssetReader
+        let writer: AVAssetWriter
+        private let lock = NSLock()
+        private var phase = ExportPhase.configuring
+
+        init(reader: AVAssetReader, writer: AVAssetWriter) {
+            self.reader = reader
+            self.writer = writer
+        }
+
+        func cancel() {
+            lock.withLock {
+                guard phase != .finishing, phase != .cancelled else { return }
+                phase = .cancelled
+                if reader.status == .reading { reader.cancelReading() }
+                if writer.status == .writing { writer.cancelWriting() }
+            }
+        }
+
+        func start() throws {
+            try lock.withLock {
+                try Task.checkCancellation()
+                guard phase != .cancelled else { throw CancellationError() }
+                try reader.start()
+                try writer.start()
+                writer.startSession(atSourceTime: .zero)
+                phase = .writing
+            }
+        }
+
+        func beginFinishing(at duration: CMTime, finishInputs: () -> Void) throws {
+            try lock.withLock {
+                try Task.checkCancellation()
+                guard phase == .writing else { throw CancellationError() }
+                guard writer.status == .writing else {
+                    throw writer.error ?? RecordingError.failed("Video encoding failed.")
+                }
+                // No native cancellation may race finish()/endSession(). Once
+                // this short flush starts, cancellation still prevents commit.
+                phase = .finishing
+                finishInputs()
+                writer.endSession(atSourceTime: duration)
+            }
         }
     }
 

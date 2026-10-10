@@ -120,24 +120,34 @@ struct VideoAnnotationTests {
         let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let source = directory.appendingPathComponent("source.mp4")
-        try await createVideo(at: source)
+        try await createVideo(at: source, frameCount: 300)
         let sourceBytes = try Data(contentsOf: source)
         let destination = directory.appendingPathComponent("existing.mp4")
         let original = Data("Original destination".utf8)
         try original.write(to: destination)
         let effect = VideoAnnotation(annotation: annotation(.blur(CGRect(x: 0, y: 0, width: 320, height: 180))),
-                                     start: 0, end: 1)
+                                     start: 0, end: 10)
         let task = Task {
             try await RecordingExport.save(source: source, to: destination, quality: .high, annotations: [effect])
         }
-        for _ in 0..<300 {
+        var didEncodeFrames = false
+        for _ in 0..<500 {
             let children = try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
             if children.contains(where: {
-                $0.lastPathComponent.hasPrefix(".slightshot-") &&
-                FileManager.default.fileExists(atPath: $0.appendingPathComponent("recording.mp4").path)
-            }) { break }
+                guard $0.lastPathComponent.hasPrefix(".slightshot-"),
+                      let files = try? FileManager.default.contentsOfDirectory(at: $0,
+                                                                                includingPropertiesForKeys: nil) else {
+                    return false
+                }
+                return files.contains { file in
+                    guard let attributes = try? FileManager.default.attributesOfItem(atPath: file.path),
+                          let size = attributes[.size] as? NSNumber else { return false }
+                    return size.intValue > 0
+                }
+            }) { didEncodeFrames = true; break }
             try await Task.sleep(for: .milliseconds(1))
         }
+        #expect(didEncodeFrames, "Cancel must interrupt an encoder that has already produced media data.")
         task.cancel()
         await #expect(throws: CancellationError.self) { try await task.value }
         #expect(try Data(contentsOf: destination) == original)
@@ -171,7 +181,7 @@ struct VideoAnnotationTests {
         return try #require(context.makeImage())
     }
 
-    private func createVideo(at url: URL) async throws {
+    private func createVideo(at url: URL, frameCount: Int = 30) async throws {
         let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
             AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: 320, AVVideoHeightKey: 180,
@@ -182,7 +192,7 @@ struct VideoAnnotationTests {
         let receiver = writer.inputPixelBufferReceiver(for: input, pixelBufferAttributes: attributes)
         try writer.start()
         writer.startSession(atSourceTime: .zero)
-        for index in 0..<30 {
+        for index in 0..<frameCount {
             let image = try fixture(frame: index)
             let buffer = try CVMutablePixelBuffer(attributes)
             try buffer.withUnsafeBuffer { raw in
@@ -197,7 +207,7 @@ struct VideoAnnotationTests {
             try await receiver.append(CVReadOnlyPixelBuffer(buffer), with: CMTime(value: Int64(index), timescale: 30))
         }
         receiver.finish()
-        writer.endSession(atSourceTime: CMTime(value: 1, timescale: 1))
+        writer.endSession(atSourceTime: CMTime(value: Int64(frameCount), timescale: 30))
         await writer.finishWriting()
         #expect(writer.status == .completed)
     }
