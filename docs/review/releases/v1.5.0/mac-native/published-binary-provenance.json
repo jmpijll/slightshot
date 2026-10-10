@@ -1,0 +1,47 @@
+{
+  "state": "Complete",
+  "beganAtUTC": "2026-10-10T22:50:17.305040+00:00",
+  "releaseVersion": "1.5.0",
+  "releaseBuild": "12",
+  "expectedReleaseSourceCommit": "7a729789290fa44df7e8e0e1db5fee623580be3f",
+  "sourceProvenance": "Parent verified the public DMG, release/tag source and asset trust before authorizing this run. The source label is provided to the built-in fixture; it is not an embedded executable commit claim.",
+  "publishedMountedApp": "/private/tmp/slightshot-validation-1.5.0/mounted-public-dmg/Slightshot.app",
+  "intactCopiedApp": "/var/folders/bn/cptgysv942vg9tvtn08_vhz00000gn/T/slightshot-release-1.5.0-review-933yd9b_/Slightshot.app",
+  "publishedExecutableSHA256": "8096283cc8b68fa718139d73f3f06db976166589e3fccca2a8efb93fff85bc5f",
+  "copiedExecutableSHA256": "8096283cc8b68fa718139d73f3f06db976166589e3fccca2a8efb93fff85bc5f",
+  "copiedAppCodesignDeepStrictPassed": true,
+  "bundleMetadataOrCodeModified": false,
+  "fixtureSource": "/Users/jamievanderpijll/slightshot/docs/review/timed-video-annotations/4k/mac/current/fixture-source.mp4",
+  "fixtureSourceSHA256": "8f3798dfc34dd3fdfcba54f6277b90fbb884eb18eff8767b457f51a5ce0c5f5d",
+  "fixtureInstrumentationSHA256": "81320c5963e1b29a1b74aab4922759979a9c285e4512497d624a0ff87c844077",
+  "fixtureHashMethod": "SHA-256 of the release-source bytes concatenated in the listed order",
+  "fixtureSourceFiles": [
+    "Sources/Slightshot/App/VideoEditorReview.swift",
+    "Sources/Slightshot/App/VideoEditor4KReview.swift"
+  ],
+  "interaction": "Built-in synthetic 4K review: actual AppKit toolbar/NSEvent/text/timing/seek actions, native screenshots, High/Balanced export and active cancellation.",
+  "originalUserPID": 43282,
+  "originalUserProcessBefore": "43282 /Users/jamievanderpijll/slightshot/build/Slightshot.app/Contents/MacOS/Slightshot",
+  "command": [
+    "/var/folders/bn/cptgysv942vg9tvtn08_vhz00000gn/T/slightshot-release-1.5.0-review-933yd9b_/Slightshot.app/Contents/MacOS/Slightshot",
+    "--video-editor-review",
+    "/tmp/slightshot-validation-1.5.0/mac-native",
+    "--video-editor-4k-evidence",
+    "--video-editor-review-source",
+    "/Users/jamievanderpijll/slightshot/docs/review/timed-video-annotations/4k/mac/current/fixture-source.mp4"
+  ],
+  "notes": "No build, framework replacement, resigning, user settings edit, inbox ownership or existing-process termination. Review entry precedes the normal ownership path.",
+  "reviewPID": 99547,
+  "completedAtUTC": "2026-10-10T22:50:30.529175+00:00",
+  "focusedCapture": "mac-4k-step.png",
+  "captureSHA256": {
+    "mac-4k-after.png": "f2579da1730e7ba738c4acdb45fe1b5eaa0fd43e40a55d99836e29d212cdd39c",
+    "mac-4k-before.png": "8ac65104840e7813d2cb86e9361c66f7b428340e86c116342ddadf1ccc478ffe",
+    "mac-4k-during.png": "dd644c85f2d782d1fcacabc4e395d161fbd0fa5c5819d6f8cd9d84b677d9ed48",
+    "mac-4k-step.png": "e80337960a0e9f38ab2fc9b3d689e4b85f76ef599713f5d63dc9dedc318990ea"
+  },
+  "originalUserProcessAfter": "43282 /Users/jamievanderpijll/slightshot/build/Slightshot.app/Contents/MacOS/Slightshot",
+  "originalUserProcessPreserved": true,
+  "onlyOwnReviewProcessTerminated": true,
+  "finishedAtUTC": "2026-10-10T22:50:30.602943+00:00"
+}

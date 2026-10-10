@@ -1,0 +1,272 @@
+{
+  "activeCancellation" : {
+    "action" : "Native RecordingExportPanel Cancel button click",
+    "annotationCountAfterCancel" : 5,
+    "cancellationWallSeconds" : 0.10184533335268497,
+    "cancelRequestedTimeSecondsSinceExportStart" : 0.50651550001930445,
+    "editsPreserved" : true,
+    "existingDestinationPreserved" : true,
+    "existingDestinationSHA256BeforeAndAfter" : "8f022c99e3128e15897014f15e069ee3a6eae6d4ad2a258f78023e2cd68c4fe5",
+    "outcome" : "CancellationError",
+    "quality" : "High quality",
+    "sourcePreserved" : true,
+    "sourceSHA256BeforeAndAfter" : "8f3798dfc34dd3fdfcba54f6277b90fbb884eb18eff8767b457f51a5ce0c5f5d",
+    "stagedOutputBytesObservedBeforeCancel" : 57732,
+    "stagedOutputFileObservedBeforeCancel" : "recording.mp4.sb-9f4fe077-dTMZE9",
+    "stagingCleanedUp" : true
+  },
+  "additionalStepCapture" : {
+    "annotationCount" : 6,
+    "file" : "mac-4k-step.png",
+    "interaction" : "Native Numbered steps toolbar click and mouse down\/up at source (2200,1680)",
+    "measurementScope" : "Added after the identical five-mark benchmark and cancellation workload completed.",
+    "platform" : "macOS",
+    "requestedTimeSeconds" : 1,
+    "source" : "ScreenCaptureKit screenshot of the running native VideoEditorWindow; synthetic source movie.",
+    "sourceCommit" : "7a729789290fa44df7e8e0e1db5fee623580be3f",
+    "stepAnnotation" : {
+      "alpha" : 1,
+      "endSeconds" : 1.3999999999999999,
+      "fontSizeSourcePixels" : 99.310344827586206,
+      "lineWidthSourcePixels" : 16.551724137931036,
+      "rasterScale" : 1,
+      "shape" : "step(number: 1, center: (2200.0, 1680.0))",
+      "startSeconds" : 0.59999999999999998,
+      "stepScale" : 4.1379310344827589
+    },
+    "stepDirtyBoundsWidthInCanvasPoints" : 36.000000000000007,
+    "verifiedPlayheadSeconds" : 1
+  },
+  "additionalWarmBlurGesture" : {
+    "benchmarkAnnotationsRestored" : true,
+    "measurementScope" : "Same source frame, source rectangle and event sequence as the first gesture. Native undo restores all five benchmark marks before the separate stamp capture.",
+    "nativeGestureAndDrawMilliseconds" : 16.956166713498533,
+    "nativeMouseEvents" : 3,
+    "nativePhaseMilliseconds" : {
+      "displayIfNeeded" : 3.9175000274553895,
+      "mouseDown" : 0.55662501836195588,
+      "mouseDraggedTotal" : 2.5674999924376607,
+      "mouseUp" : 8.915041689760983,
+      "setRange" : 0.9849166963249445
+    },
+    "sampleKind" : "Repeated identical blur gesture after exports; current process rendering is warm.",
+    "tool" : "Blur"
+  },
+  "annotationCount" : 5,
+  "annotationRangeSeconds" : [
+    0.59999999999999998,
+    1.3999999999999999
+  ],
+  "annotations" : [
+    {
+      "alpha" : 1,
+      "endSeconds" : 1.3999999999999999,
+      "fontSizeSourcePixels" : 99.310344827586206,
+      "lineWidthSourcePixels" : 16.551724137931036,
+      "rasterScale" : 4.1379310344827589,
+      "shape" : "blur((999.9999999999999, 759.9999999999999, 1050.0000000000005, 125.00000000000011))",
+      "startSeconds" : 0.59999999999999998,
+      "stepScale" : 1
+    },
+    {
+      "alpha" : 1,
+      "endSeconds" : 1.3999999999999999,
+      "fontSizeSourcePixels" : 99.310344827586206,
+      "lineWidthSourcePixels" : 16.551724137931036,
+      "rasterScale" : 4.1379310344827589,
+      "shape" : "pixelate((999.9999999999999, 968.0, 1650.0, 125.0))",
+      "startSeconds" : 0.59999999999999998,
+      "stepScale" : 1
+    },
+    {
+      "alpha" : 1,
+      "endSeconds" : 1.3999999999999999,
+      "fontSizeSourcePixels" : 99.310344827586206,
+      "lineWidthSourcePixels" : 16.551724137931036,
+      "rasterScale" : 1,
+      "shape" : "arrow(from: (3200.0, 900.0), to: (2820.0, 1150.0))",
+      "startSeconds" : 0.59999999999999998,
+      "stepScale" : 1
+    },
+    {
+      "alpha" : 1,
+      "endSeconds" : 1.3999999999999999,
+      "fontSizeSourcePixels" : 99.310344827586206,
+      "lineWidthSourcePixels" : 16.551724137931036,
+      "rasterScale" : 1,
+      "shape" : "stroke(points: [(2460.0, 1490.0), (2530.0, 1540.0), (2630.0, 1480.0)])",
+      "startSeconds" : 0.59999999999999998,
+      "stepScale" : 1
+    },
+    {
+      "alpha" : 1,
+      "endSeconds" : 1.3999999999999999,
+      "fontSizeSourcePixels" : 99.310344827586206,
+      "lineWidthSourcePixels" : 4,
+      "rasterScale" : 1,
+      "shape" : "text(\"Inspect detail\", origin: (2756.551724137931, 662.4137931034484))",
+      "startSeconds" : 0.59999999999999998,
+      "stepScale" : 1
+    }
+  ],
+  "canvasFitScale" : 0.24166666666666667,
+  "captures" : [
+    {
+      "file" : "mac-4k-before.png",
+      "platform" : "macOS",
+      "requestedTimeSeconds" : 0.25,
+      "seekAndNativeDrawMilliseconds" : 82.49741664621979,
+      "source" : "ScreenCaptureKit screenshot of the running native VideoEditorWindow; synthetic source movie.",
+      "sourceCommit" : "7a729789290fa44df7e8e0e1db5fee623580be3f",
+      "verifiedPlayheadSeconds" : 0.25
+    },
+    {
+      "file" : "mac-4k-during.png",
+      "platform" : "macOS",
+      "requestedTimeSeconds" : 1,
+      "seekAndNativeDrawMilliseconds" : 76.930541661567986,
+      "source" : "ScreenCaptureKit screenshot of the running native VideoEditorWindow; synthetic source movie.",
+      "sourceCommit" : "7a729789290fa44df7e8e0e1db5fee623580be3f",
+      "verifiedPlayheadSeconds" : 1
+    },
+    {
+      "file" : "mac-4k-after.png",
+      "platform" : "macOS",
+      "requestedTimeSeconds" : 1.75,
+      "seekAndNativeDrawMilliseconds" : 94.404708303045481,
+      "source" : "ScreenCaptureKit screenshot of the running native VideoEditorWindow; synthetic source movie.",
+      "sourceCommit" : "7a729789290fa44df7e8e0e1db5fee623580be3f",
+      "verifiedPlayheadSeconds" : 1.75
+    }
+  ],
+  "decodedPreviewHeight" : 540,
+  "decodedPreviewWidth" : 960,
+  "exports" : [
+    {
+      "actualNominalFPS" : 24,
+      "configuredMaximumFPS" : 30,
+      "effectiveExpectedFPS" : 24,
+      "expectedOutputFrames" : 48,
+      "file" : "edited-4k-2.mp4",
+      "fileBytes" : 356084,
+      "frames" : [
+        "export-4k-2-before.png",
+        "export-4k-2-during.png",
+        "export-4k-2-after.png"
+      ],
+      "mainActorHeartbeatMaximumGapMilliseconds" : 54.29962498601526,
+      "mainActorHeartbeatSamples" : 45,
+      "observedResidentBytesPeak" : 333824000,
+      "outputDimensionsVerified" : true,
+      "outputHeight" : 2160,
+      "outputWidth" : 3840,
+      "quality" : "High quality",
+      "residentBytesBeforeExport" : 140607488,
+      "residentSamples" : 45,
+      "secondsPerSourceSecond" : 1.1314483541646041,
+      "wallSeconds" : 2.2628967083292082
+    },
+    {
+      "actualNominalFPS" : 24,
+      "configuredMaximumFPS" : 24,
+      "effectiveExpectedFPS" : 24,
+      "expectedOutputFrames" : 48,
+      "file" : "edited-4k-1.mp4",
+      "fileBytes" : 229046,
+      "frames" : [
+        "export-4k-1-before.png",
+        "export-4k-1-during.png",
+        "export-4k-1-after.png"
+      ],
+      "mainActorHeartbeatMaximumGapMilliseconds" : 54.390458331909031,
+      "mainActorHeartbeatSamples" : 54,
+      "observedResidentBytesPeak" : 358514688,
+      "outputDimensionsVerified" : true,
+      "outputHeight" : 1080,
+      "outputWidth" : 1920,
+      "quality" : "Balanced",
+      "residentBytesBeforeExport" : 221151232,
+      "residentSamples" : 54,
+      "secondsPerSourceSecond" : 1.3622311458457261,
+      "wallSeconds" : 2.7244622916914523
+    }
+  ],
+  "fixture" : "Synthetic 3840×2160, 2 second H.264 movie at 24 fps; 48 source frames. Native HiDPI UI text: 27\/25 point fonts rendered at 2× (54\/50 source pixels). Name\/email and a code marker move inside fixed privacy rectangles. No personal data.",
+  "fixtureInstrumentationSHA256" : "81320c5963e1b29a1b74aab4922759979a9c285e4512497d624a0ff87c844077",
+  "heartbeatMetric" : "A MainActor task samples every 50 ms during export. The maximum observed gap includes annotation preparation and the final sample; it measures main-actor scheduling responsiveness, not a separate interactive input latency guarantee.",
+  "measurementScope" : "Native seek includes frame generation, annotation composition and synchronous canvas display. Gesture time includes native mouse events and canvas display. Export wall time includes annotation preparation, decoding, effects, resizing and encoding; evidence extraction is excluded. Qualities run serially with no source regeneration.",
+  "memoryMetric" : "Mach task resident_size sampled every 50 ms during export; an observed peak, not an operating-system lifetime high-water mark.",
+  "nativeGestureAndDrawSamples" : [
+    {
+      "nativeGestureAndDrawMilliseconds" : 1145.3617083607242,
+      "nativeMouseEvents" : 3,
+      "nativePhaseMilliseconds" : {
+        "displayIfNeeded" : 5.6816249853000045,
+        "mouseDown" : 7.5161666609346867,
+        "mouseDraggedTotal" : 1124.604458338581,
+        "mouseUp" : 6.8709166953340173,
+        "setRange" : 0.56862505152821541
+      },
+      "tool" : "Blur"
+    },
+    {
+      "nativeGestureAndDrawMilliseconds" : 12.699500017333776,
+      "nativeMouseEvents" : 3,
+      "nativePhaseMilliseconds" : {
+        "displayIfNeeded" : 4.0391666698269546,
+        "mouseDown" : 2.7831666520796716,
+        "mouseDraggedTotal" : 2.6341666234657168,
+        "mouseUp" : 2.6610416825860739,
+        "setRange" : 0.56816666619852185
+      },
+      "tool" : "Pixelate"
+    },
+    {
+      "nativeGestureAndDrawMilliseconds" : 6.33133330848068,
+      "nativeMouseEvents" : 3,
+      "nativePhaseMilliseconds" : {
+        "displayIfNeeded" : 3.3660000190138817,
+        "mouseDown" : 0.65325002651661634,
+        "mouseDraggedTotal" : 0.5740000051446259,
+        "mouseUp" : 1.2061249581165612,
+        "setRange" : 0.51991664804518223
+      },
+      "tool" : "Arrow"
+    },
+    {
+      "nativeGestureAndDrawMilliseconds" : 11.637708346825093,
+      "nativeMouseEvents" : 4,
+      "nativePhaseMilliseconds" : {
+        "displayIfNeeded" : 4.2996666743420064,
+        "mouseDown" : 4.1170416516251862,
+        "mouseDraggedTotal" : 1.0870416881516576,
+        "mouseUp" : 1.4744583168067038,
+        "setRange" : 0.6346249720081687
+      },
+      "tool" : "Pen"
+    },
+    {
+      "nativeGestureAndDrawMilliseconds" : 90.902333322446793,
+      "nativeMouseEvents" : 2,
+      "nativePhaseMilliseconds" : {
+        "displayIfNeeded" : 3.8798333262093365,
+        "mouseDown" : 31.768458371516317,
+        "mouseDraggedTotal" : 0.00041670864447951317,
+        "mouseUp" : 0.0028749927878379822,
+        "setRange" : 0.82312495214864612,
+        "textEntryAndCommit" : 54.401958303060383
+      },
+      "tool" : "Text"
+    }
+  ],
+  "platform" : "macOS",
+  "previewEffectRadiusPixels" : 8.2758620689655178,
+  "residentBytesAfterSourceLoading" : 103481344,
+  "sourceCommit" : "7a729789290fa44df7e8e0e1db5fee623580be3f",
+  "sourceFile" : "fixture-source.mp4",
+  "sourceFrames" : 48,
+  "sourceHeight" : 2160,
+  "sourceSHA256" : "8f3798dfc34dd3fdfcba54f6277b90fbb884eb18eff8767b457f51a5ce0c5f5d",
+  "sourceWidth" : 3840,
+  "state" : "Complete"
+}

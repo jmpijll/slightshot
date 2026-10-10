@@ -1,0 +1,14 @@
+{
+  "reviewed_pr_head": "47dbbb83f235f29774b6163697e65113bb9a5752",
+  "merge_commit": "27037b558228f217fdae6c442064e3b10e83afc2",
+  "release_source_commit": "7a729789290fa44df7e8e0e1db5fee623580be3f",
+  "tag": "v1.5.0",
+  "merge_tree_matches_reviewed_head": true,
+  "release_changed_files": [
+    "Windows/Slightshot/Slightshot.csproj"
+  ],
+  "release_change": "Windows default marketing version changed from 1.4.2 to 1.5.0; production editor code is unchanged from the approved PR.",
+  "main_ci_run_url": "https://github.com/jmpijll/slightshot/actions/runs/38091461479",
+  "main_windows_run_url": "https://github.com/jmpijll/slightshot/actions/runs/38091461502",
+  "both_main_workflows_conclusion": "success"
+}

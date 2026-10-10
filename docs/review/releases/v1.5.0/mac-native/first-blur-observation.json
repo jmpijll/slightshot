@@ -1,0 +1,71 @@
+{
+  "releaseVersion": "1.5.0",
+  "releaseBuild": "12",
+  "releaseSourceCommit": "7a729789290fa44df7e8e0e1db5fee623580be3f",
+  "firstGesture": {
+    "nativeGestureAndDrawMilliseconds": 1145.3617083607242,
+    "nativeMouseEvents": 3,
+    "nativePhaseMilliseconds": {
+      "displayIfNeeded": 5.6816249853000045,
+      "mouseDown": 7.516166660934687,
+      "mouseDraggedTotal": 1124.604458338581,
+      "mouseUp": 6.870916695334017,
+      "setRange": 0.5686250515282154
+    },
+    "tool": "Blur"
+  },
+  "warmRepeatGesture": {
+    "benchmarkAnnotationsRestored": true,
+    "measurementScope": "Same source frame, source rectangle and event sequence as the first gesture. Native undo restores all five benchmark marks before the separate stamp capture.",
+    "nativeGestureAndDrawMilliseconds": 16.956166713498533,
+    "nativeMouseEvents": 3,
+    "nativePhaseMilliseconds": {
+      "displayIfNeeded": 3.9175000274553895,
+      "mouseDown": 0.5566250183619559,
+      "mouseDraggedTotal": 2.5674999924376607,
+      "mouseUp": 8.915041689760983,
+      "setRange": 0.9849166963249445
+    },
+    "sampleKind": "Repeated identical blur gesture after exports; current process rendering is warm.",
+    "tool": "Blur"
+  },
+  "actualDecodedPreviewPixels": [
+    960,
+    540
+  ],
+  "actualPreviewBlurRadiusPixels": 8.275862068965518,
+  "firstBlurSourceRegionPixels": [
+    1000,
+    760,
+    1050,
+    125
+  ],
+  "actualPreviewRegionApproximatelyPixels": [
+    262.5,
+    31.25
+  ],
+  "fixtureDelayAfterPreviewSeekMilliseconds": 150,
+  "warmupCompletionWasMeasured": false,
+  "thisRunStackSampleAvailable": false,
+  "exactReleaseSourceFiles": [
+    {
+      "file": "Sources/Slightshot/Overlay/VideoCanvasView.swift",
+      "releaseSourceSHA256": "346a5f3c9e318e01530555c12be56a190562d25819b9f5a43e6f2732e75f9966",
+      "workingSourceBytesMatchRelease": true
+    },
+    {
+      "file": "Sources/Slightshot/Editor/RasterEffect.swift",
+      "releaseSourceSHA256": "8e1497c47f9331d4f17fa78cf16f55c755c23fdc84bd0745137ebf2ae5aa9fb9",
+      "workingSourceBytesMatchRelease": true
+    },
+    {
+      "file": "Sources/Slightshot/App/VideoEditor4KReview.swift",
+      "releaseSourceSHA256": "bd0d96d4209f1ff228d95d9605f0265d7d4f8c812d72500bc68a6ca1bee0a8e8",
+      "workingSourceBytesMatchRelease": true
+    }
+  ],
+  "demonstrated": "The first actual nonzero Blur drag used the synchronous production composition path and took about 1.145s, predominantly in mouseDragged; the repeated identical gesture later took 16.956ms. Native preview timing, exports, active cancellation and captures completed.",
+  "inference": "The asynchronous utility-priority prewarm can still be unfinished when the fixture draws after its fixed 150ms sleep; the main-thread render can wait on shared context/pipeline initialization or trigger additional cold Core Image/Metal work. Prior sampled startup code supports this class of cost. This run contains neither prewarm start/end telemetry nor a stack sample, so queue delay, context contention and shader-cache/size-variant work cannot be separated.",
+  "realImpact": "An early first blur drag can visibly pause the editor for roughly 1 second in this observed published-binary run. This does not establish a repeated per-frame 4K cost, an export hang, or a guaranteed worst-case latency.",
+  "scope": "No additional fixture launches, cache purges, code changes or other-process termination. Read-only release-source inspection plus original recorded phase timings."
+}

@@ -1,0 +1,153 @@
+{
+  "githubRunId": 38092022509,
+  "githubRunUrl": "https://github.com/jmpijll/slightshot/actions/runs/38092022509",
+  "tag": "v1.5.0",
+  "sourceCommit": "7a729789290fa44df7e8e0e1db5fee623580be3f",
+  "windowsJobConclusion": "success",
+  "platform": "Windows x64 native WPF / Media Foundation; ARM64 cross-build and archive checks",
+  "releaseScope": "Tag-run validation artifacts. Public-download inspection is separate.",
+  "reports": {
+    "4k/video-editor-4k-validation.json": {
+      "sha256": "f52b01e8a59458544efdcd82af0dcdcdef94b3c4cea31de5164b0d8181206e74",
+      "embeddedSourceCommit": "7a729789290fa44df7e8e0e1db5fee623580be3f",
+      "checksCount": 0
+    },
+    "video-editor/video-editor-validation.json": {
+      "sha256": "901db5ae49d4d590064924f7d11f117c1809f084b95452e4bfca9ea55965ff42",
+      "embeddedSourceCommit": "7a729789290fa44df7e8e0e1db5fee623580be3f",
+      "checksCount": 19
+    },
+    "video-editor/portable/video-editor-validation.json": {
+      "sha256": "c6f8712d100ed4cdb61a513c6aa07dac9c4d3245bd94b17161a03258c0244639",
+      "embeddedSourceCommit": "7a729789290fa44df7e8e0e1db5fee623580be3f",
+      "checksCount": 19
+    },
+    "installer/installer-validation.json": {
+      "sha256": "eff16d9a3c58707e4a052a6d637217070e0d84304b4e376c0fe6be5b3716d6a4",
+      "embeddedSourceCommit": null,
+      "checksCount": 51
+    },
+    "video-editor/video-editor-source-color-validation.json": {
+      "sha256": "1111b6760051902b8d8630b7da340ccadd61359b5fa0637e2d0bbaa7e08039a8",
+      "embeddedSourceCommit": "7a729789290fa44df7e8e0e1db5fee623580be3f"
+    },
+    "video-editor/video-editor-random-seek-validation.json": {
+      "sha256": "459857cb16210ccb553677c3910d02fe0096bf58d044bbe35d05a5de7356e7e3",
+      "embeddedSourceCommit": "7a729789290fa44df7e8e0e1db5fee623580be3f"
+    },
+    "video-editor/video-editor-timing-precision-validation.json": {
+      "sha256": "3d731c92c1c6c0ecd0dba2d313b459251d458176da30254002accfb295a011de",
+      "embeddedSourceCommit": "7a729789290fa44df7e8e0e1db5fee623580be3f"
+    },
+    "video-editor/video-editor-timing-undo-validation.json": {
+      "sha256": "a0c5e0d522ace828f8220ca376c71ea977a671e99361e7d34c050d3658345a37",
+      "embeddedSourceCommit": "7a729789290fa44df7e8e0e1db5fee623580be3f"
+    },
+    "video-editor/portable/video-editor-source-color-validation.json": {
+      "sha256": "37d25ae840979be94cc20aaa4597615a2934727a03f32d7e1aacb2de16dd97f7",
+      "embeddedSourceCommit": "7a729789290fa44df7e8e0e1db5fee623580be3f"
+    },
+    "video-editor/portable/video-editor-random-seek-validation.json": {
+      "sha256": "60233a9bd419e10cd6f7f8cb37f22016ba47aca67e92a76deb2703b3b029a7ca",
+      "embeddedSourceCommit": "7a729789290fa44df7e8e0e1db5fee623580be3f"
+    },
+    "video-editor/portable/video-editor-timing-precision-validation.json": {
+      "sha256": "34d15f55cfdb3f487889059f73afdcd8fa7578fb9ce0b76f4c60bd621dc131c6",
+      "embeddedSourceCommit": "7a729789290fa44df7e8e0e1db5fee623580be3f"
+    },
+    "video-editor/portable/video-editor-timing-undo-validation.json": {
+      "sha256": "6e3cd9cf2210dee9ddc972108885d3feef7dcf8b439060611780ed4f4a990d5d",
+      "embeddedSourceCommit": "7a729789290fa44df7e8e0e1db5fee623580be3f"
+    }
+  },
+  "video-editor": {
+    "precisionPassed": true,
+    "undoPassed": true,
+    "seekCounters": [
+      14,
+      97,
+      14,
+      55,
+      120,
+      14
+    ],
+    "sourceColorPassed": true,
+    "maximumActualMeanRgbChannelDelta": 1,
+    "colorChecksCount": 96
+  },
+  "video-editor/portable": {
+    "precisionPassed": true,
+    "undoPassed": true,
+    "seekCounters": [
+      14,
+      99,
+      14,
+      57,
+      121,
+      14
+    ],
+    "sourceColorPassed": true,
+    "maximumActualMeanRgbChannelDelta": 1,
+    "colorChecksCount": 96
+  },
+  "fourK": {
+    "durationSeconds": 1.6417,
+    "frames": 50,
+    "exportSeconds": 3.3613686,
+    "exportFramesPerSecond": 14.874893518074751,
+    "maxDispatcherGapMilliseconds": 85.0287,
+    "peakPrivateMiB": 1314.04296875,
+    "cancellationSeconds": 0.1008107,
+    "memoryPhases": [
+      {
+        "name": "recordingFixture",
+        "peakPrivateMiB": 1196.46484375,
+        "peakWorkingMiB": 809.54296875
+      },
+      {
+        "name": "editorPreview",
+        "peakPrivateMiB": 510.51953125,
+        "peakWorkingMiB": 612.30078125
+      },
+      {
+        "name": "primaryExport",
+        "peakPrivateMiB": 1192.328125,
+        "peakWorkingMiB": 1026.05078125
+      },
+      {
+        "name": "outputValidation",
+        "peakPrivateMiB": 907.2734375,
+        "peakWorkingMiB": 1015.64453125
+      },
+      {
+        "name": "activeCancel",
+        "peakPrivateMiB": 1314.04296875,
+        "peakWorkingMiB": 1150.35546875
+      },
+      {
+        "name": "balancedExport",
+        "peakPrivateMiB": 825.59375,
+        "peakWorkingMiB": 818.23046875
+      },
+      {
+        "name": "balancedValidation",
+        "peakPrivateMiB": 791.84375,
+        "peakWorkingMiB": 900.80859375
+      },
+      {
+        "name": "stepFixture",
+        "peakPrivateMiB": 1291.15625,
+        "peakWorkingMiB": 1129.87109375
+      }
+    ],
+    "acceptanceFailures": []
+  },
+  "x64InstallerSha256FromNativeLifecycle": "e1e2b7258b60f7f1600ac759430c1060638aa1be93d70f99be263a2bf9c1c087",
+  "focusedNativeWindowEvidence": {
+    "path": "windows-editor-native-during.png",
+    "sourceArtifact": "windows-native-video-editor-evidence",
+    "originalPath": "video-editor/video-editor-during.png",
+    "sha256": "9b11e29e4f520fcc2e13b8eabbc3958e52aacddf2308a1731c89f78c8b0a4b92",
+    "inputs": "Moving synthetic source with automated native pointer-drawn arrow and labelled annotation fixture inputs; captured actual editor HWND."
+  }
+}

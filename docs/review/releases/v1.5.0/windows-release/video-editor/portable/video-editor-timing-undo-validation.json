@@ -1,0 +1,21 @@
+{
+  "sourceCommit": "7a729789290fa44df7e8e0e1db5fee623580be3f",
+  "sourceDurationTicks": 43150333,
+  "beforeExactFields": {
+    "beginTicks": 0,
+    "endTicks": 43150333
+  },
+  "afterStartField": {
+    "beginTicks": 10000000,
+    "endTicks": 43150333
+  },
+  "afterEndField": {
+    "beginTicks": 10000000,
+    "endTicks": 30000000
+  },
+  "afterUndo": {
+    "beginTicks": 10000000,
+    "endTicks": 43150333
+  },
+  "passed": true
+}

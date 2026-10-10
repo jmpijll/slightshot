@@ -1,0 +1,13 @@
+# Published Mac 1.5.0 first-Blur observation
+
+This is the first recorded gesture of the downloaded signed 1.5.0/build12 app, source `7a729789290fa44df7e8e0e1db5fee623580be3f`. It took **1145.36ms**, with **1124.60ms** inside the synchronous native `mouseDragged` phase. The identical later warm gesture took **16.96ms**. No operating-system shader cache was reset and no additional review instance was launched for this diagnosis.
+
+The source is 4K, but the actual decoded preview is 960×540. The Blur region is approximately 263×32 preview pixels at radius 8.27586; this is not a 3840×2160 live Gaussian operation.
+
+`VideoCanvasView.showFrame` sets `hasPreparedBlur=true` when it **schedules** a detached utility task. It does not retain a completion signal or await the task. `RasterEffects.prewarmBlur` renders a 16×16 Gaussian output from a 32×32 seed through the shared context with the same effective scale. The fixture awaits the first preview seek and sleeps 150ms, then sends its first mouse gesture. That is a fixed delay, not proof that prewarming has finished. The real drag calls `refresh`→`Renderer.flatten`→`RasterEffects.render`→`CIContext.createCGImage` synchronously on the main thread.
+
+An unfinished prewarm can therefore overlap an early real drag; shared-context initialization and/or additional Core Image/Metal pipeline work may still block that drag. Previous isolated startup sampling in `docs/review/timed-video-annotations/mac/blur-startup-profile.txt` showed context/device registration, Metal library/pipeline/compiler-cache work and MPS preheat. That old sample is supporting context, **not a stack sample of this published run**. This run has no prewarm start/finish telemetry or captured stack, so it cannot prove the precise cause or assign the entire 1.145s to an OS shader cache. The launch log contains a nonspecific sandbox-extension warning; it does not measure Core Image warmup or establish a causal explanation.
+
+The prior 16ms figure describes its separately labelled measured capture; it is not a guaranteed first-use latency. In this shipped-binary observation an early first Blur drag visibly occupied the main thread for roughly one second, while the later identical gesture was 17ms. This is a one-run startup observation, not evidence of sustained 1.1s raster cost or an export failure. Full native captures, High/Balanced exports and active cancellation completed.
+
+The source files inspected match the exact release commit bytes. See `first-blur-observation.json` for phase values and source hashes, `4k-performance.json` for the complete native run, and `published-binary-provenance.json` for untouched signed-binary provenance.
