@@ -1,0 +1,43 @@
+{
+  "source_commit": "1f9985530fe90fd75459996144b36bfcd244ea43",
+  "renderer": "GitHub Markdown API, GFM; actual committed source excerpts displayed in a local browser",
+  "source_files": {
+    "docs/RELEASING.md": "752caf3fc65ffbf50508ac2ea33e5a175d7351ea0c3dcc91bd296c19a437752e",
+    "docs/windows.md": "dfe4fe8f7ff2c345c212494bc7d718a84dbc2ea97ef946a7c9e917652adf302d",
+    "docs/review/releases/v1.5.0/README.md": "7ea2a0f61f304bdff886d60ccb26696d5d3c9650a945bf8a9bde23e63f0cb41a",
+    "docs/review/releases/v1.5.0-validation.json": "4ecacb8eb6b5dacd9f88ecf004478f41a1082a4ec86bf2795d056874292b8315",
+    "Casks/slightshot.rb": "34a00caa2fac005cf5c08dc4da38705c1865b337f47d7a4f58d4d4bc1956a3c3"
+  },
+  "rendered_files": {
+    "release-status.html": "6f8c19c19a0dcce7a590a0544478c7e1053a037553cf2ee346275a9cc0f0e443",
+    "windows-downloads.html": "6de9e5086a6e6f383f0416e339e92a092764d33ab129131f492aefc95c76c0f4",
+    "published-validation.html": "e492f4334be4caf16321acc3b912265432261ac6d1a64ef132e6c58fe8a6d607"
+  },
+  "captured_at_utc": "2026-10-10T22:58:22.883646+00:00",
+  "browser_session": "slightshot-1-5-release-docs",
+  "capture_method": "Playwright CLI; local HTTP; full-page native browser screenshots at CSS pixel scale",
+  "viewport": {
+    "width": 1100,
+    "height": 1100
+  },
+  "captures": {
+    "release-status.png": {
+      "sha256": "75667cd96c460a15513ec944e9245031566aedffcf2f239ce6736b3e949b086a",
+      "width": 1100,
+      "height": 1100,
+      "rendered_document": "release-status.html"
+    },
+    "windows-downloads.png": {
+      "sha256": "483631dee8b26f3b92b2733836e24bfcaf722839421e674060089a4023d053cb",
+      "width": 1100,
+      "height": 1100,
+      "rendered_document": "windows-downloads.html"
+    },
+    "published-validation.png": {
+      "sha256": "9427037de0056ea446797b1dba7a773d3c9f392f03d48b46eab7a08e291ee365",
+      "width": 1100,
+      "height": 1141,
+      "rendered_document": "published-validation.html"
+    }
+  }
+}
