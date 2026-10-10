@@ -1,10 +1,5 @@
 using System.IO;
 using System.Diagnostics;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Media.Core;
-using Windows.Media.MediaProperties;
-using Windows.Media.Transcoding;
 using Windows.Storage;
 using Slightshot.Core;
 
@@ -34,95 +29,45 @@ internal static class VideoAnnotationExport
             using var sequential = await VideoSequentialDecoder.OpenAsync(source, sourceWidth, sourceHeight);
             metrics?.RecordMemory("sequentialReaderReady");
             using var renderer = new VideoRenderWorker();
-            using var frames = new RecordingFrameBuffers(checked(sourceWidth * sourceHeight * 4));
-            // Initialize the source decoder before starting the encoder graph.
-            // The retained first frame/lookahead is reused by the first sample,
-            // and native memory snapshots can distinguish these two pipelines.
-            long warmupStarted = Stopwatch.GetTimestamp();
-            using (var first = await frames.RentAsync(cancellation)) await sequential.GetFrameAsync(TimeSpan.Zero, first.Pixels, cancellation);
-            metrics?.AddDecode(Stopwatch.GetElapsedTime(warmupStarted).TotalMilliseconds);
+            byte[] pixels = new byte[checked(sourceWidth * sourceHeight * 4)];
+            // Source warmup finishes before encoder creation, so instrumentation
+            // attributes their native memory separately and reuses the first frame.
+            long measured = Stopwatch.GetTimestamp();
+            await sequential.GetFrameAsync(TimeSpan.Zero, pixels, cancellation);
+            metrics?.AddDecode(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
             metrics?.RecordMemory("decoderWarmupComplete");
-            using var samples = new SemaphoreSlim(1, 1);
-            using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
-            int active = 0; bool accepting = true;
-            object lifetime = new();
-            TaskCompletionSource drained = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            Exception? sampleError = null;
-            long nextFrame = 0;
             int rate = quality.FramesPerSecond();
-            var properties = RecordingExport.FrameProperties(sourceWidth, sourceHeight, rate);
-            var media = new MediaStreamSource(new VideoStreamDescriptor(properties)) { Duration = duration, CanSeek = false, BufferTime = TimeSpan.Zero };
-            void Starting(MediaStreamSource _, MediaStreamSourceStartingEventArgs args) => args.Request.SetActualStartPosition(TimeSpan.Zero);
-            async void SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
+            long nextFrame = 0;
+            metrics?.RecordMemory("beforeWriterPrepare");
+            using (var writer = await VideoSinkWriter.OpenAsync(staging, sourceWidth, sourceHeight, quality))
             {
-                var deferral = args.Request.GetDeferral();
-                bool admitted = false, entered = false;
-                RecordingFrame? frame = null;
-                MediaStreamSample? sample = null;
-                TypedEventHandler<MediaStreamSample, object>? processed = null;
-                try
+                metrics?.RecordMemory("writerPrepared");
+                for (;;)
                 {
-                    lock (lifetime) { if (!accepting) return; active++; admitted = true; }
-                    await samples.WaitAsync(stop.Token); entered = true;
+                    cancellation.ThrowIfCancellationRequested();
                     var position = TimeSpan.FromTicks(nextFrame * TimeSpan.TicksPerSecond / rate);
-                    if (position >= duration) return;
-                    long measured = Stopwatch.GetTimestamp();
-                    frame = await frames.RentAsync(stop.Token);
-                    metrics?.AddBufferWait(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
+                    if (position >= duration) break;
                     measured = Stopwatch.GetTimestamp();
-                    await sequential.GetFrameAsync(position, frame.Pixels, stop.Token);
+                    await sequential.GetFrameAsync(position, pixels, cancellation);
                     metrics?.AddDecode(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
                     if (nextFrame == 0) metrics?.RecordMemory("firstFrameDecoded");
                     measured = Stopwatch.GetTimestamp();
-                    await renderer.ComposeAsync(frame.Pixels, sourceWidth, sourceHeight, position, annotations, stop.Token);
+                    await renderer.ComposeAsync(pixels, sourceWidth, sourceHeight, position, annotations, cancellation);
                     metrics?.AddRender(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
-                    stop.Token.ThrowIfCancellationRequested();
-                    sample = MediaStreamSample.CreateFromBuffer(frame.Pixels.AsBuffer(), position);
-                    sample.Duration = TimeSpan.FromTicks(Math.Min(TimeSpan.TicksPerSecond / rate, duration.Ticks - position.Ticks));
-                    sample.KeyFrame = true;
-                    var submitted = frame;
-                    processed = (completed, _) => { completed.Processed -= processed; submitted.Dispose(); };
-                    sample.Processed += processed;
-                    args.Request.Sample = sample; frame = null; nextFrame++; metrics?.AddSubmittedFrame();
+                    var sampleDuration = TimeSpan.FromTicks(Math.Min(TimeSpan.TicksPerSecond / rate, duration.Ticks - position.Ticks));
+                    measured = Stopwatch.GetTimestamp();
+                    await writer.WriteAsync(pixels, position, sampleDuration, cancellation, metrics);
+                    metrics?.AddWriter(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
+                    nextFrame++; metrics?.AddSubmittedFrame();
                     if (nextFrame is 1 or 15 or 30) metrics?.RecordMemory("submittedFrame" + nextFrame);
+                    progress?.Report(Math.Min(100, (position + sampleDuration).TotalSeconds / duration.TotalSeconds * 100));
                 }
-                catch (OperationCanceledException) { }
-                catch (Exception error) { sampleError = error; sender.NotifyError(MediaStreamSourceErrorStatus.Other); }
-                finally
-                {
-                    if (frame != null)
-                    {
-                        if (sample != null && processed != null) sample.Processed -= processed;
-                        frame.Dispose();
-                    }
-                    if (entered) samples.Release();
-                    try { deferral.Complete(); }
-                    finally { if (admitted) lock (lifetime) { if (--active == 0 && !accepting) drained.TrySetResult(); } }
-                }
-            }
-            media.Starting += Starting; media.SampleRequested += SampleRequested;
-            try
-            {
-                var folder = await StorageFolder.GetFolderFromPathAsync(Path.GetDirectoryName(staging)!).AsTask(cancellation);
-                var file = await folder.CreateFileAsync(Path.GetFileName(staging), CreationCollisionOption.FailIfExists).AsTask(cancellation);
-                using var output = await file.OpenAsync(FileAccessMode.ReadWrite).AsTask(cancellation);
-                var transcoder = new MediaTranscoder { HardwareAccelerationEnabled = true, AlwaysReencode = true };
-                metrics?.RecordMemory("beforeTranscoderPrepare");
-                var prepared = await transcoder.PrepareMediaStreamSourceTranscodeAsync(media, output, RecordingExport.Profile(quality, width, height)).AsTask(cancellation);
-                metrics?.RecordMemory("transcoderPrepared");
-                if (!prepared.CanTranscode) throw new InvalidOperationException($"Windows could not export the edited recording ({prepared.FailureReason}).");
-                await prepared.TranscodeAsync().AsTask(cancellation, progress);
-                metrics?.RecordMemory("transcodeCompleted");
-                if (sampleError != null) throw new InvalidOperationException("A video frame could not be rendered.", sampleError);
                 if (nextFrame == 0) throw new InvalidOperationException("No edited frames were exported.");
+                await writer.FinishAsync(cancellation);
+                metrics?.RecordMemory("writerFinalized");
             }
-            finally
-            {
-                lock (lifetime) { accepting = false; if (active == 0) drained.TrySetResult(); }
-                stop.Cancel(); media.Starting -= Starting; media.SampleRequested -= SampleRequested;
-                await drained.Task;
-                metrics?.RecordMemory("sampleCallbacksDrained");
-            }
+            // The native writer and its file handle are closed before publishing.
+            metrics?.RecordMemory("writerReleased");
             cancellation.ThrowIfCancellationRequested();
             if (File.Exists(destination)) File.Replace(staging, destination, null);
             else File.Move(staging, destination);
@@ -148,9 +93,15 @@ internal sealed class VideoExportMetrics
     internal double DecodeMilliseconds { get; private set; }
     internal double RenderMilliseconds { get; private set; }
     internal double BufferWaitMilliseconds { get; private set; }
+    internal double ResizeMilliseconds { get; private set; }
+    internal double WriterMilliseconds { get; private set; }
+    internal uint MaximumWriterQueuedBytes { get; private set; }
     internal void AddDecode(double elapsed) => DecodeMilliseconds += elapsed;
     internal void AddRender(double elapsed) => RenderMilliseconds += elapsed;
     internal void AddBufferWait(double elapsed) => BufferWaitMilliseconds += elapsed;
+    internal void AddResize(double elapsed) => ResizeMilliseconds += elapsed;
+    internal void AddWriter(double elapsed) => WriterMilliseconds += elapsed;
+    internal void AddWriterQueue(uint bytes) => MaximumWriterQueuedBytes = Math.Max(MaximumWriterQueuedBytes, bytes);
     internal void AddSubmittedFrame() => Interlocked.Increment(ref frames);
 }
 

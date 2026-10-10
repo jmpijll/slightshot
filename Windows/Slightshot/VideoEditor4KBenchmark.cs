@@ -22,7 +22,7 @@ internal static class VideoEditor4KBenchmark
         const int width = 3840, height = 2160;
         var process = Process.GetCurrentProcess();
         long peakPrivate = 0, peakWorking = 0;
-        string[] phaseNames = ["recordingFixture", "editorPreview", "primaryExport", "outputValidation", "activeCancel", "stepFixture"];
+        string[] phaseNames = ["recordingFixture", "editorPreview", "primaryExport", "outputValidation", "activeCancel", "balancedExport", "balancedValidation", "stepFixture"];
         var phasePrivate = new long[phaseNames.Length]; var phaseWorking = new long[phaseNames.Length]; int phase = 0;
         using var monitoring = new CancellationTokenSource();
         Task monitor = Task.Run(async () =>
@@ -91,6 +91,7 @@ internal static class VideoEditor4KBenchmark
         double cancelRequestedWallSinceStart = 0; int actualFramesBeforeCancel = 0;
         string retainedSourceSha256 = "", retainedDestinationSha256 = "";
         var sourceStripe = new List<double>(); var outputStripe = new List<double>();
+        BalancedEvidence? balanced = null;
         try
         {
             Volatile.Write(ref phase, 1);
@@ -156,6 +157,9 @@ internal static class VideoEditor4KBenchmark
                 }
             }
             Require(outputStripe[1] - outputStripe[0] > 3 && outputStripe[2] - outputStripe[1] > 3, "4K MP4 source frames advance at all three timestamps");
+            // This verification decoder is no longer needed by cancellation
+            // or the separate Balanced/Step exports. Do not retain its graph.
+            decoded.Dispose();
             Volatile.Write(ref phase, 4);
             string preserved = Path.Combine(directory, "preserved.mp4"); byte[] existing = [11, 22, 33, 44]; File.WriteAllBytes(preserved, existing);
             string sourceDigest = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(session.SourcePath)));
@@ -175,9 +179,14 @@ internal static class VideoEditor4KBenchmark
             retainedDestinationSha256 = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(preserved)));
             Require(retainedSourceSha256 == sourceDigest, "active 4K cancellation preserves source bytes exactly");
             Require(!Directory.EnumerateFiles(directory, ".slightshot-*").Any(), "4K cancellation removes staging"); File.Delete(preserved);
+            // Keep the primary High/cancel workload unchanged. This separate
+            // export exercises real 4K-to-1080p resizing with the same marks.
+            Volatile.Write(ref phase, 5);
+            balanced = await VerifyBalancedAsync(directory, session.SourcePath, source, width, height, viewScale, annotations,
+                () => Volatile.Write(ref phase, 6));
             // Separate from the unchanged three-tool performance workload:
             // operate the actual Step tool and verify its real MP4 diameter.
-            Volatile.Write(ref phase, 5);
+            Volatile.Write(ref phase, 7);
             await editor.SeekAsync(TimeSpan.FromSeconds(.7));
             VideoEditorSmokeTest.ClickTooltip(editor, "Numbered steps");
             await VideoEditorSmokeTest.DragAsync(editor.Surface, new(3300, 400), new(3300, 400));
@@ -214,9 +223,10 @@ internal static class VideoEditor4KBenchmark
         {
             platform = "Windows native WPF / Media Foundation", baseline,
             sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
-            fixture = "3840×2160 synthetic moving recording, high-frequency checker and invented readable ACCT1234 / KEY5678 text, native pointer-drawn blur/pixelate plus fixture caption, 0.35–1.1s interval, actual High 30fps MP4. Separate native Step-button/click fixture and actual MP4 diameter check after the three-tool benchmark. Native editor HWND screenshots; no personal source data.",
+            fixture = "3840×2160 synthetic moving recording, high-frequency checker and invented readable ACCT1234 / KEY5678 text, native pointer-drawn blur/pixelate plus fixture caption, 0.35–1.1s interval, actual High 30fps MP4. Separate Balanced 1920×1080 export with decoded before/during/after source, composition and screenshot-strength checks after High/cancel; its throughput and UI heartbeat are reported separately. Separate native Step-button/click fixture and actual MP4 diameter check after the three-tool benchmark. Native editor HWND screenshots; no personal source data.",
             durationSeconds = source.Duration.TotalSeconds, exportSeconds, frames = metrics.Frames, exportFramesPerSecond = metrics.Frames / exportSeconds,
             metrics.DecodeMilliseconds, metrics.RenderMilliseconds, metrics.BufferWaitMilliseconds,
+            metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.MaximumWriterQueuedBytes,
             exportMemorySnapshots = metrics.MemorySnapshots, cancelMemorySnapshots = cancelMetrics.MemorySnapshots, stepMemorySnapshots = stepMetrics.MemorySnapshots,
             seekMilliseconds = seeks, maxDispatcherGapMilliseconds = maxDispatcherGap, peakPrivateMiB = peakPrivate / 1048576.0, peakWorkingMiB = peakWorking / 1048576.0,
             memoryPhases = phaseNames.Select((name, index) => new { name, peakPrivateMiB = phasePrivate[index] / 1048576.0, peakWorkingMiB = phaseWorking[index] / 1048576.0 }).ToArray(),
@@ -226,10 +236,137 @@ internal static class VideoEditor4KBenchmark
             blurScreenshotReferenceMeanDelta = blurReferenceDelta, pixelScreenshotReferenceMeanDelta = pixelReferenceDelta,
             stepDiameterPoints, renderedStepFillPoints,
             cancelRequestedWallSinceStart, actualFramesBeforeCancel, retainedSourceSha256, retainedDestinationSha256,
+            balancedResize = balanced,
             acceptanceFailures = acceptance
         }, new JsonSerializerOptions { WriteIndented = true }));
         Require(baseline || acceptance.Count == 0, string.Join("; ", acceptance));
     }
+    private static async Task<BalancedEvidence> VerifyBalancedAsync(string directory, string sourcePath, VideoFrameSource source,
+        int sourceWidth, int sourceHeight, double viewScale, IReadOnlyList<TimedAnnotation> annotations, Action validating)
+    {
+        var quality = RecordingQuality.Balanced;
+        var expected = quality.Dimensions(sourceWidth, sourceHeight);
+        Require(expected.Width == 1920 && expected.Height == 1080, "Balanced fixture exercises the 4K-to-1920×1080 quality profile");
+        string output = Path.Combine(directory, "video-editor-4k-balanced.mp4");
+        var metrics = new VideoExportMetrics();
+        double maxDispatcherGap = 0;
+        long lastBeat = Stopwatch.GetTimestamp();
+        var heartbeat = new DispatcherTimer(DispatcherPriority.Input) { Interval = TimeSpan.FromMilliseconds(16) };
+        heartbeat.Tick += (_, _) =>
+        {
+            long now = Stopwatch.GetTimestamp();
+            maxDispatcherGap = Math.Max(maxDispatcherGap, Stopwatch.GetElapsedTime(lastBeat, now).TotalMilliseconds);
+            lastBeat = now;
+        };
+        var watch = Stopwatch.StartNew();
+        heartbeat.Start();
+        try
+        {
+            await VideoAnnotationExport.SaveAsync(sourcePath, output, quality, sourceWidth, sourceHeight, annotations,
+                CancellationToken.None, metrics: metrics);
+        }
+        finally
+        {
+            // Include the final export continuation in this optional metric,
+            // even if it completes before the next dispatcher timer tick.
+            maxDispatcherGap = Math.Max(maxDispatcherGap, Stopwatch.GetElapsedTime(lastBeat).TotalMilliseconds);
+            heartbeat.Stop();
+        }
+        double exportSeconds = watch.Elapsed.TotalSeconds;
+        validating();
+        using var decoded = await VideoFrameSource.OpenAsync(output);
+        Require(decoded.Width == expected.Width && decoded.Height == expected.Height, "actual Balanced MP4 is 1920×1080");
+        long expectedFrames = (source.Duration.Ticks * quality.FramesPerSecond() + TimeSpan.TicksPerSecond - 1) / TimeSpan.TicksPerSecond;
+        double outputScale = (double)decoded.Width / sourceWidth;
+        int fitWidth = Math.Max(1, (int)Math.Round(sourceWidth * viewScale));
+        double fitScale = (double)fitWidth / sourceWidth;
+        var checks = new List<BalancedFrameEvidence>();
+        double blurReferenceDelta = 0, pixelReferenceDelta = 0;
+        foreach (double seconds in new[] { 0.15, 0.7, 1.25 })
+        {
+            string name = seconds < .35 ? "before" : seconds < 1.1 ? "during" : "after";
+            var position = TimeSpan.FromSeconds(seconds);
+            var original = await source.GetFrameAsync(position);
+            var composed = VideoAnnotationRenderer.Render(original, position, annotations);
+            var resizedSource = Fit(original, decoded.Width);
+            var resizedComposition = Fit(composed, decoded.Width);
+            var frame = await decoded.GetFrameAsync(position);
+            VideoEditorSmokeTest.Save(frame, Path.Combine(directory, "video-editor-4k-balanced-" + name + ".png"));
+            double sourceStripe = VideoEditorSmokeTest.MeanBlue(resizedSource, ScaledRegion(180, 12, 3300, 40, outputScale));
+            double outputStripe = VideoEditorSmokeTest.MeanBlue(frame, ScaledRegion(180, 12, 3300, 40, outputScale));
+            double blur = VideoEditorSmokeTest.Delta(resizedSource, frame, ScaledRegion(240, 1180, 450, 530, outputScale));
+            double pixel = VideoEditorSmokeTest.Delta(resizedSource, frame, ScaledRegion(1030, 1180, 450, 530, outputScale));
+            double caption = VideoEditorSmokeTest.Delta(resizedSource, frame, ScaledRegion(1830, 550, 1500, 200, outputScale));
+            double composition = VideoEditorSmokeTest.Delta(resizedComposition, frame, ScaledRegion(120, 1000, 1680, 960, outputScale));
+            double captionComposition = VideoEditorSmokeTest.Delta(resizedComposition, frame, ScaledRegion(1830, 550, 1500, 200, outputScale));
+            checks.Add(new(seconds, name, sourceStripe, outputStripe, blur, pixel, caption, composition, captionComposition));
+            if (name == "during")
+            {
+                var fitOriginal = Fit(original, fitWidth);
+                var fitVideo = Fit(frame, fitWidth);
+                var referenceMarks = annotations.Where(mark => mark.Annotation.IsRasterEffect).Select(mark => mark.Annotation with
+                {
+                    Points = mark.Annotation.Points.Select(point => new PointD(point.X * fitScale, point.Y * fitScale)).ToArray(), RasterScale = 1
+                }).ToArray();
+                var referenceSource = new EditorImageSource(fitOriginal, 1);
+                var screenshot = AnnotationRenderer.Flatten(referenceSource, referenceSource.Bounds, referenceMarks);
+                blurReferenceDelta = VideoEditorSmokeTest.Delta(screenshot, fitVideo, ScaledRegion(240, 1180, 450, 530, fitScale));
+                pixelReferenceDelta = VideoEditorSmokeTest.Delta(screenshot, fitVideo, ScaledRegion(1030, 1180, 450, 530, fitScale));
+                VideoEditorSmokeTest.Save(resizedComposition, Path.Combine(directory, "video-editor-4k-balanced-composition-reference.png"));
+                VideoEditorSmokeTest.Save(screenshot, Path.Combine(directory, "video-editor-4k-balanced-screenshot-strength-reference.png"));
+                VideoEditorSmokeTest.Save(fitVideo, Path.Combine(directory, "video-editor-4k-balanced-fit-view-effects.png"));
+            }
+        }
+        var failures = new List<string>();
+        void Check(bool condition, string message) { if (!condition) failures.Add(message); }
+        Check(Math.Abs((decoded.Duration - source.Duration).TotalMilliseconds) <= 1000.0 / quality.FramesPerSecond() + 5,
+            "Balanced resizing preserves the source duration within one output frame");
+        Check(metrics.Frames == expectedFrames, "Balanced submits every expected 24fps output frame");
+        foreach (var point in checks)
+        {
+            string name = point.IntervalState;
+            Check(Math.Abs(point.SourceTopStripeBlueMean - point.OutputTopStripeBlueMean) < 20,
+                "Balanced MP4 moving top stripe matches its source timestamp and vertical orientation " + name);
+            Check(name == "during" ? point.BlurMeanDeltaFromSource > 35 && point.PixelationMeanDeltaFromSource > 35 :
+                point.BlurMeanDeltaFromSource < 25 && point.PixelationMeanDeltaFromSource < 25,
+                "Balanced MP4 blur and pixelation appear only during their interval " + name);
+            Check(name == "during" ? point.CaptionMeanDeltaFromSource > 10 : point.CaptionMeanDeltaFromSource < 25,
+                "Balanced MP4 timed caption retains its source position after resizing " + name);
+            Check(point.ResizedCompositionMeanDelta < 30 && point.CaptionCompositionMeanDelta < 30,
+                "Balanced resized source-coordinate composition agrees with actual MP4 pixels within H.264 tolerance " + name);
+        }
+        Check(blurReferenceDelta <= 18 && pixelReferenceDelta <= 18,
+            "actual Balanced MP4 retains screenshot-equivalent fit-view blur/pixelation strength after downscaling");
+        Check(checks[1].OutputTopStripeBlueMean - checks[0].OutputTopStripeBlueMean > 3 &&
+            checks[2].OutputTopStripeBlueMean - checks[1].OutputTopStripeBlueMean > 3,
+            "Balanced MP4 frames advance at all three source timestamps");
+        var result = new BalancedEvidence("Balanced", Path.GetFileName(output), sourceWidth, sourceHeight, decoded.Width, decoded.Height,
+            quality.FramesPerSecond(), decoded.Duration.TotalSeconds, expectedFrames, metrics.Frames, exportSeconds,
+            metrics.Frames / exportSeconds, maxDispatcherGap, metrics.DecodeMilliseconds, metrics.RenderMilliseconds,
+            metrics.BufferWaitMilliseconds, metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.MaximumWriterQueuedBytes,
+            metrics.MemorySnapshots, checks, blurReferenceDelta, pixelReferenceDelta, failures);
+        File.WriteAllText(Path.Combine(directory, "video-editor-4k-balanced-validation.json"), JsonSerializer.Serialize(new
+        {
+            platform = "Windows native WPF / Media Foundation",
+            sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
+            fixture = "Separate actual Balanced export of the same synthetic 4K recording and three timed annotations after primary High/cancel. PNGs decode the real MP4. Composition reference renders source-coordinate annotations before resizing; screenshot reference uses the existing screenshot renderer at editor fit width. Throughput and export UI heartbeat are optional measured results; primary High acceptance thresholds remain unchanged.",
+            validation = result
+        }, new JsonSerializerOptions { WriteIndented = true }));
+        Require(failures.Count == 0, string.Join("; ", failures));
+        return result;
+    }
+    private sealed record BalancedEvidence(string Quality, string OutputFile, int SourceWidth, int SourceHeight,
+        int ActualOutputWidth, int ActualOutputHeight, int ConfiguredFramesPerSecond, double ActualDurationSeconds,
+        long ExpectedSubmittedFrames, int SubmittedFrames, double ExportSeconds, double ExportFramesPerSecond,
+        double MaxDispatcherGapMilliseconds, double DecodeMilliseconds, double RenderMilliseconds, double BufferWaitMilliseconds,
+        double WriterMilliseconds, double ResizeMilliseconds, uint MaximumWriterQueuedBytes,
+        IReadOnlyList<VideoExportMemorySnapshot> MemorySnapshots, IReadOnlyList<BalancedFrameEvidence> Frames,
+        double BlurScreenshotReferenceMeanDelta, double PixelScreenshotReferenceMeanDelta, IReadOnlyList<string> ValidationFailures);
+    private sealed record BalancedFrameEvidence(double RequestedSeconds, string IntervalState, double SourceTopStripeBlueMean,
+        double OutputTopStripeBlueMean, double BlurMeanDeltaFromSource, double PixelationMeanDeltaFromSource,
+        double CaptionMeanDeltaFromSource, double ResizedCompositionMeanDelta, double CaptionCompositionMeanDelta);
+    private static Int32Rect ScaledRegion(int x, int y, int width, int height, double scale) =>
+        new((int)Math.Round(x * scale), (int)Math.Round(y * scale), Math.Max(1, (int)Math.Round(width * scale)), Math.Max(1, (int)Math.Round(height * scale)));
     private static BitmapSource Fit(BitmapSource bitmap, int width)
     {
         int height = Math.Max(1, (int)Math.Round((double)width * bitmap.PixelHeight / bitmap.PixelWidth));
