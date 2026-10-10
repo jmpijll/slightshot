@@ -76,13 +76,16 @@ internal sealed class VideoSequentialDecoder : IDisposable
         private nint source;
         private readonly int width, height;
         private int defaultStride, decodedWidth, decodedHeight, cropX, cropY;
+        private Nv12Matrix matrix;
+        private bool fullRange;
+        private readonly VideoExportMetrics? metrics;
         private byte[] current = [], next = [];
         private ExactSizeBufferPool.BufferLease? currentLease, nextLease;
-        private long nextTime;
+        private long nextTime, sourceOrigin;
         private bool hasCurrent, hasNext, ended;
         internal NativeReader(string path, int width, int height, bool metadataOnly, VideoExportMetrics? metrics)
         {
-            this.width = width; this.height = height;
+            this.width = width; this.height = height; this.metrics = metrics;
             nint attributes = 0, mediaType = 0;
             try
             {
@@ -92,22 +95,15 @@ internal sealed class VideoSequentialDecoder : IDisposable
                     currentLease = VideoPixelBuffers.Shared.Rent(byteCount); current = currentLease.Pixels;
                     nextLease = VideoPixelBuffers.Shared.Rent(byteCount); next = nextLease.Pixels;
                 }
-                Check(MFCreateAttributes(out attributes, 2));
-                // Advanced processing uses the optimized RGB32 converter;
-                // native measurements isolate decoder warmup from encoding.
-                if (!metadataOnly)
-                {
-                    SetUInt32(attributes, new("0f81da2c-b537-4672-a8b2-a681b17307a3"), 1);
-                    SetUInt32(attributes, new("a634a91c-822b-41b9-a494-4de4643612b0"), 1);
-                }
+                // Decode native NV12 without inserting a full-resolution RGB
+                // processor. Convert directly into the bounded BGRA leases.
+                Check(MFCreateAttributes(out attributes, 1));
                 Check(MFCreateSourceReaderFromURL(path, attributes, out source));
                 Check(((delegate* unmanaged[Stdcall]<nint, uint, int, int>)Slot(source, 4))(source, 0xfffffffe, 0)); // deselect all
                 Check(((delegate* unmanaged[Stdcall]<nint, uint, int, int>)Slot(source, 4))(source, FirstVideo, 1));
                 Check(MFCreateMediaType(out mediaType));
                 SetGuid(mediaType, new("48eba18e-f8c9-4687-bf11-0a74c9f96a8f"), new("73646976-0000-0010-8000-00aa00389b71"));
-                SetGuid(mediaType, new("f7e34c9a-42e8-4714-b74b-cb29d72c35e5"), metadataOnly
-                    ? new("3231564e-0000-0010-8000-00aa00389b71") // NV12: fully decode without an RGB conversion graph.
-                    : new("00000016-0000-0010-8000-00aa00389b71"));
+                SetGuid(mediaType, new("f7e34c9a-42e8-4714-b74b-cb29d72c35e5"), new("3231564e-0000-0010-8000-00aa00389b71"));
                 Check(((delegate* unmanaged[Stdcall]<nint, uint, nint, nint, int>)Slot(source, 7))(source, FirstVideo, 0, mediaType));
                 if (!metadataOnly) { ConfigureWorkerThreads(metrics); ValidateFormat(); }
             }
@@ -162,11 +158,15 @@ internal sealed class VideoSequentialDecoder : IDisposable
                 }
                 Guid subtypeKey = new("f7e34c9a-42e8-4714-b74b-cb29d72c35e5"), subtype = default;
                 Check(((delegate* unmanaged[Stdcall]<nint, Guid*, Guid*, int>)Slot(negotiated, 10))(negotiated, &subtypeKey, &subtype));
-                if (subtype != new Guid("00000016-0000-0010-8000-00aa00389b71")) throw new InvalidOperationException("Windows changed the decoded video pixel format.");
+                if (subtype != new Guid("3231564e-0000-0010-8000-00aa00389b71")) throw new InvalidOperationException("Windows changed the decoded video pixel format from 8-bit NV12.");
+                if (width <= 0 || height <= 0 || decodedWidth <= 0 || decodedHeight <= 0
+                    || ((width | height | decodedWidth | decodedHeight | cropX | cropY) & 1) != 0)
+                    throw new InvalidOperationException("The decoded NV12 dimensions and display aperture must align to complete 2×2 chroma blocks.");
                 Guid strideKey = new("644b4e48-1e02-4516-b0eb-c01ca9d49ac6"); uint stride = 0;
                 int strideResult = ((delegate* unmanaged[Stdcall]<nint, Guid*, uint*, int>)Slot(negotiated, 7))(negotiated, &strideKey, &stride);
-                defaultStride = strideResult >= 0 ? unchecked((int)stride) : checked(-decodedWidth * 4);
-                if (Math.Abs((long)defaultStride) < decodedWidth * 4L) throw new InvalidOperationException("Windows returned an invalid decoded video stride.");
+                defaultStride = strideResult >= 0 ? unchecked((int)stride) : decodedWidth;
+                if (defaultStride < decodedWidth) throw new InvalidOperationException("Windows returned an invalid top-down NV12 stride.");
+                ValidateColor(negotiated);
                 Guid rotationKey = new("c380465d-2271-428c-9b83-ecea3b4a85c1"); uint rotation = 0;
                 int rotated = ((delegate* unmanaged[Stdcall]<nint, Guid*, uint*, int>)Slot(negotiated, 7))(negotiated, &rotationKey, &rotation);
                 // Slightshot's own recordings have no orientation metadata.
@@ -175,6 +175,26 @@ internal sealed class VideoSequentialDecoder : IDisposable
                 if (rotated >= 0 && rotation != 0) throw new InvalidOperationException("This recording has unsupported rotation metadata.");
             }
             finally { Release(negotiated); }
+        }
+        private void ValidateColor(nint mediaType)
+        {
+            static uint? Value(nint attributes, Guid key)
+            {
+                uint value = 0;
+                return ((delegate* unmanaged[Stdcall]<nint, Guid*, uint*, int>)Slot(attributes, 7))(attributes, &key, &value) == 0 ? value : null;
+            }
+            uint? rawMatrix = Value(mediaType, new("3e23d450-2c75-4d25-a00e-b91670d12327"));
+            uint? range = Value(mediaType, new("c21b8ee5-b956-4071-8daf-325edf5cab11"));
+            uint? primaries = Value(mediaType, new("dbfbe4d7-0740-4ee0-8192-850ab0e21935"));
+            uint? transfer = Value(mediaType, new("5fb0fce9-be5c-4935-a811-ec838f8eed93"));
+            // MF documents unknown matrix as BT.709. Our own SDR H.264
+            // recordings use limited range when no full-range flag is present;
+            // record this default explicitly instead of guessing by resolution.
+            var color = Nv12ColorProfile.ForSdrH264(rawMatrix, range, primaries, transfer);
+            matrix = color.Matrix; fullRange = color.FullRange;
+            metrics?.RecordDecoderColor(new(rawMatrix, range, primaries, transfer, matrix.ToString(), fullRange,
+                rawMatrix is null or 0 ? "MF unknown matrix defaults to BT.709" : "Negotiated MF matrix",
+                range is null or 0 ? "Own SDR H.264 recording: absent full-range flag defaults to limited range" : "Negotiated MF nominal range"));
         }
         private bool TryAperture(nint mediaType, Guid key)
         {
@@ -212,13 +232,28 @@ internal sealed class VideoSequentialDecoder : IDisposable
         internal void CopyFrame(TimeSpan position, byte[] output, CancellationToken cancellation)
         {
             cancellation.ThrowIfCancellationRequested();
-            if (!hasCurrent) { hasCurrent = Read(current, out _, cancellation); if (!hasCurrent) throw new InvalidOperationException("No video samples could be decoded."); }
-            if (!hasNext && !ended) hasNext = Read(next, out nextTime, cancellation);
-            while (hasNext && nextTime <= position.Ticks)
+            if (!hasCurrent)
             {
-                (current, next) = (next, current); hasNext = Read(next, out nextTime, cancellation);
+                hasCurrent = Read(current, out sourceOrigin, cancellation);
+                if (!hasCurrent) throw new InvalidOperationException("No video samples could be decoded.");
+                metrics?.RecordDecoderSourceOrigin(sourceOrigin);
+            }
+            if (!hasNext && !ended) hasNext = ReadAhead(cancellation);
+            // Subtracting two rational frame timestamps can differ from the
+            // zero-based output grid by one 100 ns tick after quantization.
+            while (hasNext && (nextTime <= position.Ticks || nextTime == position.Ticks + 1))
+            {
+                (current, next) = (next, current); hasNext = ReadAhead(cancellation);
             }
             Buffer.BlockCopy(current, 0, output, 0, current.Length);
+        }
+        private bool ReadAhead(CancellationToken cancellation)
+        {
+            bool decoded = Read(next, out long rawTime, cancellation);
+            // Recorder encoders can start their presentation timestamps above
+            // zero. Editor/output time zero still denotes the first source frame.
+            // Inspect deliberately reports raw timestamps for media validation.
+            nextTime = checked(rawTime - sourceOrigin); return decoded;
         }
         private bool Read(byte[] target, out long timestamp, CancellationToken cancellation)
         {
@@ -245,11 +280,7 @@ internal sealed class VideoSequentialDecoder : IDisposable
                         Check(((delegate* unmanaged[Stdcall]<nint, uint, nint*, int*, nint*, uint*, int>)Slot(twoD, 10))(twoD, 1, &pixels, &stride, &start, &length));
                         try
                         {
-                            nint visible = pixels + checked((nint)(cropY * (long)stride + cropX * 4L));
-                            long first = (long)visible, last = checked(first + (height - 1L) * stride);
-                            long low = Math.Min(first, last), high = checked(Math.Max(first, last) + width * 4L);
-                            if (low < (long)start || high > checked((long)start + length)) throw new InvalidOperationException("Decoded video scanlines lie outside their native buffer.");
-                            CopyRows(visible, stride, target);
+                            ConvertPlanes(pixels, stride, start, length, target);
                         }
                         finally { Check(((delegate* unmanaged[Stdcall]<nint, int>)Slot(twoD, 4))(twoD)); }
                     }
@@ -259,29 +290,33 @@ internal sealed class VideoSequentialDecoder : IDisposable
                         Check(((delegate* unmanaged[Stdcall]<nint, nint*, uint*, uint*, int>)Slot(buffer, 3))(buffer, &pixels, &maximum, &length));
                         try
                         {
-                            if (Math.Abs((long)defaultStride) * decodedHeight > length) throw new InvalidOperationException("Decoded video buffer was shorter than its dimensions.");
-                            nint first = defaultStride < 0 ? pixels + checked((nint)((decodedHeight - 1L) * -(long)defaultStride)) : pixels;
-                            first += checked((nint)(cropY * (long)defaultStride + cropX * 4L));
-                            CopyRows(first, defaultStride, target);
+                            if (checked(defaultStride * (long)decodedHeight * 3 / 2) > length) throw new InvalidOperationException("Decoded NV12 buffer was shorter than its coded dimensions.");
+                            ConvertPlanes(pixels, defaultStride, pixels, length, target);
                         }
                         finally { Check(((delegate* unmanaged[Stdcall]<nint, int>)Slot(buffer, 4))(buffer)); }
                     }
-                    // RGB32's fourth byte is unused; our compositor/transcoder
-                    // uses opaque premultiplied BGRA throughout.
-                    for (int alpha = 3; alpha < target.Length; alpha += 4) target[alpha] = 255;
                     timestamp = time; return true;
                 }
                 finally { Release(twoD); Release(buffer); Release(sample); }
             }
             return false;
         }
-        private void CopyRows(nint pixels, int stride, byte[] target)
+        private void ConvertPlanes(nint pixels, int stride, nint start, uint length, byte[] target)
         {
-            if (Math.Abs((long)stride) < decodedWidth * 4L) throw new InvalidOperationException("Invalid decoded scanline pitch.");
-            for (int row = 0; row < height; row++) Marshal.Copy(pixels + checked((nint)(row * (long)stride)), target, row * width * 4, width * 4);
+            if (stride < decodedWidth) throw new InvalidOperationException("Invalid top-down NV12 scanline pitch.");
+            nint luma = pixels + checked((nint)(cropY * (long)stride + cropX));
+            // Chroma follows the entire coded Y plane, including macroblock
+            // padding such as 640×368, before applying the visible crop.
+            nint chroma = pixels + checked((nint)(decodedHeight * (long)stride + cropY / 2L * stride + cropX));
+            int lumaLength = checked((height - 1) * stride + width), chromaLength = checked((height / 2 - 1) * stride + width);
+            long end = checked((long)start + length);
+            if ((long)luma < (long)start || checked((long)luma + lumaLength) > end
+                || (long)chroma < (long)start || checked((long)chroma + chromaLength) > end)
+                throw new InvalidOperationException("Decoded NV12 planes lie outside their native buffer.");
+            Nv12ToBgra.Convert(new ReadOnlySpan<byte>((void*)luma, lumaLength), new ReadOnlySpan<byte>((void*)chroma, chromaLength),
+                target, width, height, stride, matrix, fullRange);
         }
         private static nint Slot(nint instance, int index) => Marshal.ReadIntPtr(Marshal.ReadIntPtr(instance), index * IntPtr.Size);
-        private static void SetUInt32(nint attributes, Guid key, uint value) => Check(((delegate* unmanaged[Stdcall]<nint, Guid*, uint, int>)Slot(attributes, 21))(attributes, &key, value));
         private static void SetGuid(nint attributes, Guid key, Guid value) => Check(((delegate* unmanaged[Stdcall]<nint, Guid*, Guid*, int>)Slot(attributes, 24))(attributes, &key, &value));
         internal static void Check(int result) => Marshal.ThrowExceptionForHR(result);
         private static void Release(nint instance) { if (instance != 0) Marshal.Release(instance); }

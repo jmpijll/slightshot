@@ -88,6 +88,8 @@ internal sealed class VideoExportMetrics
     internal VideoDecoderDiagnostics DecoderDiagnostics { get; private set; } = new(null, null, null, null, null, null);
     internal void RecordDecoderWorkerControl(bool available, bool applied, uint? configured, int? previous, Guid category, Guid classId)
         => DecoderDiagnostics = new(available, applied, configured, previous, category, classId);
+    internal void RecordDecoderColor(VideoDecoderColorDiagnostics color) => DecoderDiagnostics = DecoderDiagnostics with { Color = color };
+    internal void RecordDecoderSourceOrigin(long ticks) => DecoderDiagnostics = DecoderDiagnostics with { SourceOriginTicks = ticks };
     internal IReadOnlyList<VideoExportMemorySnapshot> MemorySnapshots { get { lock (memory) return memory.ToArray(); } }
     internal void RecordMemory(string stage)
     {
@@ -150,6 +152,8 @@ internal sealed record VideoEncoderDiagnostics(bool? WorkerThreadControlSupporte
     bool? PreviousLowLatency, bool? ActualLowLatency);
 internal sealed record VideoDecoderDiagnostics(bool? WorkerThreadControlAvailable, bool? WorkerThreadControlApplied,
     uint? ConfiguredWorkerThreads, int? PreviousWorkerThreads, Guid? TransformCategory, Guid? ClassId,
-    string ConfigurationMethod = "IMFTransform.Attributes");
+    string ConfigurationMethod = "IMFTransform.Attributes", VideoDecoderColorDiagnostics? Color = null, long? SourceOriginTicks = null);
+internal sealed record VideoDecoderColorDiagnostics(uint? NegotiatedMatrix, uint? NegotiatedRange, uint? NegotiatedPrimaries,
+    uint? NegotiatedTransfer, string EffectiveMatrix, bool FullRange, string MatrixInterpretation, string RangeInterpretation);
 internal sealed record VideoTransformDiagnostics(uint Index, Guid Category, Guid ClassId, bool DisableFrameRateConversionApplied,
     uint? ActualFrameRateConversionDisabled);

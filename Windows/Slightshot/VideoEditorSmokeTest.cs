@@ -22,6 +22,12 @@ internal static class VideoEditorSmokeTest
         directory = Path.GetFullPath(directory); Directory.CreateDirectory(directory);
         const int width = 640, height = 360;
         var checks = new List<string>(); int count = 0;
+        var sourceColors = new List<SourceColorEvidence>();
+        (string Name, Int32Rect Region)[] colorRegions =
+        [
+            ("Red", new(28, 32, 44, 24)), ("Green", new(103, 32, 44, 24)),
+            ("Blue", new(178, 32, 44, 24)), ("Neutral", new(253, 32, 24, 24))
+        ];
         for (int iteration = 0; iteration < 5; iteration++) { using var worker = new VideoRenderWorker(); }
         checks.Add("Five immediate compositor-worker startup/shutdown cycles complete without joining a live dispatcher, covering cancellation before its first frame.");
         using var session = new RecordingSession(width, height, pixels =>
@@ -34,6 +40,18 @@ internal static class VideoEditorSmokeTest
                 byte shade = pattern ? ((x / 4 + y / 4) % 2 == 0 ? (byte)25 : (byte)230) : (byte)238;
                 pixels[offset] = y < 12 ? (byte)(number % 200) : shade;
                 pixels[offset + 1] = shade; pixels[offset + 2] = shade; pixels[offset + 3] = 255;
+                if (y is >= 24 and < 64)
+                {
+                    if (x is >= 20 and < 80) { pixels[offset] = 0; pixels[offset + 1] = 0; pixels[offset + 2] = 255; }
+                    else if (x is >= 95 and < 155) { pixels[offset] = 0; pixels[offset + 1] = 255; pixels[offset + 2] = 0; }
+                    else if (x is >= 170 and < 230) { pixels[offset] = 255; pixels[offset + 1] = 0; pixels[offset + 2] = 0; }
+                    else if (x is >= 245 and < 285) { pixels[offset] = 96; pixels[offset + 1] = 96; pixels[offset + 2] = 96; }
+                    else if (x is >= 300 and < 524)
+                    {
+                        byte bit = (number & (1 << ((x - 300) / 28))) == 0 ? (byte)30 : (byte)220;
+                        pixels[offset] = bit; pixels[offset + 1] = bit; pixels[offset + 2] = bit;
+                    }
+                }
             }
         });
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -44,6 +62,7 @@ internal static class VideoEditorSmokeTest
         await started.Task.WaitAsync(TimeSpan.FromSeconds(30));
         await Task.Delay(4300); session.Stop(); await recording.WaitAsync(TimeSpan.FromSeconds(30));
         Require(count > 30, "synthetic source recorded actual moving frames");
+        Require(count < 256, "bounded source frame counter fits its eight high-contrast binary cells");
         File.Copy(session.SourcePath, Path.Combine(directory, "video-editor-source.mp4"), true);
         var source = await VideoFrameSource.OpenAsync(session.SourcePath);
         int saveAttempts = 0;
@@ -156,6 +175,49 @@ internal static class VideoEditorSmokeTest
             Require(retainedSource.SequenceEqual(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(session.SourcePath))) && File.ReadAllBytes(preserved).SequenceEqual(original), "same-source rejection preserves original video and existing destination bytes");
             Require(!Directory.EnumerateFiles(session.DirectoryPath, ".slightshot-*").Any(), "same-source rejection creates no temporary staging file");
             checks.Add("Annotated, empty-annotation and plain recording exports reject exact and normalized/case-insensitive source-path destinations before staging; SHA-256 confirms the source is unchanged and existing destination bytes are retained.");
+            var rawSourceCadence = await VideoSequentialDecoder.InspectAsync(session.SourcePath, width, height);
+            int sourceFirstCounter, sourceFinalCounter;
+            using (var endpointSource = await VideoSequentialDecoder.OpenAsync(session.SourcePath, width, height))
+            {
+                var pixels = new byte[width * height * 4];
+                await endpointSource.GetFrameAsync(TimeSpan.Zero, pixels, CancellationToken.None);
+                sourceFirstCounter = FrameCounter(pixels, width);
+                // A position at the final raw source PTS reaches the actual
+                // last sample with either raw or normalized reader scheduling.
+                // This endpoint reference cannot share an off-by-one tail hold.
+                await endpointSource.GetFrameAsync(TimeSpan.FromTicks(rawSourceCadence.LastPresentationTicks), pixels, CancellationToken.None);
+                sourceFinalCounter = FrameCounter(pixels, width);
+            }
+            Require(sourceFirstCounter != sourceFinalCounter, "actual source endpoints have distinct high-contrast frame counters");
+            File.WriteAllText(Path.Combine(directory, "video-editor-source-endpoints.json"), JsonSerializer.Serialize(new
+            {
+                actualRawSourceCadence = rawSourceCadence, sourceFirstCounter, sourceFinalCounter,
+                sourceSha256 = Convert.ToHexString(retainedSource),
+                method = "Eight unannotated gray binary cells identify actual source frames. First is read at zero; final at the last raw decoded source PTS, which forces the actual final sample before or after origin normalization. Raw inspection PTS and source bytes are unchanged."
+            }, new JsonSerializerOptions { WriteIndented = true }));
+            using (var sequentialSource = await VideoSequentialDecoder.OpenAsync(session.SourcePath, width, height))
+            {
+                var sourcePixels = new byte[width * height * 4];
+                foreach (double seconds in new[] { .5, 2, 3.5 })
+                {
+                    var positionAt = TimeSpan.FromSeconds(seconds);
+                    var nativeFrame = await source.GetFrameAsync(positionAt);
+                    await sequentialSource.GetFrameAsync(positionAt, sourcePixels, CancellationToken.None);
+                    var sequentialFrame = BitmapSource.Create(width, height, 96, 96, PixelFormats.Pbgra32, null, sourcePixels, width * 4);
+                    sequentialFrame.Freeze();
+                    foreach (var patch in colorRegions)
+                    {
+                        var nativeRgb = MeanRgb(nativeFrame, patch.Region); var sequentialRgb = MeanRgb(sequentialFrame, patch.Region);
+                        var errors = nativeRgb.Zip(sequentialRgb, (first, second) => Math.Abs(first - second)).ToArray();
+                        sourceColors.Add(new(seconds, patch.Name, "Native source preview vs sequential BGRA", nativeRgb, sequentialRgb, errors));
+                        if (errors.Max() > 8) SaveSourceColors(directory, sourceColors);
+                        Require(errors.Max() <= 8, "sequential source decoder preserves native preview solid " + patch.Name + " RGB at " + seconds + "s");
+                    }
+                }
+            }
+            SaveSourceColors(directory, sourceColors);
+            checks.Add("Solid source red/green/blue/neutral interiors outside all annotation regions agree between the native WinRT preview and sequential BGRA decoder at 0.5/2/3.5 seconds within 8 mean values per RGB channel. Eight-pixel margins exclude chroma interpolation at patch edges and expose matrix/range or channel-order errors.");
+            await editor.PrepareExportAsync();
             var recoveryPosition = TimeSpan.FromSeconds(1.7);
             string retainedEdits = JsonSerializer.Serialize(snapshot);
             Task pendingPreview = editor.SeekAsync(recoveryPosition);
@@ -225,10 +287,43 @@ internal static class VideoEditorSmokeTest
                     .All(gap => gap > 0 && Math.Abs(gap - interval) <= 1), "actual MP4 preserves constant output cadence " + quality);
                 Require(cadence.LastDurationTicks > 0 && Math.Abs(cadence.LastPresentationTicks + cadence.LastDurationTicks - source.Duration.Ticks) <= interval + 10000,
                     "actual MP4 final frame retains the source endpoint within one output frame " + quality);
+                int outputFirstCounter, outputFinalCounter;
+                using (var endpoints = await VideoSequentialDecoder.OpenAsync(output, width, height))
+                {
+                    var pixels = new byte[width * height * 4];
+                    await endpoints.GetFrameAsync(TimeSpan.Zero, pixels, CancellationToken.None);
+                    outputFirstCounter = FrameCounter(pixels, width);
+                    await endpoints.GetFrameAsync(TimeSpan.FromTicks(cadence.LastPresentationTicks), pixels, CancellationToken.None);
+                    outputFinalCounter = FrameCounter(pixels, width);
+                }
+                bool reachesSourceFinal = cadence.LastPresentationTicks + 1 >= rawSourceCadence.LastPresentationTicks - rawSourceCadence.FirstPresentationTicks;
+                File.WriteAllText(Path.Combine(directory, "video-editor-" + quality.ToString().ToLowerInvariant() + "-endpoint-validation.json"), JsonSerializer.Serialize(new
+                {
+                    quality, rawSourceCadence, actualOutputCadence = cadence,
+                    sourceFirstCounter, sourceFinalCounter, outputFirstCounter, outputFinalCounter,
+                    lastScheduledOutputReachesNormalizedSourceFinal = reachesSourceFinal,
+                    firstCounterMatches = outputFirstCounter == sourceFirstCounter,
+                    finalCounterMatches = outputFinalCounter == sourceFinalCounter,
+                    method = "Actual decoded first/final output samples carry high-contrast source-frame counter bits, independent of low-gradient moving-stripe quantization. Final source reference was forced using its raw final PTS."
+                }, new JsonSerializerOptions { WriteIndented = true }));
+                Require(outputFirstCounter == sourceFirstCounter, "actual output starts with the first source frame counter " + quality);
+                if (quality == RecordingQuality.High)
+                    Require(reachesSourceFinal, "High output scheduling reaches the normalized final source sample");
+                if (reachesSourceFinal)
+                    Require(outputFinalCounter == sourceFinalCounter, "actual output retains the final source frame counter " + quality);
+                checks.Add($"{quality.Title()}: decoded first/final binary source-frame IDs {sourceFirstCounter}/{sourceFinalCounter}; actual output IDs {outputFirstCounter}/{outputFinalCounter}. First-source identity passed; final-source identity is required when the planned output cadence reaches that source sample.");
                 foreach (var point in new[] { (Name: "before", Seconds: 0.5), (Name: "during", Seconds: 2.0), (Name: "after", Seconds: 3.5) })
                 {
                     var frame = await decoded.GetFrameAsync(TimeSpan.FromSeconds(point.Seconds));
                     var originalFrame = await source.GetFrameAsync(TimeSpan.FromSeconds(point.Seconds));
+                    foreach (var patch in colorRegions)
+                    {
+                        var nativeRgb = MeanRgb(originalFrame, patch.Region); var outputRgb = MeanRgb(frame, patch.Region);
+                        var errors = nativeRgb.Zip(outputRgb, (first, second) => Math.Abs(first - second)).ToArray();
+                        sourceColors.Add(new(point.Seconds, patch.Name, quality + " actual encoded MP4 vs native source", nativeRgb, outputRgb, errors));
+                        if (errors.Max() > 8) SaveSourceColors(directory, sourceColors);
+                        Require(errors.Max() <= 8, "actual MP4 preserves unannotated source solid " + patch.Name + " RGB " + point.Name + " " + quality);
+                    }
                     sourceStripe.Add(MeanBlue(originalFrame, new Int32Rect(30, 3, 570, 6)));
                     outputStripe.Add(MeanBlue(frame, new Int32Rect(30, 3, 570, 6)));
                     Require(Math.Abs(sourceStripe[^1] - outputStripe[^1]) < 20, "actual MP4 moving top stripe matches its source timestamp/orientation " + point.Name + " " + quality);
@@ -247,6 +342,7 @@ internal static class VideoEditorSmokeTest
                 Require(outputStripe[1] - outputStripe[0] > 15 && outputStripe[2] - outputStripe[1] > 15, "actual MP4 source frames advance between all three timestamps " + quality);
                 checks.Add($"{quality.Title()}: source/output moving top-stripe blue means {string.Join("/", sourceStripe.Select(value => value.ToString("0.0")))}/{string.Join("/", outputStripe.Select(value => value.ToString("0.0")))}; timestamp and vertical orientation checks passed.");
                 checks.Add($"{quality.Title()}: actual edited MP4 decoded before/in/after interval; text, pointer arrow, drawings, blur and pixelation match preview within codec tolerance. Native export took {watch.Elapsed.TotalSeconds:0.0}s for {source.Duration.TotalSeconds:0.0}s of {width}×{height} video.");
+                SaveSourceColors(directory, sourceColors);
             }
             Require(File.Exists(session.SourcePath), "successful export leaves source available until editor closes");
             closingPreview = editor.SeekAsync(TimeSpan.FromSeconds(.85));
@@ -264,8 +360,39 @@ internal static class VideoEditorSmokeTest
             platform = "Windows native WPF / Media Foundation",
             sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
             source = "Moving synthetic BGRA recording. Real native editor HWND captured from composed desktop pixels. Arrow uses native automated pointer input; other annotations use labelled fixture inputs. Native sliders and buttons are operated automatically. MP4 is encoded and decoded through the production export path.",
-            checks
+            checks, sourceColorEvidence = sourceColors
         }, new JsonSerializerOptions { WriteIndented = true }));
+    }
+    private sealed record SourceColorEvidence(double Seconds, string Patch, string Comparison,
+        double[] NativeSourceMeanRGB, double[] ActualMeanRGB, double[] MeanAbsoluteRGBChannelDelta);
+    private static void SaveSourceColors(string directory, List<SourceColorEvidence> evidence)
+    {
+        File.WriteAllText(Path.Combine(directory, "video-editor-source-color-validation.json"), JsonSerializer.Serialize(new
+        {
+            sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
+            maximumMeanRGBChannelDelta = 8,
+            passed = evidence.All(value => value.MeanAbsoluteRGBChannelDelta.Max() <= 8),
+            evidence
+        }, new JsonSerializerOptions { WriteIndented = true }));
+    }
+    private static double[] MeanRgb(BitmapSource bitmap, Int32Rect region)
+    {
+        int stride = region.Width * 4; var pixels = new byte[stride * region.Height]; bitmap.CopyPixels(region, pixels, stride, 0);
+        long red = 0, green = 0, blue = 0;
+        for (int index = 0; index < pixels.Length; index += 4) { blue += pixels[index]; green += pixels[index + 1]; red += pixels[index + 2]; }
+        double area = region.Width * region.Height; return [red / area, green / area, blue / area];
+    }
+    private static int FrameCounter(byte[] pixels, int width)
+    {
+        int counter = 0;
+        for (int bit = 0; bit < 8; bit++)
+        {
+            long brightness = 0;
+            for (int y = 32; y < 56; y++) for (int x = 308 + bit * 28; x < 320 + bit * 28; x++)
+                brightness += pixels[(y * width + x) * 4];
+            if (brightness > 125L * 12 * 24) counter |= 1 << bit;
+        }
+        return counter;
     }
     private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
     {
