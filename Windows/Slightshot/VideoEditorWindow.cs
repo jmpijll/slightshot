@@ -200,8 +200,8 @@ internal sealed class VideoEditorWindow : Window
         if (updating || History.Selected is not { } item) return;
         Pause(); double minimum = History.MinimumDuration.TotalSeconds;
         if (!double.TryParse((startChanged ? begin : end).Text, NumberStyles.Float, CultureInfo.CurrentCulture, out double seconds) || !double.IsFinite(seconds)) { UpdateControls(); return; }
-        var start = TimeSpan.FromSeconds(startChanged ? Math.Clamp(seconds, 0, item.End.TotalSeconds - minimum) : item.Begin.TotalSeconds);
-        var finish = TimeSpan.FromSeconds(startChanged ? item.End.TotalSeconds : Math.Clamp(seconds, item.Begin.TotalSeconds + minimum, source.Duration.TotalSeconds));
+        var start = startChanged ? TimeSpan.FromSeconds(Math.Clamp(seconds, 0, item.End.TotalSeconds - minimum)) : item.Begin;
+        var finish = startChanged ? item.End : TimeSpan.FromSeconds(Math.Clamp(seconds, item.Begin.TotalSeconds + minimum, source.Duration.TotalSeconds));
         History.SetTiming(start, finish); UpdateControls(); surface.Refresh();
     }
     private void SelectTool(Tool? tool)

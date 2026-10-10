@@ -81,10 +81,13 @@ internal static class VideoEditorSmokeTest
             var from = Descendants((DependencyObject)editor.Content).OfType<TextBox>().Single(field => AutomationProperties.GetName(field) == "Annotation start time in seconds");
             var until = Descendants((DependencyObject)editor.Content).OfType<TextBox>().Single(field => AutomationProperties.GetName(field) == "Annotation end time in seconds");
             var range = Descendants((DependencyObject)editor.Content).OfType<VideoRangeSlider>().Single();
+            void EnterTime(TextBox field, string value)
+            {
+                field.Text = value; field.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(field)!, 0, Key.Enter) { RoutedEvent = Keyboard.PreviewKeyDownEvent });
+            }
             void ExactTiming()
             {
-                from.Text = "1"; from.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(from)!, 0, Key.Enter) { RoutedEvent = Keyboard.PreviewKeyDownEvent });
-                until.Text = "3"; until.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(until)!, 0, Key.Enter) { RoutedEvent = Keyboard.PreviewKeyDownEvent });
+                EnterTime(from, "1"); EnterTime(until, "3");
             }
             void Add(Annotation annotation)
             {
@@ -110,9 +113,48 @@ internal static class VideoEditorSmokeTest
             await DragAsync(range, range.HandleCenter(true), range.PositionAt(1));
             await DragAsync(range, range.HandleCenter(false), range.PositionAt(3));
             Require(Math.Abs(editor.History.Selected!.Begin.TotalSeconds - 1) < 0.08 && Math.Abs(editor.History.Selected.End.TotalSeconds - 3) < 0.08, "two native interval handles change the selected annotation period");
+            var originalTiming = editor.History.Selected!;
+            TimeSpan? precisionEndpoint = null;
+            for (long ticks = 20_000_001; ticks <= 20_065_536; ticks++)
+            {
+                var candidate = TimeSpan.FromTicks(ticks);
+                if (TimeSpan.FromSeconds(candidate.TotalSeconds) != candidate) { precisionEndpoint = candidate; break; }
+            }
+            Require(precisionEndpoint is { } found && found < source.Duration, "fixture finds an endpoint with fractional seconds whose double-seconds roundtrip changes its exact ticks");
+            var exactEndpoint = precisionEndpoint!.Value;
+            editor.SetSelectedTiming(TimeSpan.Zero, exactEndpoint);
+            EnterTime(from, "1");
+            var afterPrecisionStart = editor.History.Selected!;
+            File.WriteAllText(Path.Combine(directory, "video-editor-timing-precision-validation.json"), JsonSerializer.Serialize(new
+            {
+                sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
+                sourceDurationTicks = source.Duration.Ticks,
+                untouchedEndpointTicks = exactEndpoint.Ticks,
+                doubleSecondsRoundtripTicks = TimeSpan.FromSeconds(exactEndpoint.TotalSeconds).Ticks,
+                actualBeginTicks = afterPrecisionStart.Begin.Ticks,
+                actualEndTicks = afterPrecisionStart.End.Ticks,
+                passed = afterPrecisionStart.Begin == TimeSpan.FromSeconds(1) && afterPrecisionStart.End == exactEndpoint,
+                method = "The actual native start-time field is committed with Enter. Its untouched end must retain its original TimeSpan ticks; the fixture endpoint deliberately exposes double-seconds roundtrip loss. Original annotation timing is then restored."
+            }, new JsonSerializerOptions { WriteIndented = true }));
+            Require(afterPrecisionStart.Begin == TimeSpan.FromSeconds(1) && afterPrecisionStart.End == exactEndpoint,
+                "editing the real native start-time field preserves the untouched endpoint's exact ticks");
+            editor.SetSelectedTiming(originalTiming.Begin, originalTiming.End);
             editor.SetSelectedTiming(TimeSpan.Zero, source.Duration);
-            ExactTiming();
+            var beforeExactFields = editor.History.Selected!;
+            EnterTime(from, "1"); var afterStartField = editor.History.Selected!;
+            EnterTime(until, "3"); var afterEndField = editor.History.Selected!;
             ClickTooltip(editor, "Undo  Ctrl+Z");
+            var afterTimingUndo = editor.History.Selected!;
+            File.WriteAllText(Path.Combine(directory, "video-editor-timing-undo-validation.json"), JsonSerializer.Serialize(new
+            {
+                sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
+                sourceDurationTicks = source.Duration.Ticks,
+                beforeExactFields = new { beginTicks = beforeExactFields.Begin.Ticks, endTicks = beforeExactFields.End.Ticks },
+                afterStartField = new { beginTicks = afterStartField.Begin.Ticks, endTicks = afterStartField.End.Ticks },
+                afterEndField = new { beginTicks = afterEndField.Begin.Ticks, endTicks = afterEndField.End.Ticks },
+                afterUndo = new { beginTicks = afterTimingUndo.Begin.Ticks, endTicks = afterTimingUndo.End.Ticks },
+                passed = afterTimingUndo.End == source.Duration
+            }, new JsonSerializerOptions { WriteIndented = true }));
             Require(editor.History.Selected!.End == source.Duration, "real Undo reverses annotation timing");
             ClickTooltip(editor, "Redo  Ctrl+Y / Ctrl+Shift+Z");
             Require(editor.History.Selected!.End == TimeSpan.FromSeconds(3), "real Redo restores annotation timing");
@@ -121,7 +163,7 @@ internal static class VideoEditorSmokeTest
             ClickTooltip(editor, "Undo  Ctrl+Z");
             Require(editor.History.Items.Count == fixtureMarks + 1, "Undo restores deleted mark");
             editor.SelectAnnotation(pixelate);
-            checks.Add("Actual WPF tool icons, native pointer-drawn arrow, automated annotation fixtures for every tool, two native range handles and exact time fields, timing Undo/Redo and Delete/Undo passed. Marks cover 1–3 seconds at fixed source coordinates.");
+            checks.Add("Actual WPF tool icons, native pointer-drawn arrow, automated annotation fixtures for every tool, two native range handles and exact time fields, exact untouched-endpoint ticks, timing Undo/Redo and Delete/Undo passed. Marks cover 1–3 seconds at fixed source coordinates.");
             await editor.SeekAsync(TimeSpan.FromSeconds(0.5));
             TimeSpan position = editor.Position; editor.Play(); await Task.Delay(450); editor.Pause();
             Require(editor.Position > position, "Play advances the native preview");
