@@ -86,6 +86,7 @@ nonisolated enum RecordingExport {
     @MainActor static func save(source: URL, to destination: URL, quality: RecordingQuality,
                                 annotations: [VideoAnnotation] = []) async throws {
         try Task.checkCancellation()
+        try validateDestination(source: source, destination: destination)
         var prepared: [VideoFrameRenderer.PreparedAnnotation] = []
         if !annotations.isEmpty {
             let asset = AVURLAsset(url: source)
@@ -101,6 +102,23 @@ nonisolated enum RecordingExport {
                                                        duration: duration.seconds)
         }
         try await savePrepared(source: source, to: destination, quality: quality, annotations: prepared)
+    }
+
+    private static func validateDestination(source: URL, destination: URL) throws {
+        let original = source.standardizedFileURL.resolvingSymlinksInPath()
+        let target = destination.standardizedFileURL.resolvingSymlinksInPath()
+        let keys: Set<URLResourceKey> = [.fileResourceIdentifierKey]
+        let originalID = (try? original.resourceValues(forKeys: keys))?.fileResourceIdentifier
+        let targetID = (try? target.resourceValues(forKeys: keys))?.fileResourceIdentifier
+        // Resource identity catches hard links and case aliases on insensitive
+        // volumes without treating distinct files on sensitive volumes as equal.
+        let sameFile = originalID.map { identifier in
+            targetID.map { identifier.isEqual($0) } ?? false
+        } ?? false
+        guard original != target, !sameFile else {
+            throw RecordingError.failed("Choose a save location different from the temporary recording. "
+                + "The original video has been preserved.")
+        }
     }
 
     /// Reader and writer backpressure keep encoding off the main actor.

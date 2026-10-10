@@ -120,6 +120,41 @@ struct VideoAnnotationTests {
         #expect(try Data(contentsOf: source) == sourceBytes)
     }
 
+    @Test(arguments: [false, true])
+    func exportRejectsSourceDestinationsWithoutChangingOriginal(annotated: Bool) async throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("source.mp4")
+        try await createVideo(at: source)
+        let original = try Data(contentsOf: source)
+        let link = directory.appendingPathComponent("source-link.mp4")
+        let hardLink = directory.appendingPathComponent("source-hard-link.mp4")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: source)
+        try FileManager.default.linkItem(at: source, to: hardLink)
+        let existing = directory.appendingPathComponent("existing.mp4")
+        let existingBytes = Data("Retain the existing destination".utf8)
+        try existingBytes.write(to: existing)
+        let annotations = annotated ? [VideoAnnotation(annotation: annotation(
+            .line(from: CGPoint(x: 10, y: 100), to: CGPoint(x: 100, y: 100))), start: 0, end: 1)] : []
+        try FileManager.default.createDirectory(at: directory.appendingPathComponent("nested"),
+                                                withIntermediateDirectories: false)
+        let normalized = directory.appendingPathComponent("nested/../source.mp4")
+        var destinations = [source, normalized, link, hardLink]
+        let caseAlias = directory.appendingPathComponent("SOURCE.mp4")
+        if FileManager.default.fileExists(atPath: caseAlias.path) { destinations.append(caseAlias) }
+        let expectedFiles = try FileManager.default.contentsOfDirectory(atPath: directory.path).sorted()
+        for destination in destinations {
+            await #expect(throws: RecordingError.self) {
+                try await RecordingExport.save(source: source, to: destination,
+                                               quality: .compact, annotations: annotations)
+            }
+            #expect(try Data(contentsOf: source) == original, "A rejected export must retain the source bytes.")
+            #expect(try Data(contentsOf: existing) == existingBytes)
+            #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).sorted() == expectedFiles,
+                    "Source aliases must be rejected before creating a staging directory.")
+        }
+    }
+
     @Test func cancelledAnnotatedExportRetainsDestinationAndSource() async throws {
         let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
