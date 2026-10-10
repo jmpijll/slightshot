@@ -106,6 +106,10 @@ internal sealed class VideoExportMetrics
     internal bool? EncoderWorkerThreadControlApplied { get; private set; }
     internal uint? ActualEncoderWorkerThreads { get; private set; }
     internal uint? ActualEncoderBFrames { get; private set; }
+    internal bool? EncoderLowLatencyControlSupported { get; private set; }
+    internal bool? EncoderLowLatencyControlApplied { get; private set; }
+    internal bool? PreviousEncoderLowLatency { get; private set; }
+    internal bool? ActualEncoderLowLatency { get; private set; }
     internal ulong WriterSamplesReceived { get; private set; }
     internal ulong WriterSamplesEncoded { get; private set; }
     internal ulong WriterSamplesProcessed { get; private set; }
@@ -118,8 +122,14 @@ internal sealed class VideoExportMetrics
     internal void RecordWorkerSupport(bool supported) => EncoderWorkerThreadControlSupported = supported;
     internal void RecordWorkerThreads(uint actual, bool applied) { ActualEncoderWorkerThreads = actual; EncoderWorkerThreadControlApplied = applied; }
     internal void RecordBFrames(uint actual) => ActualEncoderBFrames = actual;
+    internal void RecordEncoderLowLatency(bool supported, bool applied, bool? previous, bool? actual)
+    {
+        EncoderLowLatencyControlSupported = supported; EncoderLowLatencyControlApplied = applied;
+        PreviousEncoderLowLatency = previous; ActualEncoderLowLatency = actual;
+    }
     internal VideoEncoderDiagnostics EncoderDiagnostics => new(EncoderWorkerThreadControlSupported, EncoderWorkerThreadControlApplied,
-        ActualEncoderWorkerThreads, ActualEncoderBFrames, WriterSamplesReceived, WriterSamplesEncoded, WriterSamplesProcessed, transforms.ToArray());
+        ActualEncoderWorkerThreads, ActualEncoderBFrames, WriterSamplesReceived, WriterSamplesEncoded, WriterSamplesProcessed, transforms.ToArray(),
+        EncoderLowLatencyControlSupported, EncoderLowLatencyControlApplied, PreviousEncoderLowLatency, ActualEncoderLowLatency);
     internal void RecordTransform(VideoTransformDiagnostics transform) => transforms.Add(transform);
     internal void AddWriterStatistics(uint bytes, ulong received, ulong encoded, ulong processed)
     {
@@ -133,7 +143,8 @@ internal sealed record VideoExportMemorySnapshot(string Stage, int Frames, doubl
     double LastGcHeapMiB, double ManagedCommittedMiB, double TotalManagedAllocatedMiB, int Gen0Collections, int Gen1Collections, int Gen2Collections);
 internal sealed record VideoEncoderDiagnostics(bool? WorkerThreadControlSupported, bool? WorkerThreadControlApplied,
     uint? ActualWorkerThreads, uint? ActualBFrames, ulong SamplesReceived, ulong SamplesEncoded, ulong SamplesProcessed,
-    IReadOnlyList<VideoTransformDiagnostics> Transforms);
+    IReadOnlyList<VideoTransformDiagnostics> Transforms, bool? LowLatencyControlSupported, bool? LowLatencyControlApplied,
+    bool? PreviousLowLatency, bool? ActualLowLatency);
 internal sealed record VideoDecoderDiagnostics(bool? WorkerThreadControlAvailable, bool? WorkerThreadControlApplied,
     uint? ConfiguredWorkerThreads, int? PreviousWorkerThreads, Guid? TransformCategory, Guid? ClassId,
     string ConfigurationMethod = "IMFTransform.Attributes");

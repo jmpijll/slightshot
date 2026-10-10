@@ -100,6 +100,7 @@ internal sealed class VideoSinkWriter : IDisposable
                 SetUInt32(parameters, new("8d390aac-dc5c-4200-b57f-814d04babab2"), 0);
                 Check(((delegate* unmanaged[Stdcall]<nint, uint, nint, nint, int>)Slot(sink, 4))(sink, stream, input, parameters));
                 ConfigureWorkerThreads();
+                ConfigureLowLatency();
                 ConfigureColorProcessors();
                 Check(((delegate* unmanaged[Stdcall]<nint, int>)Slot(sink, 5))(sink));
             }
@@ -191,6 +192,42 @@ internal sealed class VideoSinkWriter : IDisposable
             }
             return null;
         }
+        private void ConfigureLowLatency()
+        {
+            // The documented H.264 slice mode avoids multi-frame encoding.
+            // Low latency can change compression decisions at the same bitrate;
+            // keep the requested quality dimensions, cadence and bitrate intact.
+            Guid service = Guid.Empty, codecInterface = new("901db4c7-31ce-41a2-85dc-8fa0bf41b8da");
+            nint codec = 0;
+            if (((delegate* unmanaged[Stdcall]<nint, uint, Guid*, Guid*, nint*, int>)Slot(sink, 12))(sink, stream, &service, &codecInterface, &codec) < 0) return;
+            try
+            {
+                Guid latency = new("9c27891a-ed7a-40e1-88e8-b22727a024ee");
+                bool supported = ((delegate* unmanaged[Stdcall]<nint, Guid*, int>)Slot(codec, 3))(codec, &latency) == 0;
+                bool applied = false; bool? previous = null, actual = null;
+                if (supported)
+                {
+                    Variant value = default;
+                    try
+                    {
+                        if (((delegate* unmanaged[Stdcall]<nint, Guid*, Variant*, int>)Slot(codec, 8))(codec, &latency, &value) == 0 && value.Type == 11)
+                            previous = value.Boolean != 0;
+                    }
+                    finally { VariantClear(ref value); }
+                    Variant requested = new() { Type = 11, Boolean = -1 }; // VT_BOOL / VARIANT_TRUE
+                    applied = ((delegate* unmanaged[Stdcall]<nint, Guid*, Variant*, int>)Slot(codec, 9))(codec, &latency, &requested) == 0;
+                    value = default;
+                    try
+                    {
+                        if (((delegate* unmanaged[Stdcall]<nint, Guid*, Variant*, int>)Slot(codec, 8))(codec, &latency, &value) == 0 && value.Type == 11)
+                            actual = value.Boolean != 0;
+                    }
+                    finally { VariantClear(ref value); }
+                }
+                metrics?.RecordEncoderLowLatency(supported, applied, previous, actual);
+            }
+            finally { Release(codec); }
+        }
         private void ConfigureColorProcessors()
         {
             Guid extendedInterface = new("588d72ab-5bc1-496a-8714-b70617141b25"); nint extended = 0;
@@ -227,7 +264,7 @@ internal sealed class VideoSinkWriter : IDisposable
             finally { Release(extended); }
         }
         [StructLayout(LayoutKind.Explicit, Size = 24)]
-        private struct Variant { [FieldOffset(0)] public ushort Type; [FieldOffset(8)] public uint UInt32; }
+        private struct Variant { [FieldOffset(0)] public ushort Type; [FieldOffset(8)] public uint UInt32; [FieldOffset(8)] public short Boolean; }
         private static nint VideoType(Guid subtype, int width, int height, int rate)
         {
             Check(MFCreateMediaType(out nint type));
