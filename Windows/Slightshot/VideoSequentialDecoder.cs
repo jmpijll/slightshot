@@ -271,7 +271,10 @@ internal sealed class VideoSequentialDecoder : IDisposable
             Guid timeFormat = Guid.Empty;
             byte* value = stackalloc byte[24]; new Span<byte>(value, 24).Clear();
             *(ushort*)value = 20; // PROPVARIANT VT_I8
-            *(long*)(value + 8) = checked(sourceOrigin + position.Ticks);
+            // A positive first PTS can extend the last sample beyond MF's
+            // reported track duration. Seek conservatively before the desired
+            // source time; lookahead still selects using its original origin.
+            *(long*)(value + 8) = Math.Max(0, Math.Min(position.Ticks, checked(sourceOrigin + position.Ticks)));
             Check(((delegate* unmanaged[Stdcall]<nint, Guid*, byte*, int>)Slot(source, 8))(source, &timeFormat, value));
             hasCurrent = hasNext = ended = false;
         }
