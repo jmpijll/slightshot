@@ -8,11 +8,11 @@ internal static class VideoAnnotationRenderer
 {
     // Shared by native preview and export. Compositing order, glyphs and effect
     // regions are the same as the screenshot editor; only time filters marks.
-    internal static BitmapSource Render(BitmapSource frame, TimeSpan position, IReadOnlyList<TimedAnnotation> annotations)
+    internal static BitmapSource Render(BitmapSource frame, TimeSpan position, IReadOnlyList<TimedAnnotation> annotations, double sourceWidth = 0)
     {
         var visible = annotations.Where(item => item.IsVisible(position)).Select(item => item.Annotation).ToArray();
         if (visible.Length == 0) return frame;
-        var source = new EditorImageSource(frame, 1);
+        var source = new EditorImageSource(frame, sourceWidth > 0 ? frame.PixelWidth / sourceWidth : 1);
         return AnnotationRenderer.Flatten(source, source.Bounds, visible);
     }
 }
@@ -23,6 +23,7 @@ internal sealed class VideoRenderWorker : IDisposable
 {
     private readonly Thread thread;
     private readonly TaskCompletionSource<Dispatcher> ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private VideoPixelCompositor? compositor;
     internal VideoRenderWorker()
     {
         thread = new Thread(() => { ready.SetResult(Dispatcher.CurrentDispatcher); Dispatcher.Run(); }) { IsBackground = true, Name = "Slightshot video compositor" };
@@ -33,12 +34,23 @@ internal sealed class VideoRenderWorker : IDisposable
         var dispatcher = await ready.Task.ConfigureAwait(false);
         return await dispatcher.InvokeAsync(() => VideoAnnotationRenderer.Render(frame, position, annotations), DispatcherPriority.Background, cancellation).Task.ConfigureAwait(false);
     }
+    internal async Task ComposeAsync(byte[] pixels, int width, int height, TimeSpan position, IReadOnlyList<TimedAnnotation> annotations, CancellationToken cancellation)
+    {
+        var dispatcher = await ready.Task.ConfigureAwait(false);
+        await dispatcher.InvokeAsync(() =>
+        {
+            compositor ??= new VideoPixelCompositor(width, height);
+            compositor.Render(pixels, position, annotations, cancellation);
+        }, DispatcherPriority.Background, cancellation).Task.ConfigureAwait(false);
+    }
     public void Dispose()
     {
         // Cancellation or a failed destination can happen before the render
         // thread starts. Wait for its dispatcher before requesting shutdown;
         // joining first would strand a freshly started Dispatcher.Run loop.
-        ready.Task.GetAwaiter().GetResult().BeginInvokeShutdown(DispatcherPriority.Background);
+        var dispatcher = ready.Task.GetAwaiter().GetResult();
+        dispatcher.Invoke(() => compositor?.Dispose());
+        dispatcher.BeginInvokeShutdown(DispatcherPriority.Background);
         thread.Join();
     }
 }

@@ -30,7 +30,7 @@ internal sealed class VideoFrameSource : IDisposable
         var composition = new MediaComposition(); composition.Clips.Add(clip);
         return new(composition, checked((int)properties.Width), checked((int)properties.Height), clip.OriginalDuration);
     }
-    internal async Task<BitmapSource> GetFrameAsync(TimeSpan position, CancellationToken cancellation = default)
+    internal async Task<BitmapSource> GetFrameAsync(TimeSpan position, CancellationToken cancellation = default, int maximumWidth = 0)
     {
         await decoder.WaitAsync(cancellation).ConfigureAwait(false);
         try
@@ -39,7 +39,9 @@ internal sealed class VideoFrameSource : IDisposable
             // The exact endpoint lies outside the composition. Show its last
             // frame when a user drags the playhead to the end of the clip.
             var safe = TimeSpan.FromTicks(Math.Clamp(position.Ticks, 0, Math.Max(0, Duration.Ticks - 1)));
-            using var thumbnail = await composition.GetThumbnailAsync(safe, Width, Height, VideoFramePrecision.NearestFrame).AsTask(cancellation).ConfigureAwait(false);
+            int width = maximumWidth > 0 ? Math.Min(Width, maximumWidth) : Width;
+            int height = Math.Max(1, (int)Math.Round((double)width * Height / Width));
+            using var thumbnail = await composition.GetThumbnailAsync(safe, width, height, VideoFramePrecision.NearestFrame).AsTask(cancellation).ConfigureAwait(false);
             var image = await Windows.Graphics.Imaging.BitmapDecoder.CreateAsync(thumbnail).AsTask(cancellation).ConfigureAwait(false);
             var data = await image.GetPixelDataAsync(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied,
                 new BitmapTransform(), ExifOrientationMode.IgnoreExifOrientation, ColorManagementMode.DoNotColorManage).AsTask(cancellation).ConfigureAwait(false);

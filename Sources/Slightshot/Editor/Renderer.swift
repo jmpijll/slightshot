@@ -95,7 +95,8 @@ enum Renderer {
                            width: effect.rect.width, height: effect.rect.height)
         let pixels = selectionPixels(image: source, scale: scale, selection: local)
         guard !pixels.isNull, pixels.width >= 1, pixels.height >= 1,
-              let image = RasterEffects.render(effect.effect, image: source, pixels: pixels, scale: scale)
+              let image = RasterEffects.render(effect.effect, image: source, pixels: pixels,
+                                               scale: scale * annotation.effectiveRasterScale)
         else { return nil }
         return (image, pixels)
     }

@@ -16,6 +16,7 @@ internal sealed class VideoAnnotationSurface : FrameworkElement
     private BitmapSource? composition;
     private Annotation? live;
     private PointD anchor;
+    private double gestureScale = 1;
     private readonly List<PointD> points = [];
     internal TimeSpan Position { get; set; }
     internal Tool? ActiveTool { get; set; }
@@ -39,7 +40,7 @@ internal sealed class VideoAnnotationSurface : FrameworkElement
         {
             var annotations = history.Items.ToList();
             if (live != null) annotations.Add(new(Guid.Empty, live, TimeSpan.Zero, history.Duration));
-            composition = VideoAnnotationRenderer.Render(frame, Position, annotations);
+            composition = VideoAnnotationRenderer.Render(frame, Position, annotations, Width);
         }
         dc.DrawImage(composition, new Rect(0, 0, Width, Height));
         if (history.Selected is { } selected && selected.IsVisible(Position))
@@ -59,6 +60,7 @@ internal sealed class VideoAnnotationSurface : FrameworkElement
             SelectionRequested?.Invoke(selected?.Id); e.Handled = true; return;
         }
         if (tool == Tool.Text) { TextRequested?.Invoke(point); e.Handled = true; return; }
+        gestureScale = Math.Max(0.05, ViewScale);
         anchor = point; points.Clear(); points.Add(point); live = Make(point); CaptureMouse(); Refresh(); e.Handled = true;
     }
     protected override void OnMouseMove(MouseEventArgs e)
@@ -89,10 +91,10 @@ internal sealed class VideoAnnotationSurface : FrameworkElement
         var tool = ActiveTool!.Value;
         if ((Keyboard.Modifiers & ModifierKeys.Shift) != 0 && tool is Tool.Line or Tool.Arrow or Tool.Rectangle)
             end = SelectionGeometry.AxisLocked(anchor, end).Clamp(new(0, 0, Width, Height));
-        double scale = Math.Max(0.05, ViewScale);
+        double scale = gestureScale;
         return new(tool, tool is Tool.Pen or Tool.Marker ? points.ToArray() : tool == Tool.Step ? [anchor] : [anchor, end],
             settings.AnnotationColor, settings.LineWidth / scale, settings.FontSize / scale,
-            StepNumber: Annotation.NextStepNumber(history.Items.Select(item => item.Annotation)));
+            StepNumber: Annotation.NextStepNumber(history.Items.Select(item => item.Annotation)), RasterScale: 1 / scale);
     }
     private static Rect Bounds(Annotation annotation)
     {

@@ -115,6 +115,13 @@ jobs:
           if (!$process.WaitForExit(240000)) { $process.Kill(); throw 'Native 4K benchmark exceeded four-minute deadline' }
           Get-Content "$output/video-editor-4k-validation.json" -ErrorAction SilentlyContinue
           if ($process.ExitCode -ne 0) { Get-Content "$output/video-editor-4k-failure.txt" -ErrorAction SilentlyContinue; throw "Native 4K benchmark failed: $($process.ExitCode)" }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          retention-days: 7
+          name: windows-native-4k-benchmark-evidence
+          path: Windows/artifacts/video-editor/4k
+          if-no-files-found: warn
       - name: Test delayed capture on the real Windows desktop
         shell: pwsh
         run: |

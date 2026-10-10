@@ -175,7 +175,10 @@ struct RecordingExportTests {
                     }
                 }
             }
-            try await receiver.append(CVReadOnlyPixelBuffer(pixel), with: CMTime(value: Int64(frame), timescale: 30))
+            let buffer = CVReadOnlyPixelBuffer(pixel)
+            try await RecordingExport.appendWhenReady {
+                try receiver.appendImmediately(buffer, with: CMTime(value: Int64(frame), timescale: 30))
+            }
         }
         receiver.finish()
         writer.endSession(atSourceTime: CMTime(value: 2, timescale: 1))

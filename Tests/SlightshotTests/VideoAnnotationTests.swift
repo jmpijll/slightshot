@@ -82,10 +82,14 @@ struct VideoAnnotationTests {
             let redPhase = try await Self.frame(in: destination, at: 0.4)
             let bluePhase = try await Self.frame(in: destination, at: 0.6)
             let after = try await Self.frame(in: destination, at: 0.9)
-            #expect(pixel(before, x: 230, y: 140)[0] < 60)
+            // Hardware/software H.264 encoders can map the gray fixture's
+            // background differently (the hosted runner produces red=60).
+            // Compare the line site with untouched background in the same frame
+            // so this tests timing, independently of the encoder's gray level.
+            #expect(abs(pixel(before, x: 230, y: 140)[0] - pixel(before, x: 230, y: 155)[0]) < 20)
             #expect(pixel(redPhase, x: 230, y: 140)[0] > 200)
             #expect(pixel(bluePhase, x: 230, y: 140)[0] > 200)
-            #expect(pixel(after, x: 230, y: 140)[0] < 60)
+            #expect(abs(pixel(after, x: 230, y: 140)[0] - pixel(after, x: 230, y: 155)[0]) < 20)
             // The current frame changes from red detail to blue detail midway.
             // Both privacy tools must process the new pixels, never a cached frame.
             for x in [50, 110] {
@@ -204,7 +208,10 @@ struct VideoAnnotationTests {
                     bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue))
                 context.draw(image, in: CGRect(x: 0, y: 0, width: 320, height: 180))
             }
-            try await receiver.append(CVReadOnlyPixelBuffer(buffer), with: CMTime(value: Int64(index), timescale: 30))
+            let pixel = CVReadOnlyPixelBuffer(buffer)
+            try await RecordingExport.appendWhenReady {
+                try receiver.appendImmediately(pixel, with: CMTime(value: Int64(index), timescale: 30))
+            }
         }
         receiver.finish()
         writer.endSession(atSourceTime: CMTime(value: Int64(frameCount), timescale: 30))

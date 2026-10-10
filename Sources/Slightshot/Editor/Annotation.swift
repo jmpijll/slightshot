@@ -1,8 +1,8 @@
 import AppKit
 
-/// One drawn mark. Coordinates are always in *display points with a top-left
-/// origin*, matching the flipped overlay view, so the same `draw()` renders
-/// both on screen and into the exported image.
+/// One drawn mark in top-left canvas coordinates: display points for screenshots
+/// and source pixels for video. The renderer supplies the image scale so the
+/// same `draw()` renders both the preview and the exported image.
 struct Annotation: Identifiable {
     enum Shape {
         case stroke(points: [CGPoint])   // pen and marker
@@ -21,6 +21,13 @@ struct Annotation: Identifiable {
     var lineWidth: CGFloat
     var alpha: CGFloat = 1
     var fontSize: CGFloat = 18
+    /// Video stores source pixels, while privacy strength is chosen in the
+    /// displayed canvas. Keep the creation scale with the mark across resizing.
+    var rasterScale: CGFloat = 1
+
+    var effectiveRasterScale: CGFloat {
+        rasterScale.isFinite && rasterScale > 0 ? rasterScale : 1
+    }
 
     static func nextStepNumber(in annotations: [Annotation]) -> Int {
         let numbers = annotations.compactMap { annotation -> Int? in

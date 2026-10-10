@@ -55,12 +55,12 @@ internal static class VideoAnnotationExport
                     var image = await decoder.GetFrameAsync(position, stop.Token);
                     metrics?.AddDecode(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
                     measured = Stopwatch.GetTimestamp();
-                    var composed = await renderer.RenderAsync(image, position, annotations, stop.Token);
-                    metrics?.AddRender(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
-                    measured = Stopwatch.GetTimestamp();
                     frame = await frames.RentAsync(stop.Token);
-                    composed.CopyPixels(frame.Pixels, decoder.Width * 4, 0);
+                    image.CopyPixels(frame.Pixels, decoder.Width * 4, 0);
                     metrics?.AddCopy(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
+                    measured = Stopwatch.GetTimestamp();
+                    await renderer.ComposeAsync(frame.Pixels, decoder.Width, decoder.Height, position, annotations, stop.Token);
+                    metrics?.AddRender(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
                     stop.Token.ThrowIfCancellationRequested();
                     sample = MediaStreamSample.CreateFromBuffer(frame.Pixels.AsBuffer(), position);
                     sample.Duration = TimeSpan.FromTicks(Math.Min(TimeSpan.TicksPerSecond / rate, decoder.Duration.Ticks - position.Ticks));

@@ -10,6 +10,7 @@ enum VideoFrameRenderer {
         let rect: CGRect
         let overlay: CGImage?
         let effect: RasterEffect?
+        let rasterScale: CGFloat
 
         func isActive(at time: TimeInterval) -> Bool { time >= start && time < end }
     }
@@ -38,7 +39,8 @@ enum VideoFrameRenderer {
                 let rect = effect.rect.integral.intersection(bounds)
                 guard !rect.isNull, !rect.isEmpty else { return nil }
                 return PreparedAnnotation(start: value.start, end: value.end, rect: rect,
-                                          overlay: nil, effect: effect.effect)
+                                          overlay: nil, effect: effect.effect,
+                                          rasterScale: value.annotation.effectiveRasterScale)
             }
             let rect = value.annotation.dirtyBounds.integral.intersection(bounds)
             guard !rect.isNull, !rect.isEmpty else { return nil }
@@ -47,7 +49,7 @@ enum VideoFrameRenderer {
                 throw RecordingError.failed("A video annotation could not be drawn.")
             }
             return PreparedAnnotation(start: value.start, end: value.end, rect: rect,
-                                      overlay: overlay, effect: nil)
+                                      overlay: overlay, effect: nil, rasterScale: 1)
         }
     }
 
@@ -74,7 +76,8 @@ enum VideoFrameRenderer {
                                      width: value.rect.width, height: value.rect.height)
             if let effect = value.effect {
                 guard let current = context.makeImage(),
-                      let patch = RasterEffects.render(effect, image: current, pixels: value.rect, scale: 1) else {
+                      let patch = RasterEffects.render(effect, image: current, pixels: value.rect,
+                                                       scale: value.rasterScale) else {
                     throw RecordingError.failed("A video privacy effect could not be applied.")
                 }
                 context.saveGState()

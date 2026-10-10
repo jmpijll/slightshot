@@ -12,7 +12,11 @@ internal static class VideoAnnotationChecks
         }
         var duration = TimeSpan.FromSeconds(5);
         var history = new VideoAnnotationHistory(duration);
-        var blur = history.Add(new(Tool.Blur, [new(40, 50), new(120, 90)], "#FF3B30", 3));
+        var blur = history.Add(new(Tool.Blur, [new(40, 50), new(120, 90)], "#FF3B30", 3, RasterScale: 6));
+        Require(blur.Annotation.EffectiveRasterScale == 6, "4K fit-view effect strength is captured per mark");
+        Require(new Annotation(Tool.Blur, [], "#FF3B30", 3).EffectiveRasterScale == 1, "screenshot effects retain their default strength");
+        foreach (double invalid in new[] { double.NaN, double.PositiveInfinity, 0, -1 })
+            Require((blur.Annotation with { RasterScale = invalid }).EffectiveRasterScale == 1, "invalid raster scale safely falls back to screenshot strength");
         Require(blur.Begin == TimeSpan.Zero && blur.End == duration, "a new mark covers the whole clip");
         history.SetTiming(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3));
         Require(history.VisibleAt(TimeSpan.FromSeconds(0.999)).Length == 0, "mark is absent before its interval");
@@ -29,6 +33,7 @@ internal static class VideoAnnotationChecks
         history.CommitTimingEdit(); history.Undo();
         Require(history.Selected!.Begin == TimeSpan.FromSeconds(1) && history.Selected.End == TimeSpan.FromSeconds(3), "one undo reverses an entire range drag");
         history.Redo(); Require(history.Selected!.Begin == TimeSpan.FromSeconds(0.2), "redo restores timing");
+        Require(history.Selected.Annotation.RasterScale == 6, "timing undo/redo preserves fixed raster strength");
         history.SetTiming(TimeSpan.FromSeconds(-2), TimeSpan.FromSeconds(9));
         Require(history.Selected!.Begin == TimeSpan.Zero && history.Selected.End == duration, "timing clamps to clip bounds");
         history.SetTiming(duration, TimeSpan.Zero);
@@ -37,6 +42,7 @@ internal static class VideoAnnotationChecks
         Require(history.Items.Count == 1 && history.SelectedId == blur.Id, "deleting selects the adjacent mark");
         history.Undo(); Require(history.Items.Count == 2 && history.SelectedId == arrow.Id, "undo restores deletion and selection");
         var snapshot = history.ExportSnapshot(); snapshot[0].Annotation.Points[0] = new(999, 999);
+        Require(snapshot[0].Annotation.RasterScale == 6, "export snapshots preserve raster strength");
         Require(history.Items[0].Annotation.Points[0] == new PointD(40, 50), "export snapshot owns its point arrays");
         history.Undo(); history.Add(new(Tool.Text, [new(10, 10)], "#FFFFFF", 3, Text: "New"));
         Require(!history.CanRedo, "a new edit clears redo");

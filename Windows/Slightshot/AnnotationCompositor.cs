@@ -122,14 +122,15 @@ internal sealed class AnnotationCompositor(EditorImageSource display)
         var local = new RectD(region.X - selection.X, region.Y - selection.Y, region.Width, region.Height);
         var pixels = local.ToPixels(display.Scale, display.Scale, image.PixelWidth, image.PixelHeight);
         var output = PixelRect(pixels);
-        int padding = annotation.Tool == Tool.Blur ? RasterEffects.BlurPadding(RasterEffects.BlurRadius * display.Scale) : 0;
+        double effectScale = display.Scale * annotation.EffectiveRasterScale;
+        int padding = annotation.Tool == Tool.Blur ? RasterEffects.BlurPadding(RasterEffects.BlurRadius * effectScale) : 0;
         int left = Math.Max(0, output.X - padding), top = Math.Max(0, output.Y - padding);
         int right = Math.Min(image.PixelWidth, output.X + output.Width + padding), bottom = Math.Min(image.PixelHeight, output.Y + output.Height + padding);
         int width = right - left, height = bottom - top;
         var buffer = new byte[width * height * 4];
         image.CopyPixels(new Int32Rect(left, top, width, height), buffer, width * 4, 0);
-        if (annotation.Tool == Tool.Blur) RasterEffects.Blur(buffer, width, height, RasterEffects.BlurRadius * display.Scale);
-        else RasterEffects.Pixelate(buffer, width, height, Math.Max(1, (int)Math.Round(RasterEffects.PixelBlockSize * display.Scale)));
+        if (annotation.Tool == Tool.Blur) RasterEffects.Blur(buffer, width, height, RasterEffects.BlurRadius * effectScale);
+        else RasterEffects.Pixelate(buffer, width, height, Math.Max(1, (int)Math.Round(RasterEffects.PixelBlockSize * effectScale)));
         var transformed = BitmapSource.Create(width, height, 96 * display.Scale, 96 * display.Scale, PixelFormats.Pbgra32, null, buffer, width * 4);
         var patch = new CroppedBitmap(transformed, new Int32Rect(output.X - left, output.Y - top, output.Width, output.Height)); patch.Freeze();
         return new(patch, new Rect(selection.X + output.X / display.Scale, selection.Y + output.Y / display.Scale, output.Width / display.Scale, output.Height / display.Scale));

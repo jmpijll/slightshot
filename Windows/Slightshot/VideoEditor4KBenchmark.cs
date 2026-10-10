@@ -3,6 +3,7 @@ using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Slightshot.Core;
@@ -41,6 +42,23 @@ internal static class VideoEditor4KBenchmark
             byte shade = pattern ? ((x / 8 + y / 8) % 2 == 0 ? (byte)25 : (byte)230) : (byte)238;
             pixels[offset] = shade; pixels[offset + 1] = shade; pixels[offset + 2] = shade; pixels[offset + 3] = 255;
         }
+        // Readable invented account text at fit-view size makes weak effects
+        // visible in actual source/MP4 captures, alongside the high-frequency
+        // checker region used for numerical codec/effect validation.
+        var baseImage = BitmapSource.Create(width, height, 96, 96, PixelFormats.Pbgra32, null, pixels, width * 4);
+        var fixture = new DrawingVisual();
+        using (var dc = fixture.RenderOpen())
+        {
+            dc.DrawImage(baseImage, new Rect(0, 0, width, height));
+            foreach (int x in new[] { 228, 1008 })
+            {
+                dc.DrawRectangle(Brushes.White, null, new Rect(x, 1210, 540, 250));
+                dc.DrawText(AnnotationRenderer.Text("ACCT 1234", 84, Brushes.Black), new Point(x + 20, 1220));
+                dc.DrawText(AnnotationRenderer.Text("KEY 5678", 84, Brushes.Black), new Point(x + 20, 1340));
+            }
+        }
+        var accountSource = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+        accountSource.Render(fixture); accountSource.CopyPixels(pixels, width * 4, 0);
         int count = 0;
         using var session = new RecordingSession(width, height, target =>
         {
@@ -61,6 +79,8 @@ internal static class VideoEditor4KBenchmark
         var editor = new VideoEditorWindow(source, new Settings { AnnotationColor = "#FF3B30", LineWidth = 5, FontSize = 24 }, _ => Task.FromResult(false), true);
         var seeks = new List<double>(); var metrics = new VideoExportMetrics();
         double exportSeconds = 0, cancellationSeconds = 0, viewScale = 1;
+        double effectiveRasterScale = 1;
+        double blurReferenceDelta = 0, pixelReferenceDelta = 0;
         try
         {
             editor.Show(); editor.Activate(); editor.UpdateLayout(); heartbeat.Start(); lastBeat = Stopwatch.GetTimestamp();
@@ -76,6 +96,7 @@ internal static class VideoEditor4KBenchmark
             editor.SetSelectedTiming(TimeSpan.FromSeconds(0.35), TimeSpan.FromSeconds(1.1));
             editor.Surface.ActiveTool = null;
             var annotations = editor.History.ExportSnapshot();
+            effectiveRasterScale = annotations.Single(mark => mark.Annotation.Tool == Tool.Pixelate).Annotation.EffectiveRasterScale;
             foreach (double seconds in new[] { 0.15, 0.7, 1.25 })
             {
                 var watch = Stopwatch.StartNew(); await editor.SeekAsync(TimeSpan.FromSeconds(seconds));
@@ -100,7 +121,23 @@ internal static class VideoEditor4KBenchmark
                 double pixel = VideoEditorSmokeTest.Delta(original, frame, new Int32Rect(1030, 1180, 450, 530));
                 Require(seconds is > .35 and < 1.1 ? blur > 35 && pixel > 35 : blur < 25 && pixel < 25, "4K MP4 effects only during interval");
                 Require(VideoEditorSmokeTest.Delta(rendered, frame, new Int32Rect(120, 1000, 1680, 960)) < 30, "4K preview/export pixels agree within H.264 tolerance");
-                if (seconds == 0.7) VideoEditorSmokeTest.Save(frame, Path.Combine(directory, "video-editor-4k-output-during.png"));
+                if (seconds == 0.7)
+                {
+                    VideoEditorSmokeTest.Save(frame, Path.Combine(directory, "video-editor-4k-output-during.png"));
+                    int fitWidth = Math.Max(1, (int)Math.Round(width * viewScale)); double scale = (double)fitWidth / width;
+                    var fitOriginal = Fit(original, fitWidth); var fitVideo = Fit(rendered, fitWidth);
+                    var referenceMarks = annotations.Where(mark => mark.Annotation.IsRasterEffect).Select(mark => mark.Annotation with
+                    {
+                        Points = mark.Annotation.Points.Select(point => new PointD(point.X * scale, point.Y * scale)).ToArray(), RasterScale = 1
+                    }).ToArray();
+                    var referenceSource = new EditorImageSource(fitOriginal, 1);
+                    var screenshot = AnnotationRenderer.Flatten(referenceSource, referenceSource.Bounds, referenceMarks);
+                    Int32Rect Region(int left) => new((int)(left * scale), (int)(1180 * scale), (int)(450 * scale), (int)(530 * scale));
+                    blurReferenceDelta = VideoEditorSmokeTest.Delta(screenshot, fitVideo, Region(240));
+                    pixelReferenceDelta = VideoEditorSmokeTest.Delta(screenshot, fitVideo, Region(1030));
+                    VideoEditorSmokeTest.Save(screenshot, Path.Combine(directory, "video-editor-4k-screenshot-strength-reference.png"));
+                    VideoEditorSmokeTest.Save(fitVideo, Path.Combine(directory, "video-editor-4k-fit-view-effects.png"));
+                }
             }
             string preserved = Path.Combine(directory, "preserved.mp4"); byte[] existing = [11, 22, 33, 44]; File.WriteAllBytes(preserved, existing);
             using var cancel = new CancellationTokenSource();
@@ -122,23 +159,28 @@ internal static class VideoEditor4KBenchmark
         if (maxDispatcherGap > 250) acceptance.Add("UI blocked for more than 250 ms");
         if (peakPrivate > 1536L * 1024 * 1024) acceptance.Add("Private bytes exceed bounded 1.5 GiB budget");
         if (cancellationSeconds > 5) acceptance.Add("4K cancellation exceeds 5 seconds");
-        // The production gesture currently stores no view-normalized raster
-        // strength. The baseline captures this independently of pixel delta.
-        double effectiveRasterScale = 1;
+        if (blurReferenceDelta > 18 || pixelReferenceDelta > 18) acceptance.Add("Rendered fit-view effects differ from screenshot strength by more than 18 mean channel values");
         if (RasterEffects.PixelBlockSize * effectiveRasterScale * viewScale < 10) acceptance.Add("Pixelation weaker than screenshot 12-point blocks in fit view");
         File.WriteAllText(Path.Combine(directory, "video-editor-4k-validation.json"), JsonSerializer.Serialize(new
         {
             platform = "Windows native WPF / Media Foundation", baseline,
             sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
-            fixture = "3840×2160 synthetic moving recording, native pointer-drawn blur/pixelate, 0.35–1.1s interval, actual High 30fps MP4. Native editor HWND screenshots; no personal source data.",
+            fixture = "3840×2160 synthetic moving recording, high-frequency checker and invented readable ACCT1234 / KEY5678 text, native pointer-drawn blur/pixelate, 0.35–1.1s interval, actual High 30fps MP4. Native editor HWND screenshots; no personal source data.",
             durationSeconds = source.Duration.TotalSeconds, exportSeconds, frames = metrics.Frames, exportFramesPerSecond = metrics.Frames / exportSeconds,
             metrics.DecodeMilliseconds, metrics.RenderMilliseconds, metrics.CopyMilliseconds,
             seekMilliseconds = seeks, maxDispatcherGapMilliseconds = maxDispatcherGap, peakPrivateMiB = peakPrivate / 1048576.0, peakWorkingMiB = peakWorking / 1048576.0,
             cancellationSeconds, viewScale, effectiveBlurPoints = RasterEffects.BlurRadius * effectiveRasterScale * viewScale,
             effectivePixelBlockPoints = RasterEffects.PixelBlockSize * effectiveRasterScale * viewScale,
+            blurScreenshotReferenceMeanDelta = blurReferenceDelta, pixelScreenshotReferenceMeanDelta = pixelReferenceDelta,
             acceptanceFailures = acceptance
         }, new JsonSerializerOptions { WriteIndented = true }));
         Require(baseline || acceptance.Count == 0, string.Join("; ", acceptance));
+    }
+    private static BitmapSource Fit(BitmapSource bitmap, int width)
+    {
+        int height = Math.Max(1, (int)Math.Round((double)width * bitmap.PixelHeight / bitmap.PixelWidth));
+        var visual = new DrawingVisual(); using (var dc = visual.RenderOpen()) dc.DrawImage(bitmap, new Rect(0, 0, width, height));
+        var result = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32); result.Render(visual); result.Freeze(); return result;
     }
     private static void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException("4K video benchmark failed: " + message); }
 }

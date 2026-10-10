@@ -13,8 +13,14 @@ enum VideoEditorReview {
             ? URL(fileURLWithPath: arguments[flag + 1], isDirectory: true)
             : URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
                 .appendingPathComponent("build/video-editor-review", isDirectory: true)
-        let review = VideoEditorReviewDelegate(
-            directory: directory, automatic: arguments.contains("--video-editor-evidence"))
+        let fourK = arguments.contains("--video-editor-4k-evidence")
+        let sourceFlag = arguments.firstIndex(of: "--video-editor-review-source")
+        let sourceOverride = sourceFlag.flatMap { index in
+            arguments.indices.contains(index + 1) ? URL(fileURLWithPath: arguments[index + 1]) : nil
+        }
+        let review = VideoEditorReviewDelegate(directory: directory,
+            automatic: arguments.contains("--video-editor-evidence") || fourK, fourK: fourK,
+            sourceOverride: sourceOverride)
         app.delegate = review
         app.setActivationPolicy(.regular)
         withExtendedLifetime(review) { app.run() }
@@ -24,15 +30,19 @@ enum VideoEditorReview {
 private final class VideoEditorReviewDelegate: NSObject, NSApplicationDelegate {
     private let directory: URL
     private let automatic: Bool
+    private let fourK: Bool
+    private let sourceOverride: URL?
     private var editor: VideoEditorWindow?
     private var reviewTask: Task<Void, Never>?
     private var expiry: Timer?
-    private let sourceSize = CGSize(width: 960, height: 540)
-    private let duration: TimeInterval = 8
+    private var sourceSize: CGSize { fourK ? VideoEditor4KReview.sourceSize : CGSize(width: 960, height: 540) }
+    private var duration: TimeInterval { fourK ? VideoEditor4KReview.duration : 8 }
 
-    init(directory: URL, automatic: Bool) {
+    init(directory: URL, automatic: Bool, fourK: Bool = false, sourceOverride: URL? = nil) {
         self.directory = directory
         self.automatic = automatic
+        self.fourK = fourK
+        self.sourceOverride = sourceOverride
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -45,8 +55,8 @@ private final class VideoEditorReviewDelegate: NSObject, NSApplicationDelegate {
                         try FileManager.default.removeItem(at: previousFailure)
                     }
                 }
-                let source = directory.appendingPathComponent("fixture-source.mp4")
-                try await makeSource(at: source)
+                let source = sourceOverride ?? directory.appendingPathComponent("fixture-source.mp4")
+                if sourceOverride == nil { try await makeSource(at: source) }
                 let window = VideoEditorWindow(source: source, duration: duration, sourceSize: sourceSize)
                 window.title = "Slightshot video editor · synthetic review fixture"
                 window.appearance = NSAppearance(named: .darkAqua)
@@ -85,6 +95,13 @@ private final class VideoEditorReviewDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func captureEvidence(in window: VideoEditorWindow, source: URL) async throws {
+        if fourK {
+            try await VideoEditor4KReview.capture(in: window, source: source, directory: directory,
+                sourceCommit: sourceCommit, captureWindow: { [self] window, destination in
+                    try await capture(window: window, to: destination)
+                })
+            return
+        }
         let red = NSColor.systemRed
         let values = [
             Annotation(shape: .blur(CGRect(x: 70, y: 196, width: 335, height: 48)),
@@ -312,6 +329,7 @@ private final class VideoEditorReviewDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func makeSource(at url: URL) async throws {
+        if fourK { try await VideoEditor4KReview.makeSource(at: url); return }
         if FileManager.default.fileExists(atPath: url.path) { try FileManager.default.removeItem(at: url) }
         let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
@@ -329,7 +347,11 @@ private final class VideoEditorReviewDelegate: NSObject, NSApplicationDelegate {
             for index in 0..<192 {
                 try Task.checkCancellation()
                 let buffer = try makeFrame(index: index, attributes: attributes)
-                try await receiver.append(buffer, with: CMTime(value: Int64(index), timescale: 24))
+                let timestamp = CMTime(value: Int64(index), timescale: 24)
+                while try !receiver.appendImmediately(buffer, with: timestamp) {
+                    try Task.checkCancellation()
+                    try await Task.sleep(for: .milliseconds(1))
+                }
             }
             receiver.finish()
             writer.endSession(atSourceTime: CMTime(seconds: duration, preferredTimescale: 24))

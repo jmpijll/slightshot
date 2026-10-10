@@ -95,8 +95,8 @@ nonisolated enum RecordingExport {
         try await savePrepared(source: source, to: destination, quality: quality, annotations: prepared)
     }
 
-    /// AVFoundation's async providers apply backpressure without blocking the
-    /// main actor. The output is staged alongside its destination; an existing
+    /// Reader and writer backpressure keep encoding off the main actor.
+    /// The output is staged alongside its destination; an existing
     /// file is replaced only after a complete, playable MP4 has been written.
     @concurrent private static func savePrepared(
         source: URL, to destination: URL, quality: RecordingQuality,
@@ -152,7 +152,9 @@ nonisolated enum RecordingExport {
                 while let sample = try await provider.next() {
                     try Task.checkCancellation()
                     if let receiver {
-                        try await receiver.append(sample)
+                        try await appendWhenReady {
+                            try cancellation.append { try receiver.appendImmediately(sample) }
+                        }
                     } else if let pixels, let processor,
                               let pixelSample = CMReadySampleBuffer<CVReadOnlyPixelBuffer>(sample),
                               sample.presentationTimeStamp.isNumeric {
@@ -160,7 +162,12 @@ nonisolated enum RecordingExport {
                             throw RecordingError.failed("The video encoder buffer pool is unavailable.")
                         }
                         let buffer = try processor.render(pixelSample, pool: pool)
-                        try await pixels.append(CVReadOnlyPixelBuffer(buffer), with: sample.presentationTimeStamp)
+                        let frame = CVReadOnlyPixelBuffer(buffer)
+                        try await appendWhenReady {
+                            try cancellation.append {
+                                try pixels.appendImmediately(frame, with: sample.presentationTimeStamp)
+                            }
+                        }
                     } else {
                         continue // Stream boundary markers contain no image.
                     }
@@ -173,8 +180,8 @@ nonisolated enum RecordingExport {
                 }
                 try await finishAndCommit(writer: writer, staged: staged, destination: destination)
             } onCancel: {
-                // Native backpressure can suspend next()/append(). Cancelling
-                // their owners wakes those waits instead of waiting for a frame.
+                // Cancel the reader's suspended next() and release the writer.
+                // Append backpressure is a cancellable Swift wait above.
                 // cancelWriting() blocks until native cleanup finishes, so keep
                 // that work off the caller of the editor's Cancel action.
                 DispatchQueue.global(qos: .userInitiated).async { cancellation.cancel() }
@@ -185,6 +192,20 @@ nonisolated enum RecordingExport {
             // cancellation wakes their wait. Keep the editor's Cancel behavior.
             if Task.isCancelled { throw CancellationError() }
             throw error
+        }
+    }
+
+    /// The native async receiver can miss its readiness notification on macOS
+    /// 27, leaving append suspended even when the encoder is ready (including
+    /// after cancellation). Use its documented immediate backpressure result
+    /// instead. A false result never consumed the frame; an error is propagated.
+    nonisolated(nonsending) static func appendWhenReady(_ append: () throws -> Bool) async throws {
+        while true {
+            try Task.checkCancellation()
+            if try append() { return }
+            // Yield the worker while the encoder drains; cancellation wakes
+            // this cooperative wait without relying on a native continuation.
+            try await Task.sleep(for: .milliseconds(1))
         }
     }
 
@@ -233,6 +254,14 @@ nonisolated enum RecordingExport {
                 try writer.start()
                 writer.startSession(atSourceTime: .zero)
                 phase = .writing
+            }
+        }
+
+        func append(_ operation: () throws -> Bool) throws -> Bool {
+            try lock.withLock {
+                try Task.checkCancellation()
+                guard phase == .writing else { throw CancellationError() }
+                return try operation()
             }
         }
 

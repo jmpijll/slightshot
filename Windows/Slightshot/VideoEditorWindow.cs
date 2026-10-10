@@ -170,7 +170,9 @@ internal sealed class VideoEditorWindow : Window
             long request = seekVersion; var target = Position;
             try
             {
-                var image = await source.GetFrameAsync(target, lifetime.Token);
+                // Decode only the preview pixels that can be displayed. Marks
+                // keep source coordinates, and export always uses source size.
+                var image = await source.GetFrameAsync(target, lifetime.Token, 1280);
                 if (closing) return;
                 if (request != seekVersion) continue;
                 surface.Position = target; surface.SetFrame(image); return;
