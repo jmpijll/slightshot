@@ -1,0 +1,154 @@
+{
+  "createdAtUTC": "2026-10-10T16:48:00Z",
+  "macOS": {
+    "captureSourceCommit": "5a6133237d769cc2358fc08e31e19b0197d8018a",
+    "platform": "macOS 27 / Apple silicon / AppKit and AVFoundation",
+    "bundle": "Production release executable copied into an isolated ad-hoc signed bundle; only bundle identifier and bundle name changed for side-by-side review.",
+    "captureMethod": "Native rendering of the actual running NSWindow frame and contents. ScreenCaptureKit permission was unavailable.",
+    "fixture": "Synthetic 960x540 movie, 8 seconds at 24 fps. Demo Reviewer and demo@example.invalid are synthetic inputs.",
+    "automatedAcceptance": "Production commit, timing changes, Undo/Redo, seek, verified playhead 1/3.5/6.5 seconds, actual MP4 export and decoded arrow/blur/pixelation checks passed.",
+    "manualAcceptanceSourceCommit": "a808881fc1d8c067fef1c53277bae6d315ddb4c9",
+    "manualAcceptance": [
+      "Native pointer drag created an arrow.",
+      "Exact time fields set arrow to 2-5 seconds.",
+      "Pending caption plus immediate From=3 selected and committed caption at 3-8 seconds; arrow stayed 2-5 seconds.",
+      "Native interval handle drag changed start from 2.00 to 2.98; Undo restored 2.00."
+    ],
+    "swiftTestsSourceCommit": "a808881fc1d8c067fef1c53277bae6d315ddb4c9",
+    "swiftTests": {
+      "result": "passed",
+      "tests": 54,
+      "suites": 15,
+      "elapsedSeconds": 4.827
+    },
+    "latestValidation": [
+      "Warning-free swift build.",
+      "Strict SwiftLint passed.",
+      "Release bundle built and codesign --verify --deep --strict passed.",
+      "Native evidence fixture passed after the cancelled-seek guard change."
+    ],
+    "editedMP4": {
+      "codec": "h264",
+      "width": 960,
+      "height": 540,
+      "framesPerSecond": 30,
+      "durationSeconds": 8
+    }
+  },
+  "Windows": {
+    "captureSourceCommit": "2017eed8ba0bbf66bef542cc69c798529f722f71",
+    "platform": "Windows x64 hosted runner / native WPF, MediaComposition and MediaTranscoder",
+    "workflowRun": "https://github.com/jmpijll/slightshot/actions/runs/38068285277",
+    "workflowConclusion": "success",
+    "artifact": "windows-native-video-editor-evidence",
+    "captureMethod": "Actual native editor HWND captured from composed desktop pixels.",
+    "fixture": "Moving synthetic 640x360 BGRA source. Arrow drawn by automated native pointer; other tools use labelled fixture annotations.",
+    "coreChecks": 207,
+    "nativeAcceptance": "Native editor and extracted portable x64 editor smoke passed, including all tools, pointer/source coordinates, two handles, exact times, Undo/Redo/Delete, orientation, decoded MP4 timing at all three qualities, active cancellation, failed export/retry and source cleanup.",
+    "build": "0 warnings and errors; entire native/package/installer/upgrade/uninstall workflow passed.",
+    "editedMP4": {
+      "codec": "h264",
+      "width": 640,
+      "height": 360,
+      "framesPerSecond": 30,
+      "durationSeconds": 4.3
+    }
+  },
+  "documentation": {
+    "sourceCommit": "2017eed8ba0bbf66bef542cc69c798529f722f71",
+    "sourceURL": "https://github.com/jmpijll/slightshot/blob/2017eed8ba0bbf66bef542cc69c798529f722f71/README.md#record-an-area",
+    "captureMethod": "Real Chromium render of GitHub Markdown, captured with Playwright CLI."
+  },
+  "sharedValidation": {
+    "pythonTests": 14,
+    "originalUIIconsVerified": 20,
+    "result": "passed"
+  },
+  "limits": [
+    "Fixed-position marks; no tracking, keyframes, cutting or audio.",
+    "Raster strength uses existing screenshot renderer source pixels.",
+    "Large/4K preview/export performance and effect strength have not been accepted or benchmarked."
+  ],
+  "files": {
+    "documentation/readme-video-editor.png": {
+      "bytes": 483768,
+      "sha256": "43b98ac162daa3688fe019de53d0de625a7187b5e4b706f25c460058684b47b8"
+    },
+    "mac/control-video.mp4": {
+      "bytes": 220584,
+      "sha256": "f0d067040b68f889aceeea4ee67ed7f7153f6997743ec5b17ed40ae32e4d334b"
+    },
+    "mac/edited-video.mp4": {
+      "bytes": 236230,
+      "sha256": "b261f92ec3371ac81e8e01225ee830c93d98c4305a9923f7e6418d2b22e83040"
+    },
+    "mac/export-after.png": {
+      "bytes": 81201,
+      "sha256": "ccc0b2d54307d7ec0737a4bbf82d5492bc238244ac012dfdfd34fb92512d93c3"
+    },
+    "mac/export-before.png": {
+      "bytes": 85428,
+      "sha256": "310d52e9b7ec2f218d85aca141f9d975e90a25f412cd3beaea8ed20f789463c5"
+    },
+    "mac/export-during.png": {
+      "bytes": 91363,
+      "sha256": "1f8a3c945a7b1f229a2ed0829e3f59812ea1e46f142afbade0872977b39874d4"
+    },
+    "mac/fixture-source.mp4": {
+      "bytes": 211930,
+      "sha256": "2b816210a9c438c7e66e7723678bc85d0d7b06c46b60fc92060befbebc3107f0"
+    },
+    "mac/mac-after.png": {
+      "bytes": 367900,
+      "sha256": "155f7d6fdc9804c4be0b51127f7b8ccf36f29ed94bceb4fa37f87dda44ff9627"
+    },
+    "mac/mac-before.png": {
+      "bytes": 386595,
+      "sha256": "e1fc4ac00f7b9658f0a1cf4c0e35984c2a9f3d1281aa4f2e6ae716f5505f571d"
+    },
+    "mac/mac-during.png": {
+      "bytes": 374574,
+      "sha256": "46895603be5238ab054d525177682982bca9f37f64fbff8698cce99f2375969c"
+    },
+    "mac/mac-evidence-source.json": {
+      "bytes": 3740,
+      "sha256": "fac5c3eddcfc988589995acb1abd022b9ba62494cae081a6563f61b317b99111"
+    },
+    "windows/video-editor-after.png": {
+      "bytes": 95302,
+      "sha256": "f47a2270830de392bef8aedf496bc61e55437b80fec33d0b96f92d5e03f480ee"
+    },
+    "windows/video-editor-before.png": {
+      "bytes": 97914,
+      "sha256": "8b773c11268f878b6d50e855a68dfb3ccc3c97a450a77f8051ec9951146ddb3a"
+    },
+    "windows/video-editor-during.png": {
+      "bytes": 99349,
+      "sha256": "44e0138201e5418aaa7a53c4b63816ba28b99ab863cd1613251b32203a4687c7"
+    },
+    "windows/video-editor-high.mp4": {
+      "bytes": 90693,
+      "sha256": "da2dd9e0063feed8eff2dc9c24a5904d8fa1e23012262d94bd6a536dcbcc42a0"
+    },
+    "windows/video-editor-output-high-after.png": {
+      "bytes": 18401,
+      "sha256": "60311aaddff84682b01a7ab845afedce27e4cfd95ea0dfe2076badbb1a45bba1"
+    },
+    "windows/video-editor-output-high-before.png": {
+      "bytes": 11666,
+      "sha256": "7ea996119f8eabdb354858d2659f39fa9e1df2ce85a6dc70945e986079fbbd88"
+    },
+    "windows/video-editor-output-high-during.png": {
+      "bytes": 75227,
+      "sha256": "e470ca3167a70e0a3a23367944c7d45533a071b30adb0f379b22d036e2140be2"
+    },
+    "windows/video-editor-source.mp4": {
+      "bytes": 37920,
+      "sha256": "38d250982852137ea9f688c374e554fabc900b25bf191fd7b34170a6a377e05a"
+    },
+    "windows/video-editor-validation.json": {
+      "bytes": 2212,
+      "sha256": "d0b008eb46519db8ce157450380343034fd0541915dd4ddb60bebcc7939975b8"
+    }
+  }
+}

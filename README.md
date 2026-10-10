@@ -130,6 +130,9 @@ recording and annotations intact. A failed export also lets you return to the
 editor or retry. **Discard…** asks before removing the recording. Temporary
 source files are removed after saving, discarding, or quitting.
 
+See the [timed video editor review](docs/review/timed-video-annotations/README.md)
+for native Mac and Windows before/during/after screenshots and edited MP4s.
+
 See the [macOS recording review video](docs/review/recording/README.md)
 for the Record, Stop and save-time quality flow, and the
 [Windows recording validation](docs/windows.md#screen-recording) for that platform.

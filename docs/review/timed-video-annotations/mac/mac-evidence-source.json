@@ -1,0 +1,77 @@
+{
+  "captures" : [
+    {
+      "file" : "mac-before.png",
+      "interaction" : "Automated annotation commit, range editing, undo\/redo and seek.",
+      "platform" : "macOS",
+      "source" : "Native AppKit rendering of the running VideoEditorWindow frame and contents; ScreenCaptureKit unavailable: De gebruiker heeft TCC's voor het opnemen van app, venster, beeldscherm afgewezen",
+      "sourceCommit" : "5a6133237d769cc2358fc08e31e19b0197d8018a",
+      "timeSeconds" : 1,
+      "verifiedPlayheadSeconds" : 1,
+      "window" : "VideoEditorWindow"
+    },
+    {
+      "file" : "mac-during.png",
+      "interaction" : "Automated annotation commit, range editing, undo\/redo and seek.",
+      "platform" : "macOS",
+      "source" : "Native AppKit rendering of the running VideoEditorWindow frame and contents; ScreenCaptureKit unavailable: De gebruiker heeft TCC's voor het opnemen van app, venster, beeldscherm afgewezen",
+      "sourceCommit" : "5a6133237d769cc2358fc08e31e19b0197d8018a",
+      "timeSeconds" : 3.5,
+      "verifiedPlayheadSeconds" : 3.5,
+      "window" : "VideoEditorWindow"
+    },
+    {
+      "file" : "mac-after.png",
+      "interaction" : "Automated annotation commit, range editing, undo\/redo and seek.",
+      "platform" : "macOS",
+      "source" : "Native AppKit rendering of the running VideoEditorWindow frame and contents; ScreenCaptureKit unavailable: De gebruiker heeft TCC's voor het opnemen van app, venster, beeldscherm afgewezen",
+      "sourceCommit" : "5a6133237d769cc2358fc08e31e19b0197d8018a",
+      "timeSeconds" : 6.5,
+      "verifiedPlayheadSeconds" : 6.5,
+      "window" : "VideoEditorWindow"
+    }
+  ],
+  "effectRangeSeconds" : [
+    2,
+    5
+  ],
+  "export" : "edited-video.mp4",
+  "fixture" : "Synthetic 960×540, 8 second movie at 24 fps; Demo Reviewer and demo@example.invalid are fixture inputs. No desktop pixels or personal data.",
+  "interaction" : "Automated production annotation commit, range update, undo\/redo, seek and export. Native editor window screenshots.",
+  "platform" : "macOS",
+  "sourceCommit" : "5a6133237d769cc2358fc08e31e19b0197d8018a",
+  "validation" : {
+    "comparison" : "Edited frames compared with control-video.mp4, using the same annotated BGRA pipeline with a transparent empty-text layer. Source\/control codec-color drift measured separately.",
+    "durationSeconds" : 8,
+    "frames" : [
+      {
+        "arrowRedPixelFraction" : 0,
+        "blurRegionMeanRGBDifference" : 0,
+        "file" : "export-before.png",
+        "pixelateRegionMeanRGBDifference" : 0,
+        "sourceToControlBlurRegionMeanRGBDifference" : 6.2145936981757881,
+        "sourceToControlPixelateRegionMeanRGBDifference" : 6.4035399728997291,
+        "timeSeconds" : 1
+      },
+      {
+        "arrowRedPixelFraction" : 0.055956790123456793,
+        "blurRegionMeanRGBDifference" : 26.89917081260365,
+        "file" : "export-during.png",
+        "pixelateRegionMeanRGBDifference" : 19.397086720867208,
+        "sourceToControlBlurRegionMeanRGBDifference" : 6.2573383084577117,
+        "sourceToControlPixelateRegionMeanRGBDifference" : 6.3952066395663953,
+        "timeSeconds" : 3.5
+      },
+      {
+        "arrowRedPixelFraction" : 0,
+        "blurRegionMeanRGBDifference" : 0.22958126036484244,
+        "file" : "export-after.png",
+        "pixelateRegionMeanRGBDifference" : 0.62620257452574524,
+        "sourceToControlBlurRegionMeanRGBDifference" : 6.2344320066334991,
+        "sourceToControlPixelateRegionMeanRGBDifference" : 6.3926829268292682,
+        "timeSeconds" : 6.5
+      }
+    ],
+    "result" : "Passed: playable eight-second export; arrow, blur and pixelation present at 3.5s and absent at 1s \/ 6.5s. Raster changes exceed the inactive compression baseline."
+  }
+}
