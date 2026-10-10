@@ -219,6 +219,7 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
     }
 
     private func seek(to time: TimeInterval) async {
+        guard !Task.isCancelled else { return }
         seekRevision += 1
         let revision = seekRevision
         isSeeking = true
@@ -404,7 +405,14 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
         add(value.annotation)
         updateRange(start: value.start, end: value.end)
     }
-    func reviewSeek(to time: TimeInterval) async { pause(); await seek(to: time) }
+    var reviewCurrentTime: TimeInterval { canvas.time }
+
+    func reviewSeek(to time: TimeInterval) async {
+        seekTask?.cancel()
+        seekTask = nil
+        pause()
+        await seek(to: time)
+    }
     func reviewSelectAnnotation(index: Int) {
         guard annotations.indices.contains(index) else { return }
         select(annotations[index].id)

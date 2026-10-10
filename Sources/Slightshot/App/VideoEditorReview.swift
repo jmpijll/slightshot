@@ -114,9 +114,14 @@ private final class VideoEditorReviewDelegate: NSObject, NSApplicationDelegate {
             try Task.checkCancellation()
             await window.reviewSeek(to: time)
             try await Task.sleep(for: .milliseconds(250))
+            let currentTime = window.reviewCurrentTime
+            guard abs(currentTime - time) < 0.01 else {
+                throw RecordingError.failed("Review requested \(time)s but the editor displays \(currentTime)s.")
+            }
             let captureSource = try await capture(window: window,
                 to: directory.appendingPathComponent(name + ".png"))
             let captureReport: [String: Any] = ["file": name + ".png", "timeSeconds": time,
+                "verifiedPlayheadSeconds": currentTime,
                 "source": captureSource, "window": "VideoEditorWindow", "platform": "macOS",
                 "sourceCommit": sourceCommit,
                 "interaction": "Automated annotation commit, range editing, undo/redo and seek."]
