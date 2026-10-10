@@ -50,7 +50,7 @@ internal sealed class VideoEditorWindow : Window
         this.source = source; this.settings = settings; this.save = save;
         History = new(source.Duration);
         surface = new VideoAnnotationSurface(History, settings, source.Width, source.Height);
-        Title = "Edit recording"; Width = Math.Min(1040, SystemParameters.WorkArea.Width - 40); Height = Math.Min(710, SystemParameters.WorkArea.Height - 65); MinWidth = 720; MinHeight = 530;
+        Title = "Edit recording"; Width = Math.Min(1040, SystemParameters.WorkArea.Width - 40); Height = Math.Min(710, SystemParameters.WorkArea.Height - 65); MinWidth = 720; MinHeight = 560;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Appearance.ApplyWindowTheme(this, forceDark);
         var root = new Grid { Margin = new Thickness(16) };
@@ -111,7 +111,8 @@ internal sealed class VideoEditorWindow : Window
         entire.Click += (_, _) => { Pause(); History.SetTiming(TimeSpan.Zero, source.Duration); UpdateControls(); surface.Refresh(); };
         delete = new Button { Content = "Delete annotation", Padding = new Thickness(9, 5, 9, 5) };
         delete.Click += (_, _) => DeleteSelected(); timing.Children.Add(entire); timing.Children.Add(delete); inspector.Children.Add(timing);
-        Grid.SetColumn(inspector, 2); root.Children.Add(inspector);
+        var inspectorScroll = new ScrollViewer { Content = inspector, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        Grid.SetColumn(inspectorScroll, 2); root.Children.Add(inspectorScroll);
 
         var footer = new Grid { Margin = new Thickness(0, 16, 0, 0) };
         footer.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });

@@ -8,6 +8,18 @@ namespace Slightshot;
 
 internal static class RecordingExport
 {
+    // GDI capture and WPF CopyPixels both produce top-down BGRA. The default
+    // RGB media stride can be bottom-up; declare the positive stride explicitly
+    // so the native color converter preserves the image's vertical orientation.
+    internal static VideoEncodingProperties FrameProperties(int width, int height, int framesPerSecond)
+    {
+        var properties = VideoEncodingProperties.CreateUncompressed(MediaEncodingSubtypes.Bgra8, (uint)width, (uint)height);
+        properties.FrameRate.Numerator = (uint)framesPerSecond; properties.FrameRate.Denominator = 1;
+        properties.PixelAspectRatio.Numerator = properties.PixelAspectRatio.Denominator = 1;
+        properties.Properties[new Guid("644b4e48-1e02-4516-b0eb-c01ca9d49ac6")] = checked((uint)(width * 4)); // MF_MT_DEFAULT_STRIDE
+        return properties;
+    }
+
     internal static MediaEncodingProfile Profile(RecordingQuality quality, int sourceWidth, int sourceHeight)
     {
         var size = quality.Dimensions(sourceWidth, sourceHeight);

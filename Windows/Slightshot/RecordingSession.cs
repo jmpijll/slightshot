@@ -68,9 +68,7 @@ internal sealed class RecordingSession : IDisposable
 
     private async Task EncodeAsync()
     {
-        var properties = VideoEncodingProperties.CreateUncompressed(MediaEncodingSubtypes.Bgra8, (uint)Width, (uint)Height);
-        properties.FrameRate.Numerator = 30; properties.FrameRate.Denominator = 1;
-        properties.PixelAspectRatio.Numerator = properties.PixelAspectRatio.Denominator = 1;
+        var properties = RecordingExport.FrameProperties(Width, Height, 30);
         var source = new MediaStreamSource(new VideoStreamDescriptor(properties)) { BufferTime = TimeSpan.Zero, CanSeek = false, IsLive = true };
         source.Starting += SourceStarting;
         source.SampleRequested += SampleRequested;

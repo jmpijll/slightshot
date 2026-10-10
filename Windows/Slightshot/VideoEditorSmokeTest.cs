@@ -22,6 +22,8 @@ internal static class VideoEditorSmokeTest
         directory = Path.GetFullPath(directory); Directory.CreateDirectory(directory);
         const int width = 640, height = 360;
         var checks = new List<string>(); int count = 0;
+        for (int iteration = 0; iteration < 5; iteration++) { using var worker = new VideoRenderWorker(); }
+        checks.Add("Five immediate compositor-worker startup/shutdown cycles complete without joining a live dispatcher, covering cancellation before its first frame.");
         using var session = new RecordingSession(width, height, pixels =>
         {
             int number = Interlocked.Increment(ref count);
@@ -50,6 +52,10 @@ internal static class VideoEditorSmokeTest
         {
             editor.Show(); editor.Activate(); await editor.InitializeAsync(); await Task.Delay(200); editor.UpdateLayout();
             Require(editor.IsVisible && editor.Surface.CurrentFrame is { PixelWidth: width, PixelHeight: height }, "native editor displays full-resolution source pixels");
+            var top = new byte[4]; var bottom = new byte[4];
+            editor.Surface.CurrentFrame!.CopyPixels(new Int32Rect(5, 5, 1, 1), top, 4, 0);
+            editor.Surface.CurrentFrame.CopyPixels(new Int32Rect(5, height - 5, 1, 1), bottom, 4, 0);
+            Require(bottom[0] - top[0] > 30, "native BGRA source keeps the moving stripe at the top (positive media stride)");
             foreach (var tool in Enum.GetValues<Tool>())
                 Require(Buttons(editor).Any(button => Equals(button.ToolTip, tool == Tool.Step ? "Numbered steps" : tool.ToString())), "screenshot tool available: " + tool);
             var from = Descendants((DependencyObject)editor.Content).OfType<TextBox>().Single(field => AutomationProperties.GetName(field) == "Annotation start time in seconds");
@@ -79,6 +85,8 @@ internal static class VideoEditorSmokeTest
             ClickTooltip(editor, "Arrow");
             await DragAsync(editor.Surface, new(350, 250), new(480, 175));
             Require(editor.History.Items.Count == fixtureMarks + 1 && editor.History.Selected!.Annotation.Tool == Tool.Arrow, "real native pointer drag creates an arrow through the production tool");
+            var arrowPoints = editor.History.Selected!.Annotation.Points;
+            Require(Math.Abs(arrowPoints[0].X - 350) < 3 && Math.Abs(arrowPoints[0].Y - 250) < 3 && Math.Abs(arrowPoints[^1].X - 480) < 3 && Math.Abs(arrowPoints[^1].Y - 175) < 3, "native Viewbox interaction maps pointer positions to source pixels");
             await DragAsync(range, range.HandleCenter(true), range.PositionAt(1));
             await DragAsync(range, range.HandleCenter(false), range.PositionAt(3));
             Require(Math.Abs(editor.History.Selected!.Begin.TotalSeconds - 1) < 0.08 && Math.Abs(editor.History.Selected.End.TotalSeconds - 3) < 0.08, "two native interval handles change the selected annotation period");
@@ -115,8 +123,10 @@ internal static class VideoEditorSmokeTest
                 CaptureWindow(editor, Path.Combine(directory, "video-editor-" + point.Name + ".png"));
                 if (point.Name == "during")
                 {
-                    Require(Delta(editor.Surface.CurrentFrame!, rendered, new Int32Rect(40, 195, 85, 95)) > 40, "blur changes real preview pixels during its interval");
-                    Require(Delta(editor.Surface.CurrentFrame!, rendered, new Int32Rect(170, 195, 85, 95)) > 40, "pixelation changes real preview pixels during its interval");
+                    double blurDelta = Delta(editor.Surface.CurrentFrame!, rendered, new Int32Rect(40, 195, 85, 95));
+                    double pixelDelta = Delta(editor.Surface.CurrentFrame!, rendered, new Int32Rect(170, 195, 85, 95));
+                    Require(blurDelta > 40, $"blur changes real preview pixels during its interval (mean delta {blurDelta:0.00})");
+                    Require(pixelDelta > 40, $"pixelation changes real preview pixels during its interval (mean delta {pixelDelta:0.00})");
                 }
                 else Require(Delta(editor.Surface.CurrentFrame!, rendered, new Int32Rect(20, 70, 590, 250)) == 0, "annotations absent from preview " + point.Name + " their interval");
             }
@@ -171,15 +181,18 @@ internal static class VideoEditorSmokeTest
                 checks.Add($"{quality.Title()}: actual edited MP4 decoded before/in/after interval; text, pointer arrow, drawings, blur and pixelation match preview within codec tolerance. Native export took {watch.Elapsed.TotalSeconds:0.0}s for {source.Duration.TotalSeconds:0.0}s of {width}×{height} video.");
             }
             Require(File.Exists(session.SourcePath), "successful export leaves source available until editor closes");
-            File.WriteAllText(Path.Combine(directory, "video-editor-validation.json"), JsonSerializer.Serialize(new
-            {
-                platform = "Windows native WPF / MediaComposition / MediaTranscoder",
-                sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
-                source = "Moving synthetic BGRA recording. Real native editor HWND captured from composed desktop pixels. Arrow uses native automated pointer input; other annotations use labelled fixture inputs. Native sliders and buttons are operated automatically. MP4 is encoded and decoded through the production export path.",
-                checks
-            }, new JsonSerializerOptions { WriteIndented = true }));
         }
         finally { editor.CloseFixture(); await editor.Completion; }
+        session.Dispose();
+        Require(!Directory.Exists(session.DirectoryPath), "closing the native editor releases its decoder and removes temporary source files");
+        checks.Add("Closing the editor releases the preview decoder, and RecordingSession disposal removes its temporary source directory.");
+        File.WriteAllText(Path.Combine(directory, "video-editor-validation.json"), JsonSerializer.Serialize(new
+        {
+            platform = "Windows native WPF / MediaComposition / MediaTranscoder",
+            sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
+            source = "Moving synthetic BGRA recording. Real native editor HWND captured from composed desktop pixels. Arrow uses native automated pointer input; other annotations use labelled fixture inputs. Native sliders and buttons are operated automatically. MP4 is encoded and decoded through the production export path.",
+            checks
+        }, new JsonSerializerOptions { WriteIndented = true }));
     }
     private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
     {

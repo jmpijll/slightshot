@@ -33,10 +33,8 @@ internal static class VideoAnnotationExport
             TaskCompletionSource drained = new(TaskCreationOptions.RunContinuationsAsynchronously);
             Exception? sampleError = null;
             long nextFrame = 0;
-            var properties = VideoEncodingProperties.CreateUncompressed(MediaEncodingSubtypes.Bgra8, (uint)decoder.Width, (uint)decoder.Height);
             int rate = quality.FramesPerSecond();
-            properties.FrameRate.Numerator = (uint)rate; properties.FrameRate.Denominator = 1;
-            properties.PixelAspectRatio.Numerator = properties.PixelAspectRatio.Denominator = 1;
+            var properties = RecordingExport.FrameProperties(decoder.Width, decoder.Height, rate);
             var media = new MediaStreamSource(new VideoStreamDescriptor(properties)) { Duration = decoder.Duration, CanSeek = false, BufferTime = TimeSpan.Zero };
             void Starting(MediaStreamSource _, MediaStreamSourceStartingEventArgs args) => args.Request.SetActualStartPosition(TimeSpan.Zero);
             async void SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)

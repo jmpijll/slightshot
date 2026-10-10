@@ -35,7 +35,10 @@ internal sealed class VideoRenderWorker : IDisposable
     }
     public void Dispose()
     {
-        if (ready.Task.IsCompletedSuccessfully) ready.Task.Result.BeginInvokeShutdown(DispatcherPriority.Background);
+        // Cancellation or a failed destination can happen before the render
+        // thread starts. Wait for its dispatcher before requesting shutdown;
+        // joining first would strand a freshly started Dispatcher.Run loop.
+        ready.Task.GetAwaiter().GetResult().BeginInvokeShutdown(DispatcherPriority.Background);
         thread.Join();
     }
 }
