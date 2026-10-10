@@ -30,6 +30,14 @@ nonisolated enum RecordingQuality: Int, CaseIterable, Sendable {
         }
     }
 
+    func frameDuration(forSourceMinimum source: CMTime) -> CMTime {
+        let limit = CMTime(value: 1, timescale: framesPerSecond)
+        // A slower source must keep its own cadence instead of rounding its
+        // frames onto a faster grid. Unknown timing still uses the quality cap.
+        guard source.isNumeric, source.seconds > 0 else { return limit }
+        return CMTimeCompare(source, limit) > 0 ? source : limit
+    }
+
     func dimensions(for source: CGSize) -> CGSize {
         let scale = min(1, maximumDimension / max(source.width, source.height))
         // H.264 chroma samples require even dimensions. Round inward so neither
@@ -54,7 +62,7 @@ nonisolated enum RecordingQuality: Int, CaseIterable, Sendable {
         case .balanced: "Balance detail and file size"
         case .high: "Preserve more detail and smoother motion"
         }
-        return "\(Int(size.width)) × \(Int(size.height)) · \(framesPerSecond) fps\n\(tradeoff)"
+        return "\(Int(size.width)) × \(Int(size.height)) · up to \(framesPerSecond) fps\n\(tradeoff)"
     }
 }
 
@@ -121,14 +129,15 @@ nonisolated enum RecordingExport {
         guard duration.isNumeric, duration.seconds > 0 else { throw RecordingError.empty }
         let naturalSize = try await track.load(.naturalSize)
         let preferredTransform = try await track.load(.preferredTransform)
+        let frameDuration = quality.frameDuration(forSourceMinimum: try await track.load(.minFrameDuration))
         let sourceBounds = CGRect(origin: .zero, size: naturalSize).applying(preferredTransform).integral
         let sourceSize = sourceBounds.size
         let size = quality.dimensions(for: sourceSize)
         let geometry = FrameGeometry(sourceBounds: sourceBounds,
                                      preferredTransform: preferredTransform, outputSize: size)
         let reader = try AVAssetReader(asset: asset)
-        let output = compositionOutput(track: track, duration: duration, geometry: geometry, quality: quality,
-                                       annotated: !annotations.isEmpty)
+        let output = compositionOutput(track: track, duration: duration, geometry: geometry,
+                                       frameDuration: frameDuration, annotated: !annotations.isEmpty)
         let provider = reader.outputProvider(for: output)
         let writer = try AVAssetWriter(outputURL: staged, fileType: .mp4)
         writer.shouldOptimizeForNetworkUse = true
@@ -288,7 +297,7 @@ nonisolated enum RecordingExport {
     }
 
     private static func compositionOutput(
-        track: AVAssetTrack, duration: CMTime, geometry: FrameGeometry, quality: RecordingQuality, annotated: Bool
+        track: AVAssetTrack, duration: CMTime, geometry: FrameGeometry, frameDuration: CMTime, annotated: Bool
     ) -> AVAssetReaderVideoCompositionOutput {
         // Apply marks at source resolution, then resize the finished frame. This
         // preserves the screenshot tools' source-pixel stroke and privacy sizes.
@@ -309,7 +318,7 @@ nonisolated enum RecordingExport {
                 ? kCVPixelFormatType_32BGRA : kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
         ])
         output.videoComposition = AVVideoComposition(configuration: .init(
-            frameDuration: CMTime(value: 1, timescale: quality.framesPerSecond),
+            frameDuration: frameDuration,
             instructions: [instruction], renderSize: decodeSize,
             sourceTrackIDForFrameTiming: kCMPersistentTrackID_Invalid
         ))

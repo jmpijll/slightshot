@@ -296,9 +296,9 @@ extension VideoEditor4KReview {
         let nominalFrameRate = try await track.load(.nominalFrameRate)
         return ["quality": quality.title, "file": destination.lastPathComponent,
                 "outputWidth": dimensions.width, "outputHeight": dimensions.height,
-                "outputDimensionsVerified": true, "expectedOutputFPS": quality.framesPerSecond,
-                "actualNominalFrameRate": nominalFrameRate,
-                "expectedOutputFrames": Int(duration * Double(quality.framesPerSecond)),
+                "outputDimensionsVerified": true, "configuredMaximumFPS": quality.framesPerSecond,
+                "effectiveExpectedFPS": min(fps, quality.framesPerSecond), "actualNominalFPS": nominalFrameRate,
+                "expectedOutputFrames": Int(duration * Double(min(fps, quality.framesPerSecond))),
                 "wallSeconds": elapsed, "secondsPerSourceSecond": elapsed / duration,
                 "residentBytesBeforeExport": initial, "observedResidentBytesPeak": memory.peak,
                 "residentSamples": memory.count, "mainActorHeartbeatSamples": memory.heartbeatCount,
