@@ -10,15 +10,16 @@ namespace Slightshot;
 // source dimensions preserves the annotation coordinate system at every size.
 internal sealed class VideoFrameSource : IDisposable
 {
-    private readonly MediaComposition composition;
+    private MediaComposition? composition;
+    private readonly string path;
     private readonly SemaphoreSlim decoder = new(1, 1);
     private bool disposed;
     internal int Width { get; }
     internal int Height { get; }
     internal TimeSpan Duration { get; }
-    private VideoFrameSource(MediaComposition composition, int width, int height, TimeSpan duration)
+    private VideoFrameSource(string path, MediaComposition composition, int width, int height, TimeSpan duration)
     {
-        this.composition = composition; Width = width; Height = height; Duration = duration;
+        this.path = path; this.composition = composition; Width = width; Height = height; Duration = duration;
     }
     internal static async Task<VideoFrameSource> OpenAsync(string path, CancellationToken cancellation = default)
     {
@@ -28,7 +29,7 @@ internal sealed class VideoFrameSource : IDisposable
         if (properties.Width == 0 || properties.Height == 0 || clip.OriginalDuration <= TimeSpan.Zero)
             throw new InvalidOperationException("This recording has no playable video frames.");
         var composition = new MediaComposition(); composition.Clips.Add(clip);
-        return new(composition, checked((int)properties.Width), checked((int)properties.Height), clip.OriginalDuration);
+        return new(file.Path, composition, checked((int)properties.Width), checked((int)properties.Height), clip.OriginalDuration);
     }
     internal async Task<BitmapSource> GetFrameAsync(TimeSpan position, CancellationToken cancellation = default, int maximumWidth = 0)
     {
@@ -36,6 +37,12 @@ internal sealed class VideoFrameSource : IDisposable
         try
         {
             ObjectDisposedException.ThrowIf(disposed, this);
+            if (composition == null)
+            {
+                var file = await StorageFile.GetFileFromPathAsync(path).AsTask(cancellation).ConfigureAwait(false);
+                var clip = await MediaClip.CreateFromFileAsync(file).AsTask(cancellation).ConfigureAwait(false);
+                var reopened = new MediaComposition(); reopened.Clips.Add(clip); composition = reopened;
+            }
             // The exact endpoint lies outside the composition. Show its last
             // frame when a user drags the playhead to the end of the clip.
             var safe = TimeSpan.FromTicks(Math.Clamp(position.Ticks, 0, Math.Max(0, Duration.Ticks - 1)));
@@ -52,12 +59,25 @@ internal sealed class VideoFrameSource : IDisposable
         }
         finally { decoder.Release(); }
     }
+    internal async Task SuspendPreviewAsync(CancellationToken cancellation = default)
+    {
+        await decoder.WaitAsync(cancellation).ConfigureAwait(false);
+        try
+        {
+            ObjectDisposedException.ThrowIf(disposed, this);
+            // A frozen display bitmap remains usable without the native
+            // thumbnail graph. Drop its clip references before encoding;
+            // the next seek/play recreates it from the same recording.
+            composition?.Clips.Clear(); composition = null;
+        }
+        finally { decoder.Release(); }
+    }
     public void Dispose()
     {
-        // Call only after active decode requests finish. Native composition
-        // releases the clip/file before RecordingSession removes its source.
+        // Call only after active decode requests finish. Remove graph/clip
+        // references before RecordingSession removes the temporary source.
         if (disposed) return;
-        disposed = true; composition.Clips.Clear();
+        disposed = true; composition?.Clips.Clear(); composition = null;
         decoder.Dispose();
     }
 }

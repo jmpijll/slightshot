@@ -121,6 +121,7 @@ internal static class VideoEditor4KBenchmark
             var export = Stopwatch.StartNew();
             string output = Path.Combine(directory, "video-editor-4k-high.mp4");
             Volatile.Write(ref phase, 2);
+            await editor.PrepareExportAsync();
             await VideoAnnotationExport.SaveAsync(session.SourcePath, output, RecordingQuality.High, width, height, annotations, CancellationToken.None, metrics: metrics);
             exportSeconds = export.Elapsed.TotalSeconds;
             heartbeat.Stop();
@@ -179,6 +180,7 @@ internal static class VideoEditor4KBenchmark
             string sourceDigest = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(session.SourcePath)));
             using var cancel = new CancellationTokenSource();
             var cancellationStart = Stopwatch.StartNew();
+            await editor.PrepareExportAsync();
             var cancelled = VideoAnnotationExport.SaveAsync(session.SourcePath, preserved, RecordingQuality.High, width, height, annotations, cancel.Token, metrics: cancelMetrics);
             bool Written() => Directory.EnumerateFiles(directory, ".slightshot-*.mp4").Any(path => new FileInfo(path).Length > 4096);
             while (!cancelled.IsCompleted && (cancelMetrics.Frames == 0 || !Written()) && cancellationStart.Elapsed < TimeSpan.FromSeconds(15)) await Task.Delay(10);
@@ -222,7 +224,7 @@ internal static class VideoEditor4KBenchmark
             // export exercises real 4K-to-1080p resizing with the same marks.
             Volatile.Write(ref phase, 5);
             balanced = await VerifyBalancedAsync(directory, session.SourcePath, source, width, height, viewScale, annotations,
-                () => Volatile.Write(ref phase, 6));
+                editor.PrepareExportAsync, () => Volatile.Write(ref phase, 6));
             // Separate from the unchanged three-tool performance workload:
             // operate the actual Step tool and verify its real MP4 diameter.
             Volatile.Write(ref phase, 7);
@@ -236,6 +238,7 @@ internal static class VideoEditor4KBenchmark
             VideoEditorSmokeTest.CaptureWindow(editor, Path.Combine(directory, "video-editor-4k-step.png"));
             string stepOutput = Path.Combine(directory, "video-editor-4k-step.mp4");
             var stepAnnotations = editor.History.ExportSnapshot().Where(mark => mark.Annotation.Tool == Tool.Step).ToArray();
+            await editor.PrepareExportAsync();
             await VideoAnnotationExport.SaveAsync(session.SourcePath, stepOutput, RecordingQuality.High, width, height,
                 stepAnnotations, CancellationToken.None, metrics: stepMetrics);
             using var stepDecoded = await VideoFrameSource.OpenAsync(stepOutput);
@@ -287,7 +290,8 @@ internal static class VideoEditor4KBenchmark
         Require(baseline || acceptance.Count == 0, string.Join("; ", acceptance));
     }
     private static async Task<BalancedEvidence> VerifyBalancedAsync(string directory, string sourcePath, VideoFrameSource source,
-        int sourceWidth, int sourceHeight, double viewScale, IReadOnlyList<TimedAnnotation> annotations, Action validating)
+        int sourceWidth, int sourceHeight, double viewScale, IReadOnlyList<TimedAnnotation> annotations,
+        Func<Task> prepareExport, Action validating)
     {
         var quality = RecordingQuality.Balanced;
         var expected = quality.Dimensions(sourceWidth, sourceHeight);
@@ -307,6 +311,7 @@ internal static class VideoEditor4KBenchmark
         heartbeat.Start();
         try
         {
+            await prepareExport();
             await VideoAnnotationExport.SaveAsync(sourcePath, output, quality, sourceWidth, sourceHeight, annotations,
                 CancellationToken.None, metrics: metrics);
         }

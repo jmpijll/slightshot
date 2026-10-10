@@ -255,12 +255,18 @@ internal sealed class VideoEditorWindow : Window
         playbackStart = Position; clock.Restart(); playback.Start(); play.Content = "Pause";
     }
     internal void Pause() { clock.Stop(); playback.Stop(); play.Content = "Play"; }
+    internal async Task PrepareExportAsync()
+    {
+        Pause();
+        if (previewTask != null) await previewTask;
+        await source.SuspendPreviewAsync(lifetime.Token);
+    }
     private async Task SaveAsync()
     {
         if (saving || closing) return;
         Pause(); CommitText(); surface.CancelGesture(); History.CommitTimingEdit(); saving = true; IsEnabled = false;
         bool completed = false;
-        try { completed = await save(History.ExportSnapshot()); }
+        try { await PrepareExportAsync(); completed = await save(History.ExportSnapshot()); }
         catch (Exception error) { MessageBox.Show(this, "The recording could not be saved.\n\n" + error.Message, "Save recording", MessageBoxButton.OK, MessageBoxImage.Warning); }
         finally { saving = false; IsEnabled = true; }
         if (completed || closeWhenSaveFinishes) { closeAfterSave = true; Close(); } else { Activate(); Focus(); }

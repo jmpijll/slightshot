@@ -48,6 +48,7 @@ internal static class VideoEditorSmokeTest
         var source = await VideoFrameSource.OpenAsync(session.SourcePath);
         int saveAttempts = 0;
         var editor = new VideoEditorWindow(source, new Settings { AnnotationColor = "#FF3B30", LineWidth = 5, FontSize = 24 }, _ => { saveAttempts++; return Task.FromResult(false); }, true);
+        Task? closingPreview = null;
         try
         {
             editor.Show(); editor.Activate(); await editor.InitializeAsync(); await Task.Delay(200); editor.UpdateLayout();
@@ -155,29 +156,60 @@ internal static class VideoEditorSmokeTest
             Require(retainedSource.SequenceEqual(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(session.SourcePath))) && File.ReadAllBytes(preserved).SequenceEqual(original), "same-source rejection preserves original video and existing destination bytes");
             Require(!Directory.EnumerateFiles(session.DirectoryPath, ".slightshot-*").Any(), "same-source rejection creates no temporary staging file");
             checks.Add("Annotated, empty-annotation and plain recording exports reject exact and normalized/case-insensitive source-path destinations before staging; SHA-256 confirms the source is unchanged and existing destination bytes are retained.");
+            var recoveryPosition = TimeSpan.FromSeconds(1.7);
+            string retainedEdits = JsonSerializer.Serialize(snapshot);
+            Task pendingPreview = editor.SeekAsync(recoveryPosition);
+            Require(!pendingPreview.IsCompleted, "export preparation starts with a real in-flight native preview request");
+            await editor.PrepareExportAsync(); await pendingPreview;
+            BitmapSource frozenPreview = editor.Surface.CurrentFrame!;
+            Require(frozenPreview.IsFrozen && editor.Position == recoveryPosition, "export preparation drains preview and retains its frozen frame and position");
+            void RetainedPreview(string outcome)
+            {
+                Require(editor.IsVisible && editor.Position == recoveryPosition && ReferenceEquals(editor.Surface.CurrentFrame, frozenPreview), outcome + " retains the same frozen preview and playhead");
+                Require(JsonSerializer.Serialize(editor.History.ExportSnapshot()) == retainedEdits &&
+                    retainedSource.SequenceEqual(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(session.SourcePath))), outcome + " retains exact source bytes and all timed annotations");
+            }
+            async Task RecoverPreview(string outcome)
+            {
+                await editor.SeekAsync(recoveryPosition);
+                Require(editor.Position == recoveryPosition && Delta(frozenPreview, editor.Surface.CurrentFrame!, new Int32Rect(0, 0, width, height)) == 0,
+                    outcome + " lazily reopens the same source frame at the retained position");
+                editor.Play(); await Task.Delay(350); await editor.PrepareExportAsync();
+                Require(editor.Position > recoveryPosition, outcome + " resumes actual preview playback after lazy decoder recreation");
+                await editor.SeekAsync(recoveryPosition); await editor.PrepareExportAsync();
+                frozenPreview = editor.Surface.CurrentFrame!;
+                RetainedPreview(outcome + " recovery");
+            }
             await ExpectCancellation(() => VideoAnnotationExport.SaveAsync(session.SourcePath, preserved, RecordingQuality.High, width, height, snapshot, cancellation.Token));
             Require(File.ReadAllBytes(preserved).SequenceEqual(original), "early export cancellation preserves destination");
+            RetainedPreview("Early cancellation");
             using (var activeCancellation = new CancellationTokenSource())
             {
                 var progress = new CancelOnProgress(activeCancellation);
+                await editor.PrepareExportAsync();
                 await ExpectCancellation(() => VideoAnnotationExport.SaveAsync(session.SourcePath, preserved, RecordingQuality.High, width, height, snapshot, activeCancellation.Token, progress));
                 Require(progress.Called && File.ReadAllBytes(preserved).SequenceEqual(original), "active annotated export cancellation preserves destination");
             }
             Require(!Directory.EnumerateFiles(directory, ".slightshot-*").Any() && File.Exists(session.SourcePath), "cancellation cleans staging and retains source");
+            RetainedPreview("Active cancellation"); await RecoverPreview("Active cancellation");
             try
             {
+                await editor.PrepareExportAsync();
                 await VideoAnnotationExport.SaveAsync(session.SourcePath, Path.Combine(directory, "missing", "edited.mp4"), RecordingQuality.High, width, height, snapshot, CancellationToken.None);
                 throw new InvalidOperationException("Missing export folder did not fail.");
             }
             catch (Exception error) when (error is not InvalidOperationException) { }
             Require(editor.History.Items.Count == marksBeforeCancel && File.Exists(session.SourcePath), "failed export retains video and all edits");
+            RetainedPreview("Failed destination"); await RecoverPreview("Failed destination");
             checks.Add("Save callback cancellation, early/active native export cancellation and a real failed destination preserve source, edits and an existing destination; cancelled staging files are removed.");
+            checks.Add("The production PrepareExportAsync drains a real in-flight preview and releases its native graph while retaining the frozen bitmap, position, source SHA-256 and timed edits. After active cancellation and a failed destination, seeking recreates identical preview pixels and Play advances the source; subsequent exports reuse the same recording.");
             File.Delete(preserved);
             foreach (var quality in Enum.GetValues<RecordingQuality>())
             {
                 var sourceStripe = new List<double>(); var outputStripe = new List<double>();
                 string output = Path.Combine(directory, "video-editor-" + quality.ToString().ToLowerInvariant() + ".mp4");
                 var watch = Stopwatch.StartNew();
+                await editor.PrepareExportAsync();
                 await VideoAnnotationExport.SaveAsync(session.SourcePath, output, quality, width, height, snapshot, CancellationToken.None);
                 using var decoded = await VideoFrameSource.OpenAsync(output);
                 Require(decoded.Width == width && decoded.Height == height, "edited export retains dimensions " + quality);
@@ -217,11 +249,16 @@ internal static class VideoEditorSmokeTest
                 checks.Add($"{quality.Title()}: actual edited MP4 decoded before/in/after interval; text, pointer arrow, drawings, blur and pixelation match preview within codec tolerance. Native export took {watch.Elapsed.TotalSeconds:0.0}s for {source.Duration.TotalSeconds:0.0}s of {width}×{height} video.");
             }
             Require(File.Exists(session.SourcePath), "successful export leaves source available until editor closes");
+            closingPreview = editor.SeekAsync(TimeSpan.FromSeconds(.85));
         }
-        finally { editor.CloseFixture(); await editor.Completion; }
+        finally
+        {
+            editor.CloseForShutdown(); await editor.Completion.WaitAsync(TimeSpan.FromSeconds(30));
+            if (closingPreview != null) await closingPreview.WaitAsync(TimeSpan.FromSeconds(30));
+        }
         session.Dispose();
         Require(!Directory.Exists(session.DirectoryPath), "closing the native editor releases its decoder and removes temporary source files");
-        checks.Add("Closing the editor releases the preview decoder, and RecordingSession disposal removes its temporary source directory.");
+        checks.Add("The production shutdown close with a newly requested preview drains or cancels that request within 30 seconds, releases its lazily reopened decoder, and RecordingSession disposal removes the temporary source directory.");
         File.WriteAllText(Path.Combine(directory, "video-editor-validation.json"), JsonSerializer.Serialize(new
         {
             platform = "Windows native WPF / Media Foundation",
