@@ -1,0 +1,114 @@
+{
+  "measuredAt": "2026-10-10",
+  "environment": "Mac16,13, 16 GiB RAM, macOS 27.0 (26A428), Apple Swift 6.4, optimized standalone executable",
+  "sourceCommitBeforePrewarm": "dfdb26adecd2b233b8b0afec42a07787b263027b",
+  "rasterEffectSwiftSHA256": "8e1497c47f9331d4f17fa78cf16f55c755c23fdc84bd0745137ebf2ae5aa9fb9",
+  "scope": "10 cold/warmed pairs, each mode in a fresh process; 10 ROI renders per process (200 total). OS shader cache was not purged. Production RasterEffects.render and prewarmBlur compiled directly.",
+  "preview": {
+    "width": 960,
+    "height": 540,
+    "sourceWidth": 3840,
+    "roiWidth": 263,
+    "roiHeight": 32,
+    "effectScale": 1.0344827586206897,
+    "blurRadius": 8.275862068965518
+  },
+  "nativeGesturesBeforePrewarm": {
+    "baselineFirstMs": 214.20812502037734,
+    "firstObservedMs": 1153.358791663777,
+    "freshProcessRepeatMs": 51.95108335465193,
+    "scope": "Mouse down/drag/up, interval change and synchronous native canvas display; toolbar click excluded. These are native app observations, not cache-controlled paired measurements."
+  },
+  "pairs": [
+    {
+      "pair": 1,
+      "coldFirstMs": 93.55545829748735,
+      "prewarmMs": 78.47433333517984,
+      "warmedFirstMs": 1.9131250446662307
+    },
+    {
+      "pair": 2,
+      "coldFirstMs": 70.48633333761245,
+      "prewarmMs": 77.04137498512864,
+      "warmedFirstMs": 2.312333323061466
+    },
+    {
+      "pair": 3,
+      "coldFirstMs": 75.75187500333413,
+      "prewarmMs": 67.57566664600745,
+      "warmedFirstMs": 1.5922499587759376
+    },
+    {
+      "pair": 4,
+      "coldFirstMs": 63.478916650637984,
+      "prewarmMs": 68.53429169859737,
+      "warmedFirstMs": 1.7391250003129244
+    },
+    {
+      "pair": 5,
+      "coldFirstMs": 68.07616667356342,
+      "prewarmMs": 76.27954165218398,
+      "warmedFirstMs": 1.7182499868795276
+    },
+    {
+      "pair": 6,
+      "coldFirstMs": 65.29204169055447,
+      "prewarmMs": 71.03995833313093,
+      "warmedFirstMs": 1.7492083716206253
+    },
+    {
+      "pair": 7,
+      "coldFirstMs": 65.4136249795556,
+      "prewarmMs": 72.00158335035667,
+      "warmedFirstMs": 1.9771250081248581
+    },
+    {
+      "pair": 8,
+      "coldFirstMs": 63.65229171933606,
+      "prewarmMs": 75.98195836180821,
+      "warmedFirstMs": 2.0503333653323352
+    },
+    {
+      "pair": 9,
+      "coldFirstMs": 65.70716667920351,
+      "prewarmMs": 66.58074998995289,
+      "warmedFirstMs": 1.8532916437834501
+    },
+    {
+      "pair": 10,
+      "coldFirstMs": 70.7045000162907,
+      "prewarmMs": 75.35791670670733,
+      "warmedFirstMs": 2.4776666541583836
+    }
+  ],
+  "coldFirst": {
+    "count": 10,
+    "min": 63.478916650637984,
+    "median": 66.89166667638347,
+    "max": 93.55545829748735
+  },
+  "prewarm": {
+    "count": 10,
+    "min": 66.58074998995289,
+    "median": 73.679750028532,
+    "max": 78.47433333517984
+  },
+  "warmedFirst": {
+    "count": 10,
+    "min": 1.5922499587759376,
+    "median": 1.8832083442248404,
+    "max": 2.4776666541583836
+  },
+  "coldSubsequent": {
+    "count": 90,
+    "min": 0.724624958820641,
+    "median": 0.9527916845399886,
+    "max": 4.434541682712734
+  },
+  "warmedSubsequent": {
+    "count": 90,
+    "min": 0.6732916226610541,
+    "median": 0.9207499970216304,
+    "max": 4.09970834152773
+  }
+}

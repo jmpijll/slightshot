@@ -1,0 +1,31 @@
+{
+  "platform": "Windows native WPF / Media Foundation",
+  "baseline": true,
+  "sourceCommit": "d3af788ff1d13d06094485bf2b7c219dbbb4c300",
+  "fixture": "3840\u00D72160 synthetic moving recording, native pointer-drawn blur/pixelate, 0.35\u20131.1s interval, actual High 30fps MP4. Native editor HWND screenshots; no personal source data.",
+  "durationSeconds": 1.6,
+  "exportSeconds": 44.9480699,
+  "frames": 48,
+  "exportFramesPerSecond": 1.067899024514065,
+  "DecodeMilliseconds": 22267.492600000012,
+  "RenderMilliseconds": 22150.5014,
+  "CopyMilliseconds": 353.7577,
+  "seekMilliseconds": [
+    479.9948,
+    1886.6616,
+    437.4077
+  ],
+  "maxDispatcherGapMilliseconds": 1111.5389,
+  "peakPrivateMiB": 2226.0546875,
+  "peakWorkingMiB": 1858.1015625,
+  "cancellationSeconds": 0.1019739,
+  "viewScale": 0.17395833333333333,
+  "effectiveBlurPoints": 1.3916666666666666,
+  "effectivePixelBlockPoints": 2.0875,
+  "acceptanceFailures": [
+    "4K export slower than 8 fps",
+    "UI blocked for more than 250 ms",
+    "Private bytes exceed bounded 1.5 GiB budget",
+    "Pixelation weaker than screenshot 12-point blocks in fit view"
+  ]
+}

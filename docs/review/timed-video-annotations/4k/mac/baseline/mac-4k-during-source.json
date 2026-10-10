@@ -1,0 +1,9 @@
+{
+  "file" : "mac-4k-during.png",
+  "platform" : "macOS",
+  "requestedTimeSeconds" : 1,
+  "seekAndNativeDrawMilliseconds" : 150.4094583215192,
+  "source" : "ScreenCaptureKit screenshot of the running native VideoEditorWindow; synthetic source movie.",
+  "sourceCommit" : "b6d8535",
+  "verifiedPlayheadSeconds" : 1
+}

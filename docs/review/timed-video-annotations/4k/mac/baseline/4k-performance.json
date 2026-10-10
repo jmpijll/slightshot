@@ -1,0 +1,159 @@
+{
+  "annotationCount" : 5,
+  "annotationRangeSeconds" : [
+    0.59999999999999998,
+    1.3999999999999999
+  ],
+  "annotations" : [
+    {
+      "alpha" : 1,
+      "endSeconds" : 1.3999999999999999,
+      "fontSizeSourcePixels" : 99.310344827586206,
+      "lineWidthSourcePixels" : 16.551724137931036,
+      "shape" : "blur((999.9999999999999, 759.9999999999999, 1050.0000000000005, 125.00000000000011))",
+      "startSeconds" : 0.59999999999999998
+    },
+    {
+      "alpha" : 1,
+      "endSeconds" : 1.3999999999999999,
+      "fontSizeSourcePixels" : 99.310344827586206,
+      "lineWidthSourcePixels" : 16.551724137931036,
+      "shape" : "pixelate((999.9999999999999, 968.0, 1650.0, 125.0))",
+      "startSeconds" : 0.59999999999999998
+    },
+    {
+      "alpha" : 1,
+      "endSeconds" : 1.3999999999999999,
+      "fontSizeSourcePixels" : 99.310344827586206,
+      "lineWidthSourcePixels" : 16.551724137931036,
+      "shape" : "arrow(from: (3200.0, 900.0), to: (2820.0, 1150.0))",
+      "startSeconds" : 0.59999999999999998
+    },
+    {
+      "alpha" : 1,
+      "endSeconds" : 1.3999999999999999,
+      "fontSizeSourcePixels" : 99.310344827586206,
+      "lineWidthSourcePixels" : 16.551724137931036,
+      "shape" : "stroke(points: [(2460.0, 1490.0), (2530.0, 1540.0), (2630.0, 1480.0)])",
+      "startSeconds" : 0.59999999999999998
+    },
+    {
+      "alpha" : 1,
+      "endSeconds" : 1.3999999999999999,
+      "fontSizeSourcePixels" : 99.310344827586206,
+      "lineWidthSourcePixels" : 4,
+      "shape" : "text(\"Inspect detail\", origin: (2756.551724137931, 662.4137931034484))",
+      "startSeconds" : 0.59999999999999998
+    }
+  ],
+  "canvasFitScale" : 0.24166666666666667,
+  "captures" : [
+    {
+      "file" : "mac-4k-before.png",
+      "platform" : "macOS",
+      "requestedTimeSeconds" : 0.25,
+      "seekAndNativeDrawMilliseconds" : 69.409749994520098,
+      "source" : "ScreenCaptureKit screenshot of the running native VideoEditorWindow; synthetic source movie.",
+      "sourceCommit" : "b6d8535",
+      "verifiedPlayheadSeconds" : 0.25
+    },
+    {
+      "file" : "mac-4k-during.png",
+      "platform" : "macOS",
+      "requestedTimeSeconds" : 1,
+      "seekAndNativeDrawMilliseconds" : 150.4094583215192,
+      "source" : "ScreenCaptureKit screenshot of the running native VideoEditorWindow; synthetic source movie.",
+      "sourceCommit" : "b6d8535",
+      "verifiedPlayheadSeconds" : 1
+    },
+    {
+      "file" : "mac-4k-after.png",
+      "platform" : "macOS",
+      "requestedTimeSeconds" : 1.75,
+      "seekAndNativeDrawMilliseconds" : 111.1028750310652,
+      "source" : "ScreenCaptureKit screenshot of the running native VideoEditorWindow; synthetic source movie.",
+      "sourceCommit" : "b6d8535",
+      "verifiedPlayheadSeconds" : 1.75
+    }
+  ],
+  "exports" : [
+    {
+      "expectedOutputFrames" : 60,
+      "file" : "edited-4k-2.mp4",
+      "fileBytes" : 378375,
+      "frames" : [
+        "export-4k-2-before.png",
+        "export-4k-2-during.png",
+        "export-4k-2-after.png"
+      ],
+      "observedResidentBytesPeak" : 413155328,
+      "outputFPS" : 30,
+      "outputHeight" : 2160,
+      "outputWidth" : 3840,
+      "quality" : "High quality",
+      "residentBytesBeforeExport" : 142622720,
+      "residentSamples" : 53,
+      "secondsPerSourceSecond" : 1.3393354375148192,
+      "wallSeconds" : 2.6786708750296384
+    },
+    {
+      "expectedOutputFrames" : 48,
+      "file" : "edited-4k-1.mp4",
+      "fileBytes" : 235560,
+      "frames" : [
+        "export-4k-1-before.png",
+        "export-4k-1-during.png",
+        "export-4k-1-after.png"
+      ],
+      "observedResidentBytesPeak" : 319471616,
+      "outputFPS" : 24,
+      "outputHeight" : 1080,
+      "outputWidth" : 1920,
+      "quality" : "Balanced",
+      "residentBytesBeforeExport" : 217858048,
+      "residentSamples" : 55,
+      "secondsPerSourceSecond" : 1.3754067083355039,
+      "wallSeconds" : 2.7508134166710079
+    }
+  ],
+  "fixture" : "Synthetic 3840×2160, 2 second H.264 movie at 24 fps; 48 source frames. Native HiDPI UI text: 27\/25 point fonts rendered at 2× (54\/50 source pixels). Name\/email and a code marker move inside fixed privacy rectangles. No personal data.",
+  "fixtureInstrumentationSHA256" : "b70aa5b02653f9443b3a98da634c1e19ac514f70d7cac249f42f3e2d06056ae5",
+  "measurementScope" : "Native seek includes frame generation, annotation composition and synchronous canvas display. Gesture time includes native mouse events and canvas display. Export wall time includes annotation preparation, decoding, effects, resizing and encoding; evidence extraction is excluded. Qualities run serially with no source regeneration.",
+  "memoryMetric" : "Mach task resident_size sampled every 50 ms during export; an observed peak, not an operating-system lifetime high-water mark.",
+  "nativeGestureAndDrawSamples" : [
+    {
+      "nativeGestureAndDrawMilliseconds" : 214.20812502037734,
+      "nativeMouseEvents" : 3,
+      "tool" : "Blur"
+    },
+    {
+      "nativeGestureAndDrawMilliseconds" : 11.260333296377212,
+      "nativeMouseEvents" : 3,
+      "tool" : "Pixelate"
+    },
+    {
+      "nativeGestureAndDrawMilliseconds" : 29.271333303768188,
+      "nativeMouseEvents" : 3,
+      "tool" : "Arrow"
+    },
+    {
+      "nativeGestureAndDrawMilliseconds" : 23.806958342902362,
+      "nativeMouseEvents" : 4,
+      "tool" : "Pen"
+    },
+    {
+      "nativeGestureAndDrawMilliseconds" : 111.94254166912287,
+      "nativeMouseEvents" : 2,
+      "tool" : "Text"
+    }
+  ],
+  "platform" : "macOS",
+  "residentBytesAfterSourceLoading" : 115212288,
+  "sourceCommit" : "b6d8535",
+  "sourceFile" : "fixture-source.mp4",
+  "sourceFrames" : 48,
+  "sourceHeight" : 2160,
+  "sourceSHA256" : "8f3798dfc34dd3fdfcba54f6277b90fbb884eb18eff8767b457f51a5ce0c5f5d",
+  "sourceWidth" : 3840,
+  "state" : "Complete"
+}

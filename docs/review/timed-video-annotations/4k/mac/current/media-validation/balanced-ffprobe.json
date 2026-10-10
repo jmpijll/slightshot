@@ -1,0 +1,250 @@
+{
+    "frames": [
+        {
+            "best_effort_timestamp": 0,
+            "best_effort_timestamp_time": "0.000000",
+            "side_data_list": [
+                {
+                    "side_data_type": "H.26[45] User Data Unregistered SEI message"
+                }
+            ]
+        },
+        {
+            "best_effort_timestamp": 25,
+            "best_effort_timestamp_time": "0.041667"
+        },
+        {
+            "best_effort_timestamp": 50,
+            "best_effort_timestamp_time": "0.083333"
+        },
+        {
+            "best_effort_timestamp": 75,
+            "best_effort_timestamp_time": "0.125000"
+        },
+        {
+            "best_effort_timestamp": 100,
+            "best_effort_timestamp_time": "0.166667"
+        },
+        {
+            "best_effort_timestamp": 125,
+            "best_effort_timestamp_time": "0.208333"
+        },
+        {
+            "best_effort_timestamp": 150,
+            "best_effort_timestamp_time": "0.250000"
+        },
+        {
+            "best_effort_timestamp": 175,
+            "best_effort_timestamp_time": "0.291667"
+        },
+        {
+            "best_effort_timestamp": 200,
+            "best_effort_timestamp_time": "0.333333"
+        },
+        {
+            "best_effort_timestamp": 225,
+            "best_effort_timestamp_time": "0.375000"
+        },
+        {
+            "best_effort_timestamp": 250,
+            "best_effort_timestamp_time": "0.416667"
+        },
+        {
+            "best_effort_timestamp": 275,
+            "best_effort_timestamp_time": "0.458333"
+        },
+        {
+            "best_effort_timestamp": 300,
+            "best_effort_timestamp_time": "0.500000"
+        },
+        {
+            "best_effort_timestamp": 325,
+            "best_effort_timestamp_time": "0.541667"
+        },
+        {
+            "best_effort_timestamp": 350,
+            "best_effort_timestamp_time": "0.583333"
+        },
+        {
+            "best_effort_timestamp": 375,
+            "best_effort_timestamp_time": "0.625000"
+        },
+        {
+            "best_effort_timestamp": 400,
+            "best_effort_timestamp_time": "0.666667"
+        },
+        {
+            "best_effort_timestamp": 425,
+            "best_effort_timestamp_time": "0.708333"
+        },
+        {
+            "best_effort_timestamp": 450,
+            "best_effort_timestamp_time": "0.750000"
+        },
+        {
+            "best_effort_timestamp": 475,
+            "best_effort_timestamp_time": "0.791667"
+        },
+        {
+            "best_effort_timestamp": 500,
+            "best_effort_timestamp_time": "0.833333"
+        },
+        {
+            "best_effort_timestamp": 525,
+            "best_effort_timestamp_time": "0.875000"
+        },
+        {
+            "best_effort_timestamp": 550,
+            "best_effort_timestamp_time": "0.916667"
+        },
+        {
+            "best_effort_timestamp": 575,
+            "best_effort_timestamp_time": "0.958333"
+        },
+        {
+            "best_effort_timestamp": 600,
+            "best_effort_timestamp_time": "1.000000"
+        },
+        {
+            "best_effort_timestamp": 625,
+            "best_effort_timestamp_time": "1.041667"
+        },
+        {
+            "best_effort_timestamp": 650,
+            "best_effort_timestamp_time": "1.083333"
+        },
+        {
+            "best_effort_timestamp": 675,
+            "best_effort_timestamp_time": "1.125000"
+        },
+        {
+            "best_effort_timestamp": 700,
+            "best_effort_timestamp_time": "1.166667"
+        },
+        {
+            "best_effort_timestamp": 725,
+            "best_effort_timestamp_time": "1.208333"
+        },
+        {
+            "best_effort_timestamp": 750,
+            "best_effort_timestamp_time": "1.250000"
+        },
+        {
+            "best_effort_timestamp": 775,
+            "best_effort_timestamp_time": "1.291667"
+        },
+        {
+            "best_effort_timestamp": 800,
+            "best_effort_timestamp_time": "1.333333"
+        },
+        {
+            "best_effort_timestamp": 825,
+            "best_effort_timestamp_time": "1.375000"
+        },
+        {
+            "best_effort_timestamp": 850,
+            "best_effort_timestamp_time": "1.416667"
+        },
+        {
+            "best_effort_timestamp": 875,
+            "best_effort_timestamp_time": "1.458333"
+        },
+        {
+            "best_effort_timestamp": 900,
+            "best_effort_timestamp_time": "1.500000"
+        },
+        {
+            "best_effort_timestamp": 925,
+            "best_effort_timestamp_time": "1.541667"
+        },
+        {
+            "best_effort_timestamp": 950,
+            "best_effort_timestamp_time": "1.583333"
+        },
+        {
+            "best_effort_timestamp": 975,
+            "best_effort_timestamp_time": "1.625000"
+        },
+        {
+            "best_effort_timestamp": 1000,
+            "best_effort_timestamp_time": "1.666667"
+        },
+        {
+            "best_effort_timestamp": 1025,
+            "best_effort_timestamp_time": "1.708333"
+        },
+        {
+            "best_effort_timestamp": 1050,
+            "best_effort_timestamp_time": "1.750000"
+        },
+        {
+            "best_effort_timestamp": 1075,
+            "best_effort_timestamp_time": "1.791667"
+        },
+        {
+            "best_effort_timestamp": 1100,
+            "best_effort_timestamp_time": "1.833333"
+        },
+        {
+            "best_effort_timestamp": 1125,
+            "best_effort_timestamp_time": "1.875000",
+            "side_data_list": [
+                {
+                    "side_data_type": "H.26[45] User Data Unregistered SEI message"
+                }
+            ]
+        },
+        {
+            "best_effort_timestamp": 1150,
+            "best_effort_timestamp_time": "1.916667"
+        },
+        {
+            "best_effort_timestamp": 1175,
+            "best_effort_timestamp_time": "1.958333"
+        }
+    ],
+    "programs": [
+
+    ],
+    "stream_groups": [
+
+    ],
+    "streams": [
+        {
+            "width": 1920,
+            "height": 1080,
+            "r_frame_rate": "24/1",
+            "avg_frame_rate": "24/1",
+            "time_base": "1/600",
+            "duration": "2.000000",
+            "nb_frames": "48",
+            "nb_read_frames": "48",
+            "disposition": {
+                "default": 1,
+                "dub": 0,
+                "original": 0,
+                "comment": 0,
+                "lyrics": 0,
+                "karaoke": 0,
+                "forced": 0,
+                "hearing_impaired": 0,
+                "visual_impaired": 0,
+                "clean_effects": 0,
+                "attached_pic": 0,
+                "timed_thumbnails": 0,
+                "non_diegetic": 0,
+                "captions": 0,
+                "descriptions": 0,
+                "metadata": 0,
+                "dependent": 0,
+                "still_image": 0,
+                "multilayer": 0
+            },
+            "tags": {
+                "creation_time": "2026-10-10T18:21:21.000000Z",
+                "language": "und",
+                "handler_name": "Core Media Video"
+            }
+        }
+    ]
+}

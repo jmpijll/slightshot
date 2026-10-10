@@ -57,11 +57,11 @@ Marks cover **1–3 seconds**:
 ## Validation separate from images
 
 - macOS: warning-free release bundle and signature verification; strict SwiftLint;
-  54 Swift tests in 15 suites. Tests include interval boundaries, all drawing tools,
+  58 Swift tests in 16 suites. Tests include interval boundaries, all drawing tools,
   ordered raster/vector composition, real MP4s at all three qualities, current-frame
   privacy effects and cancellation after media data has been produced. Cancellation
   retains an existing destination and source and removes staging files.
-- Windows: 207 portable core checks; warning-free app build; native editor and
+- Windows: 221 portable core checks; warning-free app build; native editor and
   extracted portable x64 editor smoke checks, including pointer/source-coordinate
   mapping, source orientation, before/during/after decoded MP4 pixels at all three
   qualities, early compositor shutdown, active cancellation, failed export/retry
@@ -71,9 +71,10 @@ Marks cover **1–3 seconds**:
   captured from README source `ba7198326b5781fa5a7182f178f84cda785d53d0`.
 
 This scope has fixed-position marks and a single selected interval, without motion
-tracking, keyframes, cutting or audio. Raster strength uses the existing screenshot
-renderer in source pixels. Large/4K preview and export performance has not been
-benchmarked; the native fixtures establish correctness at the sizes listed above.
+tracking, keyframes, cutting or audio. New video privacy effects and numbered steps
+retain the screenshot tools' visible size at the preview's creation scale; export
+keeps that strength in source coordinates. See the [native 4K acceptance evidence](4k/README.md)
+for performance, effect-strength comparisons, active cancellation and source commits.
 
 ## Reproduce
 
