@@ -8,6 +8,11 @@ namespace Slightshot;
 
 internal static class RecordingExport
 {
+    internal static void ValidateDestination(string source, string destination)
+    {
+        if (StringComparer.OrdinalIgnoreCase.Equals(Path.GetFullPath(source), Path.GetFullPath(destination)))
+            throw new InvalidOperationException("Choose a save location different from the temporary recording. The original video has been preserved.");
+    }
     // GDI capture and WPF CopyPixels both produce top-down BGRA. The default
     // RGB media stride can be bottom-up; declare the positive stride explicitly
     // so the native color converter preserves the image's vertical orientation.
@@ -34,6 +39,7 @@ internal static class RecordingExport
 
     internal static async Task SaveAsync(string source, string destination, RecordingQuality quality, int width, int height, CancellationToken cancellation, IProgress<double>? progress = null)
     {
+        ValidateDestination(source, destination);
         string staging = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(destination))!, ".slightshot-" + Guid.NewGuid().ToString("N") + ".mp4");
         try
         {

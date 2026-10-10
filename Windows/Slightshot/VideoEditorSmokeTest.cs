@@ -136,6 +136,25 @@ internal static class VideoEditorSmokeTest
             Require(saveAttempts == 1 && editor.IsVisible && editor.History.Items.Count == marksBeforeCancel && File.Exists(session.SourcePath), "cancelled Save returns to the same video and annotations");
             using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
             string preserved = Path.Combine(directory, "preserved.mp4"); byte[] original = [11, 22, 33, 44]; File.WriteAllBytes(preserved, original);
+            byte[] retainedSource = System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(session.SourcePath));
+            foreach (string alias in new[] { session.SourcePath, Path.Combine(Path.GetDirectoryName(session.SourcePath)!, ".", Path.GetFileName(session.SourcePath).ToUpperInvariant()) })
+            {
+                foreach (Func<Task> operation in new Func<Task>[]
+                {
+                    () => VideoAnnotationExport.SaveAsync(session.SourcePath, alias, RecordingQuality.High, width, height, snapshot, CancellationToken.None),
+                    () => VideoAnnotationExport.SaveAsync(session.SourcePath, alias, RecordingQuality.High, width, height, [], CancellationToken.None),
+                    () => RecordingExport.SaveAsync(session.SourcePath, alias, RecordingQuality.High, width, height, CancellationToken.None)
+                })
+                {
+                    bool rejected = false;
+                    try { await operation(); }
+                    catch (InvalidOperationException error) when (error.Message.StartsWith("Choose a save location", StringComparison.Ordinal)) { rejected = true; }
+                    Require(rejected, "same-source destination rejected before staging, including normalized case-insensitive aliases");
+                }
+            }
+            Require(retainedSource.SequenceEqual(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(session.SourcePath))) && File.ReadAllBytes(preserved).SequenceEqual(original), "same-source rejection preserves original video and existing destination bytes");
+            Require(!Directory.EnumerateFiles(session.DirectoryPath, ".slightshot-*").Any(), "same-source rejection creates no temporary staging file");
+            checks.Add("Annotated, empty-annotation and plain recording exports reject exact and normalized/case-insensitive source-path destinations before staging; SHA-256 confirms the source is unchanged and existing destination bytes are retained.");
             await ExpectCancellation(() => VideoAnnotationExport.SaveAsync(session.SourcePath, preserved, RecordingQuality.High, width, height, snapshot, cancellation.Token));
             Require(File.ReadAllBytes(preserved).SequenceEqual(original), "early export cancellation preserves destination");
             using (var activeCancellation = new CancellationTokenSource())

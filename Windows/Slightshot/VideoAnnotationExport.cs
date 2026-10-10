@@ -10,6 +10,7 @@ internal static class VideoAnnotationExport
     internal static async Task SaveAsync(string source, string destination, RecordingQuality quality, int width, int height,
         IReadOnlyList<TimedAnnotation> annotations, CancellationToken cancellation, IProgress<double>? progress = null, VideoExportMetrics? metrics = null)
     {
+        RecordingExport.ValidateDestination(source, destination);
         if (annotations.Count == 0)
         {
             await RecordingExport.SaveAsync(source, destination, quality, width, height, cancellation, progress);
