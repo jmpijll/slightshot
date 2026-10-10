@@ -86,6 +86,8 @@ enum VideoEditor4KReview {
         try write(report, to: directory.appendingPathComponent("4k-performance-partial.json"))
         report["activeCancellation"] = try await measureCancellation(in: window, source: source,
             sourceHash: sourceHash, directory: directory, annotations: annotations)
+        report["additionalStepCapture"] = try await captureStep(in: window, directory: directory,
+            sourceCommit: sourceCommit, captureWindow: captureWindow)
         report["state"] = "Complete"
         report["measurementScope"] = "Native seek includes frame generation, annotation composition and synchronous "
             + "canvas display. Gesture time includes native mouse events and canvas display. "
@@ -130,7 +132,8 @@ enum VideoEditor4KReview {
         return measurements
     }
 
-    private static func committedAnnotations(in window: VideoEditorWindow) throws -> [VideoAnnotation] {
+    private static func committedAnnotations(in window: VideoEditorWindow,
+                                             expectedCount: Int = 5) throws -> [VideoAnnotation] {
         guard let save = descendants(window.contentView!).compactMap({ $0 as? NSButton })
             .first(where: { $0.title == "Save MP4…" }) else {
             throw RecordingError.failed("The native Save MP4 button is unavailable.")
@@ -140,8 +143,43 @@ enum VideoEditor4KReview {
         var result: [VideoAnnotation]?
         window.onSave = { result = $0 }
         save.performClick(nil)
-        guard let result, result.count == 5 else { throw RecordingError.failed("Five native marks were expected.") }
+        guard let result, result.count == expectedCount else {
+            throw RecordingError.failed("Expected \(expectedCount) native marks in the video editor.")
+        }
         return result
+    }
+
+    private static func captureStep(in window: VideoEditorWindow, directory: URL, sourceCommit: String,
+                                    captureWindow: (NSWindow, URL) async throws -> String) async throws
+        -> [String: Any] {
+        guard let stepButton = descendants(window.contentView!).compactMap({ $0 as? ToolbarButton })
+            .first(where: { $0.accessibilityLabel() == Tool.step.title }) else {
+            throw RecordingError.failed("The native numbered step toolbar button is unavailable.")
+        }
+        stepButton.performClick(nil)
+        try gesture([CGPoint(x: 2200, y: 1680)], in: window.canvas)
+        window.reviewSetRange(start: start, end: end)
+        let annotations = try committedAnnotations(in: window, expectedCount: 6)
+        guard let step = annotations.last, case .step = step.annotation.shape else {
+            throw RecordingError.failed("The native sixth mark is not a numbered stamp.")
+        }
+        await window.reviewSeek(to: 1)
+        guard abs(window.reviewCurrentTime - 1) < 0.01 else {
+            throw RecordingError.failed("The 4K numbered stamp capture has an unexpected playhead time.")
+        }
+        window.canvas.displayIfNeeded()
+        try await Task.sleep(for: .milliseconds(150))
+        let filename = "mac-4k-step.png"
+        let method = try await captureWindow(window, directory.appendingPathComponent(filename))
+        let report: [String: Any] = ["file": filename, "platform": "macOS", "sourceCommit": sourceCommit,
+            "requestedTimeSeconds": 1, "verifiedPlayheadSeconds": window.reviewCurrentTime, "source": method,
+            "interaction": "Native Numbered steps toolbar click and mouse down/up at source (2200,1680)",
+            "measurementScope": "Added after the identical five-mark benchmark and cancellation workload completed.",
+            "annotationCount": annotations.count, "stepAnnotation": annotationMetadata(step),
+            "stepDirtyBoundsWidthInCanvasPoints": step.annotation.dirtyBounds.width
+                * window.canvas.imageRect.width / sourceSize.width]
+        try write(report, to: directory.appendingPathComponent("mac-4k-step-source.json"))
+        return report
     }
 
     private static func gesture(_ sourcePoints: [CGPoint], in canvas: VideoCanvasView) throws {
@@ -190,9 +228,15 @@ enum VideoEditor4KReview {
             throw RecordingError.failed("The measured 4K export is not a playable two-second movie.")
         }
         let dimensions = quality.dimensions(for: sourceSize)
+        guard let track = try await asset.loadTracks(withMediaType: .video).first,
+              try await track.load(.naturalSize) == dimensions else {
+            throw RecordingError.failed("The measured 4K export has unexpected encoded dimensions.")
+        }
+        let nominalFrameRate = try await track.load(.nominalFrameRate)
         return ["quality": quality.title, "file": destination.lastPathComponent,
                 "outputWidth": dimensions.width, "outputHeight": dimensions.height,
-                "outputFPS": quality.framesPerSecond,
+                "outputDimensionsVerified": true, "expectedOutputFPS": quality.framesPerSecond,
+                "actualNominalFrameRate": nominalFrameRate,
                 "expectedOutputFrames": Int(duration * Double(quality.framesPerSecond)),
                 "wallSeconds": elapsed, "secondsPerSourceSecond": elapsed / duration,
                 "residentBytesBeforeExport": initial, "observedResidentBytesPeak": memory.peak,
@@ -310,7 +354,9 @@ enum VideoEditor4KReview {
     private static func descendants(_ view: NSView) -> [NSView] {
         view.subviews.flatMap { [$0] + descendants($0) }
     }
+}
 
+extension VideoEditor4KReview {
     static func makeSource(at url: URL) async throws {
         if FileManager.default.fileExists(atPath: url.path) { try FileManager.default.removeItem(at: url) }
         let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)

@@ -24,9 +24,14 @@ struct Annotation: Identifiable {
     /// Video stores source pixels, while privacy strength is chosen in the
     /// displayed canvas. Keep the creation scale with the mark across resizing.
     var rasterScale: CGFloat = 1
+    var stepScale: CGFloat = 1
 
     var effectiveRasterScale: CGFloat {
         rasterScale.isFinite && rasterScale > 0 ? rasterScale : 1
+    }
+
+    private var effectiveStepScale: CGFloat {
+        stepScale.isFinite && stepScale > 0 ? stepScale : 1
     }
 
     static func nextStepNumber(in annotations: [Annotation]) -> Int {
@@ -38,8 +43,8 @@ struct Annotation: Identifiable {
     }
 
     /// Stamp sizing is independent of the pen thickness and text font settings.
-    private static func stepBounds(number: Int, center: CGPoint) -> CGRect {
-        let diameter = max(32, 16 + CGFloat(String(number).count) * 12)
+    private static func stepBounds(number: Int, center: CGPoint, scale: CGFloat) -> CGRect {
+        let diameter = max(32, 16 + CGFloat(String(number).count) * 12) * scale
         return CGRect(x: center.x - diameter / 2, y: center.y - diameter / 2,
                       width: diameter, height: diameter)
     }
@@ -107,17 +112,18 @@ struct Annotation: Identifiable {
     }
 
     private func drawStep(number: Int, center: CGPoint, fill: NSColor) {
-        let bounds = Self.stepBounds(number: number, center: center)
-        let circle = NSBezierPath(ovalIn: bounds.insetBy(dx: 0.75, dy: 0.75))
+        let scale = effectiveStepScale
+        let bounds = Self.stepBounds(number: number, center: center, scale: scale)
+        let circle = NSBezierPath(ovalIn: bounds.insetBy(dx: 0.75 * scale, dy: 0.75 * scale))
         fill.setFill()
         circle.fill()
         NSColor.white.setStroke()
-        circle.lineWidth = 1.5
+        circle.lineWidth = 1.5 * scale
         circle.stroke()
         let rgb = fill.usingColorSpace(.sRGB) ?? .black
         let brightness = 0.2126 * rgb.redComponent + 0.7152 * rgb.greenComponent + 0.0722 * rgb.blueComponent
         let text = NSAttributedString(string: String(number), attributes: [
-            .font: NSFont.monospacedDigitSystemFont(ofSize: 18, weight: .semibold),
+            .font: NSFont.monospacedDigitSystemFont(ofSize: 18 * scale, weight: .semibold),
             .foregroundColor: brightness > 0.6 ? NSColor.black : NSColor.white,
         ])
         let size = text.size()
@@ -201,7 +207,8 @@ struct Annotation: Identifiable {
             let size = Self.attributedString(s, color: .white, size: fontSize).size()
             return CGRect(origin: origin, size: size).insetBy(dx: -pad, dy: -pad)
         case .step(let number, let center):
-            return Self.stepBounds(number: number, center: center).insetBy(dx: -2, dy: -2)
+            return Self.stepBounds(number: number, center: center, scale: effectiveStepScale)
+                .insetBy(dx: -2 * effectiveStepScale, dy: -2 * effectiveStepScale)
         }
     }
 }

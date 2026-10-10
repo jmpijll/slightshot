@@ -4,6 +4,50 @@ import Testing
 
 @MainActor
 struct VideoRasterScaleTests {
+    @Test func fit4KStepGestureKeepsScreenshotStampSize() throws {
+        let canvas = VideoCanvasView(sourceSize: CGSize(width: 3840, height: 2160))
+        let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 960, height: 540),
+                              styleMask: .borderless, backing: .buffered, defer: true)
+        window.isReleasedWhenClosed = false
+        window.contentView = canvas
+        canvas.frame = CGRect(x: 0, y: 0, width: 960, height: 540)
+        let preview = try pattern()
+        canvas.showFrame(preview, at: 0.5)
+        canvas.tool = .step
+        canvas.color = NSColor(srgbRed: 1, green: 0, blue: 0, alpha: 1)
+        var committed: Annotation?
+        canvas.onCommit = { committed = $0 }
+        defer { window.close() }
+        let point = CGPoint(x: 500, y: 300)
+        canvas.mouseDown(with: try mouse(.leftMouseDown, point: point, in: canvas))
+        canvas.mouseUp(with: try mouse(.leftMouseUp, point: point, in: canvas))
+        let mark = try #require(committed)
+        let image = try #require(VideoFrameRenderer.render(image: preview, at: 0.5,
+            annotations: [VideoAnnotation(annotation: mark, start: 0, end: 1)], scale: 0.25))
+        let screenshot = try #require(Renderer.flatten(image: preview, scale: 1,
+            selection: CGRect(x: 0, y: 0, width: 960, height: 540),
+            annotations: [Annotation(shape: .step(number: 1, center: point), color: canvas.color, lineWidth: 4)]))
+        let actual = redStampBounds(image)
+        let expected = redStampBounds(screenshot)
+        #expect(actual.width == expected.width, "A numbered stamp should keep screenshot size at 4K fit.")
+        #expect(actual.height == expected.height)
+    }
+
+    private func redStampBounds(_ image: CGImage) -> CGRect {
+        let data = bytes(image)
+        var left = 960, right = 0, top = 540, bottom = 0
+        for y in 270..<330 {
+            for x in 470..<530 {
+                let offset = y * image.bytesPerRow + x * 4
+                if data[offset + 2] > 180 && data[offset + 1] < 100 && data[offset] < 100 {
+                    left = min(left, x); right = max(right, x)
+                    top = min(top, y); bottom = max(bottom, y)
+                }
+            }
+        }
+        return CGRect(x: left, y: top, width: right - left + 1, height: bottom - top + 1)
+    }
+
     @Test(arguments: [Tool.blur, .pixelate])
     func prepared4KFramesKeepPreviewStrengthAndTimedRange(tool: Tool) throws {
         let size = CGSize(width: 3840, height: 2160)

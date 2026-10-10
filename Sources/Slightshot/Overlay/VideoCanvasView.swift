@@ -148,7 +148,8 @@ final class VideoCanvasView: NSView {
         let scale = max(0.001, imageRect.width / sourceSize.width)
         return Annotation(shape: shape, color: color, lineWidth: lineWidth * tool.widthMultiplier / scale,
                           alpha: tool.strokeAlpha, fontSize: 24 / scale,
-                          rasterScale: tool == .blur || tool == .pixelate ? 1 / scale : 1)
+                          rasterScale: tool == .blur || tool == .pixelate ? 1 / scale : 1,
+                          stepScale: tool == .step ? 1 / scale : 1)
     }
 
     private func beginText(at point: CGPoint) {
