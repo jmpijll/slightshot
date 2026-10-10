@@ -38,13 +38,14 @@ public enum CaptureAction { Copy, Save, SaveAs, Print }
 public enum DefaultAction { Copy, Save, StayOpen }
 public enum ImageFormat { Png, Jpeg, Tiff }
 
-public sealed record Annotation(Tool Tool, PointD[] Points, string Color, double Width, double FontSize = 18, string Text = "", int StepNumber = 1, double RasterScale = 1)
+public sealed record Annotation(Tool Tool, PointD[] Points, string Color, double Width, double FontSize = 18, string Text = "", int StepNumber = 1, double RasterScale = 1, double StepScale = 1)
 {
     public double EffectiveWidth => Tool == Tool.Marker ? Width * 6 : Width;
     public double Alpha => Tool == Tool.Marker ? 0.35 : 1;
     public bool IsRasterEffect => Tool is Tool.Blur or Tool.Pixelate;
     public double EffectiveRasterScale => double.IsFinite(RasterScale) && RasterScale > 0 ? RasterScale : 1;
-    public double StepDiameter => Math.Max(32, 16 + StepNumber.ToString(System.Globalization.CultureInfo.InvariantCulture).Length * 12);
+    public double EffectiveStepScale => double.IsFinite(StepScale) && StepScale > 0 ? StepScale : 1;
+    public double StepDiameter => Math.Max(32, 16 + StepNumber.ToString(System.Globalization.CultureInfo.InvariantCulture).Length * 12) * EffectiveStepScale;
     public static int NextStepNumber(IEnumerable<Annotation> annotations)
         => annotations.Where(annotation => annotation.Tool == Tool.Step).Select(annotation => annotation.StepNumber).DefaultIfEmpty(0).Max() + 1;
 }

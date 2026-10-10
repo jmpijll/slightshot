@@ -63,17 +63,18 @@ internal static class AnnotationRenderer
                 // The same two-pass text rendering is used live and in exported pixels.
                 dc.DrawText(Text(annotation.Text, annotation.FontSize, Brush("#000000", 0.55), pixelsPerDip), new(start.X, start.Y + 1));
                 dc.DrawText(Text(annotation.Text, annotation.FontSize, brush, pixelsPerDip), start); break;
-            case Tool.Step: DrawStep(dc, annotation, brush, start); break;
+            case Tool.Step: DrawStep(dc, annotation, brush, start, pixelsPerDip); break;
         }
     }
 
-    private static void DrawStep(DrawingContext dc, Annotation annotation, SolidColorBrush brush, Point center)
+    private static void DrawStep(DrawingContext dc, Annotation annotation, SolidColorBrush brush, Point center, double pixelsPerDip)
     {
-        double radius = annotation.StepDiameter / 2 - 0.75;
-        dc.DrawEllipse(brush, new Pen(Brushes.White, 1.5), center, radius, radius);
+        double scale = annotation.EffectiveStepScale;
+        double radius = annotation.StepDiameter / 2 - 0.75 * scale;
+        dc.DrawEllipse(brush, new Pen(Brushes.White, 1.5 * scale), center, radius, radius);
         var color = brush.Color;
         double brightness = (0.2126 * color.R + 0.7152 * color.G + 0.0722 * color.B) / 255;
-        var text = Text(annotation.StepNumber.ToString(CultureInfo.InvariantCulture), 18, brightness > 0.6 ? Brushes.Black : Brushes.White);
+        var text = Text(annotation.StepNumber.ToString(CultureInfo.InvariantCulture), 18 * scale, brightness > 0.6 ? Brushes.Black : Brushes.White, pixelsPerDip);
         // Outlined glyphs stay identical in the live surface and export at fractional DPI.
         var glyph = text.BuildGeometry(new Point(center.X - text.Width / 2, center.Y - text.Height / 2));
         dc.DrawGeometry(brightness > 0.6 ? Brushes.Black : Brushes.White, null, glyph);

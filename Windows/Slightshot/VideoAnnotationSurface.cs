@@ -94,7 +94,7 @@ internal sealed class VideoAnnotationSurface : FrameworkElement
         double scale = gestureScale;
         return new(tool, tool is Tool.Pen or Tool.Marker ? points.ToArray() : tool == Tool.Step ? [anchor] : [anchor, end],
             settings.AnnotationColor, settings.LineWidth / scale, settings.FontSize / scale,
-            StepNumber: Annotation.NextStepNumber(history.Items.Select(item => item.Annotation)), RasterScale: 1 / scale);
+            StepNumber: Annotation.NextStepNumber(history.Items.Select(item => item.Annotation)), RasterScale: 1 / scale, StepScale: 1 / scale);
     }
     private static Rect Bounds(Annotation annotation)
     {

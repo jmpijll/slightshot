@@ -12,22 +12,24 @@ enum VideoEditor4KReview {
     private static let start: TimeInterval = 0.6
     private static let end: TimeInterval = 1.4
     private static let samples: [(String, TimeInterval)] = [("before", 0.25), ("during", 1), ("after", 1.75)]
+    private static let measurementScope =
+        "Native seek includes frame generation, annotation composition and synchronous "
+        + "canvas display. Gesture time includes native mouse events and canvas display. "
+        + "Export wall time includes annotation preparation, decoding, effects, resizing and encoding; "
+        + "evidence extraction is excluded. Qualities run serially with no source regeneration."
 
     static func capture(in window: VideoEditorWindow, source: URL, directory: URL, sourceCommit: String,
                         captureWindow: (NSWindow, URL) async throws -> String) async throws {
-        let sourceAsset = AVURLAsset(url: source)
-        let track = try await sourceAsset.loadTracks(withMediaType: .video).first
-        guard let track, try await track.load(.naturalSize) == sourceSize,
-              abs(try await sourceAsset.load(.duration).seconds - duration) < 0.01 else {
-            throw RecordingError.failed("The 4K performance fixture requires the generated two-second 3840×2160 input.")
-        }
-        let sourceHash = SHA256.hash(data: try Data(contentsOf: source)).map { String(format: "%02x", $0) }.joined()
+        let sourceHash = try await validatedSourceHash(source)
         let sourceMemory = ReviewMemoryProbe.residentBytes()
         await window.reviewSeek(to: 0.25)
         try await Task.sleep(for: .milliseconds(150))
         window.contentView?.layoutSubtreeIfNeeded()
         let gestures = try makeAnnotations(in: window)
         let annotations = try committedAnnotations(in: window)
+        guard let previewSize = window.canvas.previewPixelSize else {
+            throw RecordingError.failed("The native 4K editor has not decoded a preview frame.")
+        }
         var report: [String: Any] = [
             "platform": "macOS", "sourceCommit": sourceCommit,
             "fixtureInstrumentationSHA256": ProcessInfo.processInfo.environment["SLIGHTSHOT_REVIEW_FIXTURE_SHA256"]
@@ -37,6 +39,9 @@ enum VideoEditor4KReview {
                 + "Name/email and a code marker move inside fixed privacy rectangles. No personal data.",
             "sourceSHA256": sourceHash, "sourceFile": source.lastPathComponent,
             "sourceFrames": 48, "sourceWidth": 3840, "sourceHeight": 2160,
+            "decodedPreviewWidth": previewSize.width, "decodedPreviewHeight": previewSize.height,
+            "previewEffectRadiusPixels": 8 * previewSize.width / sourceSize.width
+                * annotations[0].annotation.effectiveRasterScale,
             "annotationRangeSeconds": [start, end], "annotationCount": annotations.count,
             "annotations": annotations.map(annotationMetadata),
             "canvasFitScale": window.canvas.imageRect.width / sourceSize.width,
@@ -86,17 +91,27 @@ enum VideoEditor4KReview {
         try write(report, to: directory.appendingPathComponent("4k-performance-partial.json"))
         report["activeCancellation"] = try await measureCancellation(in: window, source: source,
             sourceHash: sourceHash, directory: directory, annotations: annotations)
+        report["additionalWarmBlurGesture"] = try await measureRepeatedBlur(in: window, annotations: annotations)
         report["additionalStepCapture"] = try await captureStep(in: window, directory: directory,
             sourceCommit: sourceCommit, captureWindow: captureWindow)
         report["state"] = "Complete"
-        report["measurementScope"] = "Native seek includes frame generation, annotation composition and synchronous "
-            + "canvas display. Gesture time includes native mouse events and canvas display. "
-            + "Export wall time includes annotation preparation, decoding, effects, resizing and encoding; "
-            + "evidence extraction is excluded. Qualities run serially with no source regeneration."
+        report["measurementScope"] = measurementScope
         try write(report, to: directory.appendingPathComponent("4k-performance.json"))
         await window.reviewSeek(to: 1)
     }
 
+    private static func validatedSourceHash(_ source: URL) async throws -> String {
+        let asset = AVURLAsset(url: source)
+        let track = try await asset.loadTracks(withMediaType: .video).first
+        guard let track, try await track.load(.naturalSize) == sourceSize,
+              abs(try await asset.load(.duration).seconds - duration) < 0.01 else {
+            throw RecordingError.failed("The 4K performance fixture requires the generated two-second 3840×2160 input.")
+        }
+        return try fileHash(source)
+    }
+}
+
+extension VideoEditor4KReview {
     private static func makeAnnotations(in window: VideoEditorWindow) throws -> [[String: Any]] {
         let canvas = window.canvas
         let recipes: [(Tool, [CGPoint])] = [
@@ -114,18 +129,21 @@ enum VideoEditor4KReview {
             }
             button.performClick(nil)
             let began = ProcessInfo.processInfo.systemUptime
-            try gesture(points, in: canvas)
+            var phases = try gesture(points, in: canvas)
             if tool == .text {
                 guard let entry = descendants(canvas).compactMap({ $0 as? TextEntryView }).first else {
                     throw RecordingError.failed("The native text entry is unavailable.")
                 }
-                entry.insertText("Inspect detail", replacementRange: NSRange(location: NSNotFound, length: 0))
-                canvas.commitTextEntry()
+                phases["textEntryAndCommit"] = measureMilliseconds {
+                    entry.insertText("Inspect detail", replacementRange: NSRange(location: NSNotFound, length: 0))
+                    canvas.commitTextEntry()
+                }
             }
-            window.reviewSetRange(start: start, end: end)
-            canvas.displayIfNeeded()
+            phases["setRange"] = measureMilliseconds { window.reviewSetRange(start: start, end: end) }
+            phases["displayIfNeeded"] = measureMilliseconds { canvas.displayIfNeeded() }
             measurements.append(["tool": tool.title,
                 "nativeMouseEvents": points.count + 1,
+                "nativePhaseMilliseconds": phases,
                 "nativeGestureAndDrawMilliseconds": (ProcessInfo.processInfo.systemUptime - began) * 1_000])
         }
         window.reviewSelectAnnotation(index: 2)
@@ -182,17 +200,60 @@ enum VideoEditor4KReview {
         return report
     }
 
-    private static func gesture(_ sourcePoints: [CGPoint], in canvas: VideoCanvasView) throws {
+    private static func measureRepeatedBlur(in window: VideoEditorWindow,
+                                            annotations: [VideoAnnotation]) async throws -> [String: Any] {
+        let previousMarks = try annotationSnapshot(annotations)
+        await window.reviewSeek(to: 0.25)
+        guard let blurButton = descendants(window.contentView!).compactMap({ $0 as? ToolbarButton })
+            .first(where: { $0.accessibilityLabel() == Tool.blur.title }) else {
+            throw RecordingError.failed("The native blur toolbar button is unavailable for the repeated gesture.")
+        }
+        blurButton.performClick(nil)
+        let began = ProcessInfo.processInfo.systemUptime
+        var phases = try gesture([CGPoint(x: 1000, y: 760), CGPoint(x: 2050, y: 885)], in: window.canvas)
+        phases["setRange"] = measureMilliseconds { window.reviewSetRange(start: start, end: end) }
+        phases["displayIfNeeded"] = measureMilliseconds { window.canvas.displayIfNeeded() }
+        let elapsed = (ProcessInfo.processInfo.systemUptime - began) * 1_000
+        window.reviewUndo() // Restore the new mark's original range.
+        window.reviewUndo() // Remove the repeated mark through native history.
+        let restored = try committedAnnotations(in: window)
+        guard try annotationSnapshot(restored) == previousMarks else {
+            throw RecordingError.failed("The repeated blur gesture did not restore the five benchmark marks.")
+        }
+        return ["tool": Tool.blur.title, "nativeGestureAndDrawMilliseconds": elapsed, "nativeMouseEvents": 3,
+            "nativePhaseMilliseconds": phases,
+            "sampleKind": "Repeated identical blur gesture after exports; current process rendering is warm.",
+            "measurementScope": "Same source frame, source rectangle and event sequence as the first gesture. "
+                + "Native undo restores all five benchmark marks before the separate stamp capture.",
+            "benchmarkAnnotationsRestored": true]
+    }
+
+    @discardableResult
+    private static func gesture(_ sourcePoints: [CGPoint], in canvas: VideoCanvasView) throws -> [String: Double] {
         let points = sourcePoints.map { point in
             CGPoint(x: canvas.imageRect.minX + point.x * canvas.imageRect.width / sourceSize.width,
                     y: canvas.imageRect.minY + point.y * canvas.imageRect.height / sourceSize.height)
         }
-        guard let first = points.first, let last = points.last else { return }
-        canvas.mouseDown(with: try event(.leftMouseDown, at: first, in: canvas))
-        for point in points.dropFirst() {
-            canvas.mouseDragged(with: try event(.leftMouseDragged, at: point, in: canvas))
+        guard let first = points.first, let last = points.last else { return [:] }
+        var phases: [String: Double] = [:]
+        phases["mouseDown"] = try measureMilliseconds {
+            canvas.mouseDown(with: try event(.leftMouseDown, at: first, in: canvas))
         }
-        canvas.mouseUp(with: try event(.leftMouseUp, at: last, in: canvas))
+        phases["mouseDraggedTotal"] = try measureMilliseconds {
+            for point in points.dropFirst() {
+                canvas.mouseDragged(with: try event(.leftMouseDragged, at: point, in: canvas))
+            }
+        }
+        phases["mouseUp"] = try measureMilliseconds {
+            canvas.mouseUp(with: try event(.leftMouseUp, at: last, in: canvas))
+        }
+        return phases
+    }
+
+    private static func measureMilliseconds(_ action: () throws -> Void) rethrows -> Double {
+        let began = ProcessInfo.processInfo.systemUptime
+        try action()
+        return (ProcessInfo.processInfo.systemUptime - began) * 1_000
     }
 
     private static func event(_ type: NSEvent.EventType, at point: CGPoint, in view: NSView) throws -> NSEvent {
@@ -269,13 +330,22 @@ enum VideoEditor4KReview {
         }
         let began = ProcessInfo.processInfo.systemUptime
         var stagedBytes = 0
+        var stagedFile = ""
         while ProcessInfo.processInfo.systemUptime - began < 10 {
             let staging = try FileManager.default.contentsOfDirectory(at: cancellationDirectory,
                 includingPropertiesForKeys: nil).filter { $0.lastPathComponent.hasPrefix(".slightshot-") }
             for staged in staging {
-                let output = staged.appendingPathComponent("recording.mp4")
-                if let size = try? output.resourceValues(forKeys: [.fileSizeKey]).fileSize {
-                    stagedBytes = max(stagedBytes, size)
+                // Optimized MP4 media is written into AVFoundation's sibling
+                // .sb file before the final container is materialized at finish.
+                let outputs = try FileManager.default.contentsOfDirectory(at: staged,
+                    includingPropertiesForKeys: [.fileSizeKey]).filter {
+                    $0.lastPathComponent == "recording.mp4" || $0.lastPathComponent.hasPrefix("recording.mp4.sb-")
+                }
+                for output in outputs {
+                    if let size = try? output.resourceValues(forKeys: [.fileSizeKey]).fileSize, size > stagedBytes {
+                        stagedBytes = size
+                        stagedFile = output.lastPathComponent
+                    }
                 }
             }
             if stagedBytes > 4096 { break }
@@ -303,6 +373,7 @@ enum VideoEditor4KReview {
         }
         return ["quality": RecordingQuality.high.title, "action": "Native RecordingExportPanel Cancel button click",
                 "stagedOutputBytesObservedBeforeCancel": stagedBytes, "cancellationWallSeconds": cancellationSeconds,
+                "stagedOutputFileObservedBeforeCancel": stagedFile,
                 "cancelRequestedTimeSecondsSinceExportStart": cancellationBegan - began,
                 "sourceSHA256BeforeAndAfter": sourceHash, "existingDestinationSHA256BeforeAndAfter": previousHash,
                 "sourcePreserved": sourcePreserved, "existingDestinationPreserved": destinationPreserved,

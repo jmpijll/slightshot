@@ -156,6 +156,7 @@ internal static class VideoEditorSmokeTest
             File.Delete(preserved);
             foreach (var quality in Enum.GetValues<RecordingQuality>())
             {
+                var sourceStripe = new List<double>(); var outputStripe = new List<double>();
                 string output = Path.Combine(directory, "video-editor-" + quality.ToString().ToLowerInvariant() + ".mp4");
                 var watch = Stopwatch.StartNew();
                 await VideoAnnotationExport.SaveAsync(session.SourcePath, output, quality, width, height, snapshot, CancellationToken.None);
@@ -166,6 +167,9 @@ internal static class VideoEditorSmokeTest
                 {
                     var frame = await decoded.GetFrameAsync(TimeSpan.FromSeconds(point.Seconds));
                     var originalFrame = await source.GetFrameAsync(TimeSpan.FromSeconds(point.Seconds));
+                    sourceStripe.Add(MeanBlue(originalFrame, new Int32Rect(30, 3, 570, 6)));
+                    outputStripe.Add(MeanBlue(frame, new Int32Rect(30, 3, 570, 6)));
+                    Require(Math.Abs(sourceStripe[^1] - outputStripe[^1]) < 20, "actual MP4 moving top stripe matches its source timestamp/orientation " + point.Name + " " + quality);
                     double blur = Delta(originalFrame, frame, new Int32Rect(40, 195, 85, 95));
                     double pixel = Delta(originalFrame, frame, new Int32Rect(170, 195, 85, 95));
                     if (point.Name == "during")
@@ -178,6 +182,8 @@ internal static class VideoEditorSmokeTest
                     Require(Delta(previews[point.Name], frame, new Int32Rect(20, 70, 590, 250)) < 30, "preview/export composition agrees within H.264 compression " + point.Name + " " + quality);
                     Save(frame, Path.Combine(directory, $"video-editor-output-{quality.ToString().ToLowerInvariant()}-{point.Name}.png"));
                 }
+                Require(outputStripe[1] - outputStripe[0] > 15 && outputStripe[2] - outputStripe[1] > 15, "actual MP4 source frames advance between all three timestamps " + quality);
+                checks.Add($"{quality.Title()}: source/output moving top-stripe blue means {string.Join("/", sourceStripe.Select(value => value.ToString("0.0")))}/{string.Join("/", outputStripe.Select(value => value.ToString("0.0")))}; timestamp and vertical orientation checks passed.");
                 checks.Add($"{quality.Title()}: actual edited MP4 decoded before/in/after interval; text, pointer arrow, drawings, blur and pixelation match preview within codec tolerance. Native export took {watch.Elapsed.TotalSeconds:0.0}s for {source.Duration.TotalSeconds:0.0}s of {width}×{height} video.");
             }
             Require(File.Exists(session.SourcePath), "successful export leaves source available until editor closes");
@@ -204,7 +210,7 @@ internal static class VideoEditorSmokeTest
     }
     private static IEnumerable<Button> Buttons(Window window) => Descendants((DependencyObject)window.Content).OfType<Button>();
     private static IEnumerable<Slider> Sliders(Window window) => Descendants((DependencyObject)window.Content).OfType<Slider>();
-    private static void ClickTooltip(Window window, string tooltip) => Buttons(window).Single(button => Equals(button.ToolTip, tooltip)).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+    internal static void ClickTooltip(Window window, string tooltip) => Buttons(window).Single(button => Equals(button.ToolTip, tooltip)).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
     private static void ClickContent(Window window, string content) => Buttons(window).Single(button => Equals(button.Content, content)).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
     internal static async Task DragAsync(FrameworkElement surface, Point start, Point end)
     {
@@ -228,6 +234,12 @@ internal static class VideoEditorSmokeTest
         first.CopyPixels(region, a, stride, 0); second.CopyPixels(region, b, stride, 0);
         long sum = 0; for (int index = 0; index < a.Length; index++) if (index % 4 != 3) sum += Math.Abs(a[index] - b[index]);
         return (double)sum / (region.Width * region.Height * 3);
+    }
+    internal static double MeanBlue(BitmapSource bitmap, Int32Rect region)
+    {
+        int stride = region.Width * 4; var pixels = new byte[stride * region.Height]; bitmap.CopyPixels(region, pixels, stride, 0);
+        long sum = 0; for (int index = 0; index < pixels.Length; index += 4) sum += pixels[index];
+        return (double)sum / (region.Width * region.Height);
     }
     private sealed class CancelOnProgress(CancellationTokenSource cancellation) : IProgress<double>
     {

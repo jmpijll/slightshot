@@ -17,6 +17,10 @@ internal static class VideoAnnotationChecks
         Require(new Annotation(Tool.Blur, [], "#FF3B30", 3).EffectiveRasterScale == 1, "screenshot effects retain their default strength");
         foreach (double invalid in new[] { double.NaN, double.PositiveInfinity, 0, -1 })
             Require((blur.Annotation with { RasterScale = invalid }).EffectiveRasterScale == 1, "invalid raster scale safely falls back to screenshot strength");
+        var step = new Annotation(Tool.Step, [new(100, 100)], "#FF3B30", 3, StepScale: 6);
+        Require(step.StepDiameter == 192 && (step with { StepScale = 1 }).StepDiameter == 32, "4K numbered steps retain screenshot size in fit view");
+        foreach (double invalid in new[] { double.NaN, double.PositiveInfinity, 0, -1 })
+            Require((step with { StepScale = invalid }).EffectiveStepScale == 1, "invalid step scale falls back to screenshot size");
         Require(blur.Begin == TimeSpan.Zero && blur.End == duration, "a new mark covers the whole clip");
         history.SetTiming(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(3));
         Require(history.VisibleAt(TimeSpan.FromSeconds(0.999)).Length == 0, "mark is absent before its interval");

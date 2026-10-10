@@ -25,6 +25,7 @@ internal static class VideoAnnotationExport
         {
             cancellation.ThrowIfCancellationRequested();
             using var decoder = await VideoFrameSource.OpenAsync(source, cancellation);
+            using var sequential = await VideoSequentialDecoder.OpenAsync(source, decoder.Width, decoder.Height);
             using var renderer = new VideoRenderWorker();
             using var frames = new RecordingFrameBuffers(checked(decoder.Width * decoder.Height * 4));
             using var samples = new SemaphoreSlim(1, 1);
@@ -52,12 +53,11 @@ internal static class VideoAnnotationExport
                     var position = TimeSpan.FromTicks(nextFrame * TimeSpan.TicksPerSecond / rate);
                     if (position >= decoder.Duration) return;
                     long measured = Stopwatch.GetTimestamp();
-                    var image = await decoder.GetFrameAsync(position, stop.Token);
-                    metrics?.AddDecode(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
-                    measured = Stopwatch.GetTimestamp();
                     frame = await frames.RentAsync(stop.Token);
-                    image.CopyPixels(frame.Pixels, decoder.Width * 4, 0);
-                    metrics?.AddCopy(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
+                    metrics?.AddBufferWait(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
+                    measured = Stopwatch.GetTimestamp();
+                    await sequential.GetFrameAsync(position, frame.Pixels, stop.Token);
+                    metrics?.AddDecode(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
                     measured = Stopwatch.GetTimestamp();
                     await renderer.ComposeAsync(frame.Pixels, decoder.Width, decoder.Height, position, annotations, stop.Token);
                     metrics?.AddRender(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
@@ -68,7 +68,7 @@ internal static class VideoAnnotationExport
                     var submitted = frame;
                     processed = (completed, _) => { completed.Processed -= processed; submitted.Dispose(); };
                     sample.Processed += processed;
-                    args.Request.Sample = sample; frame = null; nextFrame++;
+                    args.Request.Sample = sample; frame = null; nextFrame++; metrics?.AddSubmittedFrame();
                 }
                 catch (OperationCanceledException) { }
                 catch (Exception error) { sampleError = error; sender.NotifyError(MediaStreamSourceErrorStatus.Other); }
@@ -113,11 +113,13 @@ internal static class VideoAnnotationExport
 
 internal sealed class VideoExportMetrics
 {
-    internal int Frames { get; private set; }
+    private int frames;
+    internal int Frames => Volatile.Read(ref frames);
     internal double DecodeMilliseconds { get; private set; }
     internal double RenderMilliseconds { get; private set; }
-    internal double CopyMilliseconds { get; private set; }
+    internal double BufferWaitMilliseconds { get; private set; }
     internal void AddDecode(double elapsed) => DecodeMilliseconds += elapsed;
     internal void AddRender(double elapsed) => RenderMilliseconds += elapsed;
-    internal void AddCopy(double elapsed) { CopyMilliseconds += elapsed; Frames++; }
+    internal void AddBufferWait(double elapsed) => BufferWaitMilliseconds += elapsed;
+    internal void AddSubmittedFrame() => Interlocked.Increment(ref frames);
 }

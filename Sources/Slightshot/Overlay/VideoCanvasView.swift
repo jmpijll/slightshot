@@ -2,6 +2,9 @@ import AppKit
 
 /// Video frames and screenshot annotations share the same top-left source coordinates.
 final class VideoCanvasView: NSView {
+    var previewPixelSize: CGSize? {
+        sourceImage.map { CGSize(width: $0.width, height: $0.height) }
+    }
     let sourceSize: CGSize
     var onCommit: ((Annotation) -> Void)?
     var onSelect: ((UUID?) -> Void)?
@@ -13,6 +16,7 @@ final class VideoCanvasView: NSView {
     var selectedID: UUID?
     var time: TimeInterval = 0
     private var sourceImage: CGImage?
+    private var hasPreparedBlur = false
     private var renderedImage: CGImage?
     private var anchor: CGPoint?
     private var points: [CGPoint] = []
@@ -43,6 +47,13 @@ final class VideoCanvasView: NSView {
     func showFrame(_ image: CGImage, at time: TimeInterval) {
         sourceImage = image
         self.time = time
+        let blurScale = CGFloat(image.width) / imageRect.width
+        if !hasPreparedBlur, blurScale.isFinite, blurScale > 0 {
+            hasPreparedBlur = true
+            Task.detached(priority: .utility) {
+                RasterEffects.prewarmBlur(scale: blurScale)
+            }
+        }
         refresh()
     }
 

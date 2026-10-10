@@ -172,7 +172,8 @@ internal sealed class VideoEditorWindow : Window
             {
                 // Decode only the preview pixels that can be displayed. Marks
                 // keep source coordinates, and export always uses source size.
-                var image = await source.GetFrameAsync(target, lifetime.Token, 1280);
+                int previewWidth = Math.Min(1280, Math.Max(1, (int)Math.Ceiling(source.Width * surface.ViewScale * VisualTreeHelper.GetDpi(surface).DpiScaleX)));
+                var image = await source.GetFrameAsync(target, lifetime.Token, previewWidth);
                 if (closing) return;
                 if (request != seekVersion) continue;
                 surface.Position = target; surface.SetFrame(image); return;

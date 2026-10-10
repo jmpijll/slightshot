@@ -176,5 +176,8 @@ Equal(true, dragAllocations < 32 * 1024, $"warm blur reuses full-frame scratch s
 var smallAfterLarge = Enumerable.Range(0, 15).SelectMany(_ => new byte[] {90, 100, 110, 255}).ToArray();
 RasterEffects.Blur(smallAfterLarge, 3, 5, 8);
 Equal(true, smallAfterLarge.SequenceEqual(Enumerable.Range(0, 15).SelectMany(_ => new byte[] {90, 100, 110, 255})), "pooled scratch cannot leak stale larger-image pixels into a smaller blur");
+var wideKernel = Enumerable.Range(0, 256 * 257).SelectMany(index => new byte[] { (byte)(index % 251), (byte)(index * 7 % 251), (byte)(index * 23 % 251), 255 }).ToArray();
+RasterEffects.Blur(wideKernel, 256, 257, 46);
+Equal("65BBD8A5D36E95AF748B792F78E5357250D974FC44AE646A8F02F7B890E252BA", Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(wideKernel)), "4K-strength blur stays byte-identical to the original three-box kernel across all channels and edge clamps");
 checks += await RecordingFrameBufferChecks.RunAsync();
 Console.WriteLine($"Passed {checks} Windows parity geometry, pixel-boundary, style, filename and recording buffer checks.");

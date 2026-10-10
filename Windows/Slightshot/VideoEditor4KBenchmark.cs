@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
@@ -21,12 +22,17 @@ internal static class VideoEditor4KBenchmark
         const int width = 3840, height = 2160;
         var process = Process.GetCurrentProcess();
         long peakPrivate = 0, peakWorking = 0;
+        string[] phaseNames = ["recordingFixture", "editorPreview", "primaryExport", "outputValidation", "activeCancel", "stepFixture"];
+        var phasePrivate = new long[phaseNames.Length]; var phaseWorking = new long[phaseNames.Length]; int phase = 0;
         using var monitoring = new CancellationTokenSource();
         Task monitor = Task.Run(async () =>
         {
             while (!monitoring.IsCancellationRequested)
             {
                 process.Refresh(); peakPrivate = Math.Max(peakPrivate, process.PrivateMemorySize64); peakWorking = Math.Max(peakWorking, process.WorkingSet64);
+                int measuredPhase = Volatile.Read(ref phase);
+                phasePrivate[measuredPhase] = Math.Max(phasePrivate[measuredPhase], process.PrivateMemorySize64);
+                phaseWorking[measuredPhase] = Math.Max(phaseWorking[measuredPhase], process.WorkingSet64);
                 try { await Task.Delay(40, monitoring.Token); } catch (OperationCanceledException) { break; }
             }
         });
@@ -81,8 +87,13 @@ internal static class VideoEditor4KBenchmark
         double exportSeconds = 0, cancellationSeconds = 0, viewScale = 1;
         double effectiveRasterScale = 1;
         double blurReferenceDelta = 0, pixelReferenceDelta = 0;
+        double stepDiameterPoints = 0, renderedStepFillPoints = 0;
+        double cancelRequestedWallSinceStart = 0; int actualFramesBeforeCancel = 0;
+        string retainedSourceSha256 = "", retainedDestinationSha256 = "";
+        var sourceStripe = new List<double>(); var outputStripe = new List<double>();
         try
         {
+            Volatile.Write(ref phase, 1);
             editor.Show(); editor.Activate(); editor.UpdateLayout(); heartbeat.Start(); lastBeat = Stopwatch.GetTimestamp();
             await editor.InitializeAsync(); await Task.Delay(100);
             viewScale = editor.Surface.ViewScale;
@@ -107,9 +118,11 @@ internal static class VideoEditor4KBenchmark
             await editor.SeekAsync(TimeSpan.FromSeconds(0.4)); editor.Play(); await Task.Delay(750); editor.Pause();
             var export = Stopwatch.StartNew();
             string output = Path.Combine(directory, "video-editor-4k-high.mp4");
+            Volatile.Write(ref phase, 2);
             await VideoAnnotationExport.SaveAsync(session.SourcePath, output, RecordingQuality.High, width, height, annotations, CancellationToken.None, metrics: metrics);
             exportSeconds = export.Elapsed.TotalSeconds;
             heartbeat.Stop();
+            Volatile.Write(ref phase, 3);
             using var decoded = await VideoFrameSource.OpenAsync(output);
             Require(decoded.Width == width && decoded.Height == height, "actual MP4 retains 3840×2160 source dimensions");
             foreach (double seconds in new[] { 0.15, 0.7, 1.25 })
@@ -117,6 +130,9 @@ internal static class VideoEditor4KBenchmark
                 var original = await source.GetFrameAsync(TimeSpan.FromSeconds(seconds));
                 var rendered = VideoAnnotationRenderer.Render(original, TimeSpan.FromSeconds(seconds), annotations);
                 var frame = await decoded.GetFrameAsync(TimeSpan.FromSeconds(seconds));
+                sourceStripe.Add(VideoEditorSmokeTest.MeanBlue(original, new Int32Rect(180, 12, 3300, 40)));
+                outputStripe.Add(VideoEditorSmokeTest.MeanBlue(frame, new Int32Rect(180, 12, 3300, 40)));
+                Require(Math.Abs(sourceStripe[^1] - outputStripe[^1]) < 20, "4K MP4 moving top stripe matches its source timestamp and vertical orientation");
                 double blur = VideoEditorSmokeTest.Delta(original, frame, new Int32Rect(240, 1180, 450, 530));
                 double pixel = VideoEditorSmokeTest.Delta(original, frame, new Int32Rect(1030, 1180, 450, 530));
                 Require(seconds is > .35 and < 1.1 ? blur > 35 && pixel > 35 : blur < 25 && pixel < 25, "4K MP4 effects only during interval");
@@ -139,15 +155,47 @@ internal static class VideoEditor4KBenchmark
                     VideoEditorSmokeTest.Save(fitVideo, Path.Combine(directory, "video-editor-4k-fit-view-effects.png"));
                 }
             }
+            Require(outputStripe[1] - outputStripe[0] > 3 && outputStripe[2] - outputStripe[1] > 3, "4K MP4 source frames advance at all three timestamps");
+            Volatile.Write(ref phase, 4);
             string preserved = Path.Combine(directory, "preserved.mp4"); byte[] existing = [11, 22, 33, 44]; File.WriteAllBytes(preserved, existing);
+            string sourceDigest = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(session.SourcePath)));
             using var cancel = new CancellationTokenSource();
-            var cancelWatch = Stopwatch.StartNew();
-            var cancelled = VideoAnnotationExport.SaveAsync(session.SourcePath, preserved, RecordingQuality.High, width, height, annotations, cancel.Token);
-            await Task.Delay(100); cancel.Cancel();
+            var cancellationStart = Stopwatch.StartNew(); var cancelMetrics = new VideoExportMetrics();
+            var cancelled = VideoAnnotationExport.SaveAsync(session.SourcePath, preserved, RecordingQuality.High, width, height, annotations, cancel.Token, metrics: cancelMetrics);
+            bool Written() => Directory.EnumerateFiles(directory, ".slightshot-*.mp4").Any(path => new FileInfo(path).Length > 4096);
+            while (!cancelled.IsCompleted && (cancelMetrics.Frames == 0 || !Written()) && cancellationStart.Elapsed < TimeSpan.FromSeconds(15)) await Task.Delay(10);
+            actualFramesBeforeCancel = cancelMetrics.Frames;
+            Require(!cancelled.IsCompleted && actualFramesBeforeCancel > 0 && Written(), "4K cancel happens while rendered frames and MP4 bytes are actually in flight");
+            cancelRequestedWallSinceStart = cancellationStart.Elapsed.TotalSeconds;
+            var cancelWatch = Stopwatch.StartNew(); cancel.Cancel();
             try { await cancelled; throw new InvalidOperationException("4K export ignored cancellation."); } catch (OperationCanceledException) { }
             cancellationSeconds = cancelWatch.Elapsed.TotalSeconds;
             Require(File.ReadAllBytes(preserved).SequenceEqual(existing) && File.Exists(session.SourcePath) && editor.History.Items.Count == 3, "4K cancellation retains destination, source and edits");
+            retainedSourceSha256 = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(session.SourcePath)));
+            retainedDestinationSha256 = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(preserved)));
+            Require(retainedSourceSha256 == sourceDigest, "active 4K cancellation preserves source bytes exactly");
             Require(!Directory.EnumerateFiles(directory, ".slightshot-*").Any(), "4K cancellation removes staging"); File.Delete(preserved);
+            // Separate from the unchanged three-tool performance workload:
+            // operate the actual Step tool and verify its real MP4 diameter.
+            Volatile.Write(ref phase, 5);
+            await editor.SeekAsync(TimeSpan.FromSeconds(.7));
+            VideoEditorSmokeTest.ClickTooltip(editor, "Numbered steps");
+            await VideoEditorSmokeTest.DragAsync(editor.Surface, new(3300, 400), new(3300, 400));
+            editor.SetSelectedTiming(TimeSpan.FromSeconds(.35), TimeSpan.FromSeconds(1.1));
+            var step = editor.History.Selected!.Annotation;
+            stepDiameterPoints = step.StepDiameter * viewScale;
+            await Task.Delay(100); editor.UpdateLayout();
+            VideoEditorSmokeTest.CaptureWindow(editor, Path.Combine(directory, "video-editor-4k-step.png"));
+            string stepOutput = Path.Combine(directory, "video-editor-4k-step.mp4");
+            await VideoAnnotationExport.SaveAsync(session.SourcePath, stepOutput, RecordingQuality.High, width, height,
+                editor.History.ExportSnapshot().Where(mark => mark.Annotation.Tool == Tool.Step).ToArray(), CancellationToken.None);
+            using var stepDecoded = await VideoFrameSource.OpenAsync(stepOutput);
+            var stepFrame = await stepDecoded.GetFrameAsync(TimeSpan.FromSeconds(.7));
+            int left = (int)Math.Floor(3300 - step.StepDiameter / 2 - 2), length = (int)Math.Ceiling(step.StepDiameter + 4);
+            var line = new byte[length * 4]; stepFrame.CopyPixels(new Int32Rect(left, 400, length, 1), line, length * 4, 0);
+            int first = -1, last = -1;
+            for (int x = 0; x < length; x++) if (line[x * 4 + 2] > 180 && line[x * 4 + 1] < 140 && line[x * 4] < 140) { if (first < 0) first = x; last = x; }
+            renderedStepFillPoints = first < 0 ? 0 : (last - first + 1) * viewScale;
         }
         finally
         {
@@ -160,18 +208,23 @@ internal static class VideoEditor4KBenchmark
         if (peakPrivate > 1536L * 1024 * 1024) acceptance.Add("Private bytes exceed bounded 1.5 GiB budget");
         if (cancellationSeconds > 5) acceptance.Add("4K cancellation exceeds 5 seconds");
         if (blurReferenceDelta > 18 || pixelReferenceDelta > 18) acceptance.Add("Rendered fit-view effects differ from screenshot strength by more than 18 mean channel values");
+        if (Math.Abs(stepDiameterPoints - 32) > 0.01 || Math.Abs(renderedStepFillPoints - 29) > 2.5) acceptance.Add("Native numbered step does not retain its screenshot size in the actual 4K MP4");
         if (RasterEffects.PixelBlockSize * effectiveRasterScale * viewScale < 10) acceptance.Add("Pixelation weaker than screenshot 12-point blocks in fit view");
         File.WriteAllText(Path.Combine(directory, "video-editor-4k-validation.json"), JsonSerializer.Serialize(new
         {
             platform = "Windows native WPF / Media Foundation", baseline,
             sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
-            fixture = "3840×2160 synthetic moving recording, high-frequency checker and invented readable ACCT1234 / KEY5678 text, native pointer-drawn blur/pixelate, 0.35–1.1s interval, actual High 30fps MP4. Native editor HWND screenshots; no personal source data.",
+            fixture = "3840×2160 synthetic moving recording, high-frequency checker and invented readable ACCT1234 / KEY5678 text, native pointer-drawn blur/pixelate plus fixture caption, 0.35–1.1s interval, actual High 30fps MP4. Separate native Step-button/click fixture and actual MP4 diameter check after the three-tool benchmark. Native editor HWND screenshots; no personal source data.",
             durationSeconds = source.Duration.TotalSeconds, exportSeconds, frames = metrics.Frames, exportFramesPerSecond = metrics.Frames / exportSeconds,
-            metrics.DecodeMilliseconds, metrics.RenderMilliseconds, metrics.CopyMilliseconds,
+            metrics.DecodeMilliseconds, metrics.RenderMilliseconds, metrics.BufferWaitMilliseconds,
             seekMilliseconds = seeks, maxDispatcherGapMilliseconds = maxDispatcherGap, peakPrivateMiB = peakPrivate / 1048576.0, peakWorkingMiB = peakWorking / 1048576.0,
+            memoryPhases = phaseNames.Select((name, index) => new { name, peakPrivateMiB = phasePrivate[index] / 1048576.0, peakWorkingMiB = phaseWorking[index] / 1048576.0 }).ToArray(),
+            sourceTopStripeBlueMeans = sourceStripe, outputTopStripeBlueMeans = outputStripe,
             cancellationSeconds, viewScale, effectiveBlurPoints = RasterEffects.BlurRadius * effectiveRasterScale * viewScale,
             effectivePixelBlockPoints = RasterEffects.PixelBlockSize * effectiveRasterScale * viewScale,
             blurScreenshotReferenceMeanDelta = blurReferenceDelta, pixelScreenshotReferenceMeanDelta = pixelReferenceDelta,
+            stepDiameterPoints, renderedStepFillPoints,
+            cancelRequestedWallSinceStart, actualFramesBeforeCancel, retainedSourceSha256, retainedDestinationSha256,
             acceptanceFailures = acceptance
         }, new JsonSerializerOptions { WriteIndented = true }));
         Require(baseline || acceptance.Count == 0, string.Join("; ", acceptance));
