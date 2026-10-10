@@ -1,17 +1,19 @@
 import AppKit
+import AVFoundation
 import UniformTypeIdentifiers
 
-/// Selection → live recording → Stop → save-time quality. Keeping the frozen
+/// Selection → live recording → Stop → timed annotations → save-time quality. Keeping the frozen
 /// screenshot overlay out of this lifecycle ensures the recorded screen is live.
 final class RecordingCoordinator {
     static let shared = RecordingCoordinator()
-    private enum Phase { case starting, recording, stopping, saving }
+    private enum Phase { case starting, recording, stopping, editing, saving }
     private var phase: Phase?
     private var session: ScreenRecordingSession?
     private var recordingPanel: RecordingPanel?
     private var recordingOutline: RecordingOutlinePanel?
     private var savePanel: NSSavePanel?
     private var exportPanel: RecordingExportPanel?
+    private var editor: VideoEditorWindow?
     private var startTask: Task<Void, Never>?
     private var saveTask: Task<Void, Never>?
     private var exportTask: Task<Void, Error>?
@@ -78,7 +80,13 @@ final class RecordingCoordinator {
             guard !self.isTerminating else { return }
             switch result {
             case .success(let source):
-                await self.chooseDestination(source: source, size: session.size)
+                do {
+                    let asset = AVURLAsset(url: source)
+                    let duration = try await asset.load(.duration)
+                    guard duration.seconds.isFinite, duration.seconds > 0 else { throw RecordingError.empty }
+                    self.presentEditor(source: source, size: session.size, duration: duration.seconds)
+                    return
+                } catch { OutputService.presentError(error.localizedDescription) }
             case .failure(let error):
                 if error is CancellationError { break }
                 if case CaptureError.permissionDenied = error {
@@ -92,7 +100,32 @@ final class RecordingCoordinator {
         }
     }
 
-    private func chooseDestination(source: URL, size: CGSize) async {
+    private func presentEditor(source: URL, size: CGSize, duration: TimeInterval) {
+        phase = .editing
+        let window = VideoEditorWindow(source: source, duration: duration, sourceSize: size)
+        window.onSave = { [weak self] annotations in
+            guard let self, self.phase == .editing, !self.isTerminating else { return }
+            self.phase = .saving
+            self.editor?.orderOut(nil)
+            self.saveTask = Task {
+                if await self.chooseDestination(source: source, size: size, annotations: annotations) {
+                    self.reset()
+                } else if !self.isTerminating {
+                    self.phase = .editing
+                    self.editor?.makeKeyAndOrderFront(nil)
+                }
+            }
+        }
+        window.onDiscard = { [weak self] in
+            guard let self, self.phase == .editing else { return }
+            if self.shouldDiscard() { self.reset() }
+        }
+        editor = window
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func chooseDestination(source: URL, size: CGSize, annotations: [VideoAnnotation]) async -> Bool {
         var proposedURL: URL?
         while !isTerminating, !Task.isCancelled {
             let panel = NSSavePanel()
@@ -109,15 +142,15 @@ final class RecordingCoordinator {
             NSApp.activate(ignoringOtherApps: true)
             let response = panel.runModal()
             savePanel = nil
-            guard !isTerminating, !Task.isCancelled else { return }
-            guard response == .OK, let destination = panel.url else {
-                if shouldDiscard() { return }
-                continue
-            }
+            guard !isTerminating, !Task.isCancelled else { return false }
+            guard response == .OK, let destination = panel.url else { return false }
             proposedURL = destination
             let quality = qualityView.quality
             Settings.shared.recordingQuality = quality
-            let task = Task { try await RecordingExport.save(source: source, to: destination, quality: quality) }
+            let task = Task {
+                try await RecordingExport.save(source: source, to: destination, quality: quality,
+                                               annotations: annotations)
+            }
             exportTask = task
             let progress = RecordingExportPanel { [weak self] in self?.exportTask?.cancel() }
             exportPanel = progress
@@ -126,21 +159,22 @@ final class RecordingCoordinator {
                 try await task.value
                 closeExportPanel()
                 Log.debug("Recording saved: \(destination.lastPathComponent), \(quality.title)", Log.output)
-                return
+                return true
             } catch {
                 closeExportPanel()
-                guard !isTerminating, !Task.isCancelled else { return }
-                if error is CancellationError { continue }
+                guard !isTerminating, !Task.isCancelled else { return false }
+                if error is CancellationError { return false }
                 let alert = NSAlert()
                 alert.alertStyle = .warning
                 alert.messageText = "The recording could not be saved"
                 alert.informativeText = error.localizedDescription
-                    + "\n\nYour recording is still available. Choose another location or quality and try again."
+                    + "\n\nYour recording and annotations are still available. Retry or return to the editor."
                 alert.addButton(withTitle: "Try Again")
-                alert.addButton(withTitle: "Discard Recording")
-                if alert.runModal() == .alertSecondButtonReturn { return }
+                alert.addButton(withTitle: "Back to Editor")
+                if alert.runModal() == .alertSecondButtonReturn { return false }
             }
         }
+        return false
     }
 
     private func recordingFilename(size: CGSize) -> String {
@@ -153,9 +187,9 @@ final class RecordingCoordinator {
 
     private func shouldDiscard() -> Bool {
         let alert = NSAlert()
-        alert.messageText = "Keep this recording?"
-        alert.informativeText = "Choose a location to save it, or discard the recording."
-        alert.addButton(withTitle: "Keep Recording")
+        alert.messageText = "Discard this recording?"
+        alert.informativeText = "The recording and its annotations will be removed."
+        alert.addButton(withTitle: "Keep Editing")
         alert.addButton(withTitle: "Discard Recording")
         return alert.runModal() == .alertSecondButtonReturn
     }
@@ -176,6 +210,9 @@ final class RecordingCoordinator {
     private func reset() {
         closeRecordingPanel()
         closeExportPanel()
+        editor?.delegate = nil
+        editor?.close()
+        editor = nil
         session?.cleanUp()
         session = nil
         startTask = nil

@@ -3,6 +3,7 @@ using Slightshot.Core;
 int checks = 0;
 checks += DelayedCaptureChecks.Run();
 checks += AnnotationHistoryChecks.Run();
+checks += VideoAnnotationChecks.Run();
 void Equal<T>(T expected, T actual, string message)
 {
     if (!EqualityComparer<T>.Default.Equals(expected, actual)) throw new InvalidOperationException($"{message}: expected {expected}, got {actual}");

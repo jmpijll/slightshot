@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreImage
 
 /// Save-time choices. Capture always keeps the best source so changing this
 /// slider after stopping can never reduce the quality of a later retry.
@@ -72,10 +73,35 @@ nonisolated enum RecordingError: LocalizedError {
 }
 
 nonisolated enum RecordingExport {
+    /// Snapshot the editor's AppKit marks before entering the encoder worker.
+    /// Only immutable cropped overlays cross the actor boundary.
+    @MainActor static func save(source: URL, to destination: URL, quality: RecordingQuality,
+                                annotations: [VideoAnnotation] = []) async throws {
+        try Task.checkCancellation()
+        var prepared: [VideoFrameRenderer.PreparedAnnotation] = []
+        if !annotations.isEmpty {
+            let asset = AVURLAsset(url: source)
+            guard let track = try await asset.loadTracks(withMediaType: .video).first else {
+                throw RecordingError.empty
+            }
+            let duration = try await asset.load(.duration)
+            guard duration.isNumeric, duration.seconds > 0 else { throw RecordingError.empty }
+            let naturalSize = try await track.load(.naturalSize)
+            let transform = try await track.load(.preferredTransform)
+            let sourceBounds = CGRect(origin: .zero, size: naturalSize).applying(transform).integral
+            prepared = try VideoFrameRenderer.prepare(annotations, size: sourceBounds.size,
+                                                       duration: duration.seconds)
+        }
+        try await savePrepared(source: source, to: destination, quality: quality, annotations: prepared)
+    }
+
     /// AVFoundation's async providers apply backpressure without blocking the
     /// main actor. The output is staged alongside its destination; an existing
     /// file is replaced only after a complete, playable MP4 has been written.
-    @concurrent static func save(source: URL, to destination: URL, quality: RecordingQuality) async throws {
+    @concurrent private static func savePrepared(
+        source: URL, to destination: URL, quality: RecordingQuality,
+        annotations: [VideoFrameRenderer.PreparedAnnotation]
+    ) async throws {
         try Task.checkCancellation()
         let stagingDirectory = destination.deletingLastPathComponent()
             .appendingPathComponent(".slightshot-\(UUID().uuidString)", isDirectory: true)
@@ -93,56 +119,55 @@ nonisolated enum RecordingExport {
         }
         let duration = try await asset.load(.duration)
         guard duration.isNumeric, duration.seconds > 0 else { throw RecordingError.empty }
-        let sourceSize = try await track.load(.naturalSize)
+        let naturalSize = try await track.load(.naturalSize)
+        let preferredTransform = try await track.load(.preferredTransform)
+        let sourceBounds = CGRect(origin: .zero, size: naturalSize).applying(preferredTransform).integral
+        let sourceSize = sourceBounds.size
         let size = quality.dimensions(for: sourceSize)
-        let transform = try await track.load(.preferredTransform)
-            .concatenating(CGAffineTransform(scaleX: size.width / sourceSize.width,
-                                             y: size.height / sourceSize.height))
-
-        var layer = AVVideoCompositionLayerInstruction.Configuration(assetTrack: track)
-        layer.setTransform(transform, at: .zero)
-        let instruction = AVVideoCompositionInstruction(configuration: .init(
-            layerInstructions: [AVVideoCompositionLayerInstruction(configuration: layer)],
-            timeRange: CMTimeRange(start: .zero, duration: duration)
-        ))
-        let composition = AVVideoComposition(configuration: .init(
-            frameDuration: CMTime(value: 1, timescale: quality.framesPerSecond),
-            instructions: [instruction], renderSize: size,
-            sourceTrackIDForFrameTiming: kCMPersistentTrackID_Invalid
-        ))
+        let geometry = FrameGeometry(sourceBounds: sourceBounds,
+                                     preferredTransform: preferredTransform, outputSize: size)
         let reader = try AVAssetReader(asset: asset)
-        let output = AVAssetReaderVideoCompositionOutput(videoTracks: [track], videoSettings: [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
-        ])
-        output.videoComposition = composition
+        let output = compositionOutput(track: track, duration: duration, geometry: geometry, quality: quality,
+                                       annotated: !annotations.isEmpty)
         let provider = reader.outputProvider(for: output)
-
         let writer = try AVAssetWriter(outputURL: staged, fileType: .mp4)
         writer.shouldOptimizeForNetworkUse = true
-        let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
-            AVVideoCodecKey: AVVideoCodecType.h264,
-            AVVideoWidthKey: Int(size.width),
-            AVVideoHeightKey: Int(size.height),
-            AVVideoCompressionPropertiesKey: [
-                AVVideoAverageBitRateKey: quality.bitrate(for: size),
-                AVVideoExpectedSourceFrameRateKey: Int(quality.framesPerSecond),
-                AVVideoMaxKeyFrameIntervalKey: Int(quality.framesPerSecond) * 2,
-                AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
-            ],
-        ])
-        let receiver = writer.inputReceiver(for: input)
+        let input = encodingInput(size: size, quality: quality)
         do {
+            // Reader and writer providers each apply backpressure. A single
+            // source frame and a recycled encoder buffer are in flight at once.
+            let receiver = annotations.isEmpty ? writer.inputReceiver(for: input) : nil
+            let attributes = CVPixelBufferCreationAttributes(
+                pixelFormatType: .init(rawValue: kCVPixelFormatType_32BGRA),
+                size: .init(width: Int(size.width), height: Int(size.height)))
+            let pixels = annotations.isEmpty ? nil
+                : writer.inputPixelBufferReceiver(for: input, pixelBufferAttributes: attributes)
+            let processor = annotations.isEmpty ? nil
+                : try FrameProcessor(sourceSize: sourceSize, outputSize: size, annotations: annotations)
             try reader.start()
             try writer.start()
             writer.startSession(atSourceTime: .zero)
             var frameCount = 0
             while let sample = try await provider.next() {
                 try Task.checkCancellation()
-                try await receiver.append(sample)
+                if let receiver {
+                    try await receiver.append(sample)
+                } else if let pixels, let processor,
+                          let pixelSample = CMReadySampleBuffer<CVReadOnlyPixelBuffer>(sample),
+                          sample.presentationTimeStamp.isNumeric {
+                    guard let pool = pixels.pixelBufferPool else {
+                        throw RecordingError.failed("The video encoder buffer pool is unavailable.")
+                    }
+                    let buffer = try processor.render(pixelSample, pool: pool)
+                    try await pixels.append(CVReadOnlyPixelBuffer(buffer), with: sample.presentationTimeStamp)
+                } else {
+                    continue // Stream boundary markers contain no image.
+                }
                 frameCount += 1
             }
             guard frameCount > 0 else { throw RecordingError.empty }
-            receiver.finish()
+            receiver?.finish()
+            pixels?.finish()
             writer.endSession(atSourceTime: duration)
             await writer.finishWriting()
             try Task.checkCancellation()
@@ -158,6 +183,106 @@ nonisolated enum RecordingExport {
             reader.cancelReading()
             if writer.status == .writing { writer.cancelWriting() }
             throw error
+        }
+    }
+
+    private struct FrameGeometry {
+        let sourceBounds: CGRect
+        let preferredTransform: CGAffineTransform
+        let outputSize: CGSize
+    }
+
+    private static func compositionOutput(
+        track: AVAssetTrack, duration: CMTime, geometry: FrameGeometry, quality: RecordingQuality, annotated: Bool
+    ) -> AVAssetReaderVideoCompositionOutput {
+        // Apply marks at source resolution, then resize the finished frame. This
+        // preserves the screenshot tools' source-pixel stroke and privacy sizes.
+        let bounds = geometry.sourceBounds
+        let decodeSize = annotated ? bounds.size : geometry.outputSize
+        let transform = geometry.preferredTransform
+            .concatenating(CGAffineTransform(translationX: -bounds.minX, y: -bounds.minY))
+            .concatenating(CGAffineTransform(scaleX: decodeSize.width / bounds.width,
+                                             y: decodeSize.height / bounds.height))
+        var layer = AVVideoCompositionLayerInstruction.Configuration(assetTrack: track)
+        layer.setTransform(transform, at: .zero)
+        let instruction = AVVideoCompositionInstruction(configuration: .init(
+            layerInstructions: [AVVideoCompositionLayerInstruction(configuration: layer)],
+            timeRange: CMTimeRange(start: .zero, duration: duration)
+        ))
+        let output = AVAssetReaderVideoCompositionOutput(videoTracks: [track], videoSettings: [
+            kCVPixelBufferPixelFormatTypeKey as String: annotated
+                ? kCVPixelFormatType_32BGRA : kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
+        ])
+        output.videoComposition = AVVideoComposition(configuration: .init(
+            frameDuration: CMTime(value: 1, timescale: quality.framesPerSecond),
+            instructions: [instruction], renderSize: decodeSize,
+            sourceTrackIDForFrameTiming: kCMPersistentTrackID_Invalid
+        ))
+        return output
+    }
+
+    private static func encodingInput(size: CGSize, quality: RecordingQuality) -> AVAssetWriterInput {
+        AVAssetWriterInput(mediaType: .video, outputSettings: [
+            AVVideoCodecKey: AVVideoCodecType.h264,
+            AVVideoWidthKey: Int(size.width),
+            AVVideoHeightKey: Int(size.height),
+            AVVideoCompressionPropertiesKey: [
+                AVVideoAverageBitRateKey: quality.bitrate(for: size),
+                AVVideoExpectedSourceFrameRateKey: Int(quality.framesPerSecond),
+                AVVideoMaxKeyFrameIntervalKey: Int(quality.framesPerSecond) * 2,
+                AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
+            ],
+        ])
+    }
+
+    private struct FrameProcessor {
+        let sourceSize: CGSize
+        let outputSize: CGSize
+        let annotations: [VideoFrameRenderer.PreparedAnnotation]
+        let drawingContext: CGContext
+        let imageContext: CIContext
+        let colorSpace: CGColorSpace
+
+        init(sourceSize: CGSize, outputSize: CGSize,
+             annotations: [VideoFrameRenderer.PreparedAnnotation]) throws {
+            self.sourceSize = sourceSize
+            self.outputSize = outputSize
+            self.annotations = annotations
+            guard let context = VideoFrameRenderer.makeContext(size: sourceSize) else {
+                throw RecordingError.failed("The video drawing surface could not be allocated.")
+            }
+            drawingContext = context
+            colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
+            imageContext = CIContext(options: [.workingColorSpace: colorSpace, .cacheIntermediates: false])
+        }
+
+        func render(_ sample: CMReadySampleBuffer<CVReadOnlyPixelBuffer>,
+                    pool: CVMutablePixelBuffer.Pool) throws -> CVMutablePixelBuffer {
+            let rendered: CGImage = try autoreleasepool {
+                let image = sample.content.withUnsafeBuffer { buffer in
+                    imageContext.createCGImage(CIImage(cvPixelBuffer: buffer),
+                                               from: CGRect(origin: .zero, size: sourceSize),
+                                               format: .RGBA8, colorSpace: colorSpace)
+                }
+                guard let image else { throw RecordingError.failed("A video frame could not be decoded.") }
+                return try VideoFrameRenderer.render(image: image, at: sample.presentationTimeStamp.seconds,
+                                                     prepared: annotations, context: drawingContext)
+            }
+            let buffer = try pool.makeMutablePixelBuffer()
+            try buffer.withUnsafeBuffer { raw in
+                CVPixelBufferLockBaseAddress(raw, [])
+                defer { CVPixelBufferUnlockBaseAddress(raw, []) }
+                guard let context = CGContext(data: CVPixelBufferGetBaseAddress(raw),
+                    width: Int(outputSize.width), height: Int(outputSize.height), bitsPerComponent: 8,
+                    bytesPerRow: CVPixelBufferGetBytesPerRow(raw), space: colorSpace,
+                    bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
+                        | CGBitmapInfo.byteOrder32Little.rawValue) else {
+                    throw RecordingError.failed("An encoded frame could not be allocated.")
+                }
+                context.interpolationQuality = .high
+                context.draw(rendered, in: CGRect(origin: .zero, size: outputSize))
+            }
+            return buffer
         }
     }
 }

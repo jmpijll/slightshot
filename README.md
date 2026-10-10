@@ -75,7 +75,7 @@ or Print, or failing a save, keeps the screenshot editable so you can try again.
 Choose **Blur** or **Pixelate**, then drag a rectangle over details you want
 to obscure. The effect appears while dragging and is included when you copy,
 save or print. Undo removes it just like any other annotation. Both tools work
-locally on Mac and Windows; they do not modify live screen recordings.
+locally on Mac and Windows. You can also apply them to a video after stopping a recording.
 
 Choose **Numbered steps** and click to place 1, 2, 3 in circles using the current
 colour. Undo restores the next number, and each screenshot starts at 1. Circles
@@ -108,16 +108,27 @@ Select an area and click the **Record** button underneath it. The frozen
 selection disappears and Slightshot records that part of the live screen.
 A compact timer and **Stop** button stay beside the selected area.
 
-After stopping, choose where to save the MP4 and adjust its quality slider:
+After stopping, the **Edit Recording** window opens. Play, pause or scrub the
+video, then annotate a paused frame with the same pen, arrow, text, blur,
+pixelation and other tools as a screenshot. New annotations cover the whole
+video. Choose an annotation with **Select** or the annotation list or menu, then
+drag the two interval handles in the editor to set its start and end. The time
+fields let you enter exact times in seconds. Undo and Redo also restore
+timing changes and deleted annotations. Marks stay at a fixed position; they
+do not follow moving content.
+
+Choose **Save MP4…**, select a destination and adjust its quality slider:
 **Small & fast**, **Balanced**, or **High quality**. The choice is remembered.
 Small exports use a lower resolution, frame rate and bitrate; high quality
 keeps more detail. Recording controls and other Slightshot windows are excluded
 from the video. Recordings contain video only; microphone and system audio are
-not captured, and screenshot annotations are not added to the live screen.
+not captured. Screenshot annotations are not added to the live screen; the
+video editor adds its annotations to the saved MP4 during their chosen periods.
 
-Cancel an export to choose another quality or destination. Cancel the save
-panel to keep the recording or discard it. Temporary source files are removed
-after saving, discarding, or quitting.
+Cancel the save panel or export to return to the video editor with your
+recording and annotations intact. A failed export also lets you return to the
+editor or retry. **Discard…** asks before removing the recording. Temporary
+source files are removed after saving, discarding, or quitting.
 
 See the [macOS recording review video](docs/review/recording/README.md)
 for the Record, Stop and save-time quality flow, and the

@@ -50,6 +50,13 @@ public partial class App : System.Windows.Application
 
             return;
         }
+        if (e.Args.Length >= 1 && e.Args[0] == "--video-editor-smoke-test")
+        {
+            string directory = Path.GetFullPath(e.Args.Length > 1 ? e.Args[1] : "artifacts");
+            try { await VideoEditorSmokeTest.RunAsync(directory); Shutdown(0); }
+            catch (Exception ex) { Directory.CreateDirectory(directory); File.WriteAllText(Path.Combine(directory, "video-editor-failure.txt"), ex.ToString()); Shutdown(1); }
+            return;
+        }
         if (e.Args.Length >= 1 && e.Args[0] == "--recording-smoke-test")
         {
             string directory = Path.GetFullPath(e.Args.Length > 1 ? e.Args[1] : "artifacts");

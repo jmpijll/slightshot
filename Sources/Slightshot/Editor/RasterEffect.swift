@@ -1,13 +1,13 @@
 import AppKit
 import CoreImage.CIFilterBuiltins
 
-nonisolated enum RasterEffect {
+nonisolated enum RasterEffect: Sendable {
     case blur, pixelate
 }
 
 /// Processes only the requested pixels. Reusing the Core Image context avoids
 /// rebuilding its GPU resources for every pointer update.
-enum RasterEffects {
+nonisolated enum RasterEffects {
     private static let colorSpace = CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB()
     private static let imageContext = CIContext(options: [.workingColorSpace: colorSpace,
                                                          .cacheIntermediates: false])

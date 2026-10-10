@@ -11,6 +11,7 @@ internal sealed class RecordingCoordinator(Settings settings)
     private RecordingOutline? recordingOutline;
     private RecordingSaveWindow? saveWindow;
     private RecordingProgressWindow? progressWindow;
+    private VideoEditorWindow? editorWindow;
     private CancellationTokenSource? exportCancellation;
     private Task? work;
     private bool terminating;
@@ -45,7 +46,17 @@ internal sealed class RecordingCoordinator(Settings settings)
         {
             await current.RunAsync();
             CloseRecordingControls();
-            if (!terminating) await ChooseDestinationAsync(current);
+            if (!terminating)
+            {
+                var source = await VideoFrameSource.OpenAsync(current.SourcePath);
+                if (terminating) { source.Dispose(); return; }
+                try { editorWindow = new VideoEditorWindow(source, settings, annotations => ChooseDestinationAsync(current, annotations)); }
+                catch { source.Dispose(); throw; }
+                editorWindow.Show();
+                await editorWindow.InitializeAsync();
+                await editorWindow.Completion;
+                editorWindow = null;
+            }
         }
         catch (OperationCanceledException) { }
         catch (Exception error) { if (!terminating) MessageBox.Show($"Slightshot could not record the screen.\n\n{error.Message}", "Slightshot", MessageBoxButton.OK, MessageBoxImage.Warning); }
@@ -58,48 +69,45 @@ internal sealed class RecordingCoordinator(Settings settings)
         }
     }
 
-    private async Task ChooseDestinationAsync(RecordingSession current)
+    private async Task<bool> ChooseDestinationAsync(RecordingSession current, IReadOnlyList<TimedAnnotation> annotations)
     {
-        string? proposed = null;
-        while (!terminating)
+        if (terminating) return false;
+        saveWindow = new RecordingSaveWindow(settings, current.Width, current.Height, null) { Owner = editorWindow };
+        bool accepted = saveWindow.ShowDialog() == true;
+        if (!accepted || terminating) { saveWindow = null; return false; }
+        string proposed = saveWindow.Destination;
+        RecordingQuality quality = saveWindow.Quality;
+        saveWindow = null;
+        settings.RecordingQuality = quality;
+        exportCancellation = new CancellationTokenSource();
+        progressWindow = new RecordingProgressWindow(() => exportCancellation?.Cancel()) { Owner = editorWindow };
+        RecordingProgressWindow currentProgress = progressWindow;
+        var progress = new Progress<double>(value => { if (progressWindow == currentProgress) currentProgress.Update(value); });
+        progressWindow.Show();
+        try
         {
-            saveWindow = new RecordingSaveWindow(settings, current.Width, current.Height, proposed);
-            bool accepted = saveWindow.ShowDialog() == true;
-            if (terminating) return;
-            if (!accepted)
-            {
-                saveWindow = null;
-                if (MessageBox.Show("Keep this recording and choose a location, or discard it?", "Keep this recording?", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.No) return;
-                continue;
-            }
-            proposed = saveWindow.Destination; RecordingQuality quality = saveWindow.Quality; saveWindow = null;
-            settings.RecordingQuality = quality;
-            exportCancellation = new CancellationTokenSource();
-            progressWindow = new RecordingProgressWindow(() => exportCancellation?.Cancel());
-            RecordingProgressWindow currentProgress = progressWindow;
-            var progress = new Progress<double>(value => { if (progressWindow == currentProgress) currentProgress.Update(value); });
-            progressWindow.Show();
-            try
-            {
-                try { settings.Save(); }
-                catch (Exception error) when (error is IOException or UnauthorizedAccessException) { System.Diagnostics.Debug.WriteLine("Could not persist recording quality: " + error.Message); }
-                Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(proposed))!);
-                await RecordingExport.SaveAsync(current.SourcePath, proposed, quality, current.Width, current.Height, exportCancellation.Token, progress);
-                return;
-            }
-            catch (OperationCanceledException) { if (terminating) return; }
-            catch (Exception error)
-            {
-                if (terminating) return;
-                if (MessageBox.Show($"The recording could not be saved.\n\n{error.Message}\n\nYour recording is still available. Try another location or quality?", "Save recording", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
-            }
-            finally { progressWindow.Close(); progressWindow = null; exportCancellation.Dispose(); exportCancellation = null; }
+            try { settings.Save(); }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { System.Diagnostics.Debug.WriteLine("Could not persist recording quality: " + error.Message); }
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(proposed))!);
+            await VideoAnnotationExport.SaveAsync(current.SourcePath, proposed, quality, current.Width, current.Height, annotations, exportCancellation.Token, progress);
+            return true;
+        }
+        catch (OperationCanceledException) { return false; }
+        catch (Exception error)
+        {
+            if (!terminating) MessageBox.Show(editorWindow, $"The recording could not be saved.\n\n{error.Message}\n\nYour recording and annotations are still available. Choose Save MP4 to try another location or quality.", "Save recording", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return false;
+        }
+        finally
+        {
+            progressWindow.Close(); progressWindow = null;
+            exportCancellation.Dispose(); exportCancellation = null;
         }
     }
 
     internal async Task ShutdownAsync()
     {
-        terminating = true; CloseRecordingControls(); saveWindow?.Close(); exportCancellation?.Cancel(); session?.Abort();
+        terminating = true; CloseRecordingControls(); saveWindow?.Close(); exportCancellation?.Cancel(); session?.Abort(); editorWindow?.CloseForShutdown();
         if (work != null) await work;
     }
 

@@ -89,6 +89,16 @@ jobs:
           if (!$process.WaitForExit(180000)) { $process.Kill(); throw 'Native recording smoke test timed out' }
           if ($process.ExitCode -ne 0) { Get-Content "$output/recording-failure.txt" -ErrorAction SilentlyContinue; throw "Native recording smoke test failed with exit code $($process.ExitCode)" }
           Get-Content "$output/recording-validation.json"
+      - name: Test timed video editor, native pointer drawing and rendered MP4 annotations
+        shell: pwsh
+        run: |
+          $env:SLIGHTSHOT_SOURCE_COMMIT = git rev-parse HEAD
+          $app = Resolve-Path Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe
+          $output = Join-Path $PWD Windows/artifacts/video-editor
+          $process = Start-Process $app -ArgumentList '--video-editor-smoke-test', $output -PassThru
+          if (!$process.WaitForExit(240000)) { $process.Kill(); throw 'Native video editor smoke test timed out' }
+          if ($process.ExitCode -ne 0) { Get-Content "$output/video-editor-failure.txt" -ErrorAction SilentlyContinue; throw "Native video editor smoke test failed: $($process.ExitCode)" }
+          Get-Content "$output/video-editor-validation.json"
       - name: Test delayed capture on the real Windows desktop
         shell: pwsh
         run: |
@@ -128,12 +138,13 @@ jobs:
           $tests = @(
             @{ Argument = '--smoke-test'; Directory = 'parity/portable'; Report = 'validation.json'; Failure = 'failure.txt' },
             @{ Argument = '--shortcut-smoke-test'; Directory = 'shortcuts/portable'; Report = 'shortcut-validation.json'; Failure = 'shortcut-failure.txt' },
-            @{ Argument = '--recording-smoke-test'; Directory = 'recording/portable'; Report = 'recording-validation.json'; Failure = 'recording-failure.txt' }
+            @{ Argument = '--recording-smoke-test'; Directory = 'recording/portable'; Report = 'recording-validation.json'; Failure = 'recording-failure.txt' },
+            @{ Argument = '--video-editor-smoke-test'; Directory = 'video-editor/portable'; Report = 'video-editor-validation.json'; Failure = 'video-editor-failure.txt' }
           )
           foreach ($test in $tests) {
             $output = Join-Path $PWD "Windows/artifacts/$($test.Directory)"
             $process = Start-Process $app -ArgumentList $test.Argument, ('"{0}"' -f $output) -PassThru
-            if (!$process.WaitForExit(180000)) { $process.Kill(); throw "Extracted x64 $($test.Argument) timed out" }
+            if (!$process.WaitForExit(240000)) { $process.Kill(); throw "Extracted x64 $($test.Argument) timed out" }
             if ($process.ExitCode -ne 0) {
               Get-Content "$output/$($test.Failure)" -ErrorAction SilentlyContinue
               throw "Extracted x64 $($test.Argument) failed with exit code $($process.ExitCode)"
@@ -224,6 +235,13 @@ jobs:
           retention-days: 7
           name: windows-native-parity-evidence
           path: Windows/artifacts/parity
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          retention-days: 7
+          name: windows-native-video-editor-evidence
+          path: Windows/artifacts/video-editor
           if-no-files-found: error
       - uses: actions/upload-artifact@v4
         if: always()
