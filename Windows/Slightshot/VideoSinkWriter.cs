@@ -65,6 +65,7 @@ internal sealed class VideoSinkWriter : IDisposable
         private readonly BgraResizer? resizer;
         private readonly byte[]? resized;
         private readonly VideoExportMetrics? metrics;
+        private ulong submittedSamples;
         internal NativeWriter(string path, int sourceWidth, int sourceHeight, RecordingQuality quality, VideoExportMetrics? metrics)
         {
             this.metrics = metrics;
@@ -90,13 +91,13 @@ internal sealed class VideoSinkWriter : IDisposable
                 uint selected = 0; Check(((delegate* unmanaged[Stdcall]<nint, nint, uint*, int>)Slot(sink, 3))(sink, output, &selected)); stream = selected;
                 input = VideoType(new("00000016-0000-0010-8000-00aa00389b71"), size.Width, size.Height, rate); // RGB32
                 SetUInt32(input, new("644b4e48-1e02-4516-b0eb-c01ca9d49ac6"), checked((uint)(size.Width * 4)));
-                Check(MFCreateAttributes(out parameters, 2));
-                SetUInt32(parameters, new("b0c8bf60-16f7-4951-a30b-1db1609293d6"), 2);
+                Check(MFCreateAttributes(out parameters, 1));
                 // Supply encoder settings during input negotiation, before
                 // BeginWriting. Avoid presentation-time reordering at time zero.
                 SetUInt32(parameters, new("8d390aac-dc5c-4200-b57f-814d04babab2"), 0);
                 Check(((delegate* unmanaged[Stdcall]<nint, uint, nint, nint, int>)Slot(sink, 4))(sink, stream, input, parameters));
                 ConfigureWorkerThreads();
+                ConfigureColorProcessors();
                 Check(((delegate* unmanaged[Stdcall]<nint, int>)Slot(sink, 5))(sink));
             }
             catch { Dispose(); throw; }
@@ -124,6 +125,7 @@ internal sealed class VideoSinkWriter : IDisposable
                 Check(((delegate* unmanaged[Stdcall]<nint, long, int>)Slot(sample, 38))(sample, duration.Ticks));
                 cancellation.ThrowIfCancellationRequested();
                 Check(((delegate* unmanaged[Stdcall]<nint, uint, nint, int>)Slot(sink, 6))(sink, stream, sample));
+                submittedSamples++;
                 RecordStatistics();
             }
             finally { Release(sample); Release(buffer); }
@@ -132,7 +134,9 @@ internal sealed class VideoSinkWriter : IDisposable
         {
             cancellation.ThrowIfCancellationRequested();
             Check(((delegate* unmanaged[Stdcall]<nint, int>)Slot(sink, 11))(sink));
-            RecordStatistics();
+            ulong? encoded = RecordStatistics();
+            if (encoded is ulong count && count != submittedSamples)
+                throw new InvalidOperationException($"Windows encoded {count} of {submittedSamples} edited video frames. The original recording and destination have been preserved.");
             cancellation.ThrowIfCancellationRequested();
         }
         private void ConfigureWorkerThreads()
@@ -171,11 +175,50 @@ internal sealed class VideoSinkWriter : IDisposable
             }
             finally { Release(codec); }
         }
-        private void RecordStatistics()
+        private ulong? RecordStatistics()
         {
             Statistics statistics = new() { Size = (uint)sizeof(Statistics) };
-            if (((delegate* unmanaged[Stdcall]<nint, uint, Statistics*, int>)Slot(sink, 13))(sink, stream, &statistics) >= 0)
+            if (((delegate* unmanaged[Stdcall]<nint, uint, Statistics*, int>)Slot(sink, 13))(sink, stream, &statistics) == 0)
+            {
                 metrics?.AddWriterStatistics(statistics.BytesQueued, statistics.Received, statistics.Encoded, statistics.Processed);
+                return statistics.Encoded;
+            }
+            return null;
+        }
+        private void ConfigureColorProcessors()
+        {
+            Guid extendedInterface = new("588d72ab-5bc1-496a-8714-b70617141b25"); nint extended = 0;
+            if (((delegate* unmanaged[Stdcall]<nint, Guid*, nint*, int>)Slot(sink, 0))(sink, &extendedInterface, &extended) != 0) return;
+            try
+            {
+                for (uint index = 0; index < 8; index++)
+                {
+                    Guid category = default; nint transform = 0, attributes = 0;
+                    try
+                    {
+                        if (((delegate* unmanaged[Stdcall]<nint, uint, uint, Guid*, nint*, int>)Slot(extended, 14))(extended, stream, index, &category, &transform) != 0) break;
+                        Guid classId = Guid.Empty; int applied = -1; uint? actual = null;
+                        if (((delegate* unmanaged[Stdcall]<nint, nint*, int>)Slot(transform, 8))(transform, &attributes) == 0)
+                        {
+                            Guid classKey = new("6821c42b-65a4-4e82-99bc-9a88205ecd0c");
+                            _ = ((delegate* unmanaged[Stdcall]<nint, Guid*, Guid*, int>)Slot(attributes, 10))(attributes, &classKey, &classId);
+                            if (category == new Guid("302ea3fc-aa5f-47f9-9f7a-c2188bb16302") || classId == new Guid("88753b26-5b24-49bd-b2e7-0c445c78c982"))
+                            {
+                                // We already choose every output timestamp and
+                                // partial duration. Keep XVP color conversion,
+                                // and prevent it resampling away the short tail.
+                                Guid disableFrc = new("2c0afa19-7a97-4d5a-9ee8-16d4fc518d8c");
+                                applied = ((delegate* unmanaged[Stdcall]<nint, Guid*, uint, int>)Slot(attributes, 21))(attributes, &disableFrc, 1);
+                                uint value = 0;
+                                if (((delegate* unmanaged[Stdcall]<nint, Guid*, uint*, int>)Slot(attributes, 7))(attributes, &disableFrc, &value) == 0) actual = value;
+                            }
+                        }
+                        metrics?.RecordTransform(new(index, category, classId, applied == 0, actual));
+                    }
+                    finally { Release(attributes); Release(transform); }
+                }
+            }
+            finally { Release(extended); }
         }
         [StructLayout(LayoutKind.Explicit, Size = 24)]
         private struct Variant { [FieldOffset(0)] public ushort Type; [FieldOffset(8)] public uint UInt32; }

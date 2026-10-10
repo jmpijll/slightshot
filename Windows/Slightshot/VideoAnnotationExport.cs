@@ -80,6 +80,7 @@ internal sealed class VideoExportMetrics
 {
     private int frames;
     private readonly List<VideoExportMemorySnapshot> memory = [];
+    private readonly List<VideoTransformDiagnostics> transforms = [];
     internal IReadOnlyList<VideoExportMemorySnapshot> MemorySnapshots { get { lock (memory) return memory.ToArray(); } }
     internal void RecordMemory(string stage)
     {
@@ -112,7 +113,8 @@ internal sealed class VideoExportMetrics
     internal void RecordWorkerThreads(uint actual, bool applied) { ActualEncoderWorkerThreads = actual; EncoderWorkerThreadControlApplied = applied; }
     internal void RecordBFrames(uint actual) => ActualEncoderBFrames = actual;
     internal VideoEncoderDiagnostics EncoderDiagnostics => new(EncoderWorkerThreadControlSupported, EncoderWorkerThreadControlApplied,
-        ActualEncoderWorkerThreads, ActualEncoderBFrames, WriterSamplesReceived, WriterSamplesEncoded, WriterSamplesProcessed);
+        ActualEncoderWorkerThreads, ActualEncoderBFrames, WriterSamplesReceived, WriterSamplesEncoded, WriterSamplesProcessed, transforms.ToArray());
+    internal void RecordTransform(VideoTransformDiagnostics transform) => transforms.Add(transform);
     internal void AddWriterStatistics(uint bytes, ulong received, ulong encoded, ulong processed)
     {
         MaximumWriterQueuedBytes = Math.Max(MaximumWriterQueuedBytes, bytes);
@@ -124,4 +126,7 @@ internal sealed class VideoExportMetrics
 internal sealed record VideoExportMemorySnapshot(string Stage, int Frames, double PrivateMiB, double WorkingMiB, double ManagedLiveMiB,
     double LastGcHeapMiB, double ManagedCommittedMiB, double TotalManagedAllocatedMiB, int Gen0Collections, int Gen1Collections, int Gen2Collections);
 internal sealed record VideoEncoderDiagnostics(bool? WorkerThreadControlSupported, bool? WorkerThreadControlApplied,
-    uint? ActualWorkerThreads, uint? ActualBFrames, ulong SamplesReceived, ulong SamplesEncoded, ulong SamplesProcessed);
+    uint? ActualWorkerThreads, uint? ActualBFrames, ulong SamplesReceived, ulong SamplesEncoded, ulong SamplesProcessed,
+    IReadOnlyList<VideoTransformDiagnostics> Transforms);
+internal sealed record VideoTransformDiagnostics(uint Index, Guid Category, Guid ClassId, bool DisableFrameRateConversionApplied,
+    uint? ActualFrameRateConversionDisabled);

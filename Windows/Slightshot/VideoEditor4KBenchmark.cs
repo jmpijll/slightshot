@@ -191,6 +191,30 @@ internal static class VideoEditor4KBenchmark
             retainedDestinationSha256 = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(preserved)));
             Require(retainedSourceSha256 == sourceDigest, "active 4K cancellation preserves source bytes exactly");
             Require(!Directory.EnumerateFiles(directory, ".slightshot-*").Any(), "4K cancellation removes staging"); File.Delete(preserved);
+            // Preserve completed High/cancel measurements even when a later,
+            // separate quality or Step regression aborts the full fixture.
+            File.WriteAllText(Path.Combine(directory, "video-editor-4k-primary-performance.json"), JsonSerializer.Serialize(new
+            {
+                platform = "Windows native WPF / Media Foundation",
+                sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
+                measurementCheckpoint = "Completed primary three-annotation High export, decoded cadence/pixel checks and active cancellation; Balanced and Step have not started. This is a partial report, not final fixture acceptance.",
+                durationSeconds = source.Duration.TotalSeconds, exportSeconds, frames = metrics.Frames,
+                exportFramesPerSecond = metrics.Frames / exportSeconds, actualHighDecodedStatistics = highDecodedStatistics,
+                metrics.DecodeMilliseconds, metrics.RenderMilliseconds, metrics.BufferWaitMilliseconds,
+                metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.MaximumWriterQueuedBytes,
+                encoderDiagnostics = metrics.EncoderDiagnostics, exportMemorySnapshots = metrics.MemorySnapshots,
+                cancelMemorySnapshots = cancelMetrics.MemorySnapshots, seekMilliseconds = seeks,
+                maxDispatcherGapMilliseconds = maxDispatcherGap, peakPrivateMiB = peakPrivate / 1048576.0,
+                peakWorkingMiB = peakWorking / 1048576.0,
+                memoryPhases = phaseNames.Take(5).Select((name, index) => new
+                {
+                    name, peakPrivateMiB = phasePrivate[index] / 1048576.0, peakWorkingMiB = phaseWorking[index] / 1048576.0
+                }).ToArray(),
+                cancellationSeconds, cancelRequestedWallSinceStart, actualFramesBeforeCancel,
+                retainedSourceSha256, retainedDestinationSha256,
+                blurScreenshotReferenceMeanDelta = blurReferenceDelta, pixelScreenshotReferenceMeanDelta = pixelReferenceDelta,
+                sourceTopStripeBlueMeans = sourceStripe, outputTopStripeBlueMeans = outputStripe
+            }, new JsonSerializerOptions { WriteIndented = true }));
             // Keep the primary High/cancel workload unchanged. This separate
             // export exercises real 4K-to-1080p resizing with the same marks.
             Volatile.Write(ref phase, 5);
@@ -277,6 +301,25 @@ internal static class VideoEditor4KBenchmark
         {
             await VideoAnnotationExport.SaveAsync(sourcePath, output, quality, sourceWidth, sourceHeight, annotations,
                 CancellationToken.None, metrics: metrics);
+        }
+        catch (Exception error)
+        {
+            // An encoder safety check can reject publication before an MP4
+            // exists to decode. Keep diagnostics, without retaining staging.
+            File.WriteAllText(Path.Combine(directory, "video-editor-4k-balanced-export-failure.json"), JsonSerializer.Serialize(new
+            {
+                platform = "Windows native WPF / Media Foundation",
+                sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
+                quality = quality.Title(), expectedOutputWidth = expected.Width, expectedOutputHeight = expected.Height,
+                expectedSubmittedFrames = ExpectedFrames(source.Duration, quality), submittedFrames = metrics.Frames,
+                errorType = error.GetType().FullName, error = error.Message, exportSeconds = watch.Elapsed.TotalSeconds,
+                maxDispatcherGapMilliseconds = Math.Max(maxDispatcherGap, Stopwatch.GetElapsedTime(lastBeat).TotalMilliseconds),
+                encoderDiagnostics = metrics.EncoderDiagnostics, metrics.DecodeMilliseconds, metrics.RenderMilliseconds,
+                metrics.BufferWaitMilliseconds, metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.MaximumWriterQueuedBytes,
+                memorySnapshots = metrics.MemorySnapshots,
+                diagnosis = "Balanced export failed before successful publication. No decoded-frame count is claimed here; native writer counters and the completed primary checkpoint are separate measured results."
+            }, new JsonSerializerOptions { WriteIndented = true }));
+            throw;
         }
         finally
         {
