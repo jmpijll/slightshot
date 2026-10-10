@@ -24,10 +24,17 @@ internal static class VideoAnnotationExport
         try
         {
             cancellation.ThrowIfCancellationRequested();
-            using var decoder = await VideoFrameSource.OpenAsync(source, cancellation);
-            using var sequential = await VideoSequentialDecoder.OpenAsync(source, decoder.Width, decoder.Height);
+            metrics?.RecordMemory("beforeMetadata");
+            var input = await StorageFile.GetFileFromPathAsync(source).AsTask(cancellation);
+            var metadata = await input.Properties.GetVideoPropertiesAsync().AsTask(cancellation);
+            int sourceWidth = checked((int)metadata.Width), sourceHeight = checked((int)metadata.Height);
+            TimeSpan duration = metadata.Duration;
+            if (sourceWidth <= 0 || sourceHeight <= 0 || duration <= TimeSpan.Zero) throw new InvalidOperationException("This recording has no playable video frames.");
+            metrics?.RecordMemory("metadataReady");
+            using var sequential = await VideoSequentialDecoder.OpenAsync(source, sourceWidth, sourceHeight);
+            metrics?.RecordMemory("sequentialReaderReady");
             using var renderer = new VideoRenderWorker();
-            using var frames = new RecordingFrameBuffers(checked(decoder.Width * decoder.Height * 4));
+            using var frames = new RecordingFrameBuffers(checked(sourceWidth * sourceHeight * 4));
             using var samples = new SemaphoreSlim(1, 1);
             using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
             int active = 0; bool accepting = true;
@@ -36,8 +43,8 @@ internal static class VideoAnnotationExport
             Exception? sampleError = null;
             long nextFrame = 0;
             int rate = quality.FramesPerSecond();
-            var properties = RecordingExport.FrameProperties(decoder.Width, decoder.Height, rate);
-            var media = new MediaStreamSource(new VideoStreamDescriptor(properties)) { Duration = decoder.Duration, CanSeek = false, BufferTime = TimeSpan.Zero };
+            var properties = RecordingExport.FrameProperties(sourceWidth, sourceHeight, rate);
+            var media = new MediaStreamSource(new VideoStreamDescriptor(properties)) { Duration = duration, CanSeek = false, BufferTime = TimeSpan.Zero };
             void Starting(MediaStreamSource _, MediaStreamSourceStartingEventArgs args) => args.Request.SetActualStartPosition(TimeSpan.Zero);
             async void SampleRequested(MediaStreamSource sender, MediaStreamSourceSampleRequestedEventArgs args)
             {
@@ -51,24 +58,26 @@ internal static class VideoAnnotationExport
                     lock (lifetime) { if (!accepting) return; active++; admitted = true; }
                     await samples.WaitAsync(stop.Token); entered = true;
                     var position = TimeSpan.FromTicks(nextFrame * TimeSpan.TicksPerSecond / rate);
-                    if (position >= decoder.Duration) return;
+                    if (position >= duration) return;
                     long measured = Stopwatch.GetTimestamp();
                     frame = await frames.RentAsync(stop.Token);
                     metrics?.AddBufferWait(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
                     measured = Stopwatch.GetTimestamp();
                     await sequential.GetFrameAsync(position, frame.Pixels, stop.Token);
                     metrics?.AddDecode(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
+                    if (nextFrame == 0) metrics?.RecordMemory("firstFrameDecoded");
                     measured = Stopwatch.GetTimestamp();
-                    await renderer.ComposeAsync(frame.Pixels, decoder.Width, decoder.Height, position, annotations, stop.Token);
+                    await renderer.ComposeAsync(frame.Pixels, sourceWidth, sourceHeight, position, annotations, stop.Token);
                     metrics?.AddRender(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
                     stop.Token.ThrowIfCancellationRequested();
                     sample = MediaStreamSample.CreateFromBuffer(frame.Pixels.AsBuffer(), position);
-                    sample.Duration = TimeSpan.FromTicks(Math.Min(TimeSpan.TicksPerSecond / rate, decoder.Duration.Ticks - position.Ticks));
+                    sample.Duration = TimeSpan.FromTicks(Math.Min(TimeSpan.TicksPerSecond / rate, duration.Ticks - position.Ticks));
                     sample.KeyFrame = true;
                     var submitted = frame;
                     processed = (completed, _) => { completed.Processed -= processed; submitted.Dispose(); };
                     sample.Processed += processed;
                     args.Request.Sample = sample; frame = null; nextFrame++; metrics?.AddSubmittedFrame();
+                    if (nextFrame is 1 or 15 or 30) metrics?.RecordMemory("submittedFrame" + nextFrame);
                 }
                 catch (OperationCanceledException) { }
                 catch (Exception error) { sampleError = error; sender.NotifyError(MediaStreamSourceErrorStatus.Other); }
@@ -91,9 +100,12 @@ internal static class VideoAnnotationExport
                 var file = await folder.CreateFileAsync(Path.GetFileName(staging), CreationCollisionOption.FailIfExists).AsTask(cancellation);
                 using var output = await file.OpenAsync(FileAccessMode.ReadWrite).AsTask(cancellation);
                 var transcoder = new MediaTranscoder { HardwareAccelerationEnabled = true, AlwaysReencode = true };
+                metrics?.RecordMemory("beforeTranscoderPrepare");
                 var prepared = await transcoder.PrepareMediaStreamSourceTranscodeAsync(media, output, RecordingExport.Profile(quality, width, height)).AsTask(cancellation);
+                metrics?.RecordMemory("transcoderPrepared");
                 if (!prepared.CanTranscode) throw new InvalidOperationException($"Windows could not export the edited recording ({prepared.FailureReason}).");
                 await prepared.TranscodeAsync().AsTask(cancellation, progress);
+                metrics?.RecordMemory("transcodeCompleted");
                 if (sampleError != null) throw new InvalidOperationException("A video frame could not be rendered.", sampleError);
                 if (nextFrame == 0) throw new InvalidOperationException("No edited frames were exported.");
             }
@@ -102,6 +114,7 @@ internal static class VideoAnnotationExport
                 lock (lifetime) { accepting = false; if (active == 0) drained.TrySetResult(); }
                 stop.Cancel(); media.Starting -= Starting; media.SampleRequested -= SampleRequested;
                 await drained.Task;
+                metrics?.RecordMemory("sampleCallbacksDrained");
             }
             cancellation.ThrowIfCancellationRequested();
             if (File.Exists(destination)) File.Replace(staging, destination, null);
@@ -114,6 +127,16 @@ internal static class VideoAnnotationExport
 internal sealed class VideoExportMetrics
 {
     private int frames;
+    private readonly List<VideoExportMemorySnapshot> memory = [];
+    internal IReadOnlyList<VideoExportMemorySnapshot> MemorySnapshots { get { lock (memory) return memory.ToArray(); } }
+    internal void RecordMemory(string stage)
+    {
+        using var process = Process.GetCurrentProcess(); process.Refresh(); var heap = GC.GetGCMemoryInfo();
+        var snapshot = new VideoExportMemorySnapshot(stage, Frames, process.PrivateMemorySize64 / 1048576.0, process.WorkingSet64 / 1048576.0,
+            GC.GetTotalMemory(false) / 1048576.0, heap.HeapSizeBytes / 1048576.0, heap.TotalCommittedBytes / 1048576.0, GC.GetTotalAllocatedBytes(false) / 1048576.0,
+            GC.CollectionCount(0), GC.CollectionCount(1), GC.CollectionCount(2));
+        lock (memory) memory.Add(snapshot);
+    }
     internal int Frames => Volatile.Read(ref frames);
     internal double DecodeMilliseconds { get; private set; }
     internal double RenderMilliseconds { get; private set; }
@@ -123,3 +146,6 @@ internal sealed class VideoExportMetrics
     internal void AddBufferWait(double elapsed) => BufferWaitMilliseconds += elapsed;
     internal void AddSubmittedFrame() => Interlocked.Increment(ref frames);
 }
+
+internal sealed record VideoExportMemorySnapshot(string Stage, int Frames, double PrivateMiB, double WorkingMiB, double ManagedLiveMiB,
+    double LastGcHeapMiB, double ManagedCommittedMiB, double TotalManagedAllocatedMiB, int Gen0Collections, int Gen1Collections, int Gen2Collections);

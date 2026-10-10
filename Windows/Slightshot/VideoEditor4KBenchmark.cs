@@ -83,7 +83,7 @@ internal static class VideoEditor4KBenchmark
         File.Copy(session.SourcePath, Path.Combine(directory, "video-editor-4k-source.mp4"), true);
         var source = await VideoFrameSource.OpenAsync(session.SourcePath);
         var editor = new VideoEditorWindow(source, new Settings { AnnotationColor = "#FF3B30", LineWidth = 5, FontSize = 24 }, _ => Task.FromResult(false), true);
-        var seeks = new List<double>(); var metrics = new VideoExportMetrics();
+        var seeks = new List<double>(); var metrics = new VideoExportMetrics(); var cancelMetrics = new VideoExportMetrics(); var stepMetrics = new VideoExportMetrics();
         double exportSeconds = 0, cancellationSeconds = 0, viewScale = 1;
         double effectiveRasterScale = 1;
         double blurReferenceDelta = 0, pixelReferenceDelta = 0;
@@ -160,7 +160,7 @@ internal static class VideoEditor4KBenchmark
             string preserved = Path.Combine(directory, "preserved.mp4"); byte[] existing = [11, 22, 33, 44]; File.WriteAllBytes(preserved, existing);
             string sourceDigest = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(session.SourcePath)));
             using var cancel = new CancellationTokenSource();
-            var cancellationStart = Stopwatch.StartNew(); var cancelMetrics = new VideoExportMetrics();
+            var cancellationStart = Stopwatch.StartNew();
             var cancelled = VideoAnnotationExport.SaveAsync(session.SourcePath, preserved, RecordingQuality.High, width, height, annotations, cancel.Token, metrics: cancelMetrics);
             bool Written() => Directory.EnumerateFiles(directory, ".slightshot-*.mp4").Any(path => new FileInfo(path).Length > 4096);
             while (!cancelled.IsCompleted && (cancelMetrics.Frames == 0 || !Written()) && cancellationStart.Elapsed < TimeSpan.FromSeconds(15)) await Task.Delay(10);
@@ -188,7 +188,7 @@ internal static class VideoEditor4KBenchmark
             VideoEditorSmokeTest.CaptureWindow(editor, Path.Combine(directory, "video-editor-4k-step.png"));
             string stepOutput = Path.Combine(directory, "video-editor-4k-step.mp4");
             await VideoAnnotationExport.SaveAsync(session.SourcePath, stepOutput, RecordingQuality.High, width, height,
-                editor.History.ExportSnapshot().Where(mark => mark.Annotation.Tool == Tool.Step).ToArray(), CancellationToken.None);
+                editor.History.ExportSnapshot().Where(mark => mark.Annotation.Tool == Tool.Step).ToArray(), CancellationToken.None, metrics: stepMetrics);
             using var stepDecoded = await VideoFrameSource.OpenAsync(stepOutput);
             var stepFrame = await stepDecoded.GetFrameAsync(TimeSpan.FromSeconds(.7));
             int left = (int)Math.Floor(3300 - step.StepDiameter / 2 - 2), length = (int)Math.Ceiling(step.StepDiameter + 4);
@@ -217,6 +217,7 @@ internal static class VideoEditor4KBenchmark
             fixture = "3840×2160 synthetic moving recording, high-frequency checker and invented readable ACCT1234 / KEY5678 text, native pointer-drawn blur/pixelate plus fixture caption, 0.35–1.1s interval, actual High 30fps MP4. Separate native Step-button/click fixture and actual MP4 diameter check after the three-tool benchmark. Native editor HWND screenshots; no personal source data.",
             durationSeconds = source.Duration.TotalSeconds, exportSeconds, frames = metrics.Frames, exportFramesPerSecond = metrics.Frames / exportSeconds,
             metrics.DecodeMilliseconds, metrics.RenderMilliseconds, metrics.BufferWaitMilliseconds,
+            exportMemorySnapshots = metrics.MemorySnapshots, cancelMemorySnapshots = cancelMetrics.MemorySnapshots, stepMemorySnapshots = stepMetrics.MemorySnapshots,
             seekMilliseconds = seeks, maxDispatcherGapMilliseconds = maxDispatcherGap, peakPrivateMiB = peakPrivate / 1048576.0, peakWorkingMiB = peakWorking / 1048576.0,
             memoryPhases = phaseNames.Select((name, index) => new { name, peakPrivateMiB = phasePrivate[index] / 1048576.0, peakWorkingMiB = phaseWorking[index] / 1048576.0 }).ToArray(),
             sourceTopStripeBlueMeans = sourceStripe, outputTopStripeBlueMeans = outputStripe,
