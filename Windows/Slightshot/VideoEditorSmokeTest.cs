@@ -23,10 +23,10 @@ internal static class VideoEditorSmokeTest
         const int width = 640, height = 360;
         var checks = new List<string>(); int count = 0;
         var sourceColors = new List<SourceColorEvidence>();
-        (string Name, Int32Rect Region)[] colorRegions =
+        (string Name, Int32Rect Region, double[] Nominal)[] colorRegions =
         [
-            ("Red", new(28, 32, 44, 24)), ("Green", new(103, 32, 44, 24)),
-            ("Blue", new(178, 32, 44, 24)), ("Neutral", new(253, 32, 24, 24))
+            ("Red", new(28, 32, 44, 24), [255, 0, 0]), ("Green", new(103, 32, 44, 24), [0, 255, 0]),
+            ("Blue", new(178, 32, 44, 24), [0, 0, 255]), ("Neutral", new(253, 32, 24, 24), [96, 96, 96])
         ];
         for (int iteration = 0; iteration < 5; iteration++) { using var worker = new VideoRenderWorker(); }
         checks.Add("Five immediate compositor-worker startup/shutdown cycles complete without joining a live dispatcher, covering cancellation before its first frame.");
@@ -208,15 +208,21 @@ internal static class VideoEditorSmokeTest
                     foreach (var patch in colorRegions)
                     {
                         var nativeRgb = MeanRgb(nativeFrame, patch.Region); var sequentialRgb = MeanRgb(sequentialFrame, patch.Region);
+                        var nativeInputErrors = patch.Nominal.Zip(nativeRgb, (first, second) => Math.Abs(first - second)).ToArray();
+                        var sequentialInputErrors = patch.Nominal.Zip(sequentialRgb, (first, second) => Math.Abs(first - second)).ToArray();
                         var errors = nativeRgb.Zip(sequentialRgb, (first, second) => Math.Abs(first - second)).ToArray();
+                        sourceColors.Add(new(seconds, patch.Name, "Known nominal fixture input vs native source preview", patch.Nominal, nativeRgb, nativeInputErrors));
+                        sourceColors.Add(new(seconds, patch.Name, "Known nominal fixture input vs sequential BGRA", patch.Nominal, sequentialRgb, sequentialInputErrors));
                         sourceColors.Add(new(seconds, patch.Name, "Native source preview vs sequential BGRA", nativeRgb, sequentialRgb, errors));
-                        if (errors.Max() > 8) SaveSourceColors(directory, sourceColors);
+                        if (new[] { nativeInputErrors.Max(), sequentialInputErrors.Max(), errors.Max() }.Max() > 8) SaveSourceColors(directory, sourceColors);
+                        Require(nativeInputErrors.Max() <= 8, "native source preserves known nominal " + patch.Name + " input RGB at " + seconds + "s");
+                        Require(sequentialInputErrors.Max() <= 8, "sequential source preserves known nominal " + patch.Name + " input RGB at " + seconds + "s");
                         Require(errors.Max() <= 8, "sequential source decoder preserves native preview solid " + patch.Name + " RGB at " + seconds + "s");
                     }
                 }
             }
             SaveSourceColors(directory, sourceColors);
-            checks.Add("Solid source red/green/blue/neutral interiors outside all annotation regions agree between the native WinRT preview and sequential BGRA decoder at 0.5/2/3.5 seconds within 8 mean values per RGB channel. Eight-pixel margins exclude chroma interpolation at patch edges and expose matrix/range or channel-order errors.");
+            checks.Add("Solid source red/green/blue/neutral interiors outside all annotation regions retain their known nominal fixture RGB in both native WinRT preview and sequential BGRA, and agree with each other at 0.5/2/3.5 seconds within 8 mean values per RGB channel. Eight-pixel margins exclude chroma interpolation at patch edges; independent nominal comparisons reject consistently mislabeled matrix/range colors.");
             await editor.PrepareExportAsync();
             var recoveryPosition = TimeSpan.FromSeconds(1.7);
             string retainedEdits = JsonSerializer.Serialize(snapshot);
@@ -364,7 +370,7 @@ internal static class VideoEditorSmokeTest
         }, new JsonSerializerOptions { WriteIndented = true }));
     }
     private sealed record SourceColorEvidence(double Seconds, string Patch, string Comparison,
-        double[] NativeSourceMeanRGB, double[] ActualMeanRGB, double[] MeanAbsoluteRGBChannelDelta);
+        double[] ReferenceMeanRGB, double[] ActualMeanRGB, double[] MeanAbsoluteRGBChannelDelta);
     private static void SaveSourceColors(string directory, List<SourceColorEvidence> evidence)
     {
         File.WriteAllText(Path.Combine(directory, "video-editor-source-color-validation.json"), JsonSerializer.Serialize(new

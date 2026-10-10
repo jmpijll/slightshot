@@ -22,6 +22,7 @@ internal static class RecordingExport
         properties.FrameRate.Numerator = (uint)framesPerSecond; properties.FrameRate.Denominator = 1;
         properties.PixelAspectRatio.Numerator = properties.PixelAspectRatio.Denominator = 1;
         properties.Properties[new Guid("644b4e48-1e02-4516-b0eb-c01ca9d49ac6")] = checked((uint)(width * 4)); // MF_MT_DEFAULT_STRIDE
+        SetSdrColor(properties, rgb: true);
         return properties;
     }
 
@@ -34,7 +35,19 @@ internal static class RecordingExport
         profile.Video.FrameRate.Numerator = (uint)quality.FramesPerSecond(); profile.Video.FrameRate.Denominator = 1;
         profile.Video.PixelAspectRatio.Numerator = profile.Video.PixelAspectRatio.Denominator = 1;
         profile.Video.Bitrate = quality.Bitrate(size.Width, size.Height);
+        SetSdrColor(profile.Video, rgb: false);
         return profile;
+    }
+
+    private static void SetSdrColor(VideoEncodingProperties properties, bool rgb)
+    {
+        // Supply format attributes before native media-type negotiation. The
+        // recorder's full-range BGRA must be converted to limited-range BT.709
+        // at every size; the native pipeline's untagged SD default can use 601.
+        properties.Properties[new Guid("dbfbe4d7-0740-4ee0-8192-850ab0e21935")] = (uint)2; // MF_MT_VIDEO_PRIMARIES: BT.709
+        properties.Properties[new Guid("5fb0fce9-be5c-4935-a811-ec838f8eed93")] = (uint)5; // MF_MT_TRANSFER_FUNCTION: BT.709
+        properties.Properties[new Guid("c21b8ee5-b956-4071-8daf-325edf5cab11")] = rgb ? (uint)1 : (uint)2; // MF_MT_VIDEO_NOMINAL_RANGE
+        if (!rgb) properties.Properties[new Guid("3e23d450-2c75-4d25-a00e-b91670d12327")] = (uint)1; // MF_MT_YUV_MATRIX: BT.709
     }
 
     internal static async Task SaveAsync(string source, string destination, RecordingQuality quality, int width, int height, CancellationToken cancellation, IProgress<double>? progress = null)
