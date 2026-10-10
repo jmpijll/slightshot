@@ -1,4 +1,5 @@
 using System.IO;
+using System.Diagnostics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Media.Core;
@@ -12,7 +13,7 @@ namespace Slightshot;
 internal static class VideoAnnotationExport
 {
     internal static async Task SaveAsync(string source, string destination, RecordingQuality quality, int width, int height,
-        IReadOnlyList<TimedAnnotation> annotations, CancellationToken cancellation, IProgress<double>? progress = null)
+        IReadOnlyList<TimedAnnotation> annotations, CancellationToken cancellation, IProgress<double>? progress = null, VideoExportMetrics? metrics = null)
     {
         if (annotations.Count == 0)
         {
@@ -50,10 +51,16 @@ internal static class VideoAnnotationExport
                     await samples.WaitAsync(stop.Token); entered = true;
                     var position = TimeSpan.FromTicks(nextFrame * TimeSpan.TicksPerSecond / rate);
                     if (position >= decoder.Duration) return;
+                    long measured = Stopwatch.GetTimestamp();
                     var image = await decoder.GetFrameAsync(position, stop.Token);
+                    metrics?.AddDecode(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
+                    measured = Stopwatch.GetTimestamp();
                     var composed = await renderer.RenderAsync(image, position, annotations, stop.Token);
+                    metrics?.AddRender(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
+                    measured = Stopwatch.GetTimestamp();
                     frame = await frames.RentAsync(stop.Token);
                     composed.CopyPixels(frame.Pixels, decoder.Width * 4, 0);
+                    metrics?.AddCopy(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
                     stop.Token.ThrowIfCancellationRequested();
                     sample = MediaStreamSample.CreateFromBuffer(frame.Pixels.AsBuffer(), position);
                     sample.Duration = TimeSpan.FromTicks(Math.Min(TimeSpan.TicksPerSecond / rate, decoder.Duration.Ticks - position.Ticks));
@@ -102,4 +109,15 @@ internal static class VideoAnnotationExport
         }
         finally { try { File.Delete(staging); } catch (IOException) { } catch (UnauthorizedAccessException) { } }
     }
+}
+
+internal sealed class VideoExportMetrics
+{
+    internal int Frames { get; private set; }
+    internal double DecodeMilliseconds { get; private set; }
+    internal double RenderMilliseconds { get; private set; }
+    internal double CopyMilliseconds { get; private set; }
+    internal void AddDecode(double elapsed) => DecodeMilliseconds += elapsed;
+    internal void AddRender(double elapsed) => RenderMilliseconds += elapsed;
+    internal void AddCopy(double elapsed) { CopyMilliseconds += elapsed; Frames++; }
 }

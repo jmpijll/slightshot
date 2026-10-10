@@ -10,6 +10,10 @@ on:
         description: Optional app version (defaults to the project version)
         type: string
         required: false
+      video_benchmark_baseline:
+        description: Report the 4K baseline without enforcing performance/effect acceptance limits
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       version:
@@ -99,6 +103,18 @@ jobs:
           if (!$process.WaitForExit(240000)) { $process.Kill(); throw 'Native video editor smoke test timed out' }
           if ($process.ExitCode -ne 0) { Get-Content "$output/video-editor-failure.txt" -ErrorAction SilentlyContinue; throw "Native video editor smoke test failed: $($process.ExitCode)" }
           Get-Content "$output/video-editor-validation.json"
+      - name: Benchmark real 4K preview, timed effects, export and cancellation
+        shell: pwsh
+        env:
+          SLIGHTSHOT_VIDEO_BENCHMARK_BASELINE: ${{ inputs.video_benchmark_baseline && '1' || '0' }}
+        run: |
+          $env:SLIGHTSHOT_SOURCE_COMMIT = git rev-parse HEAD
+          $app = Resolve-Path Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe
+          $output = Join-Path $PWD Windows/artifacts/video-editor/4k
+          $process = Start-Process $app -ArgumentList '--video-editor-4k-benchmark', $output -PassThru
+          if (!$process.WaitForExit(240000)) { $process.Kill(); throw 'Native 4K benchmark exceeded four-minute deadline' }
+          Get-Content "$output/video-editor-4k-validation.json" -ErrorAction SilentlyContinue
+          if ($process.ExitCode -ne 0) { Get-Content "$output/video-editor-4k-failure.txt" -ErrorAction SilentlyContinue; throw "Native 4K benchmark failed: $($process.ExitCode)" }
       - name: Test delayed capture on the real Windows desktop
         shell: pwsh
         run: |
@@ -134,6 +150,7 @@ jobs:
       - name: Test the extracted x64 app from a path containing spaces
         shell: pwsh
         run: |
+          $env:SLIGHTSHOT_SOURCE_COMMIT = git rev-parse HEAD
           $app = Resolve-Path 'Windows/artifacts/extracted x64/Slightshot.exe'
           $tests = @(
             @{ Argument = '--smoke-test'; Directory = 'parity/portable'; Report = 'validation.json'; Failure = 'failure.txt' },

@@ -206,7 +206,7 @@ internal static class VideoEditorSmokeTest
     private static IEnumerable<Slider> Sliders(Window window) => Descendants((DependencyObject)window.Content).OfType<Slider>();
     private static void ClickTooltip(Window window, string tooltip) => Buttons(window).Single(button => Equals(button.ToolTip, tooltip)).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
     private static void ClickContent(Window window, string content) => Buttons(window).Single(button => Equals(button.Content, content)).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-    private static async Task DragAsync(FrameworkElement surface, Point start, Point end)
+    internal static async Task DragAsync(FrameworkElement surface, Point start, Point end)
     {
         var first = surface.PointToScreen(start); var last = surface.PointToScreen(end);
         Require(SetCursorPos((int)first.X, (int)first.Y), "native pointer moves to annotation start"); await Task.Delay(50);
@@ -214,15 +214,15 @@ internal static class VideoEditorSmokeTest
         Require(SetCursorPos((int)last.X, (int)last.Y), "native pointer moves to annotation endpoint"); await Task.Delay(50);
         MouseEvent(0x0004, 0, 0, 0, UIntPtr.Zero); await Task.Delay(100);
     }
-    private static void CaptureWindow(Window window, string path)
+    internal static void CaptureWindow(Window window, string path)
     {
         Require(RecordingNative.GetWindowRect(new WindowInteropHelper(window).Handle, out var rect), "native editor screenshot bounds");
         using var bitmap = new System.Drawing.Bitmap(rect.Right - rect.Left, rect.Bottom - rect.Top);
         using var graphics = System.Drawing.Graphics.FromImage(bitmap); graphics.CopyFromScreen(rect.Left, rect.Top, 0, 0, bitmap.Size);
         bitmap.Save(path, System.Drawing.Imaging.ImageFormat.Png);
     }
-    private static void Save(BitmapSource bitmap, string path) { using var stream = File.Create(path); OutputService.Encode(bitmap, ImageFormat.Png, 1).Save(stream); }
-    private static double Delta(BitmapSource first, BitmapSource second, Int32Rect region)
+    internal static void Save(BitmapSource bitmap, string path) { using var stream = File.Create(path); OutputService.Encode(bitmap, ImageFormat.Png, 1).Save(stream); }
+    internal static double Delta(BitmapSource first, BitmapSource second, Int32Rect region)
     {
         int stride = region.Width * 4; var a = new byte[stride * region.Height]; var b = new byte[a.Length];
         first.CopyPixels(region, a, stride, 0); second.CopyPixels(region, b, stride, 0);
