@@ -226,21 +226,31 @@ internal static class VideoEditorSmokeTest
             SaveSourceColors(directory, sourceColors);
             checks.Add("Solid source red/green/blue/neutral interiors outside all annotation regions retain their known nominal fixture RGB in both native editor source preview (MF NV12+Core) and sequential BGRA, and agree with each other at 0.5/2/3.5 seconds within 8 mean values per RGB channel. Eight-pixel margins exclude chroma interpolation at patch edges; independent nominal comparisons reject consistently mislabeled matrix/range colors.");
             var seekEvidence = new List<object>();
-            foreach (double seconds in new[] { .5, 3.5, .5, 2 })
+            void SaveSeekEvidence()
             {
-                var target = TimeSpan.FromSeconds(seconds);
-                await editor.SeekAsync(target);
-                var currentFrame = editor.Surface.CurrentFrame!;
-                var pixels = new byte[width * height * 4]; currentFrame.CopyPixels(pixels, width * 4, 0);
-                int actualCounter = FrameCounter(pixels, width), expectedCounter = sourceReferenceCounters[target.Ticks];
-                seekEvidence.Add(new { requestedSeconds = seconds, actualEditorPositionSeconds = editor.Position.TotalSeconds,
-                    expectedCounterFromIndependentForwardOnlyReader = expectedCounter, actualNativePreviewCounter = actualCounter });
                 File.WriteAllText(Path.Combine(directory, "video-editor-random-seek-validation.json"), JsonSerializer.Serialize(new
                 {
                     sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
-                    method = "Native editor backward/forward seeks are checked against separately decoded forward-only source counters. Known nominal source RGB remains the independent color truth.",
+                    method = "Native editor backward/forward/end seeks are checked against separately decoded forward-only source counters. End is checked against the actual final source sample forced using raw last PTS; the next backward seek covers terminal-cache recovery. Known nominal source RGB remains the independent color truth.",
                     evidence = seekEvidence
                 }, new JsonSerializerOptions { WriteIndented = true }));
+            }
+            foreach (var target in new[] { TimeSpan.FromSeconds(.5), TimeSpan.FromSeconds(3.5), TimeSpan.FromSeconds(.5), TimeSpan.FromSeconds(2), source.Duration, TimeSpan.FromSeconds(.5) })
+            {
+                double seconds = target.TotalSeconds;
+                int expectedCounter = target == source.Duration ? sourceFinalCounter : sourceReferenceCounters[target.Ticks];
+                try { await editor.SeekAsync(target); }
+                catch (Exception error)
+                {
+                    seekEvidence.Add(new { requestedSeconds = seconds, expectedCounterFromIndependentForwardOnlyReader = expectedCounter, error = error.ToString() });
+                    SaveSeekEvidence(); throw;
+                }
+                var currentFrame = editor.Surface.CurrentFrame!;
+                var pixels = new byte[width * height * 4]; currentFrame.CopyPixels(pixels, width * 4, 0);
+                int actualCounter = FrameCounter(pixels, width);
+                seekEvidence.Add(new { requestedSeconds = seconds, actualEditorPositionSeconds = editor.Position.TotalSeconds,
+                    expectedCounterFromIndependentForwardOnlyReader = expectedCounter, actualNativePreviewCounter = actualCounter });
+                SaveSeekEvidence();
                 Require(editor.Position == target && actualCounter == expectedCounter, "native backward/forward seek returns the correct source-frame counter at " + seconds + "s");
                 foreach (var patch in colorRegions)
                 {
@@ -252,7 +262,7 @@ internal static class VideoEditorSmokeTest
                 }
             }
             SaveSourceColors(directory, sourceColors);
-            checks.Add("Native editor seeks 0.5→3.5→0.5→2 seconds return exact binary source-frame counters from a separate forward-only reader and preserve known nominal RGB, covering backward and large forward native reader seeks.");
+            checks.Add("Native editor seeks 0.5→3.5→0.5→2→source end→0.5 seconds return exact binary source-frame counters from a separate forward-only reader and preserve known nominal RGB, covering backward/large forward/end native seeks and terminal decoder-cache recovery.");
             await editor.PrepareExportAsync();
             var recoveryPosition = TimeSpan.FromSeconds(1.7);
             string retainedEdits = JsonSerializer.Serialize(snapshot);
