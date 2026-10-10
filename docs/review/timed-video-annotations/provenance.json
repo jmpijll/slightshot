@@ -55,8 +55,8 @@
     }
   },
   "documentation": {
-    "sourceCommit": "2017eed8ba0bbf66bef542cc69c798529f722f71",
-    "sourceURL": "https://github.com/jmpijll/slightshot/blob/2017eed8ba0bbf66bef542cc69c798529f722f71/README.md#record-an-area",
+    "sourceCommit": "ba7198326b5781fa5a7182f178f84cda785d53d0",
+    "sourceURL": "https://github.com/jmpijll/slightshot/blob/ba7198326b5781fa5a7182f178f84cda785d53d0/README.md#record-an-area",
     "captureMethod": "Real Chromium render of GitHub Markdown, captured with Playwright CLI."
   },
   "sharedValidation": {
@@ -71,8 +71,8 @@
   ],
   "files": {
     "documentation/readme-video-editor.png": {
-      "bytes": 483768,
-      "sha256": "43b98ac162daa3688fe019de53d0de625a7187b5e4b706f25c460058684b47b8"
+      "bytes": 446731,
+      "sha256": "20c0fcd07f524fecab4493d5841cc22279e6711fb6ccb86b54226a05d7ee8ead"
     },
     "mac/control-video.mp4": {
       "bytes": 220584,

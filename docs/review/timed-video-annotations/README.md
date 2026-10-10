@@ -68,7 +68,7 @@ Marks cover **1–3 seconds**:
   and temporary-source cleanup.
 - Shared: 20 original UI icons verified and 14 Python packaging tests passed.
 - Documentation: [GitHub-rendered recording instructions](documentation/readme-video-editor.png),
-  captured from README source `2017eed8ba0bbf66bef542cc69c798529f722f71`.
+  captured from README source `ba7198326b5781fa5a7182f178f84cda785d53d0`.
 
 This scope has fixed-position marks and a single selected interval, without motion
 tracking, keyframes, cutting or audio. Raster strength uses the existing screenshot
