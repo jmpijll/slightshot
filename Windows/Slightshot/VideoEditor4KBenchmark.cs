@@ -153,6 +153,7 @@ internal static class VideoEditor4KBenchmark
                 if (seconds == 0.7)
                 {
                     VideoEditorSmokeTest.Save(frame, Path.Combine(directory, "video-editor-4k-output-during.png"));
+                    VideoEditorSmokeTest.Save(rendered, Path.Combine(directory, "video-editor-4k-high-composition-reference.png"));
                     int fitWidth = Math.Max(1, (int)Math.Round(width * viewScale)); double scale = (double)fitWidth / width;
                     var fitOriginal = Fit(original, fitWidth); var fitVideo = Fit(rendered, fitWidth);
                     var referenceMarks = annotations.Where(mark => mark.Annotation.IsRasterEffect).Select(mark => mark.Annotation with
@@ -201,7 +202,7 @@ internal static class VideoEditor4KBenchmark
                 durationSeconds = source.Duration.TotalSeconds, exportSeconds, frames = metrics.Frames,
                 exportFramesPerSecond = metrics.Frames / exportSeconds, actualHighDecodedStatistics = highDecodedStatistics,
                 metrics.DecodeMilliseconds, metrics.RenderMilliseconds, metrics.BufferWaitMilliseconds,
-                metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.MaximumWriterQueuedBytes,
+                metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.ColorConversionMilliseconds, metrics.MaximumWriterQueuedBytes,
                 encoderDiagnostics = metrics.EncoderDiagnostics, exportMemorySnapshots = metrics.MemorySnapshots,
                 cancelMemorySnapshots = cancelMetrics.MemorySnapshots, seekMilliseconds = seeks,
                 maxDispatcherGapMilliseconds = maxDispatcherGap, peakPrivateMiB = peakPrivate / 1048576.0,
@@ -232,8 +233,9 @@ internal static class VideoEditor4KBenchmark
             await Task.Delay(100); editor.UpdateLayout();
             VideoEditorSmokeTest.CaptureWindow(editor, Path.Combine(directory, "video-editor-4k-step.png"));
             string stepOutput = Path.Combine(directory, "video-editor-4k-step.mp4");
+            var stepAnnotations = editor.History.ExportSnapshot().Where(mark => mark.Annotation.Tool == Tool.Step).ToArray();
             await VideoAnnotationExport.SaveAsync(session.SourcePath, stepOutput, RecordingQuality.High, width, height,
-                editor.History.ExportSnapshot().Where(mark => mark.Annotation.Tool == Tool.Step).ToArray(), CancellationToken.None, metrics: stepMetrics);
+                stepAnnotations, CancellationToken.None, metrics: stepMetrics);
             using var stepDecoded = await VideoFrameSource.OpenAsync(stepOutput);
             var stepFrame = await stepDecoded.GetFrameAsync(TimeSpan.FromSeconds(.7));
             int left = (int)Math.Floor(3300 - step.StepDiameter / 2 - 2), length = (int)Math.Ceiling(step.StepDiameter + 4);
@@ -241,6 +243,9 @@ internal static class VideoEditor4KBenchmark
             int first = -1, last = -1;
             for (int x = 0; x < length; x++) if (line[x * 4 + 2] > 180 && line[x * 4 + 1] < 140 && line[x * 4] < 140) { if (first < 0) first = x; last = x; }
             renderedStepFillPoints = first < 0 ? 0 : (last - first + 1) * viewScale;
+            var stepOriginal = await source.GetFrameAsync(TimeSpan.FromSeconds(.7));
+            var stepReference = VideoAnnotationRenderer.Render(stepOriginal, TimeSpan.FromSeconds(.7), stepAnnotations);
+            VideoEditorSmokeTest.Save(stepReference, Path.Combine(directory, "video-editor-4k-step-composition-reference.png"));
         }
         finally
         {
@@ -262,7 +267,7 @@ internal static class VideoEditor4KBenchmark
             fixture = "3840×2160 synthetic moving recording, high-frequency checker and invented readable ACCT1234 / KEY5678 text, native pointer-drawn blur/pixelate plus fixture caption, 0.35–1.1s interval, actual High 30fps MP4. Separate Balanced 1920×1080 export with decoded before/during/after source, composition and screenshot-strength checks after High/cancel; its throughput and UI heartbeat are reported separately. Separate native Step-button/click fixture and actual MP4 diameter check after the three-tool benchmark. Native editor HWND screenshots; no personal source data.",
             durationSeconds = source.Duration.TotalSeconds, exportSeconds, frames = metrics.Frames, exportFramesPerSecond = metrics.Frames / exportSeconds,
             metrics.DecodeMilliseconds, metrics.RenderMilliseconds, metrics.BufferWaitMilliseconds,
-            metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.MaximumWriterQueuedBytes,
+            metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.ColorConversionMilliseconds, metrics.MaximumWriterQueuedBytes,
             encoderDiagnostics = metrics.EncoderDiagnostics, actualHighDecodedStatistics = highDecodedStatistics,
             exportMemorySnapshots = metrics.MemorySnapshots, cancelMemorySnapshots = cancelMetrics.MemorySnapshots, stepMemorySnapshots = stepMetrics.MemorySnapshots,
             seekMilliseconds = seeks, maxDispatcherGapMilliseconds = maxDispatcherGap, peakPrivateMiB = peakPrivate / 1048576.0, peakWorkingMiB = peakWorking / 1048576.0,
@@ -315,7 +320,7 @@ internal static class VideoEditor4KBenchmark
                 errorType = error.GetType().FullName, error = error.Message, exportSeconds = watch.Elapsed.TotalSeconds,
                 maxDispatcherGapMilliseconds = Math.Max(maxDispatcherGap, Stopwatch.GetElapsedTime(lastBeat).TotalMilliseconds),
                 encoderDiagnostics = metrics.EncoderDiagnostics, metrics.DecodeMilliseconds, metrics.RenderMilliseconds,
-                metrics.BufferWaitMilliseconds, metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.MaximumWriterQueuedBytes,
+                metrics.BufferWaitMilliseconds, metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.ColorConversionMilliseconds, metrics.MaximumWriterQueuedBytes,
                 memorySnapshots = metrics.MemorySnapshots,
                 diagnosis = "Balanced export failed before successful publication. No decoded-frame count is claimed here; native writer counters and the completed primary checkpoint are separate measured results."
             }, new JsonSerializerOptions { WriteIndented = true }));
@@ -400,7 +405,7 @@ internal static class VideoEditor4KBenchmark
         var result = new BalancedEvidence("Balanced", Path.GetFileName(output), sourceWidth, sourceHeight, decoded.Width, decoded.Height,
             quality.FramesPerSecond(), decoded.Duration.TotalSeconds, expectedFrames, metrics.Frames, exportSeconds,
             metrics.Frames / exportSeconds, maxDispatcherGap, metrics.DecodeMilliseconds, metrics.RenderMilliseconds,
-            metrics.BufferWaitMilliseconds, metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.MaximumWriterQueuedBytes,
+            metrics.BufferWaitMilliseconds, metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.ColorConversionMilliseconds, metrics.MaximumWriterQueuedBytes,
             actualDecoded, metrics.EncoderDiagnostics, metrics.MemorySnapshots, checks, blurReferenceDelta, pixelReferenceDelta, failures);
         File.WriteAllText(Path.Combine(directory, "video-editor-4k-balanced-validation.json"), JsonSerializer.Serialize(new
         {
@@ -416,7 +421,7 @@ internal static class VideoEditor4KBenchmark
         int ActualOutputWidth, int ActualOutputHeight, int ConfiguredFramesPerSecond, double ActualDurationSeconds,
         long ExpectedSubmittedFrames, int SubmittedFrames, double ExportSeconds, double ExportFramesPerSecond,
         double MaxDispatcherGapMilliseconds, double DecodeMilliseconds, double RenderMilliseconds, double BufferWaitMilliseconds,
-        double WriterMilliseconds, double ResizeMilliseconds, uint MaximumWriterQueuedBytes,
+        double WriterMilliseconds, double ResizeMilliseconds, double ColorConversionMilliseconds, uint MaximumWriterQueuedBytes,
         VideoDecodedStatistics ActualDecodedStatistics, VideoEncoderDiagnostics EncoderDiagnostics,
         IReadOnlyList<VideoExportMemorySnapshot> MemorySnapshots, IReadOnlyList<BalancedFrameEvidence> Frames,
         double BlurScreenshotReferenceMeanDelta, double PixelScreenshotReferenceMeanDelta, IReadOnlyList<string> ValidationFailures);

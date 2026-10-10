@@ -196,5 +196,42 @@ for (int iteration = 0; iteration < 10; iteration++) warmResizer.Resize(resizeCo
 long resizeAllocatedBefore = GC.GetAllocatedBytesForCurrentThread();
 for (int iteration = 0; iteration < 100; iteration++) warmResizer.Resize(resizeCorners, resizeAverage);
 Equal(0L, GC.GetAllocatedBytesForCurrentThread() - resizeAllocatedBefore, "reused resize mappings allocate no per-frame pixel buffers");
+foreach (var color in new (int R, int G, int B, int Y, int U, int V)[] { (0, 0, 0, 16, 128, 128), (255, 255, 255, 235, 128, 128),
+    (128, 128, 128, 126, 128, 128), (255, 0, 0, 63, 102, 240), (0, 255, 0, 173, 42, 26),
+    (0, 0, 255, 32, 240, 118), (0, 255, 255, 188, 154, 16), (255, 0, 255, 78, 214, 230), (255, 255, 0, 219, 16, 138) })
+{
+    byte[] rgb = Enumerable.Range(0, 16).SelectMany(_ => new byte[] {(byte)color.B, (byte)color.G, (byte)color.R, 255}).ToArray();
+    byte[] nv12 = new byte[24]; BgraToNv12.Convert(rgb, nv12, 8, 2);
+    Equal(true, nv12.AsSpan(0, 16).ToArray().All(value => Math.Abs(value - color.Y) <= 1), "BT.709 NV12 luma reference " + color);
+    Equal(true, Enumerable.Range(0, 4).All(index => Math.Abs(nv12[16 + index * 2] - color.U) <= 1 && Math.Abs(nv12[17 + index * 2] - color.V) <= 1), "BT.709 NV12 U-before-V primary reference " + color);
+}
+var colorRandom = new Random(709);
+foreach (var size in new (int W, int H)[] {(2, 2), (6, 4), (8, 2), (10, 4), (16, 6), (32, 8)})
+{
+    byte[] rgb = new byte[size.W * size.H * 4], nv12 = new byte[size.W * size.H * 3 / 2]; colorRandom.NextBytes(rgb);
+    BgraToNv12.Convert(rgb, nv12, size.W, size.H); bool lumaMatches = true, chromaMatches = true;
+    byte[] scalarNv12 = new byte[nv12.Length]; BgraToNv12.Convert(rgb, scalarNv12, size.W, size.H, false);
+    Equal(true, nv12.SequenceEqual(scalarNv12), "SIMD and scalar NV12 produce identical mixed-color bytes including each chroma lane and width remainder " + size);
+    for (int y = 0; y < size.H; y++) for (int x = 0; x < size.W; x++)
+    {
+        int pixel = (y * size.W + x) * 4; double luminance = .2126 * rgb[pixel + 2] + .7152 * rgb[pixel + 1] + .0722 * rgb[pixel];
+        lumaMatches &= Math.Abs(nv12[y * size.W + x] - Math.Floor(16 + 219 * luminance / 255 + .5)) <= 1;
+    }
+    for (int y = 0; y < size.H; y += 2) for (int x = 0; x < size.W; x += 2)
+    {
+        double r = 0, g = 0, b = 0;
+        for (int dy = 0; dy < 2; dy++) for (int dx = 0; dx < 2; dx++) { int pixel = ((y + dy) * size.W + x + dx) * 4; r += rgb[pixel + 2] / 4.0; g += rgb[pixel + 1] / 4.0; b += rgb[pixel] / 4.0; }
+        double luminance = .2126 * r + .7152 * g + .0722 * b; int uv = size.W * size.H + y / 2 * size.W + x;
+        chromaMatches &= Math.Abs(nv12[uv] - Math.Floor(128 + 112 * (b - luminance) / (.9278 * 255) + .5)) <= 1;
+        chromaMatches &= Math.Abs(nv12[uv + 1] - Math.Floor(128 + 112 * (r - luminance) / (.7874 * 255) + .5)) <= 1;
+    }
+    Equal(true, lumaMatches, "top-down NV12 luma agrees with independent floating-point BT.709 equation " + size);
+    Equal(true, chromaMatches, "NV12 2×2 chroma averaging and SIMD/remainder order agree with independent equation " + size);
+}
+byte[] colorWarmInput = new byte[64], colorWarmOutput = new byte[24];
+for (int iteration = 0; iteration < 10; iteration++) BgraToNv12.Convert(colorWarmInput, colorWarmOutput, 8, 2);
+long colorAllocation = GC.GetAllocatedBytesForCurrentThread();
+for (int iteration = 0; iteration < 100; iteration++) BgraToNv12.Convert(colorWarmInput, colorWarmOutput, 8, 2);
+Equal(0L, GC.GetAllocatedBytesForCurrentThread() - colorAllocation, "NV12 conversion allocates no per-frame storage");
 checks += await RecordingFrameBufferChecks.RunAsync();
 Console.WriteLine($"Passed {checks} Windows parity geometry, pixel-boundary, style, filename and recording buffer checks.");

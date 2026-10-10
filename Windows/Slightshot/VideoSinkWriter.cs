@@ -62,6 +62,8 @@ internal sealed class VideoSinkWriter : IDisposable
         private nint sink;
         private uint stream;
         private readonly int byteCount;
+        private readonly int width, height;
+        private readonly byte[] converted;
         private readonly BgraResizer? resizer;
         private readonly byte[]? resized;
         private readonly VideoExportMetrics? metrics;
@@ -70,10 +72,11 @@ internal sealed class VideoSinkWriter : IDisposable
         {
             this.metrics = metrics;
             var size = quality.Dimensions(sourceWidth, sourceHeight); int rate = quality.FramesPerSecond();
-            byteCount = checked(size.Width * size.Height * 4);
+            width = size.Width; height = size.Height;
+            byteCount = checked(width * height * 3 / 2); converted = new byte[byteCount];
             if (sourceWidth != size.Width || sourceHeight != size.Height)
             {
-                resizer = new(sourceWidth, sourceHeight, size.Width, size.Height); resized = new byte[byteCount];
+                resizer = new(sourceWidth, sourceHeight, size.Width, size.Height); resized = new byte[checked(width * height * 4)];
             }
             nint attributes = 0, output = 0, input = 0, parameters = 0;
             try
@@ -89,8 +92,8 @@ internal sealed class VideoSinkWriter : IDisposable
                 uint profileId = profile.Video.Properties.TryGetValue(new("ad76a80b-2d5c-4e0b-b375-64e520137036"), out var profileValue) ? Convert.ToUInt32(profileValue) : 100;
                 SetUInt32(output, new("ad76a80b-2d5c-4e0b-b375-64e520137036"), profileId);
                 uint selected = 0; Check(((delegate* unmanaged[Stdcall]<nint, nint, uint*, int>)Slot(sink, 3))(sink, output, &selected)); stream = selected;
-                input = VideoType(new("00000016-0000-0010-8000-00aa00389b71"), size.Width, size.Height, rate); // RGB32
-                SetUInt32(input, new("644b4e48-1e02-4516-b0eb-c01ca9d49ac6"), checked((uint)(size.Width * 4)));
+                input = VideoType(new("3231564e-0000-0010-8000-00aa00389b71"), size.Width, size.Height, rate); // NV12, accepted directly by H.264
+                SetUInt32(input, new("644b4e48-1e02-4516-b0eb-c01ca9d49ac6"), checked((uint)size.Width));
                 Check(MFCreateAttributes(out parameters, 1));
                 // Supply encoder settings during input negotiation, before
                 // BeginWriting. Avoid presentation-time reordering at time zero.
@@ -110,6 +113,9 @@ internal sealed class VideoSinkWriter : IDisposable
             byte[] pixels = source;
             if (resizer != null) { resizer.Resize(source, resized!); pixels = resized!; }
             metrics?.AddResize(System.Diagnostics.Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
+            measured = System.Diagnostics.Stopwatch.GetTimestamp();
+            BgraToNv12.Convert(pixels, converted, width, height); pixels = converted;
+            metrics?.AddColorConversion(System.Diagnostics.Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
             nint sample = 0, buffer = 0, data = 0;
             try
             {
@@ -205,8 +211,8 @@ internal sealed class VideoSinkWriter : IDisposable
                             if (category == new Guid("302ea3fc-aa5f-47f9-9f7a-c2188bb16302") || classId == new Guid("88753b26-5b24-49bd-b2e7-0c445c78c982"))
                             {
                                 // We already choose every output timestamp and
-                                // partial duration. Keep XVP color conversion,
-                                // and prevent it resampling away the short tail.
+                                // partial duration. If the encoder inserts a
+                                // processor, prevent it resampling the short tail.
                                 Guid disableFrc = new("2c0afa19-7a97-4d5a-9ee8-16d4fc518d8c");
                                 applied = ((delegate* unmanaged[Stdcall]<nint, Guid*, uint, int>)Slot(attributes, 21))(attributes, &disableFrc, 1);
                                 uint value = 0;
@@ -233,6 +239,10 @@ internal sealed class VideoSinkWriter : IDisposable
                 SetUInt64(type, new("1652c33d-d6b2-4012-b834-72030849a37d"), ((ulong)(uint)width << 32) | (uint)height);
                 SetUInt64(type, new("c459a2e8-3d2c-4e44-b132-fee5156c7bb0"), ((ulong)(uint)rate << 32) | 1);
                 SetUInt64(type, new("c6376a1e-8d0a-4027-be45-6d9a0ad39bb6"), (1UL << 32) | 1);
+                SetUInt32(type, new("3e23d450-2c75-4d25-a00e-b91670d12327"), 1); // BT.709 matrix
+                SetUInt32(type, new("c21b8ee5-b956-4071-8daf-325edf5cab11"), 2); // studio/limited range
+                SetUInt32(type, new("dbfbe4d7-0740-4ee0-8192-850ab0e21935"), 2); // BT.709 primaries
+                SetUInt32(type, new("5fb0fce9-be5c-4935-a811-ec838f8eed93"), 5); // BT.709 transfer
                 return type;
             }
             catch { Release(type); throw; }

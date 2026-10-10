@@ -96,6 +96,7 @@ internal sealed class VideoExportMetrics
     internal double BufferWaitMilliseconds { get; private set; }
     internal double ResizeMilliseconds { get; private set; }
     internal double WriterMilliseconds { get; private set; }
+    internal double ColorConversionMilliseconds { get; private set; }
     internal uint MaximumWriterQueuedBytes { get; private set; }
     internal bool? EncoderWorkerThreadControlSupported { get; private set; }
     internal bool? EncoderWorkerThreadControlApplied { get; private set; }
@@ -109,6 +110,7 @@ internal sealed class VideoExportMetrics
     internal void AddBufferWait(double elapsed) => BufferWaitMilliseconds += elapsed;
     internal void AddResize(double elapsed) => ResizeMilliseconds += elapsed;
     internal void AddWriter(double elapsed) => WriterMilliseconds += elapsed;
+    internal void AddColorConversion(double elapsed) => ColorConversionMilliseconds += elapsed;
     internal void RecordWorkerSupport(bool supported) => EncoderWorkerThreadControlSupported = supported;
     internal void RecordWorkerThreads(uint actual, bool applied) { ActualEncoderWorkerThreads = actual; EncoderWorkerThreadControlApplied = applied; }
     internal void RecordBFrames(uint actual) => ActualEncoderBFrames = actual;
