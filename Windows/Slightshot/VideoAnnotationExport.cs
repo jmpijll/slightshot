@@ -39,7 +39,7 @@ internal static class VideoAnnotationExport
             int rate = quality.FramesPerSecond();
             long nextFrame = 0;
             metrics?.RecordMemory("beforeWriterPrepare");
-            using (var writer = await VideoSinkWriter.OpenAsync(staging, sourceWidth, sourceHeight, quality))
+            using (var writer = await VideoSinkWriter.OpenAsync(staging, sourceWidth, sourceHeight, quality, metrics))
             {
                 metrics?.RecordMemory("writerPrepared");
                 for (;;)
@@ -96,14 +96,32 @@ internal sealed class VideoExportMetrics
     internal double ResizeMilliseconds { get; private set; }
     internal double WriterMilliseconds { get; private set; }
     internal uint MaximumWriterQueuedBytes { get; private set; }
+    internal bool? EncoderWorkerThreadControlSupported { get; private set; }
+    internal bool? EncoderWorkerThreadControlApplied { get; private set; }
+    internal uint? ActualEncoderWorkerThreads { get; private set; }
+    internal uint? ActualEncoderBFrames { get; private set; }
+    internal ulong WriterSamplesReceived { get; private set; }
+    internal ulong WriterSamplesEncoded { get; private set; }
+    internal ulong WriterSamplesProcessed { get; private set; }
     internal void AddDecode(double elapsed) => DecodeMilliseconds += elapsed;
     internal void AddRender(double elapsed) => RenderMilliseconds += elapsed;
     internal void AddBufferWait(double elapsed) => BufferWaitMilliseconds += elapsed;
     internal void AddResize(double elapsed) => ResizeMilliseconds += elapsed;
     internal void AddWriter(double elapsed) => WriterMilliseconds += elapsed;
-    internal void AddWriterQueue(uint bytes) => MaximumWriterQueuedBytes = Math.Max(MaximumWriterQueuedBytes, bytes);
+    internal void RecordWorkerSupport(bool supported) => EncoderWorkerThreadControlSupported = supported;
+    internal void RecordWorkerThreads(uint actual, bool applied) { ActualEncoderWorkerThreads = actual; EncoderWorkerThreadControlApplied = applied; }
+    internal void RecordBFrames(uint actual) => ActualEncoderBFrames = actual;
+    internal VideoEncoderDiagnostics EncoderDiagnostics => new(EncoderWorkerThreadControlSupported, EncoderWorkerThreadControlApplied,
+        ActualEncoderWorkerThreads, ActualEncoderBFrames, WriterSamplesReceived, WriterSamplesEncoded, WriterSamplesProcessed);
+    internal void AddWriterStatistics(uint bytes, ulong received, ulong encoded, ulong processed)
+    {
+        MaximumWriterQueuedBytes = Math.Max(MaximumWriterQueuedBytes, bytes);
+        WriterSamplesReceived = Math.Max(WriterSamplesReceived, received); WriterSamplesEncoded = Math.Max(WriterSamplesEncoded, encoded); WriterSamplesProcessed = Math.Max(WriterSamplesProcessed, processed);
+    }
     internal void AddSubmittedFrame() => Interlocked.Increment(ref frames);
 }
 
 internal sealed record VideoExportMemorySnapshot(string Stage, int Frames, double PrivateMiB, double WorkingMiB, double ManagedLiveMiB,
     double LastGcHeapMiB, double ManagedCommittedMiB, double TotalManagedAllocatedMiB, int Gen0Collections, int Gen1Collections, int Gen2Collections);
+internal sealed record VideoEncoderDiagnostics(bool? WorkerThreadControlSupported, bool? WorkerThreadControlApplied,
+    uint? ActualWorkerThreads, uint? ActualBFrames, ulong SamplesReceived, ulong SamplesEncoded, ulong SamplesProcessed);

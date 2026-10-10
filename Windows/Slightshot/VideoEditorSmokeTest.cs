@@ -163,6 +163,17 @@ internal static class VideoEditorSmokeTest
                 using var decoded = await VideoFrameSource.OpenAsync(output);
                 Require(decoded.Width == width && decoded.Height == height, "edited export retains dimensions " + quality);
                 Require(Math.Abs(decoded.Duration.TotalSeconds - source.Duration.TotalSeconds) < 0.2, "edited export retains duration " + quality);
+                var cadence = await VideoSequentialDecoder.InspectAsync(output, decoded.Width, decoded.Height);
+                long expectedFrames = (source.Duration.Ticks * quality.FramesPerSecond() + TimeSpan.TicksPerSecond - 1) / TimeSpan.TicksPerSecond;
+                File.WriteAllText(Path.Combine(directory, "video-editor-" + quality.ToString().ToLowerInvariant() + "-cadence-validation.json"),
+                    JsonSerializer.Serialize(new { quality, expectedFrames, actualDecoded = cadence }, new JsonSerializerOptions { WriteIndented = true }));
+                Require(cadence.Frames == expectedFrames, "actual MP4 decodes every planned frame including its final partial frame " + quality);
+                Require(Math.Abs(cadence.FirstPresentationTicks) <= 1, "actual MP4 starts at time zero " + quality);
+                long interval = TimeSpan.TicksPerSecond / quality.FramesPerSecond();
+                Require(cadence.PresentationTicks.Zip(cadence.PresentationTicks.Skip(1), (first, second) => second - first)
+                    .All(gap => gap > 0 && Math.Abs(gap - interval) <= 1), "actual MP4 preserves constant output cadence " + quality);
+                Require(cadence.LastDurationTicks > 0 && Math.Abs(cadence.LastPresentationTicks + cadence.LastDurationTicks - source.Duration.Ticks) <= interval + 10000,
+                    "actual MP4 final frame retains the source endpoint within one output frame " + quality);
                 foreach (var point in new[] { (Name: "before", Seconds: 0.5), (Name: "during", Seconds: 2.0), (Name: "after", Seconds: 3.5) })
                 {
                     var frame = await decoded.GetFrameAsync(TimeSpan.FromSeconds(point.Seconds));
@@ -194,7 +205,7 @@ internal static class VideoEditorSmokeTest
         checks.Add("Closing the editor releases the preview decoder, and RecordingSession disposal removes its temporary source directory.");
         File.WriteAllText(Path.Combine(directory, "video-editor-validation.json"), JsonSerializer.Serialize(new
         {
-            platform = "Windows native WPF / MediaComposition / MediaTranscoder",
+            platform = "Windows native WPF / Media Foundation",
             sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
             source = "Moving synthetic BGRA recording. Real native editor HWND captured from composed desktop pixels. Arrow uses native automated pointer input; other annotations use labelled fixture inputs. Native sliders and buttons are operated automatically. MP4 is encoded and decoded through the production export path.",
             checks

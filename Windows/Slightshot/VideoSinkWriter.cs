@@ -13,7 +13,7 @@ internal sealed class VideoSinkWriter : IDisposable
     private readonly TaskCompletionSource ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly Thread thread;
     private NativeWriter? writer;
-    private VideoSinkWriter(string path, int sourceWidth, int sourceHeight, RecordingQuality quality)
+    private VideoSinkWriter(string path, int sourceWidth, int sourceHeight, RecordingQuality quality, VideoExportMetrics? metrics)
     {
         thread = new Thread(() =>
         {
@@ -22,7 +22,7 @@ internal sealed class VideoSinkWriter : IDisposable
             {
                 NativeWriter.Check(CoInitializeEx(0, 0)); com = true;
                 NativeWriter.Check(MFStartup(0x20070, 0)); foundation = true;
-                writer = new NativeWriter(path, sourceWidth, sourceHeight, quality); ready.TrySetResult();
+                writer = new NativeWriter(path, sourceWidth, sourceHeight, quality, metrics); ready.TrySetResult();
                 foreach (var request in requests.GetConsumingEnumerable()) request();
             }
             catch (Exception error) { ready.TrySetException(error); }
@@ -30,9 +30,9 @@ internal sealed class VideoSinkWriter : IDisposable
         }) { IsBackground = true, Name = "Slightshot direct video encoder" };
         thread.SetApartmentState(ApartmentState.MTA); thread.Start();
     }
-    internal static async Task<VideoSinkWriter> OpenAsync(string path, int width, int height, RecordingQuality quality)
+    internal static async Task<VideoSinkWriter> OpenAsync(string path, int width, int height, RecordingQuality quality, VideoExportMetrics? metrics = null)
     {
-        var writer = new VideoSinkWriter(path, width, height, quality);
+        var writer = new VideoSinkWriter(path, width, height, quality, metrics);
         try { await writer.ready.Task.ConfigureAwait(false); return writer; }
         catch { writer.Dispose(); throw; }
     }
@@ -64,15 +64,17 @@ internal sealed class VideoSinkWriter : IDisposable
         private readonly int byteCount;
         private readonly BgraResizer? resizer;
         private readonly byte[]? resized;
-        internal NativeWriter(string path, int sourceWidth, int sourceHeight, RecordingQuality quality)
+        private readonly VideoExportMetrics? metrics;
+        internal NativeWriter(string path, int sourceWidth, int sourceHeight, RecordingQuality quality, VideoExportMetrics? metrics)
         {
+            this.metrics = metrics;
             var size = quality.Dimensions(sourceWidth, sourceHeight); int rate = quality.FramesPerSecond();
             byteCount = checked(size.Width * size.Height * 4);
             if (sourceWidth != size.Width || sourceHeight != size.Height)
             {
                 resizer = new(sourceWidth, sourceHeight, size.Width, size.Height); resized = new byte[byteCount];
             }
-            nint attributes = 0, output = 0, input = 0;
+            nint attributes = 0, output = 0, input = 0, parameters = 0;
             try
             {
                 Check(MFCreateAttributes(out attributes, 1));
@@ -88,11 +90,17 @@ internal sealed class VideoSinkWriter : IDisposable
                 uint selected = 0; Check(((delegate* unmanaged[Stdcall]<nint, nint, uint*, int>)Slot(sink, 3))(sink, output, &selected)); stream = selected;
                 input = VideoType(new("00000016-0000-0010-8000-00aa00389b71"), size.Width, size.Height, rate); // RGB32
                 SetUInt32(input, new("644b4e48-1e02-4516-b0eb-c01ca9d49ac6"), checked((uint)(size.Width * 4)));
-                Check(((delegate* unmanaged[Stdcall]<nint, uint, nint, nint, int>)Slot(sink, 4))(sink, stream, input, 0));
+                Check(MFCreateAttributes(out parameters, 2));
+                SetUInt32(parameters, new("b0c8bf60-16f7-4951-a30b-1db1609293d6"), 2);
+                // Supply encoder settings during input negotiation, before
+                // BeginWriting. Avoid presentation-time reordering at time zero.
+                SetUInt32(parameters, new("8d390aac-dc5c-4200-b57f-814d04babab2"), 0);
+                Check(((delegate* unmanaged[Stdcall]<nint, uint, nint, nint, int>)Slot(sink, 4))(sink, stream, input, parameters));
+                ConfigureWorkerThreads();
                 Check(((delegate* unmanaged[Stdcall]<nint, int>)Slot(sink, 5))(sink));
             }
             catch { Dispose(); throw; }
-            finally { Release(input); Release(output); Release(attributes); }
+            finally { Release(parameters); Release(input); Release(output); Release(attributes); }
         }
         internal void Write(byte[] source, TimeSpan position, TimeSpan duration, CancellationToken cancellation, VideoExportMetrics? metrics)
         {
@@ -116,8 +124,7 @@ internal sealed class VideoSinkWriter : IDisposable
                 Check(((delegate* unmanaged[Stdcall]<nint, long, int>)Slot(sample, 38))(sample, duration.Ticks));
                 cancellation.ThrowIfCancellationRequested();
                 Check(((delegate* unmanaged[Stdcall]<nint, uint, nint, int>)Slot(sink, 6))(sink, stream, sample));
-                Statistics statistics = new() { Size = (uint)sizeof(Statistics) };
-                if (((delegate* unmanaged[Stdcall]<nint, uint, Statistics*, int>)Slot(sink, 13))(sink, stream, &statistics) >= 0) metrics?.AddWriterQueue(statistics.BytesQueued);
+                RecordStatistics();
             }
             finally { Release(sample); Release(buffer); }
         }
@@ -125,8 +132,53 @@ internal sealed class VideoSinkWriter : IDisposable
         {
             cancellation.ThrowIfCancellationRequested();
             Check(((delegate* unmanaged[Stdcall]<nint, int>)Slot(sink, 11))(sink));
+            RecordStatistics();
             cancellation.ThrowIfCancellationRequested();
         }
+        private void ConfigureWorkerThreads()
+        {
+            // The software H.264 encoder selects its own worker count by
+            // default. Bound this native parallelism without changing bitrate,
+            // quality, GOP structure or the hardware encoder selection.
+            Guid service = Guid.Empty, codecInterface = new("901db4c7-31ce-41a2-85dc-8fa0bf41b8da");
+            nint codec = 0;
+            int found = ((delegate* unmanaged[Stdcall]<nint, uint, Guid*, Guid*, nint*, int>)Slot(sink, 12))(sink, stream, &service, &codecInterface, &codec);
+            if (found < 0) return;
+            try
+            {
+                Guid workerThreads = new("b0c8bf60-16f7-4951-a30b-1db1609293d6");
+                Guid bPictures = new("8d390aac-dc5c-4200-b57f-814d04babab2");
+                bool bSupported = ((delegate* unmanaged[Stdcall]<nint, Guid*, int>)Slot(codec, 3))(codec, &bPictures) == 0;
+                Variant bActual = default;
+                try
+                {
+                    if (bSupported && ((delegate* unmanaged[Stdcall]<nint, Guid*, Variant*, int>)Slot(codec, 8))(codec, &bPictures, &bActual) == 0 && bActual.Type == 19)
+                        metrics?.RecordBFrames(bActual.UInt32);
+                }
+                finally { VariantClear(ref bActual); }
+                int supported = ((delegate* unmanaged[Stdcall]<nint, Guid*, int>)Slot(codec, 3))(codec, &workerThreads);
+                metrics?.RecordWorkerSupport(supported == 0);
+                if (supported != 0) return; // S_FALSE means unsupported.
+                Variant requested = new() { Type = 19, UInt32 = 2 }; // VT_UI4
+                int applied = ((delegate* unmanaged[Stdcall]<nint, Guid*, Variant*, int>)Slot(codec, 9))(codec, &workerThreads, &requested);
+                Variant actual = default;
+                try
+                {
+                    if (((delegate* unmanaged[Stdcall]<nint, Guid*, Variant*, int>)Slot(codec, 8))(codec, &workerThreads, &actual) == 0 && actual.Type == 19)
+                        metrics?.RecordWorkerThreads(actual.UInt32, applied == 0);
+                }
+                finally { VariantClear(ref actual); }
+            }
+            finally { Release(codec); }
+        }
+        private void RecordStatistics()
+        {
+            Statistics statistics = new() { Size = (uint)sizeof(Statistics) };
+            if (((delegate* unmanaged[Stdcall]<nint, uint, Statistics*, int>)Slot(sink, 13))(sink, stream, &statistics) >= 0)
+                metrics?.AddWriterStatistics(statistics.BytesQueued, statistics.Received, statistics.Encoded, statistics.Processed);
+        }
+        [StructLayout(LayoutKind.Explicit, Size = 24)]
+        private struct Variant { [FieldOffset(0)] public ushort Type; [FieldOffset(8)] public uint UInt32; }
         private static nint VideoType(Guid subtype, int width, int height, int rate)
         {
             Check(MFCreateMediaType(out nint type));
@@ -161,5 +213,6 @@ internal sealed class VideoSinkWriter : IDisposable
         [DllImport("mfplat.dll")] private static extern int MFCreateMemoryBuffer(uint size, out nint buffer);
         [DllImport("mfplat.dll")] private static extern int MFCreateSample(out nint sample);
         [DllImport("mfreadwrite.dll", CharSet = CharSet.Unicode)] private static extern int MFCreateSinkWriterFromURL(string path, nint byteStream, nint attributes, out nint writer);
+        [DllImport("oleaut32.dll")] private static extern int VariantClear(ref Variant variant);
     }
 }

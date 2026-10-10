@@ -11,7 +11,7 @@ internal sealed class VideoSequentialDecoder : IDisposable
     private readonly TaskCompletionSource ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly Thread thread;
     private NativeReader? reader;
-    private VideoSequentialDecoder(string path, int width, int height)
+    private VideoSequentialDecoder(string path, int width, int height, bool metadataOnly = false)
     {
         thread = new Thread(() =>
         {
@@ -20,7 +20,7 @@ internal sealed class VideoSequentialDecoder : IDisposable
             {
                 NativeReader.Check(CoInitializeEx(0, 0)); com = true;
                 NativeReader.Check(MFStartup(0x20070, 0)); foundation = true;
-                reader = new NativeReader(path, width, height); ready.TrySetResult();
+                reader = new NativeReader(path, width, height, metadataOnly); ready.TrySetResult();
                 foreach (var request in requests.GetConsumingEnumerable()) request();
             }
             catch (Exception error) { ready.TrySetException(error); }
@@ -46,6 +46,19 @@ internal sealed class VideoSequentialDecoder : IDisposable
         }, cancellation);
         return completed.Task;
     }
+    internal static async Task<VideoDecodedStatistics> InspectAsync(string path, int width, int height, CancellationToken cancellation = default)
+    {
+        using var decoder = new VideoSequentialDecoder(path, width, height, metadataOnly: true);
+        await decoder.ready.Task.ConfigureAwait(false);
+        var completed = new TaskCompletionSource<VideoDecodedStatistics>(TaskCreationOptions.RunContinuationsAsynchronously);
+        decoder.requests.Add(() =>
+        {
+            try { completed.TrySetResult(decoder.reader!.Inspect(cancellation)); }
+            catch (OperationCanceledException) { completed.TrySetCanceled(cancellation); }
+            catch (Exception error) { completed.TrySetException(error); }
+        }, cancellation);
+        return await completed.Task.ConfigureAwait(false);
+    }
     public void Dispose() { requests.CompleteAdding(); thread.Join(); requests.Dispose(); }
 
     [DllImport("ole32.dll")] private static extern int CoInitializeEx(nint reserved, uint flags);
@@ -65,26 +78,31 @@ internal sealed class VideoSequentialDecoder : IDisposable
         private byte[] current, next;
         private long nextTime;
         private bool hasCurrent, hasNext, ended;
-        internal NativeReader(string path, int width, int height)
+        internal NativeReader(string path, int width, int height, bool metadataOnly)
         {
             this.width = width; this.height = height;
-            current = new byte[checked(width * height * 4)]; next = new byte[current.Length];
+            current = metadataOnly ? [] : new byte[checked(width * height * 4)]; next = new byte[current.Length];
             nint attributes = 0, mediaType = 0;
             try
             {
                 Check(MFCreateAttributes(out attributes, 2));
                 // Advanced processing uses the optimized RGB32 converter;
                 // native measurements isolate decoder warmup from encoding.
-                SetUInt32(attributes, new("0f81da2c-b537-4672-a8b2-a681b17307a3"), 1);
-                SetUInt32(attributes, new("a634a91c-822b-41b9-a494-4de4643612b0"), 1);
+                if (!metadataOnly)
+                {
+                    SetUInt32(attributes, new("0f81da2c-b537-4672-a8b2-a681b17307a3"), 1);
+                    SetUInt32(attributes, new("a634a91c-822b-41b9-a494-4de4643612b0"), 1);
+                }
                 Check(MFCreateSourceReaderFromURL(path, attributes, out source));
                 Check(((delegate* unmanaged[Stdcall]<nint, uint, int, int>)Slot(source, 4))(source, 0xfffffffe, 0)); // deselect all
                 Check(((delegate* unmanaged[Stdcall]<nint, uint, int, int>)Slot(source, 4))(source, FirstVideo, 1));
                 Check(MFCreateMediaType(out mediaType));
                 SetGuid(mediaType, new("48eba18e-f8c9-4687-bf11-0a74c9f96a8f"), new("73646976-0000-0010-8000-00aa00389b71"));
-                SetGuid(mediaType, new("f7e34c9a-42e8-4714-b74b-cb29d72c35e5"), new("00000016-0000-0010-8000-00aa00389b71")); // RGB32
+                SetGuid(mediaType, new("f7e34c9a-42e8-4714-b74b-cb29d72c35e5"), metadataOnly
+                    ? new("3231564e-0000-0010-8000-00aa00389b71") // NV12: fully decode without an RGB conversion graph.
+                    : new("00000016-0000-0010-8000-00aa00389b71"));
                 Check(((delegate* unmanaged[Stdcall]<nint, uint, nint, nint, int>)Slot(source, 7))(source, FirstVideo, 0, mediaType));
-                ValidateFormat();
+                if (!metadataOnly) ValidateFormat();
             }
             catch { Dispose(); throw; }
             finally { Release(mediaType); Release(attributes); }
@@ -134,6 +152,29 @@ internal sealed class VideoSequentialDecoder : IDisposable
         }
         [StructLayout(LayoutKind.Sequential)]
         private struct VideoArea { public ushort XFraction; public short X; public ushort YFraction; public short Y; public int Width; public int Height; }
+        internal VideoDecodedStatistics Inspect(CancellationToken cancellation)
+        {
+            var timestamps = new List<long>(); long finalDuration = 0;
+            for (;;)
+            {
+                cancellation.ThrowIfCancellationRequested();
+                nint sample = 0; uint stream = 0, flags = 0; long time = 0;
+                try
+                {
+                    Check(((delegate* unmanaged[Stdcall]<nint, uint, uint, uint*, uint*, long*, nint*, int>)Slot(source, 9))
+                        (source, FirstVideo, 0, &stream, &flags, &time, &sample));
+                    if ((flags & 1) != 0) throw new InvalidOperationException("Windows reported a video inspection decoding error.");
+                    if (sample != 0)
+                    {
+                        timestamps.Add(time); finalDuration = 0; long sampleDuration = 0;
+                        if (((delegate* unmanaged[Stdcall]<nint, long*, int>)Slot(sample, 37))(sample, &sampleDuration) >= 0) finalDuration = sampleDuration;
+                    }
+                    if ((flags & 2) != 0) break;
+                }
+                finally { Release(sample); }
+            }
+            return new(timestamps.Count, timestamps.Count == 0 ? 0 : timestamps[0], timestamps.Count == 0 ? 0 : timestamps[^1], finalDuration, timestamps);
+        }
         internal void CopyFrame(TimeSpan position, byte[] output, CancellationToken cancellation)
         {
             cancellation.ThrowIfCancellationRequested();
@@ -216,3 +257,5 @@ internal sealed class VideoSequentialDecoder : IDisposable
         [DllImport("mfreadwrite.dll", CharSet = CharSet.Unicode)] private static extern int MFCreateSourceReaderFromURL(string path, nint attributes, out nint sourceReader);
     }
 }
+internal sealed record VideoDecodedStatistics(int Frames, long FirstPresentationTicks, long LastPresentationTicks,
+    long LastDurationTicks, IReadOnlyList<long> PresentationTicks);

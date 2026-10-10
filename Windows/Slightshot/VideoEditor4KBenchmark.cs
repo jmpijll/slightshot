@@ -92,6 +92,7 @@ internal static class VideoEditor4KBenchmark
         string retainedSourceSha256 = "", retainedDestinationSha256 = "";
         var sourceStripe = new List<double>(); var outputStripe = new List<double>();
         BalancedEvidence? balanced = null;
+        VideoDecodedStatistics? highDecodedStatistics = null;
         try
         {
             Volatile.Write(ref phase, 1);
@@ -124,6 +125,17 @@ internal static class VideoEditor4KBenchmark
             exportSeconds = export.Elapsed.TotalSeconds;
             heartbeat.Stop();
             Volatile.Write(ref phase, 3);
+            highDecodedStatistics = await VideoSequentialDecoder.InspectAsync(output, width, height);
+            var highCadenceFailures = DecodedCadenceFailures(highDecodedStatistics, source.Duration, RecordingQuality.High);
+            File.WriteAllText(Path.Combine(directory, "video-editor-4k-high-cadence-validation.json"), JsonSerializer.Serialize(new
+            {
+                platform = "Windows native Media Foundation full NV12 decode",
+                sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
+                expectedDecodedFrames = ExpectedFrames(source.Duration, RecordingQuality.High),
+                submittedFrames = metrics.Frames, decodedStatistics = highDecodedStatistics,
+                encoderDiagnostics = metrics.EncoderDiagnostics, validationFailures = highCadenceFailures
+            }, new JsonSerializerOptions { WriteIndented = true }));
+            Require(highCadenceFailures.Count == 0, string.Join("; ", highCadenceFailures));
             using var decoded = await VideoFrameSource.OpenAsync(output);
             Require(decoded.Width == width && decoded.Height == height, "actual MP4 retains 3840×2160 source dimensions");
             foreach (double seconds in new[] { 0.15, 0.7, 1.25 })
@@ -227,6 +239,7 @@ internal static class VideoEditor4KBenchmark
             durationSeconds = source.Duration.TotalSeconds, exportSeconds, frames = metrics.Frames, exportFramesPerSecond = metrics.Frames / exportSeconds,
             metrics.DecodeMilliseconds, metrics.RenderMilliseconds, metrics.BufferWaitMilliseconds,
             metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.MaximumWriterQueuedBytes,
+            encoderDiagnostics = metrics.EncoderDiagnostics, actualHighDecodedStatistics = highDecodedStatistics,
             exportMemorySnapshots = metrics.MemorySnapshots, cancelMemorySnapshots = cancelMetrics.MemorySnapshots, stepMemorySnapshots = stepMetrics.MemorySnapshots,
             seekMilliseconds = seeks, maxDispatcherGapMilliseconds = maxDispatcherGap, peakPrivateMiB = peakPrivate / 1048576.0, peakWorkingMiB = peakWorking / 1048576.0,
             memoryPhases = phaseNames.Select((name, index) => new { name, peakPrivateMiB = phasePrivate[index] / 1048576.0, peakWorkingMiB = phaseWorking[index] / 1048576.0 }).ToArray(),
@@ -274,9 +287,10 @@ internal static class VideoEditor4KBenchmark
         }
         double exportSeconds = watch.Elapsed.TotalSeconds;
         validating();
+        var actualDecoded = await VideoSequentialDecoder.InspectAsync(output, expected.Width, expected.Height);
         using var decoded = await VideoFrameSource.OpenAsync(output);
         Require(decoded.Width == expected.Width && decoded.Height == expected.Height, "actual Balanced MP4 is 1920×1080");
-        long expectedFrames = (source.Duration.Ticks * quality.FramesPerSecond() + TimeSpan.TicksPerSecond - 1) / TimeSpan.TicksPerSecond;
+        long expectedFrames = ExpectedFrames(source.Duration, quality);
         double outputScale = (double)decoded.Width / sourceWidth;
         int fitWidth = Math.Max(1, (int)Math.Round(sourceWidth * viewScale));
         double fitScale = (double)fitWidth / sourceWidth;
@@ -317,7 +331,7 @@ internal static class VideoEditor4KBenchmark
                 VideoEditorSmokeTest.Save(fitVideo, Path.Combine(directory, "video-editor-4k-balanced-fit-view-effects.png"));
             }
         }
-        var failures = new List<string>();
+        var failures = DecodedCadenceFailures(actualDecoded, source.Duration, quality);
         void Check(bool condition, string message) { if (!condition) failures.Add(message); }
         Check(Math.Abs((decoded.Duration - source.Duration).TotalMilliseconds) <= 1000.0 / quality.FramesPerSecond() + 5,
             "Balanced resizing preserves the source duration within one output frame");
@@ -344,7 +358,7 @@ internal static class VideoEditor4KBenchmark
             quality.FramesPerSecond(), decoded.Duration.TotalSeconds, expectedFrames, metrics.Frames, exportSeconds,
             metrics.Frames / exportSeconds, maxDispatcherGap, metrics.DecodeMilliseconds, metrics.RenderMilliseconds,
             metrics.BufferWaitMilliseconds, metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.MaximumWriterQueuedBytes,
-            metrics.MemorySnapshots, checks, blurReferenceDelta, pixelReferenceDelta, failures);
+            actualDecoded, metrics.EncoderDiagnostics, metrics.MemorySnapshots, checks, blurReferenceDelta, pixelReferenceDelta, failures);
         File.WriteAllText(Path.Combine(directory, "video-editor-4k-balanced-validation.json"), JsonSerializer.Serialize(new
         {
             platform = "Windows native WPF / Media Foundation",
@@ -360,6 +374,7 @@ internal static class VideoEditor4KBenchmark
         long ExpectedSubmittedFrames, int SubmittedFrames, double ExportSeconds, double ExportFramesPerSecond,
         double MaxDispatcherGapMilliseconds, double DecodeMilliseconds, double RenderMilliseconds, double BufferWaitMilliseconds,
         double WriterMilliseconds, double ResizeMilliseconds, uint MaximumWriterQueuedBytes,
+        VideoDecodedStatistics ActualDecodedStatistics, VideoEncoderDiagnostics EncoderDiagnostics,
         IReadOnlyList<VideoExportMemorySnapshot> MemorySnapshots, IReadOnlyList<BalancedFrameEvidence> Frames,
         double BlurScreenshotReferenceMeanDelta, double PixelScreenshotReferenceMeanDelta, IReadOnlyList<string> ValidationFailures);
     private sealed record BalancedFrameEvidence(double RequestedSeconds, string IntervalState, double SourceTopStripeBlueMean,
@@ -367,6 +382,35 @@ internal static class VideoEditor4KBenchmark
         double CaptionMeanDeltaFromSource, double ResizedCompositionMeanDelta, double CaptionCompositionMeanDelta);
     private static Int32Rect ScaledRegion(int x, int y, int width, int height, double scale) =>
         new((int)Math.Round(x * scale), (int)Math.Round(y * scale), Math.Max(1, (int)Math.Round(width * scale)), Math.Max(1, (int)Math.Round(height * scale)));
+    private static long ExpectedFrames(TimeSpan duration, RecordingQuality quality) =>
+        (duration.Ticks * quality.FramesPerSecond() + TimeSpan.TicksPerSecond - 1) / TimeSpan.TicksPerSecond;
+    private static List<string> DecodedCadenceFailures(VideoDecodedStatistics actual, TimeSpan duration, RecordingQuality quality)
+    {
+        var failures = new List<string>();
+        string label = quality.Title();
+        long expected = ExpectedFrames(duration, quality);
+        if (actual.Frames != expected) failures.Add($"{label} MP4 actually decodes {actual.Frames} frames; expected {expected} from source duration and quality cadence");
+        if (actual.Frames <= 0 || actual.PresentationTicks.Count != actual.Frames)
+        {
+            failures.Add(label + " MP4 does not have a presentation timestamp for every decoded frame"); return failures;
+        }
+        if (Math.Abs(actual.FirstPresentationTicks) > 1) failures.Add(label + " MP4 first actual presentation timestamp is not zero within one 100ns tick");
+        long frameTicks = TimeSpan.TicksPerSecond / quality.FramesPerSecond();
+        if (actual.PresentationTicks.Zip(actual.PresentationTicks.Skip(1), (first, second) => second - first)
+            .Any(gap => gap <= 0 || Math.Abs(gap - frameTicks) > 1))
+            failures.Add(label + " MP4 decoded presentation timestamps do not advance at the configured cadence within one 100ns tick");
+        long expectedLastPresentation = (expected - 1) * TimeSpan.TicksPerSecond / quality.FramesPerSecond();
+        long expectedLastDuration = Math.Min(frameTicks, duration.Ticks - expectedLastPresentation);
+        // MP4 timescale conversion can round sample lengths. One millisecond
+        // admits that conversion, but cannot hide the missing 8.3ms final sample
+        // observed in the original Balanced 4K output or an extra full frame.
+        const long endToleranceTicks = TimeSpan.TicksPerMillisecond;
+        if (actual.LastDurationTicks <= 0 || Math.Abs(actual.LastDurationTicks - expectedLastDuration) > endToleranceTicks)
+            failures.Add(label + " MP4 does not preserve the planned final partial-frame duration within 1ms");
+        if (Math.Abs(actual.LastPresentationTicks + actual.LastDurationTicks - duration.Ticks) > endToleranceTicks)
+            failures.Add(label + " MP4 decoded frame coverage does not preserve the source end time within 1ms");
+        return failures;
+    }
     private static BitmapSource Fit(BitmapSource bitmap, int width)
     {
         int height = Math.Max(1, (int)Math.Round((double)width * bitmap.PixelHeight / bitmap.PixelWidth));
