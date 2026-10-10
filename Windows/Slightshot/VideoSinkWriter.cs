@@ -169,7 +169,7 @@ internal sealed class VideoSinkWriter : IDisposable
                 int supported = ((delegate* unmanaged[Stdcall]<nint, Guid*, int>)Slot(codec, 3))(codec, &workerThreads);
                 metrics?.RecordWorkerSupport(supported == 0);
                 if (supported != 0) return; // S_FALSE means unsupported.
-                Variant requested = new() { Type = 19, UInt32 = 2 }; // VT_UI4
+                Variant requested = new() { Type = 19, UInt32 = 1 }; // VT_UI4
                 int applied = ((delegate* unmanaged[Stdcall]<nint, Guid*, Variant*, int>)Slot(codec, 9))(codec, &workerThreads, &requested);
                 Variant actual = default;
                 try
