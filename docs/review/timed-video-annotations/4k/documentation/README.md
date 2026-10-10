@@ -11,3 +11,11 @@ the macOS results heading and captures the viewport.
 This image is evidence of the rendered documentation. The native application
 screenshots and actual MP4s in the platform directories establish feature
 behavior separately.
+
+`windows-results.png` captures the final Windows results section using the same
+real-browser rendering method and viewport. Its source is the 4K README at commit
+`e81e3147401764bfd451d82187d10ddcf1e345e3`, document SHA-256
+`e36fc1c7c4c5a5146d1800b0b9e14266a89c9a35f5edcdfd139e5e759a297a96`.
+Playwright scrolls to the Windows results heading before capturing the viewport.
+The visible table shows the actual native run's throughput, sampled whole-fixture
+memory, primary-export dispatcher gap and active cancellation result.

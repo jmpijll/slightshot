@@ -217,6 +217,13 @@
       "sourceCommit": "6c17c925e95a6abea541bddabec82dd05769cfcc",
       "sourceDocumentSHA256": "0321ba72d1ffe1ee59b850346ca331d0dfe6509c232c836a6c8a4addcc7a3141",
       "rendering": "GitHub Markdown API, gfm, jmpijll/slightshot context; served locally with readable CSS and actual repository native images; Chromium/Playwright screenshot at 1400 \u00d7 1000 CSS pixels."
+    },
+    {
+      "file": "documentation/windows-results.png",
+      "document": "README.md",
+      "sourceCommit": "e81e3147401764bfd451d82187d10ddcf1e345e3",
+      "sourceDocumentSHA256": "e36fc1c7c4c5a5146d1800b0b9e14266a89c9a35f5edcdfd139e5e759a297a96",
+      "rendering": "GitHub Markdown API, gfm, jmpijll/slightshot context; served locally with readable CSS and repository native images; Chromium/Playwright screenshot at 1400 \u00d7 1000 CSS pixels."
     }
   ],
   "inventory": "SHA256SUMS contains hashes relative to this directory, excluding itself."
