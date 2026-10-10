@@ -35,6 +35,13 @@ internal static class VideoAnnotationExport
             metrics?.RecordMemory("sequentialReaderReady");
             using var renderer = new VideoRenderWorker();
             using var frames = new RecordingFrameBuffers(checked(sourceWidth * sourceHeight * 4));
+            // Initialize the source decoder before starting the encoder graph.
+            // The retained first frame/lookahead is reused by the first sample,
+            // and native memory snapshots can distinguish these two pipelines.
+            long warmupStarted = Stopwatch.GetTimestamp();
+            using (var first = await frames.RentAsync(cancellation)) await sequential.GetFrameAsync(TimeSpan.Zero, first.Pixels, cancellation);
+            metrics?.AddDecode(Stopwatch.GetElapsedTime(warmupStarted).TotalMilliseconds);
+            metrics?.RecordMemory("decoderWarmupComplete");
             using var samples = new SemaphoreSlim(1, 1);
             using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
             int active = 0; bool accepting = true;

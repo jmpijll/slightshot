@@ -72,9 +72,11 @@ internal sealed class VideoSequentialDecoder : IDisposable
             nint attributes = 0, mediaType = 0;
             try
             {
-                Check(MFCreateAttributes(out attributes, 2));
-                SetUInt32(attributes, new("0f81da2c-b537-4672-a8b2-a681b17307a3"), 1); // advanced video processing
-                SetUInt32(attributes, new("a634a91c-822b-41b9-a494-4de4643612b0"), 1); // hardware transforms when available
+                Check(MFCreateAttributes(out attributes, 1));
+                // Only progressive YUV→RGB32 conversion is needed. The
+                // advanced XVP graph also supports resize/frame-rate changes
+                // and reserves a large native 4K surface pool on Windows.
+                SetUInt32(attributes, new("fb394f3d-ccf1-42ee-bbb3-f9b845d5681d"), 1); // software RGB32 video processing
                 Check(MFCreateSourceReaderFromURL(path, attributes, out source));
                 Check(((delegate* unmanaged[Stdcall]<nint, uint, int, int>)Slot(source, 4))(source, 0xfffffffe, 0)); // deselect all
                 Check(((delegate* unmanaged[Stdcall]<nint, uint, int, int>)Slot(source, 4))(source, FirstVideo, 1));
