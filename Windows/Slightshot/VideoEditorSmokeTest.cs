@@ -195,6 +195,7 @@ internal static class VideoEditorSmokeTest
                 sourceSha256 = Convert.ToHexString(retainedSource),
                 method = "Eight unannotated gray binary cells identify actual source frames. First is read at zero; final at the last raw decoded source PTS, which forces the actual final sample before or after origin normalization. Raw inspection PTS and source bytes are unchanged."
             }, new JsonSerializerOptions { WriteIndented = true }));
+            var sourceReferenceCounters = new Dictionary<long, int>();
             using (var sequentialSource = await VideoSequentialDecoder.OpenAsync(session.SourcePath, width, height))
             {
                 var sourcePixels = new byte[width * height * 4];
@@ -203,6 +204,7 @@ internal static class VideoEditorSmokeTest
                     var positionAt = TimeSpan.FromSeconds(seconds);
                     var nativeFrame = await source.GetFrameAsync(positionAt);
                     await sequentialSource.GetFrameAsync(positionAt, sourcePixels, CancellationToken.None);
+                    sourceReferenceCounters[positionAt.Ticks] = FrameCounter(sourcePixels, width);
                     var sequentialFrame = BitmapSource.Create(width, height, 96, 96, PixelFormats.Pbgra32, null, sourcePixels, width * 4);
                     sequentialFrame.Freeze();
                     foreach (var patch in colorRegions)
@@ -211,9 +213,9 @@ internal static class VideoEditorSmokeTest
                         var nativeInputErrors = patch.Nominal.Zip(nativeRgb, (first, second) => Math.Abs(first - second)).ToArray();
                         var sequentialInputErrors = patch.Nominal.Zip(sequentialRgb, (first, second) => Math.Abs(first - second)).ToArray();
                         var errors = nativeRgb.Zip(sequentialRgb, (first, second) => Math.Abs(first - second)).ToArray();
-                        sourceColors.Add(new(seconds, patch.Name, "Known nominal fixture input vs native source preview", patch.Nominal, nativeRgb, nativeInputErrors));
+                        sourceColors.Add(new(seconds, patch.Name, "Known nominal fixture input vs native editor source preview (MF NV12+Core)", patch.Nominal, nativeRgb, nativeInputErrors));
                         sourceColors.Add(new(seconds, patch.Name, "Known nominal fixture input vs sequential BGRA", patch.Nominal, sequentialRgb, sequentialInputErrors));
-                        sourceColors.Add(new(seconds, patch.Name, "Native source preview vs sequential BGRA", nativeRgb, sequentialRgb, errors));
+                        sourceColors.Add(new(seconds, patch.Name, "Native editor source preview (MF NV12+Core) vs sequential BGRA", nativeRgb, sequentialRgb, errors));
                         if (new[] { nativeInputErrors.Max(), sequentialInputErrors.Max(), errors.Max() }.Max() > 8) SaveSourceColors(directory, sourceColors);
                         Require(nativeInputErrors.Max() <= 8, "native source preserves known nominal " + patch.Name + " input RGB at " + seconds + "s");
                         Require(sequentialInputErrors.Max() <= 8, "sequential source preserves known nominal " + patch.Name + " input RGB at " + seconds + "s");
@@ -222,7 +224,35 @@ internal static class VideoEditorSmokeTest
                 }
             }
             SaveSourceColors(directory, sourceColors);
-            checks.Add("Solid source red/green/blue/neutral interiors outside all annotation regions retain their known nominal fixture RGB in both native WinRT preview and sequential BGRA, and agree with each other at 0.5/2/3.5 seconds within 8 mean values per RGB channel. Eight-pixel margins exclude chroma interpolation at patch edges; independent nominal comparisons reject consistently mislabeled matrix/range colors.");
+            checks.Add("Solid source red/green/blue/neutral interiors outside all annotation regions retain their known nominal fixture RGB in both native editor source preview (MF NV12+Core) and sequential BGRA, and agree with each other at 0.5/2/3.5 seconds within 8 mean values per RGB channel. Eight-pixel margins exclude chroma interpolation at patch edges; independent nominal comparisons reject consistently mislabeled matrix/range colors.");
+            var seekEvidence = new List<object>();
+            foreach (double seconds in new[] { .5, 3.5, .5, 2 })
+            {
+                var target = TimeSpan.FromSeconds(seconds);
+                await editor.SeekAsync(target);
+                var currentFrame = editor.Surface.CurrentFrame!;
+                var pixels = new byte[width * height * 4]; currentFrame.CopyPixels(pixels, width * 4, 0);
+                int actualCounter = FrameCounter(pixels, width), expectedCounter = sourceReferenceCounters[target.Ticks];
+                seekEvidence.Add(new { requestedSeconds = seconds, actualEditorPositionSeconds = editor.Position.TotalSeconds,
+                    expectedCounterFromIndependentForwardOnlyReader = expectedCounter, actualNativePreviewCounter = actualCounter });
+                File.WriteAllText(Path.Combine(directory, "video-editor-random-seek-validation.json"), JsonSerializer.Serialize(new
+                {
+                    sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
+                    method = "Native editor backward/forward seeks are checked against separately decoded forward-only source counters. Known nominal source RGB remains the independent color truth.",
+                    evidence = seekEvidence
+                }, new JsonSerializerOptions { WriteIndented = true }));
+                Require(editor.Position == target && actualCounter == expectedCounter, "native backward/forward seek returns the correct source-frame counter at " + seconds + "s");
+                foreach (var patch in colorRegions)
+                {
+                    var rgb = MeanRgb(currentFrame, patch.Region);
+                    var errors = patch.Nominal.Zip(rgb, (first, second) => Math.Abs(first - second)).ToArray();
+                    sourceColors.Add(new(seconds, patch.Name, "Known nominal fixture input vs native editor preview after random seek", patch.Nominal, rgb, errors));
+                    if (errors.Max() > 8) SaveSourceColors(directory, sourceColors);
+                    Require(errors.Max() <= 8, "native backward/forward seek preserves nominal " + patch.Name + " RGB at " + seconds + "s");
+                }
+            }
+            SaveSourceColors(directory, sourceColors);
+            checks.Add("Native editor seeks 0.5→3.5→0.5→2 seconds return exact binary source-frame counters from a separate forward-only reader and preserve known nominal RGB, covering backward and large forward native reader seeks.");
             await editor.PrepareExportAsync();
             var recoveryPosition = TimeSpan.FromSeconds(1.7);
             string retainedEdits = JsonSerializer.Serialize(snapshot);
@@ -326,7 +356,7 @@ internal static class VideoEditorSmokeTest
                     {
                         var nativeRgb = MeanRgb(originalFrame, patch.Region); var outputRgb = MeanRgb(frame, patch.Region);
                         var errors = nativeRgb.Zip(outputRgb, (first, second) => Math.Abs(first - second)).ToArray();
-                        sourceColors.Add(new(point.Seconds, patch.Name, quality + " actual encoded MP4 vs native source", nativeRgb, outputRgb, errors));
+                        sourceColors.Add(new(point.Seconds, patch.Name, quality + " actual encoded MP4 vs native editor source preview (MF NV12+Core)", nativeRgb, outputRgb, errors));
                         if (errors.Max() > 8) SaveSourceColors(directory, sourceColors);
                         Require(errors.Max() <= 8, "actual MP4 preserves unannotated source solid " + patch.Name + " RGB " + point.Name + " " + quality);
                     }

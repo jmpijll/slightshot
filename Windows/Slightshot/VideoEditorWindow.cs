@@ -149,7 +149,7 @@ internal sealed class VideoEditorWindow : Window
         {
             try { if (previewTask != null) await previewTask; }
             catch (OperationCanceledException) { }
-            finally { source.Dispose(); lifetime.Dispose(); completion.TrySetResult(); }
+            finally { await Task.Run(source.Dispose); lifetime.Dispose(); completion.TrySetResult(); }
         };
         UpdateControls();
     }

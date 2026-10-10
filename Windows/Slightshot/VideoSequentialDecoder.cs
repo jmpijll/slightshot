@@ -12,7 +12,7 @@ internal sealed class VideoSequentialDecoder : IDisposable
     private readonly TaskCompletionSource ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly Thread thread;
     private NativeReader? reader;
-    private VideoSequentialDecoder(string path, int width, int height, bool metadataOnly = false, VideoExportMetrics? metrics = null)
+    private VideoSequentialDecoder(string path, int width, int height, bool metadataOnly = false, VideoExportMetrics? metrics = null, bool canSeek = false)
     {
         thread = new Thread(() =>
         {
@@ -21,7 +21,7 @@ internal sealed class VideoSequentialDecoder : IDisposable
             {
                 NativeReader.Check(CoInitializeEx(0, 0)); com = true;
                 NativeReader.Check(MFStartup(0x20070, 0)); foundation = true;
-                reader = new NativeReader(path, width, height, metadataOnly, metrics); ready.TrySetResult();
+                reader = new NativeReader(path, width, height, metadataOnly, metrics, canSeek); ready.TrySetResult();
                 foreach (var request in requests.GetConsumingEnumerable()) request();
             }
             catch (Exception error) { ready.TrySetException(error); }
@@ -29,9 +29,9 @@ internal sealed class VideoSequentialDecoder : IDisposable
         }) { IsBackground = true, Name = "Slightshot sequential video decoder" };
         thread.SetApartmentState(ApartmentState.MTA); thread.Start();
     }
-    internal static async Task<VideoSequentialDecoder> OpenAsync(string path, int width, int height, VideoExportMetrics? metrics = null)
+    internal static async Task<VideoSequentialDecoder> OpenAsync(string path, int width, int height, VideoExportMetrics? metrics = null, bool canSeek = false)
     {
-        var decoder = new VideoSequentialDecoder(path, width, height, metrics: metrics);
+        var decoder = new VideoSequentialDecoder(path, width, height, metrics: metrics, canSeek: canSeek);
         try { await decoder.ready.Task.ConfigureAwait(false); return decoder; }
         catch { decoder.Dispose(); throw; }
     }
@@ -79,13 +79,14 @@ internal sealed class VideoSequentialDecoder : IDisposable
         private Nv12Matrix matrix;
         private bool fullRange;
         private readonly VideoExportMetrics? metrics;
+        private readonly bool canSeek;
         private byte[] current = [], next = [];
         private ExactSizeBufferPool.BufferLease? currentLease, nextLease;
-        private long nextTime, sourceOrigin;
-        private bool hasCurrent, hasNext, ended;
-        internal NativeReader(string path, int width, int height, bool metadataOnly, VideoExportMetrics? metrics)
+        private long nextTime, sourceOrigin, lastPosition;
+        private bool hasCurrent, hasNext, ended, hasOrigin;
+        internal NativeReader(string path, int width, int height, bool metadataOnly, VideoExportMetrics? metrics, bool canSeek)
         {
-            this.width = width; this.height = height; this.metrics = metrics;
+            this.width = width; this.height = height; this.metrics = metrics; this.canSeek = canSeek;
             nint attributes = 0, mediaType = 0;
             try
             {
@@ -232,11 +233,25 @@ internal sealed class VideoSequentialDecoder : IDisposable
         internal void CopyFrame(TimeSpan position, byte[] output, CancellationToken cancellation)
         {
             cancellation.ThrowIfCancellationRequested();
+            if (canSeek && hasOrigin && (position.Ticks < lastPosition || position.Ticks - lastPosition > TimeSpan.TicksPerSecond))
+                Seek(position);
             if (!hasCurrent)
             {
-                hasCurrent = Read(current, out sourceOrigin, cancellation);
+                hasCurrent = Read(current, out long rawTime, cancellation);
                 if (!hasCurrent) throw new InvalidOperationException("No video samples could be decoded.");
-                metrics?.RecordDecoderSourceOrigin(sourceOrigin);
+                if (!hasOrigin)
+                {
+                    sourceOrigin = rawTime; hasOrigin = true;
+                    metrics?.RecordDecoderSourceOrigin(sourceOrigin);
+                    // Establish the original timeline before the first seek;
+                    // keyframes returned after seeking must not replace it.
+                    if (canSeek && position.Ticks > TimeSpan.TicksPerSecond)
+                    {
+                        Seek(position);
+                        hasCurrent = Read(current, out _, cancellation);
+                        if (!hasCurrent) throw new InvalidOperationException("No video sample was available at this recording position.");
+                    }
+                }
             }
             if (!hasNext && !ended) hasNext = ReadAhead(cancellation);
             // Subtracting two rational frame timestamps can differ from the
@@ -246,6 +261,19 @@ internal sealed class VideoSequentialDecoder : IDisposable
                 (current, next) = (next, current); hasNext = ReadAhead(cancellation);
             }
             Buffer.BlockCopy(current, 0, output, 0, current.Length);
+            lastPosition = position.Ticks;
+        }
+        private void Seek(TimeSpan position)
+        {
+            // Synchronous ReadSample has no outstanding native requests here.
+            // MF seeks to a preceding keyframe; normal lookahead then advances
+            // to the requested frame using the preserved original source origin.
+            Guid timeFormat = Guid.Empty;
+            byte* value = stackalloc byte[24]; new Span<byte>(value, 24).Clear();
+            *(ushort*)value = 20; // PROPVARIANT VT_I8
+            *(long*)(value + 8) = checked(sourceOrigin + position.Ticks);
+            Check(((delegate* unmanaged[Stdcall]<nint, Guid*, byte*, int>)Slot(source, 8))(source, &timeFormat, value));
+            hasCurrent = hasNext = ended = false;
         }
         private bool ReadAhead(CancellationToken cancellation)
         {
