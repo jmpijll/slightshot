@@ -61,7 +61,7 @@ internal sealed class VideoSequentialDecoder : IDisposable
         private const uint FirstVideo = 0xfffffffc;
         private nint source;
         private readonly int width, height;
-        private int defaultStride;
+        private int defaultStride, decodedWidth, decodedHeight, cropX, cropY;
         private byte[] current, next;
         private long nextTime;
         private bool hasCurrent, hasNext, ended;
@@ -97,15 +97,24 @@ internal sealed class VideoSequentialDecoder : IDisposable
                 Check(((delegate* unmanaged[Stdcall]<nint, uint, nint*, int>)Slot(source, 6))(source, FirstVideo, &negotiated));
                 Guid sizeKey = new("1652c33d-d6b2-4012-b834-72030849a37d"); ulong dimensions = 0;
                 Check(((delegate* unmanaged[Stdcall]<nint, Guid*, ulong*, int>)Slot(negotiated, 8))(negotiated, &sizeKey, &dimensions));
-                if ((int)(dimensions >> 32) != width || (int)(dimensions & uint.MaxValue) != height)
-                    throw new InvalidOperationException("Windows changed the edited video's source dimensions.");
+                decodedWidth = checked((int)(dimensions >> 32)); decodedHeight = checked((int)(dimensions & uint.MaxValue));
+                cropX = cropY = 0;
+                if (decodedWidth != width || decodedHeight != height)
+                {
+                    // H.264 decoders may expose macroblock padding (360→368)
+                    // after their first sample. The visible display aperture
+                    // must match the source exactly; only that region is copied.
+                    bool cropped = TryAperture(negotiated, new("d7388766-18fe-48c6-a177-ee894867c8c4"))
+                        || TryAperture(negotiated, new("66758743-7e5f-400d-980a-aa8596c85696"));
+                    if (!cropped) throw new InvalidOperationException($"Windows changed the decoded video to {decodedWidth}×{decodedHeight}; no exact {width}×{height} display aperture was present.");
+                }
                 Guid subtypeKey = new("f7e34c9a-42e8-4714-b74b-cb29d72c35e5"), subtype = default;
                 Check(((delegate* unmanaged[Stdcall]<nint, Guid*, Guid*, int>)Slot(negotiated, 10))(negotiated, &subtypeKey, &subtype));
                 if (subtype != new Guid("00000016-0000-0010-8000-00aa00389b71")) throw new InvalidOperationException("Windows changed the decoded video pixel format.");
                 Guid strideKey = new("644b4e48-1e02-4516-b0eb-c01ca9d49ac6"); uint stride = 0;
                 int strideResult = ((delegate* unmanaged[Stdcall]<nint, Guid*, uint*, int>)Slot(negotiated, 7))(negotiated, &strideKey, &stride);
-                defaultStride = strideResult >= 0 ? unchecked((int)stride) : -width * 4;
-                if (Math.Abs((long)defaultStride) < width * 4L) throw new InvalidOperationException("Windows returned an invalid decoded video stride.");
+                defaultStride = strideResult >= 0 ? unchecked((int)stride) : checked(-decodedWidth * 4);
+                if (Math.Abs((long)defaultStride) < decodedWidth * 4L) throw new InvalidOperationException("Windows returned an invalid decoded video stride.");
                 Guid rotationKey = new("c380465d-2271-428c-9b83-ecea3b4a85c1"); uint rotation = 0;
                 int rotated = ((delegate* unmanaged[Stdcall]<nint, Guid*, uint*, int>)Slot(negotiated, 7))(negotiated, &rotationKey, &rotation);
                 // Slightshot's own recordings have no orientation metadata.
@@ -115,6 +124,16 @@ internal sealed class VideoSequentialDecoder : IDisposable
             }
             finally { Release(negotiated); }
         }
+        private bool TryAperture(nint mediaType, Guid key)
+        {
+            VideoArea area = default; uint size = 0;
+            int result = ((delegate* unmanaged[Stdcall]<nint, Guid*, VideoArea*, uint, uint*, int>)Slot(mediaType, 15))(mediaType, &key, &area, (uint)sizeof(VideoArea), &size);
+            if (result < 0 || size != sizeof(VideoArea) || area.Width != width || area.Height != height || area.XFraction != 0 || area.YFraction != 0
+                || area.X < 0 || area.Y < 0 || area.X + (long)width > decodedWidth || area.Y + (long)height > decodedHeight) return false;
+            cropX = area.X; cropY = area.Y; return true;
+        }
+        [StructLayout(LayoutKind.Sequential)]
+        private struct VideoArea { public ushort XFraction; public short X; public ushort YFraction; public short Y; public int Width; public int Height; }
         internal void CopyFrame(TimeSpan position, byte[] output, CancellationToken cancellation)
         {
             cancellation.ThrowIfCancellationRequested();
@@ -151,10 +170,11 @@ internal sealed class VideoSequentialDecoder : IDisposable
                         Check(((delegate* unmanaged[Stdcall]<nint, uint, nint*, int*, nint*, uint*, int>)Slot(twoD, 10))(twoD, 1, &pixels, &stride, &start, &length));
                         try
                         {
-                            long first = (long)pixels, last = checked(first + (height - 1L) * stride);
+                            nint visible = pixels + checked((nint)(cropY * (long)stride + cropX * 4L));
+                            long first = (long)visible, last = checked(first + (height - 1L) * stride);
                             long low = Math.Min(first, last), high = checked(Math.Max(first, last) + width * 4L);
                             if (low < (long)start || high > checked((long)start + length)) throw new InvalidOperationException("Decoded video scanlines lie outside their native buffer.");
-                            CopyRows(pixels, stride, target);
+                            CopyRows(visible, stride, target);
                         }
                         finally { Check(((delegate* unmanaged[Stdcall]<nint, int>)Slot(twoD, 4))(twoD)); }
                     }
@@ -164,8 +184,9 @@ internal sealed class VideoSequentialDecoder : IDisposable
                         Check(((delegate* unmanaged[Stdcall]<nint, nint*, uint*, uint*, int>)Slot(buffer, 3))(buffer, &pixels, &maximum, &length));
                         try
                         {
-                            if (Math.Abs((long)defaultStride) * height > length) throw new InvalidOperationException("Decoded video buffer was shorter than its dimensions.");
-                            nint first = defaultStride < 0 ? pixels + checked((nint)((height - 1L) * -(long)defaultStride)) : pixels;
+                            if (Math.Abs((long)defaultStride) * decodedHeight > length) throw new InvalidOperationException("Decoded video buffer was shorter than its dimensions.");
+                            nint first = defaultStride < 0 ? pixels + checked((nint)((decodedHeight - 1L) * -(long)defaultStride)) : pixels;
+                            first += checked((nint)(cropY * (long)defaultStride + cropX * 4L));
                             CopyRows(first, defaultStride, target);
                         }
                         finally { Check(((delegate* unmanaged[Stdcall]<nint, int>)Slot(buffer, 4))(buffer)); }
@@ -181,7 +202,7 @@ internal sealed class VideoSequentialDecoder : IDisposable
         }
         private void CopyRows(nint pixels, int stride, byte[] target)
         {
-            if (Math.Abs((long)stride) < width * 4L) throw new InvalidOperationException("Invalid decoded scanline pitch.");
+            if (Math.Abs((long)stride) < decodedWidth * 4L) throw new InvalidOperationException("Invalid decoded scanline pitch.");
             for (int row = 0; row < height; row++) Marshal.Copy(pixels + checked((nint)(row * (long)stride)), target, row * width * 4, width * 4);
         }
         private static nint Slot(nint instance, int index) => Marshal.ReadIntPtr(Marshal.ReadIntPtr(instance), index * IntPtr.Size);

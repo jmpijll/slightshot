@@ -56,6 +56,7 @@ jobs:
       - name: Test selection, layout and output geometry
         run: dotnet run --project Windows/Slightshot.Core.Tests -c Release
       - name: Build native app with warnings as errors
+        id: native_app
         run: dotnet build Windows/Slightshot -c Release -p:Version="$env:WINDOWS_VERSION"
       - name: Test Windows shortcuts through native keyboard input and global registration
         shell: pwsh
@@ -104,6 +105,7 @@ jobs:
           if ($process.ExitCode -ne 0) { Get-Content "$output/video-editor-failure.txt" -ErrorAction SilentlyContinue; throw "Native video editor smoke test failed: $($process.ExitCode)" }
           Get-Content "$output/video-editor-validation.json"
       - name: Benchmark real 4K preview, timed effects, export and cancellation
+        if: ${{ !cancelled() && steps.native_app.outcome == 'success' }}
         shell: pwsh
         env:
           SLIGHTSHOT_VIDEO_BENCHMARK_BASELINE: ${{ inputs.video_benchmark_baseline && '1' || '0' }}
