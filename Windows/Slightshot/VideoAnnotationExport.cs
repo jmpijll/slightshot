@@ -27,7 +27,7 @@ internal static class VideoAnnotationExport
             TimeSpan duration = metadata.Duration;
             if (sourceWidth <= 0 || sourceHeight <= 0 || duration <= TimeSpan.Zero) throw new InvalidOperationException("This recording has no playable video frames.");
             metrics?.RecordMemory("metadataReady");
-            using var sequential = await VideoSequentialDecoder.OpenAsync(source, sourceWidth, sourceHeight);
+            using var sequential = await VideoSequentialDecoder.OpenAsync(source, sourceWidth, sourceHeight, metrics);
             metrics?.RecordMemory("sequentialReaderReady");
             using var renderer = new VideoRenderWorker();
             byte[] pixels = new byte[checked(sourceWidth * sourceHeight * 4)];
@@ -82,6 +82,9 @@ internal sealed class VideoExportMetrics
     private int frames;
     private readonly List<VideoExportMemorySnapshot> memory = [];
     private readonly List<VideoTransformDiagnostics> transforms = [];
+    internal VideoDecoderDiagnostics DecoderDiagnostics { get; private set; } = new(null, null, null, null, null, null);
+    internal void RecordDecoderWorkerControl(bool available, bool applied, uint? configured, int? previous, Guid category, Guid classId)
+        => DecoderDiagnostics = new(available, applied, configured, previous, category, classId);
     internal IReadOnlyList<VideoExportMemorySnapshot> MemorySnapshots { get { lock (memory) return memory.ToArray(); } }
     internal void RecordMemory(string stage)
     {
@@ -131,5 +134,8 @@ internal sealed record VideoExportMemorySnapshot(string Stage, int Frames, doubl
 internal sealed record VideoEncoderDiagnostics(bool? WorkerThreadControlSupported, bool? WorkerThreadControlApplied,
     uint? ActualWorkerThreads, uint? ActualBFrames, ulong SamplesReceived, ulong SamplesEncoded, ulong SamplesProcessed,
     IReadOnlyList<VideoTransformDiagnostics> Transforms);
+internal sealed record VideoDecoderDiagnostics(bool? WorkerThreadControlAvailable, bool? WorkerThreadControlApplied,
+    uint? ConfiguredWorkerThreads, int? PreviousWorkerThreads, Guid? TransformCategory, Guid? ClassId,
+    string ConfigurationMethod = "IMFTransform.Attributes");
 internal sealed record VideoTransformDiagnostics(uint Index, Guid Category, Guid ClassId, bool DisableFrameRateConversionApplied,
     uint? ActualFrameRateConversionDisabled);

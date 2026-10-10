@@ -11,7 +11,7 @@ internal sealed class VideoSequentialDecoder : IDisposable
     private readonly TaskCompletionSource ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly Thread thread;
     private NativeReader? reader;
-    private VideoSequentialDecoder(string path, int width, int height, bool metadataOnly = false)
+    private VideoSequentialDecoder(string path, int width, int height, bool metadataOnly = false, VideoExportMetrics? metrics = null)
     {
         thread = new Thread(() =>
         {
@@ -20,7 +20,7 @@ internal sealed class VideoSequentialDecoder : IDisposable
             {
                 NativeReader.Check(CoInitializeEx(0, 0)); com = true;
                 NativeReader.Check(MFStartup(0x20070, 0)); foundation = true;
-                reader = new NativeReader(path, width, height, metadataOnly); ready.TrySetResult();
+                reader = new NativeReader(path, width, height, metadataOnly, metrics); ready.TrySetResult();
                 foreach (var request in requests.GetConsumingEnumerable()) request();
             }
             catch (Exception error) { ready.TrySetException(error); }
@@ -28,9 +28,9 @@ internal sealed class VideoSequentialDecoder : IDisposable
         }) { IsBackground = true, Name = "Slightshot sequential video decoder" };
         thread.SetApartmentState(ApartmentState.MTA); thread.Start();
     }
-    internal static async Task<VideoSequentialDecoder> OpenAsync(string path, int width, int height)
+    internal static async Task<VideoSequentialDecoder> OpenAsync(string path, int width, int height, VideoExportMetrics? metrics = null)
     {
-        var decoder = new VideoSequentialDecoder(path, width, height);
+        var decoder = new VideoSequentialDecoder(path, width, height, metrics: metrics);
         try { await decoder.ready.Task.ConfigureAwait(false); return decoder; }
         catch { decoder.Dispose(); throw; }
     }
@@ -78,7 +78,7 @@ internal sealed class VideoSequentialDecoder : IDisposable
         private byte[] current, next;
         private long nextTime;
         private bool hasCurrent, hasNext, ended;
-        internal NativeReader(string path, int width, int height, bool metadataOnly)
+        internal NativeReader(string path, int width, int height, bool metadataOnly, VideoExportMetrics? metrics)
         {
             this.width = width; this.height = height;
             current = metadataOnly ? [] : new byte[checked(width * height * 4)]; next = new byte[current.Length];
@@ -102,10 +102,37 @@ internal sealed class VideoSequentialDecoder : IDisposable
                     ? new("3231564e-0000-0010-8000-00aa00389b71") // NV12: fully decode without an RGB conversion graph.
                     : new("00000016-0000-0010-8000-00aa00389b71"));
                 Check(((delegate* unmanaged[Stdcall]<nint, uint, nint, nint, int>)Slot(source, 7))(source, FirstVideo, 0, mediaType));
-                if (!metadataOnly) ValidateFormat();
+                if (!metadataOnly) { ConfigureWorkerThreads(metrics); ValidateFormat(); }
             }
             catch { Dispose(); throw; }
             finally { Release(mediaType); Release(attributes); }
+        }
+        private void ConfigureWorkerThreads(VideoExportMetrics? metrics)
+        {
+            // H.264 documents this decoder attribute before streaming. Limit
+            // native parallelism separately from the encoder's worker setting.
+            Guid extendedInterface = new("7b981cf0-560e-4116-9875-b099895f23d7"), category = default, classId = default;
+            nint extended = 0, transform = 0, attributes = 0;
+            bool available = false, applied = false; uint? configured = null; int? previous = null;
+            try
+            {
+                if (((delegate* unmanaged[Stdcall]<nint, Guid*, nint*, int>)Slot(source, 0))(source, &extendedInterface, &extended) != 0) return;
+                if (((delegate* unmanaged[Stdcall]<nint, uint, uint, Guid*, nint*, int>)Slot(extended, 16))(extended, FirstVideo, 0, &category, &transform) != 0
+                    || category != new Guid("d6c02d4b-6833-45b4-971a-05a4b04bab91")) return;
+                if (((delegate* unmanaged[Stdcall]<nint, nint*, int>)Slot(transform, 8))(transform, &attributes) != 0) return;
+                available = true;
+                Guid classKey = new("6821c42b-65a4-4e82-99bc-9a88205ecd0c"), workers = new("9561c3e8-ea9e-4435-9b1e-a93e691894d8");
+                _ = ((delegate* unmanaged[Stdcall]<nint, Guid*, Guid*, int>)Slot(attributes, 10))(attributes, &classKey, &classId);
+                uint value = 0;
+                if (((delegate* unmanaged[Stdcall]<nint, Guid*, uint*, int>)Slot(attributes, 7))(attributes, &workers, &value) == 0) previous = unchecked((int)value);
+                applied = ((delegate* unmanaged[Stdcall]<nint, Guid*, uint, int>)Slot(attributes, 21))(attributes, &workers, 1) == 0;
+                if (((delegate* unmanaged[Stdcall]<nint, Guid*, uint*, int>)Slot(attributes, 7))(attributes, &workers, &value) == 0) configured = value;
+            }
+            finally
+            {
+                metrics?.RecordDecoderWorkerControl(available, applied, configured, previous, category, classId);
+                Release(attributes); Release(transform); Release(extended);
+            }
         }
         private void ValidateFormat()
         {

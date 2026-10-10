@@ -133,7 +133,8 @@ internal static class VideoEditor4KBenchmark
                 sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
                 expectedDecodedFrames = ExpectedFrames(source.Duration, RecordingQuality.High),
                 submittedFrames = metrics.Frames, decodedStatistics = highDecodedStatistics,
-                encoderDiagnostics = metrics.EncoderDiagnostics, validationFailures = highCadenceFailures
+                encoderDiagnostics = metrics.EncoderDiagnostics, decoderDiagnostics = metrics.DecoderDiagnostics,
+                validationFailures = highCadenceFailures
             }, new JsonSerializerOptions { WriteIndented = true }));
             Require(highCadenceFailures.Count == 0, string.Join("; ", highCadenceFailures));
             using var decoded = await VideoFrameSource.OpenAsync(output);
@@ -203,7 +204,8 @@ internal static class VideoEditor4KBenchmark
                 exportFramesPerSecond = metrics.Frames / exportSeconds, actualHighDecodedStatistics = highDecodedStatistics,
                 metrics.DecodeMilliseconds, metrics.RenderMilliseconds, metrics.BufferWaitMilliseconds,
                 metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.ColorConversionMilliseconds, metrics.MaximumWriterQueuedBytes,
-                encoderDiagnostics = metrics.EncoderDiagnostics, exportMemorySnapshots = metrics.MemorySnapshots,
+                encoderDiagnostics = metrics.EncoderDiagnostics, decoderDiagnostics = metrics.DecoderDiagnostics,
+                exportMemorySnapshots = metrics.MemorySnapshots,
                 cancelMemorySnapshots = cancelMetrics.MemorySnapshots, seekMilliseconds = seeks,
                 maxDispatcherGapMilliseconds = maxDispatcherGap, peakPrivateMiB = peakPrivate / 1048576.0,
                 peakWorkingMiB = peakWorking / 1048576.0,
@@ -268,7 +270,8 @@ internal static class VideoEditor4KBenchmark
             durationSeconds = source.Duration.TotalSeconds, exportSeconds, frames = metrics.Frames, exportFramesPerSecond = metrics.Frames / exportSeconds,
             metrics.DecodeMilliseconds, metrics.RenderMilliseconds, metrics.BufferWaitMilliseconds,
             metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.ColorConversionMilliseconds, metrics.MaximumWriterQueuedBytes,
-            encoderDiagnostics = metrics.EncoderDiagnostics, actualHighDecodedStatistics = highDecodedStatistics,
+            encoderDiagnostics = metrics.EncoderDiagnostics, decoderDiagnostics = metrics.DecoderDiagnostics,
+            actualHighDecodedStatistics = highDecodedStatistics,
             exportMemorySnapshots = metrics.MemorySnapshots, cancelMemorySnapshots = cancelMetrics.MemorySnapshots, stepMemorySnapshots = stepMetrics.MemorySnapshots,
             seekMilliseconds = seeks, maxDispatcherGapMilliseconds = maxDispatcherGap, peakPrivateMiB = peakPrivate / 1048576.0, peakWorkingMiB = peakWorking / 1048576.0,
             memoryPhases = phaseNames.Select((name, index) => new { name, peakPrivateMiB = phasePrivate[index] / 1048576.0, peakWorkingMiB = phaseWorking[index] / 1048576.0 }).ToArray(),
@@ -319,7 +322,8 @@ internal static class VideoEditor4KBenchmark
                 expectedSubmittedFrames = ExpectedFrames(source.Duration, quality), submittedFrames = metrics.Frames,
                 errorType = error.GetType().FullName, error = error.Message, exportSeconds = watch.Elapsed.TotalSeconds,
                 maxDispatcherGapMilliseconds = Math.Max(maxDispatcherGap, Stopwatch.GetElapsedTime(lastBeat).TotalMilliseconds),
-                encoderDiagnostics = metrics.EncoderDiagnostics, metrics.DecodeMilliseconds, metrics.RenderMilliseconds,
+                encoderDiagnostics = metrics.EncoderDiagnostics, decoderDiagnostics = metrics.DecoderDiagnostics,
+                metrics.DecodeMilliseconds, metrics.RenderMilliseconds,
                 metrics.BufferWaitMilliseconds, metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.ColorConversionMilliseconds, metrics.MaximumWriterQueuedBytes,
                 memorySnapshots = metrics.MemorySnapshots,
                 diagnosis = "Balanced export failed before successful publication. No decoded-frame count is claimed here; native writer counters and the completed primary checkpoint are separate measured results."
@@ -406,7 +410,8 @@ internal static class VideoEditor4KBenchmark
             quality.FramesPerSecond(), decoded.Duration.TotalSeconds, expectedFrames, metrics.Frames, exportSeconds,
             metrics.Frames / exportSeconds, maxDispatcherGap, metrics.DecodeMilliseconds, metrics.RenderMilliseconds,
             metrics.BufferWaitMilliseconds, metrics.WriterMilliseconds, metrics.ResizeMilliseconds, metrics.ColorConversionMilliseconds, metrics.MaximumWriterQueuedBytes,
-            actualDecoded, metrics.EncoderDiagnostics, metrics.MemorySnapshots, checks, blurReferenceDelta, pixelReferenceDelta, failures);
+            actualDecoded, metrics.EncoderDiagnostics, metrics.DecoderDiagnostics, metrics.MemorySnapshots, checks,
+            blurReferenceDelta, pixelReferenceDelta, failures);
         File.WriteAllText(Path.Combine(directory, "video-editor-4k-balanced-validation.json"), JsonSerializer.Serialize(new
         {
             platform = "Windows native WPF / Media Foundation",
@@ -422,7 +427,7 @@ internal static class VideoEditor4KBenchmark
         long ExpectedSubmittedFrames, int SubmittedFrames, double ExportSeconds, double ExportFramesPerSecond,
         double MaxDispatcherGapMilliseconds, double DecodeMilliseconds, double RenderMilliseconds, double BufferWaitMilliseconds,
         double WriterMilliseconds, double ResizeMilliseconds, double ColorConversionMilliseconds, uint MaximumWriterQueuedBytes,
-        VideoDecodedStatistics ActualDecodedStatistics, VideoEncoderDiagnostics EncoderDiagnostics,
+        VideoDecodedStatistics ActualDecodedStatistics, VideoEncoderDiagnostics EncoderDiagnostics, VideoDecoderDiagnostics DecoderDiagnostics,
         IReadOnlyList<VideoExportMemorySnapshot> MemorySnapshots, IReadOnlyList<BalancedFrameEvidence> Frames,
         double BlurScreenshotReferenceMeanDelta, double PixelScreenshotReferenceMeanDelta, IReadOnlyList<string> ValidationFailures);
     private sealed record BalancedFrameEvidence(double RequestedSeconds, string IntervalState, double SourceTopStripeBlueMean,
