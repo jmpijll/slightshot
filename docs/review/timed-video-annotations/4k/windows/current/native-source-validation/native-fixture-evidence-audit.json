@@ -1,0 +1,172 @@
+{
+  "githubRunId": "38085300980",
+  "prHeadCommit": "0d96e8eece5bcdfc8f24074b61126b230e0dccb0",
+  "actualCheckoutCommit": "e28601319e3107e8681c2af2bea6b8312c5cd1ff",
+  "scope": "Read-only verification of existing native automated review fixture reports and source SHA, plus unchanged independent FFmpeg source nominal-RGB validation. Both separately recorded native and portable instances retain their own input hash/duration/counters. No new workload or thresholds.",
+  "instances": [
+    {
+      "instance": "native",
+      "artifactDirectory": "/tmp/slightshot-windows-640-0d96e8e",
+      "sourceSHA256": "601fed93f02cde2d329047b52a26c2b5bcbe25b73465509ce838cbff9516f7b9",
+      "sourceBytes": 29476,
+      "sourceDurationTicks": 43087000,
+      "nativeKnownNominalRGBPassed": true,
+      "independentActualSourceNominalRGBPassed": true,
+      "untouchedEndpointTicks": 20000004,
+      "roundtrippedEndpointTicks": 20000003,
+      "actualEndTicks": 20000004,
+      "afterStartEndTicks": 43087000,
+      "afterUndoEndTicks": 43087000,
+      "nativeSeekRecords": [
+        {
+          "requestedSeconds": 0.5,
+          "actualEditorPositionSeconds": 0.5,
+          "expectedCounterFromIndependentForwardOnlyReader": 15,
+          "actualNativePreviewCounter": 15
+        },
+        {
+          "requestedSeconds": 3.5,
+          "actualEditorPositionSeconds": 3.5,
+          "expectedCounterFromIndependentForwardOnlyReader": 96,
+          "actualNativePreviewCounter": 96
+        },
+        {
+          "requestedSeconds": 0.5,
+          "actualEditorPositionSeconds": 0.5,
+          "expectedCounterFromIndependentForwardOnlyReader": 15,
+          "actualNativePreviewCounter": 15
+        },
+        {
+          "requestedSeconds": 2,
+          "actualEditorPositionSeconds": 2,
+          "expectedCounterFromIndependentForwardOnlyReader": 56,
+          "actualNativePreviewCounter": 56
+        },
+        {
+          "requestedSeconds": 4.3087,
+          "actualEditorPositionSeconds": 4.3087,
+          "expectedCounterFromIndependentForwardOnlyReader": 118,
+          "actualNativePreviewCounter": 118
+        },
+        {
+          "requestedSeconds": 0.5,
+          "actualEditorPositionSeconds": 0.5,
+          "expectedCounterFromIndependentForwardOnlyReader": 15,
+          "actualNativePreviewCounter": 15
+        }
+      ],
+      "outputEndpointObservations": {
+        "high": {
+          "sourceFirstCounter": 1,
+          "sourceFinalCounter": 118,
+          "outputFirstCounter": 1,
+          "outputFinalCounter": 118,
+          "lastScheduledOutputReachesNormalizedSourceFinal": true,
+          "firstCounterMatches": true,
+          "finalCounterMatches": true
+        },
+        "balanced": {
+          "sourceFirstCounter": 1,
+          "sourceFinalCounter": 118,
+          "outputFirstCounter": 1,
+          "outputFinalCounter": 118,
+          "lastScheduledOutputReachesNormalizedSourceFinal": true,
+          "firstCounterMatches": true,
+          "finalCounterMatches": true
+        },
+        "compact": {
+          "sourceFirstCounter": 1,
+          "sourceFinalCounter": 118,
+          "outputFirstCounter": 1,
+          "outputFinalCounter": 117,
+          "lastScheduledOutputReachesNormalizedSourceFinal": false,
+          "firstCounterMatches": true,
+          "finalCounterMatches": false
+        }
+      },
+      "allRequestedExistingNativeEvidenceChecksPass": true
+    },
+    {
+      "instance": "portable",
+      "artifactDirectory": "/tmp/slightshot-windows-640-0d96e8e/portable",
+      "sourceSHA256": "20d48862011083dc56317e5a35d85789765e4baf22186fb3fcded7b5e47ace1b",
+      "sourceBytes": 33888,
+      "sourceDurationTicks": 43175333,
+      "nativeKnownNominalRGBPassed": true,
+      "independentActualSourceNominalRGBPassed": true,
+      "untouchedEndpointTicks": 20000004,
+      "roundtrippedEndpointTicks": 20000003,
+      "actualEndTicks": 20000004,
+      "afterStartEndTicks": 43175333,
+      "afterUndoEndTicks": 43175333,
+      "nativeSeekRecords": [
+        {
+          "requestedSeconds": 0.5,
+          "actualEditorPositionSeconds": 0.5,
+          "expectedCounterFromIndependentForwardOnlyReader": 14,
+          "actualNativePreviewCounter": 14
+        },
+        {
+          "requestedSeconds": 3.5,
+          "actualEditorPositionSeconds": 3.5,
+          "expectedCounterFromIndependentForwardOnlyReader": 98,
+          "actualNativePreviewCounter": 98
+        },
+        {
+          "requestedSeconds": 0.5,
+          "actualEditorPositionSeconds": 0.5,
+          "expectedCounterFromIndependentForwardOnlyReader": 14,
+          "actualNativePreviewCounter": 14
+        },
+        {
+          "requestedSeconds": 2,
+          "actualEditorPositionSeconds": 2,
+          "expectedCounterFromIndependentForwardOnlyReader": 56,
+          "actualNativePreviewCounter": 56
+        },
+        {
+          "requestedSeconds": 4.3175333,
+          "actualEditorPositionSeconds": 4.3175333,
+          "expectedCounterFromIndependentForwardOnlyReader": 121,
+          "actualNativePreviewCounter": 121
+        },
+        {
+          "requestedSeconds": 0.5,
+          "actualEditorPositionSeconds": 0.5,
+          "expectedCounterFromIndependentForwardOnlyReader": 14,
+          "actualNativePreviewCounter": 14
+        }
+      ],
+      "outputEndpointObservations": {
+        "high": {
+          "sourceFirstCounter": 1,
+          "sourceFinalCounter": 121,
+          "outputFirstCounter": 1,
+          "outputFinalCounter": 121,
+          "lastScheduledOutputReachesNormalizedSourceFinal": true,
+          "firstCounterMatches": true,
+          "finalCounterMatches": true
+        },
+        "balanced": {
+          "sourceFirstCounter": 1,
+          "sourceFinalCounter": 121,
+          "outputFirstCounter": 1,
+          "outputFinalCounter": 121,
+          "lastScheduledOutputReachesNormalizedSourceFinal": true,
+          "firstCounterMatches": true,
+          "finalCounterMatches": true
+        },
+        "compact": {
+          "sourceFirstCounter": 1,
+          "sourceFinalCounter": 121,
+          "outputFirstCounter": 1,
+          "outputFinalCounter": 120,
+          "lastScheduledOutputReachesNormalizedSourceFinal": false,
+          "firstCounterMatches": true,
+          "finalCounterMatches": false
+        }
+      },
+      "allRequestedExistingNativeEvidenceChecksPass": true
+    }
+  ]
+}

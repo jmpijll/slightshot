@@ -57,11 +57,11 @@ Marks cover **1–3 seconds**:
 ## Validation separate from images
 
 - macOS: warning-free release bundle and signature verification; strict SwiftLint;
-  58 Swift tests in 16 suites. Tests include interval boundaries, all drawing tools,
+  59 Swift tests in 16 suites. Tests include interval boundaries, all drawing tools,
   ordered raster/vector composition, real MP4s at all three qualities, current-frame
   privacy effects and cancellation after media data has been produced. Cancellation
   retains an existing destination and source and removes staging files.
-- Windows: 221 portable core checks; warning-free app build; native editor and
+- Windows: 422 portable core checks; warning-free app build; native editor and
   extracted portable x64 editor smoke checks, including pointer/source-coordinate
   mapping, source orientation, before/during/after decoded MP4 pixels at all three
   qualities, early compositor shutdown, active cancellation, failed export/retry

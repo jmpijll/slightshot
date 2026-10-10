@@ -1,0 +1,24 @@
+{
+  "artifact": "/private/tmp/slightshot-windows-4k-0d96e8e",
+  "sourceFirstPTS": 0.03333333333333333,
+  "outputs": {
+    "high": {
+      "actualFrames": 49,
+      "bestShift": null,
+      "rawRMSE": 1.1029979997308232,
+      "normalizedRMSE": 0.2768279581031007
+    },
+    "balanced": {
+      "actualFrames": 39,
+      "bestShift": null,
+      "rawRMSE": 0.9344855010904203,
+      "normalizedRMSE": 0.5404089321228469
+    },
+    "step": {
+      "actualFrames": 49,
+      "bestShift": null,
+      "rawRMSE": 1.1029979997308232,
+      "normalizedRMSE": 0.2768279581031007
+    }
+  }
+}

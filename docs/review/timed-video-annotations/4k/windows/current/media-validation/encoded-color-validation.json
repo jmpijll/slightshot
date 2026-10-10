@@ -1,0 +1,256 @@
+{
+  "sourceCommit": "e28601319e3107e8681c2af2bea6b8312c5cd1ff",
+  "prHeadCommit": "0d96e8eece5bcdfc8f24074b61126b230e0dccb0",
+  "githubRunId": "38085300980",
+  "acceptanceScope": "Actual MP4 export: ffprobe must expose tv range and bt709 matrix/primaries/transfer, and decoded solid annotation RGB must meet the predefined codec tolerances. H.264 SPS VUI is a separate explicit observation and is not required for this MP4 export.",
+  "method": "Inspect ffprobe MP4 color metadata; inspect actual H.264 SPS VUI separately via trace_headers. Decode a real during-interval MP4 sample and compare against the native production-renderer PNG at reference pixels within 2 RGB values of the nominal solid annotation color, then erode 2 or 3 pixels to exclude glyph/ring edges and the white Step digit. Decoded RGB includes limited-range YUV conversion, 4:2:0 chroma sampling and H.264 quantization; exact byte equality is not claimed.",
+  "tools": {
+    "ffprobe": "ffprobe version 8.1.2 Copyright (c) 2007-2026 the FFmpeg developers",
+    "ffmpeg": "ffmpeg version 8.1.2 Copyright (c) 2000-2026 the FFmpeg developers"
+  },
+  "expectedFfprobeColorTags": {
+    "color_range": "tv",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709"
+  },
+  "limitedBt709SpsReferenceValuesIfSignaled": {
+    "video_full_range_flag": 0,
+    "colour_description_present_flag": 1,
+    "colour_primaries": 1,
+    "transfer_characteristics": 1,
+    "matrix_coefficients": 1
+  },
+  "h264SpsObservations": [
+    {
+      "quality": "high",
+      "videoSignalTypePresentFlags": [
+        0
+      ],
+      "observation": "The H.264 SPS omits explicit range/matrix/primaries/transfer VUI. BT.709 color signaling is supplied by the MP4 container, and the actual MP4 decode is verified against the production RGB reference. No SPS-VUI or raw-H264 color claim is made."
+    },
+    {
+      "quality": "balanced",
+      "videoSignalTypePresentFlags": [
+        0
+      ],
+      "observation": "The H.264 SPS omits explicit range/matrix/primaries/transfer VUI. BT.709 color signaling is supplied by the MP4 container, and the actual MP4 decode is verified against the production RGB reference. No SPS-VUI or raw-H264 color claim is made."
+    },
+    {
+      "quality": "step",
+      "videoSignalTypePresentFlags": [
+        0
+      ],
+      "observation": "The H.264 SPS omits explicit range/matrix/primaries/transfer VUI. BT.709 color signaling is supplied by the MP4 container, and the actual MP4 decode is verified against the production RGB reference. No SPS-VUI or raw-H264 color claim is made."
+    }
+  ],
+  "checks": {
+    "high": {
+      "file": "video-editor-4k-high.mp4",
+      "sha256": "55ae2370e823cbfa299c7fbb8c9c981de1f1fd0ff6e321dd94ada7f545a43b27",
+      "width": 3840,
+      "height": 2160,
+      "actualDecodedFrames": 49,
+      "codec": "h264",
+      "profile": "Main",
+      "hasBFrames": 0,
+      "ffprobeColorTags": {
+        "color_range": "tv",
+        "color_space": "bt709",
+        "color_transfer": "bt709",
+        "color_primaries": "bt709"
+      },
+      "ffprobeColorTagsPass": true,
+      "h264SpsColorFields": {
+        "video_full_range_flag": [],
+        "colour_description_present_flag": [],
+        "colour_primaries": [],
+        "transfer_characteristics": [],
+        "matrix_coefficients": []
+      },
+      "h264SpsVideoSignalTypePresentFlags": [
+        0
+      ],
+      "h264SpsLimitedBt709Signaled": false,
+      "referenceFile": "video-editor-4k-high-composition-reference.png",
+      "referenceSha256": "cb650461c5abfdbd64408a6e3b3399dff813f0607cc75f5d8d381b27f75fc3e2",
+      "requestedSeconds": 0.7,
+      "zeroBasedDecodedFrameIndex": 21,
+      "actualPresentationSeconds": 0.7,
+      "sourceRectangle": [
+        1830,
+        550,
+        3330,
+        750
+      ],
+      "nominalAnnotationRGB": [
+        10,
+        132,
+        255
+      ],
+      "maskErosionPixels": 3,
+      "solidReferencePixelCount": 9136,
+      "productionReferenceMeanRGB": [
+        10.0,
+        132.0,
+        255.0
+      ],
+      "actualEncodedDecodedMeanRGB": [
+        9.423051663747811,
+        131.8756567425569,
+        253.93377845884413
+      ],
+      "meanAbsoluteRGBDelta": [
+        1.3265105078809107,
+        0.3408493870402802,
+        1.0662215411558669
+      ],
+      "p95MaximumRGBChannelDelta": 4,
+      "codecTolerance": {
+        "maximumMeanAbsoluteDeltaInEachChannel": 6,
+        "maximumP95LargestChannelDelta": 12
+      },
+      "solidAnnotationColorPass": true,
+      "passed": true
+    },
+    "balanced": {
+      "file": "video-editor-4k-balanced.mp4",
+      "sha256": "b9a07956c59a78873625b973c2a0c33fa9eddcf598161fbb3beafee32b43981b",
+      "width": 1920,
+      "height": 1080,
+      "actualDecodedFrames": 39,
+      "codec": "h264",
+      "profile": "Main",
+      "hasBFrames": 0,
+      "ffprobeColorTags": {
+        "color_range": "tv",
+        "color_space": "bt709",
+        "color_transfer": "bt709",
+        "color_primaries": "bt709"
+      },
+      "ffprobeColorTagsPass": true,
+      "h264SpsColorFields": {
+        "video_full_range_flag": [],
+        "colour_description_present_flag": [],
+        "colour_primaries": [],
+        "transfer_characteristics": [],
+        "matrix_coefficients": []
+      },
+      "h264SpsVideoSignalTypePresentFlags": [
+        0
+      ],
+      "h264SpsLimitedBt709Signaled": false,
+      "referenceFile": "video-editor-4k-balanced-composition-reference.png",
+      "referenceSha256": "38155e625ac108249408a8f20f9a96a084922587dcdb9c81951b29c0e9ef9a13",
+      "requestedSeconds": 0.7,
+      "zeroBasedDecodedFrameIndex": 17,
+      "actualPresentationSeconds": 0.7083333333333334,
+      "sourceRectangle": [
+        915,
+        275,
+        1665,
+        375
+      ],
+      "nominalAnnotationRGB": [
+        10,
+        132,
+        255
+      ],
+      "maskErosionPixels": 2,
+      "solidReferencePixelCount": 816,
+      "productionReferenceMeanRGB": [
+        10.0,
+        132.0,
+        255.0
+      ],
+      "actualEncodedDecodedMeanRGB": [
+        9.936274509803921,
+        131.84926470588235,
+        253.52696078431373
+      ],
+      "meanAbsoluteRGBDelta": [
+        1.553921568627451,
+        0.46691176470588236,
+        1.4730392156862746
+      ],
+      "p95MaximumRGBChannelDelta": 5,
+      "codecTolerance": {
+        "maximumMeanAbsoluteDeltaInEachChannel": 6,
+        "maximumP95LargestChannelDelta": 12
+      },
+      "solidAnnotationColorPass": true,
+      "passed": true
+    },
+    "step": {
+      "file": "video-editor-4k-step.mp4",
+      "sha256": "456e6c9b4a1793715a2a451deda88a1a77f77b3cea674cdf0d054baa23d26706",
+      "width": 3840,
+      "height": 2160,
+      "actualDecodedFrames": 49,
+      "codec": "h264",
+      "profile": "Main",
+      "hasBFrames": 0,
+      "ffprobeColorTags": {
+        "color_range": "tv",
+        "color_space": "bt709",
+        "color_transfer": "bt709",
+        "color_primaries": "bt709"
+      },
+      "ffprobeColorTagsPass": true,
+      "h264SpsColorFields": {
+        "video_full_range_flag": [],
+        "colour_description_present_flag": [],
+        "colour_primaries": [],
+        "transfer_characteristics": [],
+        "matrix_coefficients": []
+      },
+      "h264SpsVideoSignalTypePresentFlags": [
+        0
+      ],
+      "h264SpsLimitedBt709Signaled": false,
+      "referenceFile": "video-editor-4k-step-composition-reference.png",
+      "referenceSha256": "c8f7b66360a5d97191f13d178b0d72a0991a433dbf4c219d0c8463be580833be",
+      "requestedSeconds": 0.7,
+      "zeroBasedDecodedFrameIndex": 21,
+      "actualPresentationSeconds": 0.7,
+      "sourceRectangle": [
+        3050,
+        150,
+        3550,
+        650
+      ],
+      "nominalAnnotationRGB": [
+        255,
+        59,
+        48
+      ],
+      "maskErosionPixels": 3,
+      "solidReferencePixelCount": 17821,
+      "productionReferenceMeanRGB": [
+        255.0,
+        59.0,
+        48.0
+      ],
+      "actualEncodedDecodedMeanRGB": [
+        254.95101285000842,
+        58.989506761685654,
+        47.05392514449245
+      ],
+      "meanAbsoluteRGBDelta": [
+        0.04898714999158296,
+        0.038998933842096406,
+        1.0365299365916616
+      ],
+      "p95MaximumRGBChannelDelta": 1,
+      "codecTolerance": {
+        "maximumMeanAbsoluteDeltaInEachChannel": 6,
+        "maximumP95LargestChannelDelta": 12
+      },
+      "solidAnnotationColorPass": true,
+      "passed": true
+    }
+  },
+  "findings": [],
+  "allEncodedColorChecksPass": true,
+  "nativePerformanceAcceptanceFailures": []
+}

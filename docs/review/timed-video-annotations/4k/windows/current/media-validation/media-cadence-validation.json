@@ -1,0 +1,62 @@
+{
+  "sourceCommit": "e28601319e3107e8681c2af2bea6b8312c5cd1ff",
+  "prHeadCommit": "0d96e8eece5bcdfc8f24074b61126b230e0dccb0",
+  "githubRunId": "38085300980",
+  "method": "Independent saved ffprobe raw decoded samples/packets, exact fractions in each MP4 stream time base. Expected count is ceil(source track duration times quality FPS), with exported sample scheduling beginning at zero. Final partial sample and decoded coverage/container end permit 1ms for MP4 timescale conversion; this is smaller than the previously missing 8.342ms final sample.",
+  "sourceInitialPresentationSeconds": 0.03333333333333333,
+  "sourceDurationSeconds": 1.6245666666666667,
+  "checks": {
+    "high": {
+      "actualDecodedFrames": 49,
+      "expectedDecodedFramesFromSourceDurationCeiling": 49,
+      "actualFrameCountMatchesSourceDurationCeiling": true,
+      "actualDimensions": [
+        3840,
+        2160
+      ],
+      "dimensionsPass": true,
+      "actualFirstPresentationSeconds": 0.0,
+      "firstOutputPTSIsZeroWithin100ns": true,
+      "configuredFramesPerSecond": 30,
+      "allFrameGapsMatchCadenceWithin100ns": true,
+      "actualLastPresentationSeconds": 1.6,
+      "expectedLastPresentationSeconds": 1.6,
+      "actualLastFrameDurationSeconds": 0.024566666666666667,
+      "expectedFinalPartialDurationSeconds": 0.024566666666666667,
+      "finalPartialDurationMatchesSourceWithin1ms": true,
+      "actualDecodedCoverageEndSeconds": 1.6245666666666667,
+      "decodedCoverageMatchesSourceEndWithin1ms": true,
+      "sourceDurationSeconds": 1.6245666666666667,
+      "containerDurationSeconds": 1.624533,
+      "containerDurationMatchesSourceWithin1ms": true,
+      "passed": true
+    },
+    "balanced": {
+      "actualDecodedFrames": 39,
+      "expectedDecodedFramesFromSourceDurationCeiling": 39,
+      "actualFrameCountMatchesSourceDurationCeiling": true,
+      "actualDimensions": [
+        1920,
+        1080
+      ],
+      "dimensionsPass": true,
+      "actualFirstPresentationSeconds": 0.0,
+      "firstOutputPTSIsZeroWithin100ns": true,
+      "configuredFramesPerSecond": 24,
+      "allFrameGapsMatchCadenceWithin100ns": true,
+      "actualLastPresentationSeconds": 1.5833333333333333,
+      "expectedLastPresentationSeconds": 1.5833333333333333,
+      "actualLastFrameDurationSeconds": 0.04125,
+      "expectedFinalPartialDurationSeconds": 0.04123333333333333,
+      "finalPartialDurationMatchesSourceWithin1ms": true,
+      "actualDecodedCoverageEndSeconds": 1.6245833333333333,
+      "decodedCoverageMatchesSourceEndWithin1ms": true,
+      "sourceDurationSeconds": 1.6245666666666667,
+      "containerDurationSeconds": 1.624542,
+      "containerDurationMatchesSourceWithin1ms": true,
+      "passed": true
+    }
+  },
+  "allOutputCadenceAndDurationChecksPass": true,
+  "nativePerformanceAcceptanceFailures": []
+}

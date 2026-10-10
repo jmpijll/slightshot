@@ -1,0 +1,5 @@
+System.InvalidOperationException: Video editor smoke test failed: native backward/forward seek returns the correct source-frame counter at 4.3298333s
+   at Slightshot.VideoEditorSmokeTest.Require(Boolean condition, String check) in D:\a\slightshot\slightshot\Windows\Slightshot\VideoEditorSmokeTest.cs:line 494
+   at Slightshot.VideoEditorSmokeTest.RunAsync(String directory) in D:\a\slightshot\slightshot\Windows\Slightshot\VideoEditorSmokeTest.cs:line 254
+   at Slightshot.VideoEditorSmokeTest.RunAsync(String directory) in D:\a\slightshot\slightshot\Windows\Slightshot\VideoEditorSmokeTest.cs:line 399
+   at Slightshot.App.OnStartup(StartupEventArgs e) in D:\a\slightshot\slightshot\Windows\Slightshot\App.xaml.cs:line 63

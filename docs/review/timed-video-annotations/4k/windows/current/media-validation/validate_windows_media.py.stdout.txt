@@ -1,0 +1,12 @@
+{
+  "sourceCommit": "e28601319e3107e8681c2af2bea6b8312c5cd1ff",
+  "counts": {
+    "source": 38,
+    "high": 49,
+    "balanced": 39
+  },
+  "cadencePass": true,
+  "privacyPass": true,
+  "findings": [],
+  "nativePerformanceFailures": []
+}
