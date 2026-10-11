@@ -1,0 +1,26 @@
+[
+  {
+    "method": "GET",
+    "path": "/appcast.xml"
+  },
+  {
+    "method": "GET",
+    "path": "/appcast.xml"
+  },
+  {
+    "method": "GET",
+    "path": "/appcast.xml"
+  },
+  {
+    "method": "GET",
+    "path": "/appcast.xml"
+  },
+  {
+    "method": "GET",
+    "path": "/appcast.xml"
+  },
+  {
+    "method": "GET",
+    "path": "/appcast.xml"
+  }
+]

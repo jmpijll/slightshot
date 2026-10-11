@@ -190,6 +190,25 @@ shasum -a 256 build/Slightshot-1.5.1.dmg
 
 ## Check release scripts
 
+Published Mac builds and ordinary local bundles use the full Git commit count
+as `CFBundleVersion`. Sparkle compares this internal number, rather than the
+visible `CFBundleShortVersionString`. Older releases used the Release workflow's
+run number: an affected local installation displaying `1.4.0 (128)` therefore
+considered release `1.5.0 (12)` older, even though its visible version was newer.
+
+The Release workflow now resolves the same counter as `Scripts/bundle.sh` and
+checks that both the build and marketing version exceed every appcast entry in
+the source checkout and freshly fetched canonical `main` publication record.
+Fetching the latter preserves the selected source HEAD and prevents an old
+branch or queued tag from using a stale feed. An unavailable canonical record,
+shallow checkout, reused version, decreasing build or invalid feed
+blocks publication. The workflow checks out full history; do not substitute a
+workflow-run counter. Verify the next release's metadata before building with:
+
+```bash
+python3 Scripts/release_metadata.py --version 1.5.1 --appcast public/appcast.xml
+```
+
 ```bash
 python3 -m unittest discover -s Tests -v
 shellcheck Scripts/notarize.sh

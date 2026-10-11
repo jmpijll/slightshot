@@ -1,0 +1,57 @@
+{
+  "appcastItems" : [
+    {
+      "build" : "192",
+      "downloadURL" : "https:\/\/github.com\/jmpijll\/slightshot\/releases\/download\/v1.5.1\/Slightshot-1.5.1.dmg",
+      "marketingVersion" : "1.5.1"
+    },
+    {
+      "build" : "12",
+      "downloadURL" : "https:\/\/github.com\/jmpijll\/slightshot\/releases\/download\/v1.5.0\/Slightshot-1.5.0.dmg",
+      "marketingVersion" : "1.5.0"
+    },
+    {
+      "build" : "11",
+      "downloadURL" : "https:\/\/github.com\/jmpijll\/slightshot\/releases\/download\/v1.4.2\/Slightshot-1.4.2.dmg",
+      "marketingVersion" : "1.4.2"
+    },
+    {
+      "build" : "10",
+      "downloadURL" : "https:\/\/github.com\/jmpijll\/slightshot\/releases\/download\/v1.4.1\/Slightshot-1.4.1.dmg",
+      "marketingVersion" : "1.4.1"
+    }
+  ],
+  "automaticChecks" : false,
+  "automaticDownloadsAllowed" : false,
+  "capture" : {
+    "file" : "native-discovery.png",
+    "saved" : true,
+    "source" : "ScreenCaptureKit screenshot of the actual running native NSWindow"
+  },
+  "events" : [
+    "startUpdater succeeded",
+    "checkForUpdateInformation invoked",
+    "didFinishLoadingAppcast: 4 items",
+    "didFindValidUpdate",
+    "didFinishUpdateCycleForUpdateCheck:error:"
+  ],
+  "expectedResult" : "update-found",
+  "feedURL" : "http:\/\/127.0.0.1:64263\/appcast.xml",
+  "finishedAt" : "2026-10-11T00:15:53Z",
+  "fixture" : "Automated native AppKit diagnostic harness; synthetic installed bundle metadata; real Sparkle SDK 2.10.0. This is not a pristine published Slightshot binary.",
+  "hostBuild" : "9",
+  "hostBundleIdentifier" : "com.jmpijll.slightshot.updater-review.after-candidate192-public9",
+  "hostMarketingVersion" : "1.4.0",
+  "matchesExpectedResult" : true,
+  "operation" : "SPUUpdater.checkForUpdateInformation (no update offering, download or installation)",
+  "phase" : "After fix · candidate 1.5.1 build 192 · information only",
+  "result" : "update-found",
+  "selectedUpdate" : {
+    "build" : "192",
+    "downloadURL" : "https:\/\/github.com\/jmpijll\/slightshot\/releases\/download\/v1.5.1\/Slightshot-1.5.1.dmg",
+    "marketingVersion" : "1.5.1"
+  },
+  "sourceCommit" : "1806a9eb8280cce7601f1807374d79d30ed4da72",
+  "startedAt" : "2026-10-11T00:15:53Z",
+  "updateCheckType" : 2
+}

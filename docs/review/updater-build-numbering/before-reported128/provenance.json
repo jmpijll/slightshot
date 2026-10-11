@@ -1,0 +1,26 @@
+{
+  "command": [
+    "/private/tmp/slightshot-updater-1.5.1/before-reported128.app/Contents/MacOS/UpdateDiscoveryProbe",
+    "--output",
+    "/private/tmp/slightshot-updater-1.5.1/before-reported128",
+    "--label",
+    "Before fix \u00b7 observed installed build against published 1.5.0 feed",
+    "--expected",
+    "no-update",
+    "--source-commit",
+    "06cf15b185d1d599201d944453a1f02568f23f1b"
+  ],
+  "bundleIdentifier": "com.jmpijll.slightshot.updater-review.before-reported128",
+  "hostMarketingVersion": "1.4.0",
+  "hostBuild": "128",
+  "sourceCommit": "06cf15b185d1d599201d944453a1f02568f23f1b",
+  "syntheticHostMetadata": true,
+  "probeOnly": true,
+  "feedURL": "https://jmpijll.github.io/slightshot/appcast.xml",
+  "feedSnapshotSHA256": "778f95aed5700ddd0ac5614f8caf541fc51874308f349d9d1ebd13f447e03ce6",
+  "executableSHA256": "59ecccdea62a44bd13a74c6421b11dce06678ee5380f6fe2a3c5ce5282a3a4e2",
+  "nativeScreenshotSHA256": "879e17558f44b7a4ec7af219b91df8afed86fc0ea7c770d31ddf5f11896d242e",
+  "sparkleVersion": "2.10.0",
+  "result": "no-update",
+  "matchesExpectedResult": true
+}

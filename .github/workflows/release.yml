@@ -51,8 +51,19 @@ jobs:
             echo "::error::Version must be MAJOR.MINOR.PATCH"
             exit 1
           }
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+          # Match bundle.sh's local build counter. Workflow run numbers used a
+          # different sequence and made newer releases look older to Sparkle.
+          # A queued tag or manual branch may contain an outdated feed. Fetch
+          # the canonical publication record without changing the source HEAD.
+          git fetch --no-tags origin main
+          git show FETCH_HEAD:public/appcast.xml > "$RUNNER_TEMP/published-appcast.xml"
+          BUILD="$(python3 Scripts/release_metadata.py --version "$VERSION" \
+            --appcast public/appcast.xml --appcast "$RUNNER_TEMP/published-appcast.xml")"
+          {
+            echo "version=$VERSION"
+            echo "build=$BUILD"
+            echo "publish=$PUBLISH"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Check release credentials
         env:
@@ -98,7 +109,7 @@ jobs:
       - name: Build and sign the app
         env:
           VERSION: ${{ steps.version.outputs.version }}
-          BUILD: ${{ github.run_number }}
+          BUILD: ${{ steps.version.outputs.build }}
           SPARKLE_PUBLIC_KEY: ${{ secrets.SPARKLE_PUBLIC_KEY }}
         run: ./Scripts/bundle.sh
 

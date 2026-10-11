@@ -1,0 +1,10 @@
+{
+  "sourceCommit": "1806a9eb8280cce7601f1807374d79d30ed4da72",
+  "sourceFile": "docs/RELEASING.md",
+  "sourceFileSHA256": "87fded04395b1297063296e458e15e57e4ff44b8d147a6d7feabed0c9d1bd2c6",
+  "renderedExcerpt": "Check release scripts and build-number policy",
+  "renderer": "GitHub Markdown API, GFM, real committed source shown in a local browser",
+  "htmlSHA256": "2d83325c0e9021ea7d83aacf3b3fe3b3f5d99c819ee40ba48d5a857ac9f08c78",
+  "imageSHA256": "0dd722229caf83f7afe0ca701a58038ab6a7c43a17c1cef035e0a45b2dbf67b0",
+  "browser": "Playwright CLI, owned session slightshot-updater-docs;1050x950CSSpixels, full-page screenshot"
+}
