@@ -44,3 +44,9 @@ The Windows x64 native editor/4K and extracted-portable checks pass, as do insta
 The 24 Python checks include ten release-metadata regression tests. They execute the real Resolve version shell step against actual Git histories, covering the original counter mismatch and stale checkout versus newer canonical feed without moving source HEAD. Workflow lint and evidence hash checks pass.
 
 The previously observed first-use Mac Blur delay remains documented in the [1.5.0 review](../v1.5.0/README.md); this updater patch does not change the video pipeline. The short synthetic Windows tag-run benchmark is evidence for that run, rather than a guarantee for every recording or computer.
+
+## Rendered release guide
+
+Actual committed release status, source `2c9aea70b695c52d6f26926a76b6fff3de0d6f59`, rendered through GitHub Markdown and captured in a browser. [Source and capture hashes](documentation-capture-source.json).
+
+![Rendered published 1.5.1 status](release-status.png)

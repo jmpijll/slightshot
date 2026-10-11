@@ -1,0 +1,15 @@
+{
+  "sourceCommit": "2c9aea70b695c52d6f26926a76b6fff3de0d6f59",
+  "sourcePath": "docs/RELEASING.md",
+  "sourceSHA256": "6e7d189678646f96210b184efdff2feb9b14bff9259098f46a107b5edd2a3ecf",
+  "excerptSHA256": "fa62ed9a12ff4d6610494eea79efb7089751297039b6cae0c1306ed712a42b94",
+  "renderer": "GitHub Markdown API, gfm mode, actual committed Current status excerpt",
+  "capture": "Real Playwright browser viewport screenshot",
+  "viewport": {
+    "width": 1050,
+    "height": 1450
+  },
+  "htmlSHA256": "59d796c42589c5bbad82dc5e511469b50a941da530c6d9840723ce75674e694c",
+  "imageSHA256": "6eb15edcc3a99ddeaa05d3b9a202716aa5896593938320ed700ada7feb999039",
+  "capturedAt": "2026-10-11T00:46:22.436718+00:00"
+}
