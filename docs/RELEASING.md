@@ -197,8 +197,11 @@ run number: an affected local installation displaying `1.4.0 (128)` therefore
 considered release `1.5.0 (12)` older, even though its visible version was newer.
 
 The Release workflow now resolves the same counter as `Scripts/bundle.sh` and
-checks that both the build and marketing version exceed every published appcast
-entry. A shallow checkout, reused version, decreasing build or invalid feed
+checks that both the build and marketing version exceed every appcast entry in
+the source checkout and freshly fetched canonical `main` publication record.
+Fetching the latter preserves the selected source HEAD and prevents an old
+branch or queued tag from using a stale feed. An unavailable canonical record,
+shallow checkout, reused version, decreasing build or invalid feed
 blocks publication. The workflow checks out full history; do not substitute a
 workflow-run counter. Verify the next release's metadata before building with:
 

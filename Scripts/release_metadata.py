@@ -16,7 +16,7 @@ def marketing_version(value):
     return tuple(int(part) for part in value.split("."))
 
 
-def release_build(repository, version, appcast):
+def release_build(repository, version, appcasts):
     requested = marketing_version(version)
     shallow = subprocess.check_output(
         ["git", "rev-parse", "--is-shallow-repository"], cwd=repository, text=True
@@ -29,25 +29,25 @@ def release_build(repository, version, appcast):
     ).strip())
     if build < 1:
         raise ValueError("Release build must be a positive Git commit count.")
-    root = ET.parse(appcast).getroot()
-    channel = root.find("channel")
-    if root.tag != "rss" or channel is None:
-        raise ValueError("Invalid appcast: expected an RSS channel.")
-    items = channel.findall("item")
-    for item in items:
-        previous = item.findtext(f"{SPARKLE}version", "")
-        previous_version = item.findtext(f"{SPARKLE}shortVersionString", "")
-        if not previous.isascii() or not previous.isdecimal():
-            raise ValueError(f"Invalid published integer build: {previous!r}")
-        if build <= int(previous):
-            raise ValueError(
-                f"Release build {build} must exceed published build {previous}; "
-                "Sparkle compares build numbers, not marketing versions."
-            )
-        if requested <= marketing_version(previous_version):
-            raise ValueError(
-                f"Release version {version} must exceed published version {previous_version}."
-            )
+    for appcast in appcasts:
+        root = ET.parse(appcast).getroot()
+        channel = root.find("channel")
+        if root.tag != "rss" or channel is None:
+            raise ValueError("Invalid appcast: expected an RSS channel.")
+        for item in channel.findall("item"):
+            previous = item.findtext(f"{SPARKLE}version", "")
+            previous_version = item.findtext(f"{SPARKLE}shortVersionString", "")
+            if not previous.isascii() or not previous.isdecimal():
+                raise ValueError(f"Invalid published integer build: {previous!r}")
+            if build <= int(previous):
+                raise ValueError(
+                    f"Release build {build} must exceed published build {previous}; "
+                    "Sparkle compares build numbers, not marketing versions."
+                )
+            if requested <= marketing_version(previous_version):
+                raise ValueError(
+                    f"Release version {version} must exceed published version {previous_version}."
+                )
     return build
 
 
@@ -55,12 +55,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", required=True)
     parser.add_argument("--repository", type=Path, default=Path.cwd())
-    parser.add_argument("--appcast", type=Path, default=Path("public/appcast.xml"))
+    parser.add_argument("--appcast", type=Path, action="append",
+                        help="Check each supplied appcast; defaults to public/appcast.xml.")
     args = parser.parse_args()
     repository = args.repository.resolve()
-    appcast = args.appcast if args.appcast.is_absolute() else repository / args.appcast
+    appcasts = [path if path.is_absolute() else repository / path
+                for path in (args.appcast or [Path("public/appcast.xml")])]
     try:
-        print(release_build(repository, args.version, appcast))
+        print(release_build(repository, args.version, appcasts))
     except (ValueError, OSError, ET.ParseError, subprocess.CalledProcessError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1

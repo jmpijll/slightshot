@@ -53,7 +53,12 @@ jobs:
           }
           # Match bundle.sh's local build counter. Workflow run numbers used a
           # different sequence and made newer releases look older to Sparkle.
-          BUILD="$(python3 Scripts/release_metadata.py --version "$VERSION" --appcast public/appcast.xml)"
+          # A queued tag or manual branch may contain an outdated feed. Fetch
+          # the canonical publication record without changing the source HEAD.
+          git fetch --no-tags origin main
+          git show FETCH_HEAD:public/appcast.xml > "$RUNNER_TEMP/published-appcast.xml"
+          BUILD="$(python3 Scripts/release_metadata.py --version "$VERSION" \
+            --appcast public/appcast.xml --appcast "$RUNNER_TEMP/published-appcast.xml")"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "build=$BUILD" >> "$GITHUB_OUTPUT"
           echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
