@@ -1,0 +1,181 @@
+{
+  "checkedAtUTC": "2026-10-11T00:03:42.577875+00:00",
+  "artifacts": [
+    {
+      "version": "1.4.0",
+      "releaseURL": "https://github.com/jmpijll/slightshot/releases/tag/v1.4.0",
+      "releasePublishedAtUTC": "2026-10-08T14:53:03Z",
+      "tagSourceCommit": "58fd64431a215af2fceb2733ff83a4c5c9fd0be3",
+      "dmgSHA256": "725db9d357aac22d5283b689ac9b224ee6c80a1c7b3c9f1284a52d9edbd3cbec",
+      "dmgBytes": 2076489,
+      "githubDigestAndSizeMatch": true,
+      "assetURL": "https://github.com/jmpijll/slightshot/releases/download/v1.4.0/Slightshot-1.4.0.dmg",
+      "appInfo": {
+        "CFBundleIdentifier": "com.jmpijll.slightshot",
+        "CFBundleShortVersionString": "1.4.0",
+        "CFBundleVersion": "9",
+        "LSMinimumSystemVersion": "27.0",
+        "SUEnableInstallerLauncherService": false,
+        "SUFeedURL": "https://jmpijll.github.io/slightshot/appcast.xml",
+        "SUPublicEDKey": "LZbWZr1mS3HybeBxRO/JoMTreRBKobdnLgYQO5zrjdI="
+      },
+      "sparkleInfo": {
+        "CFBundleIdentifier": "org.sparkle-project.Sparkle",
+        "CFBundleShortVersionString": "2.10.0",
+        "CFBundleVersion": "2064",
+        "LSMinimumSystemVersion": "12.0"
+      },
+      "appExecutableSHA256": "b5bded28b5781544bed0f302e7b6397aeb41b9182bb12213158e0634219cf782",
+      "appDeepStrictSignature": "--prepared:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.4.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\n--prepared:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.4.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--validated:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.4.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--prepared:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.4.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--validated:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.4.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--prepared:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.4.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--validated:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.4.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--prepared:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.4.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.4.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.4.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\n/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.4.0/Slightshot.app: valid on disk\n/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.4.0/Slightshot.app: satisfies its Designated Requirement",
+      "appSigningIdentity": "Executable=/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.4.0/Slightshot.app/Contents/MacOS/Slightshot\nIdentifier=com.jmpijll.slightshot\nFormat=app bundle with Mach-O thin (arm64)\nCodeDirectory v=20500 size=3010 flags=0x10000(runtime) hashes=87+3 location=embedded\nSignature size=8988\nAuthority=Developer ID Application: Jamie van der Pijll (PAW49RLWAA)\nAuthority=Developer ID Certification Authority\nAuthority=Apple Root CA\nTimestamp=8 Oct 2026 at 16:51:22\nNotarization Ticket=stapled\nInfo.plist entries=20\nTeamIdentifier=PAW49RLWAA\nRuntime Version=27.0.0\nSealed Resources version=2 rules=13 files=3\nInternal requirements count=1 size=184\nTotal signatures=1\nChosen signature=1",
+      "releaseSourceFiles": {
+        "Sources/Slightshot/Services/UpdaterController.swift": {
+          "sha256": "d2a68c15d64cba0dd2e95e7fc3825e9f52f63bb4c5502d8e82078b91250ae5dc",
+          "savedTo": "/tmp/slightshot-updater-1.5.1/artifact-audit/1.4.0-UpdaterController.swift"
+        },
+        "Package.swift": {
+          "sha256": "44226ff563bf54e3a6db50edd2c9c64194bb8259e7e0ad9755318785b779b00f",
+          "savedTo": "/tmp/slightshot-updater-1.5.1/artifact-audit/1.4.0-Package.swift"
+        },
+        "Scripts/bundle.sh": {
+          "sha256": "a70c6276d0660b2e645aa6fd1f251a2f134ccbc717e968f94ccbbf5322e6f347",
+          "savedTo": "/tmp/slightshot-updater-1.5.1/artifact-audit/1.4.0-bundle.sh"
+        }
+      }
+    },
+    {
+      "version": "1.5.0",
+      "releaseURL": "https://github.com/jmpijll/slightshot/releases/tag/v1.5.0",
+      "releasePublishedAtUTC": "2026-10-10T22:46:23Z",
+      "tagSourceCommit": "7a729789290fa44df7e8e0e1db5fee623580be3f",
+      "dmgSHA256": "6ae8a77b0d983dd24d82a2b022e314979cbef872dd6f3f98df93c5bf1dec9037",
+      "dmgBytes": 2306605,
+      "githubDigestAndSizeMatch": true,
+      "assetURL": "https://github.com/jmpijll/slightshot/releases/download/v1.5.0/Slightshot-1.5.0.dmg",
+      "appInfo": {
+        "CFBundleIdentifier": "com.jmpijll.slightshot",
+        "CFBundleShortVersionString": "1.5.0",
+        "CFBundleVersion": "12",
+        "LSMinimumSystemVersion": "27.0",
+        "SUEnableInstallerLauncherService": false,
+        "SUFeedURL": "https://jmpijll.github.io/slightshot/appcast.xml",
+        "SUPublicEDKey": "LZbWZr1mS3HybeBxRO/JoMTreRBKobdnLgYQO5zrjdI="
+      },
+      "sparkleInfo": {
+        "CFBundleIdentifier": "org.sparkle-project.Sparkle",
+        "CFBundleShortVersionString": "2.10.0",
+        "CFBundleVersion": "2064",
+        "LSMinimumSystemVersion": "12.0"
+      },
+      "appExecutableSHA256": "8096283cc8b68fa718139d73f3f06db976166589e3fccca2a8efb93fff85bc5f",
+      "appDeepStrictSignature": "--prepared:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.5.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\n--prepared:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.5.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--validated:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.5.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--prepared:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.5.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--validated:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.5.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--prepared:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.5.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--validated:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.5.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--prepared:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.5.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.5.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.5.0/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\n/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.5.0/Slightshot.app: valid on disk\n/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.5.0/Slightshot.app: satisfies its Designated Requirement",
+      "appSigningIdentity": "Executable=/private/tmp/slightshot-updater-1.5.1/artifact-audit/mounted-1.5.0/Slightshot.app/Contents/MacOS/Slightshot\nIdentifier=com.jmpijll.slightshot\nFormat=app bundle with Mach-O thin (arm64)\nCodeDirectory v=20500 size=3970 flags=0x10000(runtime) hashes=117+3 location=embedded\nSignature size=8989\nAuthority=Developer ID Application: Jamie van der Pijll (PAW49RLWAA)\nAuthority=Developer ID Certification Authority\nAuthority=Apple Root CA\nTimestamp=11 Oct 2026 at 00:44:59\nNotarization Ticket=stapled\nInfo.plist entries=20\nTeamIdentifier=PAW49RLWAA\nRuntime Version=27.0.0\nSealed Resources version=2 rules=13 files=3\nInternal requirements count=1 size=184\nTotal signatures=1\nChosen signature=1",
+      "releaseSourceFiles": {
+        "Sources/Slightshot/Services/UpdaterController.swift": {
+          "sha256": "a683e4093257fa8d1dd7c43a39c8f948083314ed7079ff780ad3fd89e9f3a66f",
+          "savedTo": "/tmp/slightshot-updater-1.5.1/artifact-audit/1.5.0-UpdaterController.swift"
+        },
+        "Package.swift": {
+          "sha256": "4bc010b23bb2f1d68398fddc2ec3a83482a6e91322f8bb7285909d75a3b765da",
+          "savedTo": "/tmp/slightshot-updater-1.5.1/artifact-audit/1.5.0-Package.swift"
+        },
+        "Scripts/bundle.sh": {
+          "sha256": "2d612b8d7a90da6fe9c2f625801200eedaa1127dd4d358ffa6413e1045417385",
+          "savedTo": "/tmp/slightshot-updater-1.5.1/artifact-audit/1.5.0-bundle.sh"
+        }
+      }
+    }
+  ],
+  "feed": {
+    "url": "https://jmpijll.github.io/slightshot/appcast.xml",
+    "sha256": "778f95aed5700ddd0ac5614f8caf541fc51874308f349d9d1ebd13f447e03ce6",
+    "responseHeaders": {
+      "Connection": "close",
+      "Content-Length": "2011",
+      "Server": "GitHub.com",
+      "Content-Type": "application/xml",
+      "Last-Modified": "Sat, 10 Oct 2026 22:46:43 GMT",
+      "Access-Control-Allow-Origin": "*",
+      "Strict-Transport-Security": "max-age=31556952",
+      "ETag": "\"6acac053-7db\"",
+      "expires": "Sat, 10 Oct 2026 23:10:07 GMT",
+      "Cache-Control": "max-age=600",
+      "x-proxy-cache": "MISS",
+      "X-GitHub-Request-Id": "4926:98A43:2F26B63:2F98B6E:6ACAC377",
+      "x-github-edge-region": "fra",
+      "Accept-Ranges": "bytes",
+      "Age": "0",
+      "Date": "Sun, 11 Oct 2026 00:03:55 GMT",
+      "Via": "1.1 varnish",
+      "X-Served-By": "cache-rtm-ehrd2290026-RTM",
+      "X-Cache": "HIT",
+      "X-Cache-Hits": "0",
+      "X-Timer": "S1791677036.624286,VS0,VE126",
+      "Vary": "Accept-Encoding",
+      "X-Fastly-Request-ID": "6e984a902e1086855c6de38ed8e99239bedcade6"
+    },
+    "items": [
+      {
+        "version": "1.5.0",
+        "build": "12",
+        "minimumSystemVersion": "27.0",
+        "enclosure": {
+          "url": "https://github.com/jmpijll/slightshot/releases/download/v1.5.0/Slightshot-1.5.0.dmg",
+          "length": "2306605",
+          "type": "application/octet-stream",
+          "{http://www.andymatuschak.org/xml-namespaces/sparkle}edSignature": "1+PHhJWyyStBt1cgEv1Cttoi4QtzDBsZNpkbqB3F8hw+xnd2clJgSUvjnIz8gYQx4ehApaldWUqW7hnc2tPNCg=="
+        }
+      },
+      {
+        "version": "1.4.2",
+        "build": "11",
+        "minimumSystemVersion": "27.0",
+        "enclosure": {
+          "url": "https://github.com/jmpijll/slightshot/releases/download/v1.4.2/Slightshot-1.4.2.dmg",
+          "length": "2076701",
+          "type": "application/octet-stream",
+          "{http://www.andymatuschak.org/xml-namespaces/sparkle}edSignature": "cOt56CsU+oCeQMJwaxZGxPVuLE0NwmjjJu8c3yxJh0XAhj2t3sPVlatikRLpHFMw6aXx3Y2JAJ1ns0a2vBHSCw=="
+        }
+      },
+      {
+        "version": "1.4.1",
+        "build": "10",
+        "minimumSystemVersion": "27.0",
+        "enclosure": {
+          "url": "https://github.com/jmpijll/slightshot/releases/download/v1.4.1/Slightshot-1.4.1.dmg",
+          "length": "2076686",
+          "type": "application/octet-stream",
+          "{http://www.andymatuschak.org/xml-namespaces/sparkle}edSignature": "OR4S/orGXOWidgB4lXYh+L9Vau7cGA51Io9J54EoCNDoeKu9I7g/S5NFxuvdwS77UEemF6ED0cnWyAAbN5xcAQ=="
+        }
+      }
+    ]
+  },
+  "limits": "Actual immutable public bundle metadata and exact tag source inspection; no app launch or updater execution, and no user app/settings changes.",
+  "oldPublicAppKeyVerifiesLatestPublicDMG": true,
+  "sparkleSourceContract": {
+    "version": "2.10.0",
+    "revision": "eef1a539a373c1f1a320624b1130fc5de7b2e100",
+    "hostVersionSource": "CFBundleVersion",
+    "newerItemCondition": "SUStandardVersionComparator compares host.version < item.versionString; no custom comparator in Slightshot updater delegate.",
+    "references": [
+      {
+        "url": "https://github.com/sparkle-project/Sparkle/blob/eef1a539a373c1f1a320624b1130fc5de7b2e100/Sparkle/SUHost.m",
+        "sha256": "93f2ac76c9324f42d5d4587997e9fb8f3cc5640d9eba13ac6b3e40850b2699b4",
+        "savedTo": "/tmp/slightshot-updater-1.5.1/artifact-audit/Sparkle-2.10.0-SUHost.m"
+      },
+      {
+        "url": "https://github.com/sparkle-project/Sparkle/blob/eef1a539a373c1f1a320624b1130fc5de7b2e100/Sparkle/SUAppcastDriver.m",
+        "sha256": "af743b4e963d9370650561e58d07aa57083d8d13f47f0ad212e2cd3a5319b3a4",
+        "savedTo": "/tmp/slightshot-updater-1.5.1/artifact-audit/Sparkle-2.10.0-SUAppcastDriver.m"
+      }
+    ]
+  },
+  "numberingObservation": {
+    "localBundleDefault": "git rev-list --count HEAD",
+    "publishedReleaseOverride": "github.run_number",
+    "possibleConflict": "A local bundle with internal build greater than the public feed builds will be considered newer regardless of visible marketing version. This audit has not inspected or executed the user app.",
+    "publicOlderBuild": "9",
+    "publicLatestBuild": "12",
+    "publicOlderBuildLessThanPublicLatestBuild": true
+  }
+}

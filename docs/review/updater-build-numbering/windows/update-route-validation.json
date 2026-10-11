@@ -1,0 +1,21 @@
+{
+  "method": "Compile actual historical/current Windows AppInfo source against version-specific assembly metadata; browser click is not executed. Replay captured live GitHub latest-link response from this investigation.",
+  "actualProductionResults": [
+    {
+      "method": "Source-linked production AppInfo metadata and release-link contract; WPF browser click is not executed on this Mac",
+      "appVersion": "1.4.0",
+      "updateUrl": "https://github.com/jmpijll/slightshot/releases/latest",
+      "passed": true
+    },
+    {
+      "method": "Source-linked production AppInfo metadata and release-link contract; WPF browser click is not executed on this Mac",
+      "appVersion": "1.5.0",
+      "updateUrl": "https://github.com/jmpijll/slightshot/releases/latest",
+      "passed": true
+    }
+  ],
+  "actualObservedRedirect": "https://github.com/jmpijll/slightshot/releases/tag/v1.5.0",
+  "staleRedirectRedControlDetected": true,
+  "scope": "Windows manual download route only; no Sparkle availability checker exists in Windows.",
+  "passed": true
+}

@@ -1,0 +1,62 @@
+{
+  "appcastItems" : [
+    {
+      "build" : "12",
+      "downloadURL" : "https:\/\/github.com\/jmpijll\/slightshot\/releases\/download\/v1.5.0\/Slightshot-1.5.0.dmg",
+      "marketingVersion" : "1.5.0"
+    },
+    {
+      "build" : "11",
+      "downloadURL" : "https:\/\/github.com\/jmpijll\/slightshot\/releases\/download\/v1.4.2\/Slightshot-1.4.2.dmg",
+      "marketingVersion" : "1.4.2"
+    },
+    {
+      "build" : "10",
+      "downloadURL" : "https:\/\/github.com\/jmpijll\/slightshot\/releases\/download\/v1.4.1\/Slightshot-1.4.1.dmg",
+      "marketingVersion" : "1.4.1"
+    }
+  ],
+  "automaticChecks" : false,
+  "automaticDownloadsAllowed" : false,
+  "capture" : {
+    "file" : "native-discovery.png",
+    "saved" : true,
+    "source" : "ScreenCaptureKit screenshot of the actual running native NSWindow"
+  },
+  "cycleError" : {
+    "code" : 1001,
+    "description" : "You’re up to date!",
+    "domain" : "SUSparkleErrorDomain"
+  },
+  "events" : [
+    "startUpdater succeeded",
+    "checkForUpdateInformation invoked",
+    "didFinishLoadingAppcast: 3 items",
+    "updaterDidNotFindUpdate:error:",
+    "didFinishUpdateCycleForUpdateCheck:error:"
+  ],
+  "expectedResult" : "no-update",
+  "feedURL" : "https:\/\/jmpijll.github.io\/slightshot\/appcast.xml",
+  "finishedAt" : "2026-10-11T00:07:43Z",
+  "fixture" : "Automated native AppKit diagnostic harness; synthetic installed bundle metadata; real Sparkle SDK 2.10.0. This is not a pristine published Slightshot binary.",
+  "hostBuild" : "162",
+  "hostBundleIdentifier" : "com.jmpijll.slightshot.updater-review.before-high162",
+  "hostMarketingVersion" : "1.4.0",
+  "latestRejectedItem" : {
+    "build" : "12",
+    "marketingVersion" : "1.5.0"
+  },
+  "matchesExpectedResult" : true,
+  "noUpdateError" : {
+    "code" : 1001,
+    "description" : "You’re up to date!",
+    "domain" : "SUSparkleErrorDomain"
+  },
+  "noUpdateReason" : 2,
+  "operation" : "SPUUpdater.checkForUpdateInformation (no update offering, download or installation)",
+  "phase" : "Before fix · local high build against published 1.5.0 feed",
+  "result" : "no-update",
+  "sourceCommit" : "06cf15b185d1d599201d944453a1f02568f23f1b",
+  "startedAt" : "2026-10-11T00:07:42Z",
+  "updateCheckType" : 2
+}

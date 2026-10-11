@@ -1,0 +1,26 @@
+{
+  "command": [
+    "/private/tmp/slightshot-updater-1.5.1/after-candidate192-public9.app/Contents/MacOS/UpdateDiscoveryProbe",
+    "--output",
+    "/private/tmp/slightshot-updater-1.5.1/after-candidate192/public9",
+    "--label",
+    "After fix \u00b7 candidate 1.5.1 build 192 \u00b7 information only",
+    "--expected",
+    "update-found",
+    "--source-commit",
+    "1806a9eb8280cce7601f1807374d79d30ed4da72"
+  ],
+  "bundleIdentifier": "com.jmpijll.slightshot.updater-review.after-candidate192-public9",
+  "hostMarketingVersion": "1.4.0",
+  "hostBuild": "9",
+  "sourceCommit": "1806a9eb8280cce7601f1807374d79d30ed4da72",
+  "syntheticHostMetadata": true,
+  "probeOnly": true,
+  "feedURL": "http://127.0.0.1:64263/appcast.xml",
+  "feedSnapshotSHA256": "7abf00d8be044e7a20a20d4c070171b58c089a76b6d256253df86c97f6dd6fbe",
+  "executableSHA256": "67eec389bc473a3aadbf6efbee033dc17f9f0edf8cc03f78579c822e9663322a",
+  "nativeScreenshotSHA256": "719eb5767e5c46a092b508c8a5af52a380dea0b80dc05ebf9622146caf0684d9",
+  "sparkleVersion": "2.10.0",
+  "result": "update-found",
+  "matchesExpectedResult": true
+}

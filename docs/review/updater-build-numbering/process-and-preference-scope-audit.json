@@ -1,0 +1,10 @@
+{
+  "checkedAtUTC": "2026-10-11T00:16:50.450283+00:00",
+  "ownedProcessesRemaining": [],
+  "existingUserProcess": [
+    "43282 /Users/jamievanderpijll/slightshot/build/Slightshot.app/Contents/MacOS/Slightshot"
+  ],
+  "productionPreferencesTargeted": false,
+  "preferenceIsolationBasis": "SPUUpdater hostBundle/applicationBundle = NSBundle.mainBundle; unique com.jmpijll.slightshot.updater-review.* ID for each case; automatic behavior disabled by fixture Info.plist; no production suite/defaults setters.",
+  "limitation": "No bytewise audit of unrelated user preferences; only fixture targeting and process ownership were checked."
+}

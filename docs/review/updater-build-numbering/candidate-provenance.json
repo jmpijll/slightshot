@@ -1,0 +1,12 @@
+{
+  "sourceCommit": "1806a9eb8280cce7601f1807374d79d30ed4da72",
+  "candidateVersion": "1.5.1",
+  "candidateBuild": "192",
+  "buildPolicyCommand": "python3 Scripts/release_metadata.py --version 1.5.1 --appcast public/appcast.xml",
+  "policySHA256": "8979541a67c0f2d2f401f0c80d832e8a932f7b41e9e8d16e5b21e40238f2c93b",
+  "workflowSHA256": "a1a74ee74d89cf326ef2efb2ca05144e98e22009268af5bc1337e62ba69dc39c",
+  "originalFeedSHA256": "778f95aed5700ddd0ac5614f8caf541fc51874308f349d9d1ebd13f447e03ce6",
+  "candidateFeedSHA256": "7abf00d8be044e7a20a20d4c070171b58c089a76b6d256253df86c97f6dd6fbe",
+  "generatedAtUTC": "2026-10-11T00:15:36.177564+00:00",
+  "scope": "Synthetic candidate appcast only for actual Sparkle information-only discovery. Build comes from actual committed release policy. Future enclosure not downloaded/installed or claimed signed; live/public release validated separately after publication."
+}

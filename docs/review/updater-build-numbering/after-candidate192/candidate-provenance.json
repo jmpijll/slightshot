@@ -1,0 +1,30 @@
+{
+  "sourceCommit": "1806a9eb8280cce7601f1807374d79d30ed4da72",
+  "candidateVersion": "1.5.1",
+  "candidateBuild": "192",
+  "inputFeed": "/private/tmp/slightshot-updater-1.5.1/candidate-appcast.xml",
+  "feedSHA256": "7abf00d8be044e7a20a20d4c070171b58c089a76b6d256253df86c97f6dd6fbe",
+  "feedURL": "http://127.0.0.1:64263/appcast.xml",
+  "fixture": "Synthetic installed metadata; exact candidate appcast bytes served on owned loopback.",
+  "scope": "Real Sparkle SDK discovery only; no publication, download, signature or installation claim.",
+  "cases": [
+    {
+      "case": "reported128",
+      "hostBuild": "128",
+      "selectedBuild": "192",
+      "result": "update-found"
+    },
+    {
+      "case": "high162",
+      "hostBuild": "162",
+      "selectedBuild": "192",
+      "result": "update-found"
+    },
+    {
+      "case": "public9",
+      "hostBuild": "9",
+      "selectedBuild": "192",
+      "result": "update-found"
+    }
+  ]
+}
