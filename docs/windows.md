@@ -10,15 +10,15 @@ limit Windows 10 support to certain Enterprise/LTSC editions.
 
 ## Download and updates
 
-Version [1.5.0](https://github.com/jmpijll/slightshot/releases/tag/v1.5.0) offers
-[x64 setup](https://github.com/jmpijll/slightshot/releases/download/v1.5.0/Slightshot-windows-x64-setup.exe)
-and [ARM64 setup](https://github.com/jmpijll/slightshot/releases/download/v1.5.0/Slightshot-windows-arm64-setup.exe).
+Version [1.5.1](https://github.com/jmpijll/slightshot/releases/tag/v1.5.1) offers
+[x64 setup](https://github.com/jmpijll/slightshot/releases/download/v1.5.1/Slightshot-windows-x64-setup.exe)
+and [ARM64 setup](https://github.com/jmpijll/slightshot/releases/download/v1.5.1/Slightshot-windows-arm64-setup.exe).
 Choose x64 for an Intel/AMD PC or ARM64 for a Windows on Arm PC, quit any running
 Slightshot copy, then run setup. See [Installer](#installer) for upgrades and
 switching from portable to installed.
 
-Portable [x64 ZIP](https://github.com/jmpijll/slightshot/releases/download/v1.5.0/Slightshot-windows-x64.zip)
-and [ARM64 ZIP](https://github.com/jmpijll/slightshot/releases/download/v1.5.0/Slightshot-windows-arm64.zip)
+Portable [x64 ZIP](https://github.com/jmpijll/slightshot/releases/download/v1.5.1/Slightshot-windows-x64.zip)
+and [ARM64 ZIP](https://github.com/jmpijll/slightshot/releases/download/v1.5.1/Slightshot-windows-arm64.zip)
 downloads remain available. Extract the ZIP and double-click its only file,
 `Slightshot.exe`. Setup and the portable app both bundle the .NET runtime;
 you do not need to install it separately.
@@ -32,7 +32,7 @@ remove Windows security warnings. Updates are downloaded manually from
 **Download updates…** in the tray menu or General settings opens the latest
 release. About and Settings show the version embedded in the running executable.
 
-See the [1.5.0 published-file validation and native editor evidence](review/releases/v1.5.0/README.md).
+See the [1.5.1 published-file validation and native editor evidence](review/releases/v1.5.1/README.md).
 
 ## Installer
 
@@ -114,8 +114,8 @@ Install [Inno Setup 7.1.0](https://jrsoftware.org/isdl.php) on Windows and use
 After the portable publish above, wrap each architecture's executable in setup:
 
 ```powershell
-./Scripts/build_windows_installer.ps1 -Runtime win-x64 -Version 1.5.0 -PublishDirectory Windows/artifacts/win-x64 -OutputDirectory Windows/artifacts/installers -CompilerPath 'C:\Program Files\Inno Setup 7\ISCC.exe'
-./Scripts/build_windows_installer.ps1 -Runtime win-arm64 -Version 1.5.0 -PublishDirectory Windows/artifacts/win-arm64 -OutputDirectory Windows/artifacts/installers -CompilerPath 'C:\Program Files\Inno Setup 7\ISCC.exe'
+./Scripts/build_windows_installer.ps1 -Runtime win-x64 -Version 1.5.1 -PublishDirectory Windows/artifacts/win-x64 -OutputDirectory Windows/artifacts/installers -CompilerPath 'C:\Program Files\Inno Setup 7\ISCC.exe'
+./Scripts/build_windows_installer.ps1 -Runtime win-arm64 -Version 1.5.1 -PublishDirectory Windows/artifacts/win-arm64 -OutputDirectory Windows/artifacts/installers -CompilerPath 'C:\Program Files\Inno Setup 7\ISCC.exe'
 ```
 
 Use the version embedded in the published app; the builder rejects a mismatch.

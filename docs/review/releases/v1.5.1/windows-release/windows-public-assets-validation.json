@@ -1,0 +1,282 @@
+{
+  "checked_at_utc": "2026-10-11T00:42:07.048754+00:00",
+  "repository": "jmpijll/slightshot",
+  "expected_version": "1.5.1",
+  "source": "GitHub public release API and downloaded published files",
+  "native_execution": {
+    "rerun": false,
+    "release_workflow_url": "https://github.com/jmpijll/slightshot/actions/runs/38098651456",
+    "native_x64": "Exact-source native Windows workflow checks passed; public-file validator does not rerun native execution.",
+    "native_arm64": "Not performed; cross-built package inspection only."
+  },
+  "assets": [
+    {
+      "asset": "Slightshot-windows-x64.zip",
+      "url": "https://github.com/jmpijll/slightshot/releases/download/v1.5.1/Slightshot-windows-x64.zip",
+      "github_asset_digest": "sha256:b5457c511cdd403cf96b078334a7ee3fa7285505e1a41308ae00e5a45d6f4e7c",
+      "github_digest_matches": true,
+      "github_size_matches": true,
+      "status": "passed",
+      "architecture": "x64",
+      "archive_bytes": 75865075,
+      "archive_sha256": "b5457c511cdd403cf96b078334a7ee3fa7285505e1a41308ae00e5a45d6f4e7c",
+      "archive_entries": [
+        "Slightshot.exe"
+      ],
+      "zip_crc_verified": true,
+      "executable_bytes": 199108959,
+      "executable_sha256": "e554bd67ece1f3cdad894867faf6c3d3d73338376a07f8b1452aad22ccbc41fc",
+      "pe_machine": "0x8664",
+      "pe_format": "PE32+",
+      "product_version_source_commit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+      "product_version_source_commit_matches": true,
+      "version_strings": [
+        {
+          "CompanyName": "Slightshot",
+          "FileDescription": "Slightshot",
+          "FileVersion": "1.5.1.0",
+          "InternalName": "Slightshot.dll",
+          "LegalCopyright": "",
+          "OriginalFilename": "Slightshot.dll",
+          "ProductName": "Slightshot",
+          "ProductVersion": "1.5.1+293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+          "Assembly Version": "1.5.1.0"
+        }
+      ],
+      "raw_version_strings": [
+        {
+          "CompanyName": "Slightshot",
+          "FileDescription": "Slightshot",
+          "FileVersion": "1.5.1.0",
+          "InternalName": "Slightshot.dll",
+          "LegalCopyright": " ",
+          "OriginalFilename": "Slightshot.dll",
+          "ProductName": "Slightshot",
+          "ProductVersion": "1.5.1+293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+          "Assembly Version": "1.5.1.0"
+        }
+      ],
+      "fixed_versions": [
+        {
+          "product": "1.5.1.0",
+          "file": "1.5.1.0"
+        }
+      ]
+    },
+    {
+      "asset": "Slightshot-windows-arm64.zip",
+      "url": "https://github.com/jmpijll/slightshot/releases/download/v1.5.1/Slightshot-windows-arm64.zip",
+      "github_asset_digest": "sha256:8f4ad747de7cb7e40d7504013f7908d18c7d482ef5ffe117eaaeb4114397987d",
+      "github_digest_matches": true,
+      "github_size_matches": true,
+      "status": "passed",
+      "architecture": "arm64",
+      "archive_bytes": 70956730,
+      "archive_sha256": "8f4ad747de7cb7e40d7504013f7908d18c7d482ef5ffe117eaaeb4114397987d",
+      "archive_entries": [
+        "Slightshot.exe"
+      ],
+      "zip_crc_verified": true,
+      "executable_bytes": 212961500,
+      "executable_sha256": "5a3aed2340d669883ef8e9d09c36ae3b183b366a046a426dc97a0dd216f5edb7",
+      "pe_machine": "0xaa64",
+      "pe_format": "PE32+",
+      "product_version_source_commit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+      "product_version_source_commit_matches": true,
+      "version_strings": [
+        {
+          "CompanyName": "Slightshot",
+          "FileDescription": "Slightshot",
+          "FileVersion": "1.5.1.0",
+          "InternalName": "Slightshot.dll",
+          "LegalCopyright": "",
+          "OriginalFilename": "Slightshot.dll",
+          "ProductName": "Slightshot",
+          "ProductVersion": "1.5.1+293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+          "Assembly Version": "1.5.1.0"
+        }
+      ],
+      "raw_version_strings": [
+        {
+          "CompanyName": "Slightshot",
+          "FileDescription": "Slightshot",
+          "FileVersion": "1.5.1.0",
+          "InternalName": "Slightshot.dll",
+          "LegalCopyright": " ",
+          "OriginalFilename": "Slightshot.dll",
+          "ProductName": "Slightshot",
+          "ProductVersion": "1.5.1+293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+          "Assembly Version": "1.5.1.0"
+        }
+      ],
+      "fixed_versions": [
+        {
+          "product": "1.5.1.0",
+          "file": "1.5.1.0"
+        }
+      ]
+    }
+  ],
+  "installer_assets": [
+    {
+      "asset": "Slightshot-windows-x64-setup.exe",
+      "url": "https://github.com/jmpijll/slightshot/releases/download/v1.5.1/Slightshot-windows-x64-setup.exe",
+      "github_asset_digest": "sha256:9e296529ec45726ad7d36282e156f1a4a2b12a6bc43828ea58efd019fda8a19b",
+      "github_digest_matches": true,
+      "github_size_matches": true,
+      "status": "passed",
+      "bytes": 56000210,
+      "sha256": "9e296529ec45726ad7d36282e156f1a4a2b12a6bc43828ea58efd019fda8a19b",
+      "bootstrapper_architecture": "x86",
+      "bootstrapper_pe_machine": "0x014c",
+      "bootstrapper_pe_format": "PE32",
+      "target_architecture": "x64",
+      "target_architecture_source": "Published asset name and reviewed Inno Setup architecture selection; corresponding native payload is checked in its portable archive.",
+      "payload_inspected": false,
+      "native_execution_rerun": false,
+      "version_strings": [
+        {
+          "Comments": "This installation was built with Inno Setup.",
+          "CompanyName": "Jamie van der Pijll",
+          "FileDescription": "Slightshot installer",
+          "FileVersion": "1.5.1.0",
+          "LegalCopyright": "",
+          "OriginalFileName": "",
+          "ProductName": "Slightshot",
+          "ProductVersion": "1.5.1"
+        }
+      ],
+      "raw_version_strings": [
+        {
+          "Comments": "This installation was built with Inno Setup.",
+          "CompanyName": "Jamie van der Pijll                                         ",
+          "FileDescription": "Slightshot installer                                        ",
+          "FileVersion": "1.5.1.0             ",
+          "LegalCopyright": "                                                                                                    ",
+          "OriginalFileName": "                                                  ",
+          "ProductName": "Slightshot                                                  ",
+          "ProductVersion": "1.5.1                                             "
+        }
+      ],
+      "fixed_versions": [
+        {
+          "product": "1.5.1.0",
+          "file": "1.5.1.0"
+        }
+      ]
+    },
+    {
+      "asset": "Slightshot-windows-arm64-setup.exe",
+      "url": "https://github.com/jmpijll/slightshot/releases/download/v1.5.1/Slightshot-windows-arm64-setup.exe",
+      "github_asset_digest": "sha256:3c260f87bff889bc2eaa20215850b1e4a9810de388572d61fd097da7bc4b386b",
+      "github_digest_matches": true,
+      "github_size_matches": true,
+      "status": "passed",
+      "bytes": 49862226,
+      "sha256": "3c260f87bff889bc2eaa20215850b1e4a9810de388572d61fd097da7bc4b386b",
+      "bootstrapper_architecture": "x86",
+      "bootstrapper_pe_machine": "0x014c",
+      "bootstrapper_pe_format": "PE32",
+      "target_architecture": "arm64",
+      "target_architecture_source": "Published asset name and reviewed Inno Setup architecture selection; corresponding native payload is checked in its portable archive.",
+      "payload_inspected": false,
+      "native_execution_rerun": false,
+      "version_strings": [
+        {
+          "Comments": "This installation was built with Inno Setup.",
+          "CompanyName": "Jamie van der Pijll",
+          "FileDescription": "Slightshot installer",
+          "FileVersion": "1.5.1.0",
+          "LegalCopyright": "",
+          "OriginalFileName": "",
+          "ProductName": "Slightshot",
+          "ProductVersion": "1.5.1"
+        }
+      ],
+      "raw_version_strings": [
+        {
+          "Comments": "This installation was built with Inno Setup.",
+          "CompanyName": "Jamie van der Pijll                                         ",
+          "FileDescription": "Slightshot installer                                        ",
+          "FileVersion": "1.5.1.0             ",
+          "LegalCopyright": "                                                                                                    ",
+          "OriginalFileName": "                                                  ",
+          "ProductName": "Slightshot                                                  ",
+          "ProductVersion": "1.5.1                                             "
+        }
+      ],
+      "fixed_versions": [
+        {
+          "product": "1.5.1.0",
+          "file": "1.5.1.0"
+        }
+      ]
+    }
+  ],
+  "status": "passed",
+  "source_commit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+  "release_url": "https://github.com/jmpijll/slightshot/releases/tag/v1.5.1",
+  "published_at_utc": "2026-10-11T00:41:00Z",
+  "native_execution_provenance": {
+    "release_workflow_url": "https://github.com/jmpijll/slightshot/actions/runs/38098651456",
+    "source_commit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+    "run_number": 13,
+    "release_run_status_at_validation": "completed",
+    "release_run_conclusion_at_validation": "success",
+    "job": "Windows preview and native checks / build-and-render",
+    "job_url": "https://github.com/jmpijll/slightshot/actions/runs/38098651456/job/114349780225",
+    "job_conclusion": "success",
+    "native_checks": [
+      {
+        "step": "Test selection, layout and output geometry",
+        "conclusion": "success"
+      },
+      {
+        "step": "Build native app with warnings as errors",
+        "conclusion": "success"
+      },
+      {
+        "step": "Render native WPF parity fixtures and test image export",
+        "conclusion": "success"
+      },
+      {
+        "step": "Test clipboard image editor, native window, original pixels and output retry",
+        "conclusion": "success"
+      },
+      {
+        "step": "Test native video recording, export quality, cancellation and retry",
+        "conclusion": "success"
+      },
+      {
+        "step": "Test timed video editor, native pointer drawing and rendered MP4 annotations",
+        "conclusion": "success"
+      },
+      {
+        "step": "Benchmark real 4K preview, timed effects, export and cancellation",
+        "conclusion": "success"
+      },
+      {
+        "step": "Test delayed capture on the real Windows desktop",
+        "conclusion": "success"
+      },
+      {
+        "step": "Package and verify single-file archives",
+        "conclusion": "success"
+      },
+      {
+        "step": "Test the extracted x64 app from a path containing spaces",
+        "conclusion": "success"
+      },
+      {
+        "step": "Build per-user Windows installers",
+        "conclusion": "success"
+      },
+      {
+        "step": "Test installation, upgrade, installed app and uninstallation",
+        "conclusion": "success"
+      }
+    ],
+    "native_x64_installer_execution": "Passed installation, upgrade, running-app/downgrade guards and uninstall in the exact-tag release workflow; not rerun by this public-file validator.",
+    "native_arm64_installer_execution": "Not performed; ARM64 installer and native payload are cross-built and inspected. Native ARM64 desktop acceptance remains pending."
+  }
+}

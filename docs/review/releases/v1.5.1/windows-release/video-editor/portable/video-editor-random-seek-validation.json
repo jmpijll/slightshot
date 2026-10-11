@@ -1,0 +1,42 @@
+{
+  "sourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+  "method": "Native editor backward/forward/end seeks are checked against separately decoded forward-only source counters. End is checked against the actual final source sample forced using raw last PTS; the next backward seek covers terminal-cache recovery. Known nominal source RGB remains the independent color truth.",
+  "evidence": [
+    {
+      "requestedSeconds": 0.5,
+      "actualEditorPositionSeconds": 0.5,
+      "expectedCounterFromIndependentForwardOnlyReader": 15,
+      "actualNativePreviewCounter": 15
+    },
+    {
+      "requestedSeconds": 3.5,
+      "actualEditorPositionSeconds": 3.5,
+      "expectedCounterFromIndependentForwardOnlyReader": 99,
+      "actualNativePreviewCounter": 99
+    },
+    {
+      "requestedSeconds": 0.5,
+      "actualEditorPositionSeconds": 0.5,
+      "expectedCounterFromIndependentForwardOnlyReader": 15,
+      "actualNativePreviewCounter": 15
+    },
+    {
+      "requestedSeconds": 2,
+      "actualEditorPositionSeconds": 2,
+      "expectedCounterFromIndependentForwardOnlyReader": 56,
+      "actualNativePreviewCounter": 56
+    },
+    {
+      "requestedSeconds": 4.3140333,
+      "actualEditorPositionSeconds": 4.3140333,
+      "expectedCounterFromIndependentForwardOnlyReader": 122,
+      "actualNativePreviewCounter": 122
+    },
+    {
+      "requestedSeconds": 0.5,
+      "actualEditorPositionSeconds": 0.5,
+      "expectedCounterFromIndependentForwardOnlyReader": 15,
+      "actualNativePreviewCounter": 15
+    }
+  ]
+}

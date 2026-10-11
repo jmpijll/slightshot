@@ -1,0 +1,19 @@
+{
+  "verified_at": "2026-10-11T00:42:55.012491+00:00",
+  "platform": "macOS 27",
+  "interaction": "Native CUA accessibility click of Check for Updates… in the existing running app",
+  "application_path": "build/Slightshot.app (primary workspace)",
+  "runtime_version_before": "1.4.0 (128)",
+  "running_binary_source_commit": "Unknown; loaded metadata differs from the subsequently rebuilt on-disk bundle",
+  "published_release_source": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+  "published_release_version": "1.5.1",
+  "published_release_build": 195,
+  "result": "update offered",
+  "actual_accessibility_text": "A new version of Slightshot is available! Slightshot 1.5.1 is now available—you have 1.4.0. Would you like to download it now?",
+  "automatic_download_checkbox_before": false,
+  "dismissal": "Window close button; Install Update and Skip This Version were not selected",
+  "runtime_version_after": "1.4.0 (128)",
+  "scope": "Availability verification only; no update installation and no manual preference edits",
+  "visual_scope": "Actual Software Update screenshot displayed in this chat; separate durable native SDK fixture captures are retained in the release review",
+  "status": "passed"
+}

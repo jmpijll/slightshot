@@ -1,0 +1,52 @@
+{
+  "appcastItems" : [
+    {
+      "build" : "195",
+      "downloadURL" : "https:\/\/github.com\/jmpijll\/slightshot\/releases\/download\/v1.5.1\/Slightshot-1.5.1.dmg",
+      "marketingVersion" : "1.5.1"
+    },
+    {
+      "build" : "12",
+      "downloadURL" : "https:\/\/github.com\/jmpijll\/slightshot\/releases\/download\/v1.5.0\/Slightshot-1.5.0.dmg",
+      "marketingVersion" : "1.5.0"
+    },
+    {
+      "build" : "11",
+      "downloadURL" : "https:\/\/github.com\/jmpijll\/slightshot\/releases\/download\/v1.4.2\/Slightshot-1.4.2.dmg",
+      "marketingVersion" : "1.4.2"
+    }
+  ],
+  "automaticChecks" : false,
+  "automaticDownloadsAllowed" : false,
+  "capture" : {
+    "file" : "native-discovery.png",
+    "saved" : true,
+    "source" : "ScreenCaptureKit screenshot of the actual running native NSWindow"
+  },
+  "events" : [
+    "startUpdater succeeded",
+    "checkForUpdateInformation invoked",
+    "didFinishLoadingAppcast: 3 items",
+    "didFindValidUpdate",
+    "didFinishUpdateCycleForUpdateCheck:error:"
+  ],
+  "expectedResult" : "update-found",
+  "feedURL" : "https:\/\/jmpijll.github.io\/slightshot\/appcast.xml",
+  "finishedAt" : "2026-10-11T00:42:09Z",
+  "fixture" : "Automated native AppKit diagnostic harness; synthetic installed bundle metadata; real Sparkle SDK 2.10.0. This is not a pristine published Slightshot binary.",
+  "hostBuild" : "128",
+  "hostBundleIdentifier" : "com.jmpijll.slightshot.updater-review.after-published195-reported128",
+  "hostMarketingVersion" : "1.4.0",
+  "matchesExpectedResult" : true,
+  "operation" : "SPUUpdater.checkForUpdateInformation (no update offering, download or installation)",
+  "phase" : "Published 1.5.1 build 195 · real feed · information only",
+  "result" : "update-found",
+  "selectedUpdate" : {
+    "build" : "195",
+    "downloadURL" : "https:\/\/github.com\/jmpijll\/slightshot\/releases\/download\/v1.5.1\/Slightshot-1.5.1.dmg",
+    "marketingVersion" : "1.5.1"
+  },
+  "sourceCommit" : "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+  "startedAt" : "2026-10-11T00:42:07Z",
+  "updateCheckType" : 2
+}

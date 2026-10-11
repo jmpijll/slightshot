@@ -1,0 +1,10 @@
+{
+  "sourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+  "sourceDurationTicks": 43140333,
+  "untouchedEndpointTicks": 20000004,
+  "doubleSecondsRoundtripTicks": 20000003,
+  "actualBeginTicks": 10000000,
+  "actualEndTicks": 20000004,
+  "passed": true,
+  "method": "The actual native start-time field is committed with Enter. Its untouched end must retain its original TimeSpan ticks; the fixture endpoint deliberately exposes double-seconds roundtrip loss. Original annotation timing is then restored."
+}

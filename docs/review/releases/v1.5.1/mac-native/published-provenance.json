@@ -1,0 +1,43 @@
+{
+  "releaseSourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+  "releaseVersion": "1.5.1",
+  "releaseBuild": "195",
+  "feedURL": "https://jmpijll.github.io/slightshot/appcast.xml",
+  "feedSHA256": "76dd4f483755929990936daff4e55b3dcb914637752e3242e3ce9bb452de2873",
+  "sparkleVersion": "2.10.0",
+  "sparkleFrameworkSHA256": "b57162032b569fce26c8ba162a54c55740da362822f80eac72dbad41d6edc374",
+  "scope": "Actual published feed; real pinned Sparkle SDK information-only discovery. Synthetic installed host metadata. No archive download, installation or payload trust claim.",
+  "cases": [
+    {
+      "case": "reported128",
+      "hostBuild": "128",
+      "selectedBuild": "195",
+      "result": "update-found",
+      "sourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1"
+    },
+    {
+      "case": "high162",
+      "hostBuild": "162",
+      "selectedBuild": "195",
+      "result": "update-found",
+      "sourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1"
+    },
+    {
+      "case": "public9",
+      "hostBuild": "9",
+      "selectedBuild": "195",
+      "result": "update-found",
+      "sourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1"
+    }
+  ],
+  "ownedProcessesRemaining": [],
+  "initialExistingProcesses": [
+    "43282 /Users/jamievanderpijll/slightshot/build/Slightshot.app/Contents/MacOS/Slightshot",
+    "79524 /Users/jamievanderpijll/.codex/worktrees/screen-recording/slightshot/build/Slightshot.app/Contents/MacOS/Slightshot"
+  ],
+  "existingProcesses": [
+    "43282 /Users/jamievanderpijll/slightshot/build/Slightshot.app/Contents/MacOS/Slightshot",
+    "79524 /Users/jamievanderpijll/.codex/worktrees/screen-recording/slightshot/build/Slightshot.app/Contents/MacOS/Slightshot"
+  ],
+  "productionPreferencesTargeted": false
+}

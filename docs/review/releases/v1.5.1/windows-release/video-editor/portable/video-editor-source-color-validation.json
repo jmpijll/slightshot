@@ -1,0 +1,1927 @@
+{
+  "sourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+  "maximumMeanRGBChannelDelta": 8,
+  "passed": true,
+  "evidence": [
+    {
+      "Seconds": 0.5,
+      "Patch": "Red",
+      "Comparison": "Known nominal fixture input vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        255,
+        0,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Red",
+      "Comparison": "Known nominal fixture input vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        255,
+        0,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Red",
+      "Comparison": "Native editor source preview (MF NV12\u002BCore) vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Green",
+      "Comparison": "Known nominal fixture input vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        0,
+        255,
+        0
+      ],
+      "ActualMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.09090909090909091,
+        0,
+        1
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Green",
+      "Comparison": "Known nominal fixture input vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        0,
+        255,
+        0
+      ],
+      "ActualMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.09090909090909091,
+        0,
+        1
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Green",
+      "Comparison": "Native editor source preview (MF NV12\u002BCore) vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "ActualMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Blue",
+      "Comparison": "Known nominal fixture input vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        0,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Blue",
+      "Comparison": "Known nominal fixture input vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        0,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Blue",
+      "Comparison": "Native editor source preview (MF NV12\u002BCore) vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Neutral",
+      "Comparison": "Known nominal fixture input vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        96,
+        96,
+        96
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Neutral",
+      "Comparison": "Known nominal fixture input vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        96,
+        96,
+        96
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Neutral",
+      "Comparison": "Native editor source preview (MF NV12\u002BCore) vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Red",
+      "Comparison": "Known nominal fixture input vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        255,
+        0,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Red",
+      "Comparison": "Known nominal fixture input vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        255,
+        0,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Red",
+      "Comparison": "Native editor source preview (MF NV12\u002BCore) vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Green",
+      "Comparison": "Known nominal fixture input vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        0,
+        255,
+        0
+      ],
+      "ActualMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.09090909090909091,
+        0,
+        1
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Green",
+      "Comparison": "Known nominal fixture input vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        0,
+        255,
+        0
+      ],
+      "ActualMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.09090909090909091,
+        0,
+        1
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Green",
+      "Comparison": "Native editor source preview (MF NV12\u002BCore) vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "ActualMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Blue",
+      "Comparison": "Known nominal fixture input vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        0,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Blue",
+      "Comparison": "Known nominal fixture input vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        0,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Blue",
+      "Comparison": "Native editor source preview (MF NV12\u002BCore) vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Neutral",
+      "Comparison": "Known nominal fixture input vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        96,
+        96,
+        96
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Neutral",
+      "Comparison": "Known nominal fixture input vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        96,
+        96,
+        96
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Neutral",
+      "Comparison": "Native editor source preview (MF NV12\u002BCore) vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Red",
+      "Comparison": "Known nominal fixture input vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        255,
+        0,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        0.9090909090909091,
+        0.18181818181818182
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0.9090909090909091,
+        0.18181818181818182
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Red",
+      "Comparison": "Known nominal fixture input vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        255,
+        0,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        0.9090909090909091,
+        0.18181818181818182
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0.9090909090909091,
+        0.18181818181818182
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Red",
+      "Comparison": "Native editor source preview (MF NV12\u002BCore) vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        255,
+        0.9090909090909091,
+        0.18181818181818182
+      ],
+      "ActualMeanRGB": [
+        255,
+        0.9090909090909091,
+        0.18181818181818182
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Green",
+      "Comparison": "Known nominal fixture input vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        0,
+        255,
+        0
+      ],
+      "ActualMeanRGB": [
+        0,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Green",
+      "Comparison": "Known nominal fixture input vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        0,
+        255,
+        0
+      ],
+      "ActualMeanRGB": [
+        0,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Green",
+      "Comparison": "Native editor source preview (MF NV12\u002BCore) vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        0,
+        255,
+        1
+      ],
+      "ActualMeanRGB": [
+        0,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Blue",
+      "Comparison": "Known nominal fixture input vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        0,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Blue",
+      "Comparison": "Known nominal fixture input vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        0,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Blue",
+      "Comparison": "Native editor source preview (MF NV12\u002BCore) vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Neutral",
+      "Comparison": "Known nominal fixture input vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        96,
+        96,
+        96
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Neutral",
+      "Comparison": "Known nominal fixture input vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        96,
+        96,
+        96
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Neutral",
+      "Comparison": "Native editor source preview (MF NV12\u002BCore) vs sequential BGRA",
+      "ReferenceMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Red",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        255,
+        0,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Green",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        0,
+        255,
+        0
+      ],
+      "ActualMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.09090909090909091,
+        0,
+        1
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Blue",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        0,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Neutral",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        96,
+        96,
+        96
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Red",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        255,
+        0,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        0.9090909090909091,
+        0.18181818181818182
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0.9090909090909091,
+        0.18181818181818182
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Green",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        0,
+        255,
+        0
+      ],
+      "ActualMeanRGB": [
+        0,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Blue",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        0,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Neutral",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        96,
+        96,
+        96
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Red",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        255,
+        0,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Green",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        0,
+        255,
+        0
+      ],
+      "ActualMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.09090909090909091,
+        0,
+        1
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Blue",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        0,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Neutral",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        96,
+        96,
+        96
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Red",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        255,
+        0,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Green",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        0,
+        255,
+        0
+      ],
+      "ActualMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.09090909090909091,
+        0,
+        1
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Blue",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        0,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Neutral",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        96,
+        96,
+        96
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "Seconds": 4.3140333,
+      "Patch": "Red",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        255,
+        0,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        0.9090909090909091,
+        0.18181818181818182
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0.9090909090909091,
+        0.18181818181818182
+      ]
+    },
+    {
+      "Seconds": 4.3140333,
+      "Patch": "Green",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        0,
+        255,
+        0
+      ],
+      "ActualMeanRGB": [
+        0,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "Seconds": 4.3140333,
+      "Patch": "Blue",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        0,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 4.3140333,
+      "Patch": "Neutral",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        96,
+        96,
+        96
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Red",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        255,
+        0,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Green",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        0,
+        255,
+        0
+      ],
+      "ActualMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.09090909090909091,
+        0,
+        1
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Blue",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        0,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Neutral",
+      "Comparison": "Known nominal fixture input vs native editor preview after random seek",
+      "ReferenceMeanRGB": [
+        96,
+        96,
+        96
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Red",
+      "Comparison": "Compact actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Green",
+      "Comparison": "Compact actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "ActualMeanRGB": [
+        0.13636363636363635,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.04545454545454544,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Blue",
+      "Comparison": "Compact actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1.0265151515151516,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.026515151515151603,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Neutral",
+      "Comparison": "Compact actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Red",
+      "Comparison": "Compact actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Green",
+      "Comparison": "Compact actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "ActualMeanRGB": [
+        0.13636363636363635,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.04545454545454544,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Blue",
+      "Comparison": "Compact actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Neutral",
+      "Comparison": "Compact actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Red",
+      "Comparison": "Compact actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        255,
+        0.9090909090909091,
+        0.18181818181818182
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0.09090909090909094,
+        0.18181818181818182
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Green",
+      "Comparison": "Compact actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        0,
+        255,
+        1
+      ],
+      "ActualMeanRGB": [
+        0,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Blue",
+      "Comparison": "Compact actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Neutral",
+      "Comparison": "Compact actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Red",
+      "Comparison": "Balanced actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Green",
+      "Comparison": "Balanced actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "ActualMeanRGB": [
+        0.13636363636363635,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.04545454545454544,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Blue",
+      "Comparison": "Balanced actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1.0265151515151516,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.026515151515151603,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Neutral",
+      "Comparison": "Balanced actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Red",
+      "Comparison": "Balanced actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Green",
+      "Comparison": "Balanced actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "ActualMeanRGB": [
+        0.13636363636363635,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.04545454545454544,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Blue",
+      "Comparison": "Balanced actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Neutral",
+      "Comparison": "Balanced actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Red",
+      "Comparison": "Balanced actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        255,
+        0.9090909090909091,
+        0.18181818181818182
+      ],
+      "ActualMeanRGB": [
+        255,
+        0.9090909090909091,
+        0.18181818181818182
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Green",
+      "Comparison": "Balanced actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        0,
+        255,
+        1
+      ],
+      "ActualMeanRGB": [
+        0.13636363636363635,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.13636363636363635,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Blue",
+      "Comparison": "Balanced actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Neutral",
+      "Comparison": "Balanced actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Red",
+      "Comparison": "High actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Green",
+      "Comparison": "High actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "ActualMeanRGB": [
+        0.13636363636363635,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.04545454545454544,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Blue",
+      "Comparison": "High actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1.0265151515151516,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.026515151515151603,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 0.5,
+      "Patch": "Neutral",
+      "Comparison": "High actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Red",
+      "Comparison": "High actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "ActualMeanRGB": [
+        255,
+        1,
+        0
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Green",
+      "Comparison": "High actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        0.09090909090909091,
+        255,
+        1
+      ],
+      "ActualMeanRGB": [
+        0.13636363636363635,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.04545454545454544,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Blue",
+      "Comparison": "High actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 2,
+      "Patch": "Neutral",
+      "Comparison": "High actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Red",
+      "Comparison": "High actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        255,
+        0.9090909090909091,
+        0.18181818181818182
+      ],
+      "ActualMeanRGB": [
+        255,
+        0.9090909090909091,
+        0.18181818181818182
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Green",
+      "Comparison": "High actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        0,
+        255,
+        1
+      ],
+      "ActualMeanRGB": [
+        0.13636363636363635,
+        255,
+        1
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0.13636363636363635,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Blue",
+      "Comparison": "High actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "ActualMeanRGB": [
+        1,
+        0,
+        255
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "Seconds": 3.5,
+      "Patch": "Neutral",
+      "Comparison": "High actual encoded MP4 vs native editor source preview (MF NV12\u002BCore)",
+      "ReferenceMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "ActualMeanRGB": [
+        95,
+        95,
+        95
+      ],
+      "MeanAbsoluteRGBChannelDelta": [
+        0,
+        0,
+        0
+      ]
+    }
+  ]
+}

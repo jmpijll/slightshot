@@ -1,0 +1,43 @@
+{
+  "status": "passed",
+  "checkedAtUtc": "2026-10-11T00:42:32.991837+00:00",
+  "sourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+  "tag": "v1.5.1",
+  "releaseRunId": 38098651456,
+  "publicAssets": {
+    "Slightshot-windows-x64.zip": {
+      "sha256": "b5457c511cdd403cf96b078334a7ee3fa7285505e1a41308ae00e5a45d6f4e7c",
+      "bytes": 75865075,
+      "publishedMatchesTestedTagArtifact": true
+    },
+    "Slightshot-windows-arm64.zip": {
+      "sha256": "8f4ad747de7cb7e40d7504013f7908d18c7d482ef5ffe117eaaeb4114397987d",
+      "bytes": 70956730,
+      "publishedMatchesTestedTagArtifact": true
+    },
+    "Slightshot-windows-x64-setup.exe": {
+      "sha256": "9e296529ec45726ad7d36282e156f1a4a2b12a6bc43828ea58efd019fda8a19b",
+      "bytes": 56000210,
+      "publishedMatchesTestedTagArtifact": true
+    },
+    "Slightshot-windows-arm64-setup.exe": {
+      "sha256": "3c260f87bff889bc2eaa20215850b1e4a9810de388572d61fd097da7bc4b386b",
+      "bytes": 49862226,
+      "publishedMatchesTestedTagArtifact": true
+    }
+  },
+  "unchangedWindowsUpdateRoute": {
+    "sourceFile": "Windows/Slightshot/AppInfo.cs",
+    "sourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+    "sourceFileSha256": "56afe6ad7796bc62daeb358c7b1db6777a5b21fff8360d50e5209294e467c2c3",
+    "route": "https://github.com/jmpijll/slightshot/releases/latest",
+    "liveEffectiveUrl": "https://github.com/jmpijll/slightshot/releases/tag/v1.5.1",
+    "httpCode": 200,
+    "behavior": "Manual release page opened by tray and Settings. Windows has no automatic availability checker.",
+    "nativeUpdateClickRerun": false
+  },
+  "nativeExecution": {
+    "x64": "Exact-tag CI installation/upgrade/app/uninstall succeeded; public files match those tested bytes.",
+    "arm64": "Cross-built package architecture and version inspection only; native ARM64 execution was not performed."
+  }
+}

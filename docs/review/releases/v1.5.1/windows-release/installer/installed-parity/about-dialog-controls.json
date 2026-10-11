@@ -1,0 +1,14 @@
+[
+  {
+    "handle": "60230",
+    "className": "Button",
+    "text": "OK",
+    "visible": true
+  },
+  {
+    "handle": "170076",
+    "className": "Static",
+    "text": "Slightshot 1.5.1 for Windows\n\nAn open-source screenshot and screen recording app for Windows.\n\ngithub.com/jmpijll/slightshot",
+    "visible": true
+  }
+]

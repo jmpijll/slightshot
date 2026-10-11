@@ -1,0 +1,411 @@
+{
+  "checkedAtUtc": "2026-10-11T00:40:49.275934+00:00",
+  "githubRunId": 38098651456,
+  "githubRunUrl": "https://github.com/jmpijll/slightshot/actions/runs/38098651456",
+  "tag": "v1.5.1",
+  "sourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+  "windowsJobConclusion": "success",
+  "platform": "Windows x64 native WPF / Media Foundation; ARM64 cross-build and archive checks",
+  "releaseScope": "Exact-tag native artifacts. Public-download byte/architecture/version validation is separate.",
+  "nativeWindowsSteps": [
+    {
+      "name": "Set up job",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/checkout@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Resolve app version",
+      "conclusion": "success"
+    },
+    {
+      "name": "Verify shared icon assets",
+      "conclusion": "success"
+    },
+    {
+      "name": "Test portable archive layout and architecture gates",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/setup-dotnet@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Test selection, layout and output geometry",
+      "conclusion": "success"
+    },
+    {
+      "name": "Build native app with warnings as errors",
+      "conclusion": "success"
+    },
+    {
+      "name": "Test Windows shortcuts through native keyboard input and global registration",
+      "conclusion": "success"
+    },
+    {
+      "name": "Render native WPF parity fixtures and test image export",
+      "conclusion": "success"
+    },
+    {
+      "name": "Test clipboard image editor, native window, original pixels and output retry",
+      "conclusion": "success"
+    },
+    {
+      "name": "Test native video recording, export quality, cancellation and retry",
+      "conclusion": "success"
+    },
+    {
+      "name": "Test timed video editor, native pointer drawing and rendered MP4 annotations",
+      "conclusion": "success"
+    },
+    {
+      "name": "Benchmark real 4K preview, timed effects, export and cancellation",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/upload-artifact@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Test delayed capture on the real Windows desktop",
+      "conclusion": "success"
+    },
+    {
+      "name": "Publish portable x64 app",
+      "conclusion": "success"
+    },
+    {
+      "name": "Publish portable ARM64 app",
+      "conclusion": "success"
+    },
+    {
+      "name": "Package and verify single-file archives",
+      "conclusion": "success"
+    },
+    {
+      "name": "Test the extracted x64 app from a path containing spaces",
+      "conclusion": "success"
+    },
+    {
+      "name": "Install pinned Inno Setup compiler",
+      "conclusion": "success"
+    },
+    {
+      "name": "Build per-user Windows installers",
+      "conclusion": "success"
+    },
+    {
+      "name": "Build older-version fixture for upgrade and downgrade checks",
+      "conclusion": "success"
+    },
+    {
+      "name": "Test installation, upgrade, installed app and uninstallation",
+      "conclusion": "success"
+    },
+    {
+      "name": "Stage verified release downloads",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/upload-artifact@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/upload-artifact@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/upload-artifact@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/upload-artifact@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/upload-artifact@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/upload-artifact@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/upload-artifact@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/upload-artifact@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Run actions/setup-dotnet@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Run actions/checkout@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Complete job",
+      "conclusion": "success"
+    }
+  ],
+  "reports": {
+    "4k/video-editor-4k-validation.json": {
+      "sha256": "a51eff296d9cc6cded76d66a3bea171d6a2a6155493b12050852b6c8fb3577b9",
+      "embeddedSourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+      "checksCount": 0
+    },
+    "4k/video-editor-4k-high-cadence-validation.json": {
+      "sha256": "421734230541ea1d493c893f419c7589c4e818f1b5a1f5c4f36b34443398d736",
+      "embeddedSourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+      "checksCount": 0
+    },
+    "4k/video-editor-4k-balanced-validation.json": {
+      "sha256": "b1b74199c2eccc5a640702b3e0aff9cbd513ba55d737229cfa9c27c4517cc9b4",
+      "embeddedSourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+      "checksCount": 0
+    },
+    "4k/video-editor-4k-primary-performance.json": {
+      "sha256": "1b741ef2f85ff94254a81b54588676e336c71416e1cf2490e0e4b5f222144852",
+      "embeddedSourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+      "checksCount": 0
+    },
+    "video-editor/video-editor-validation.json": {
+      "sha256": "19cd4b360dd74ccc131eaa28648b6f5e0cc77129b82afe13f500dad2c2c9d0b1",
+      "embeddedSourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+      "checksCount": 19
+    },
+    "video-editor/video-editor-source-color-validation.json": {
+      "sha256": "3a5067fd038507902d73916619ec07bad7cbcdc282828ea961c2168fb72ab8de",
+      "embeddedSourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+      "checksCount": 0
+    },
+    "video-editor/video-editor-random-seek-validation.json": {
+      "sha256": "fc249420ca5edfc82ad8bfaa0ebb952b1180965bf7e52da635eb7c9a4f26843c",
+      "embeddedSourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+      "checksCount": 0
+    },
+    "video-editor/video-editor-timing-precision-validation.json": {
+      "sha256": "8a025c840ddecaf32ea04a83ca95085ac7d48210cefc653875db48270703770f",
+      "embeddedSourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+      "checksCount": 0
+    },
+    "video-editor/video-editor-timing-undo-validation.json": {
+      "sha256": "9b2597f3d7ed980ccbcc72765b84b70cbb67a46368bf8c8c3af63de7ce27ebf1",
+      "embeddedSourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+      "checksCount": 0
+    },
+    "video-editor/video-editor-high-cadence-validation.json": {
+      "sha256": "8717e94412daecc03a20145b1a4dfc01e33ebecf242b9a57e5d5de00cef4ca66",
+      "embeddedSourceCommit": null,
+      "checksCount": 0
+    },
+    "video-editor/video-editor-high-endpoint-validation.json": {
+      "sha256": "ccf086ded7200b37788698fd504969a311879a90e3ef604508f08321cadd3f50",
+      "embeddedSourceCommit": null,
+      "checksCount": 0
+    },
+    "video-editor/video-editor-balanced-cadence-validation.json": {
+      "sha256": "e8be82584bcb9ce59c6795b89e026ce31b6c5061704873a2f75b0647b35e3766",
+      "embeddedSourceCommit": null,
+      "checksCount": 0
+    },
+    "video-editor/video-editor-balanced-endpoint-validation.json": {
+      "sha256": "b057af7e0ab36958a51e46f9122c8ddeae842e2d5ecbcdf1b867762b0f6fd081",
+      "embeddedSourceCommit": null,
+      "checksCount": 0
+    },
+    "video-editor/video-editor-compact-cadence-validation.json": {
+      "sha256": "a8242e3b19a6f9e618f7f3cbcbbbdbd1e084314fc0be3856b0468b273c89e1ec",
+      "embeddedSourceCommit": null,
+      "checksCount": 0
+    },
+    "video-editor/video-editor-compact-endpoint-validation.json": {
+      "sha256": "88d6b4ea3d9ea6f97fc43174bb26759928d61eee441fda69719c101b90289aa9",
+      "embeddedSourceCommit": null,
+      "checksCount": 0
+    },
+    "video-editor/video-editor-source-endpoints.json": {
+      "sha256": "61949695f88f4b978c9b7827767839833acd4f81bb564e4cfd88a08bcd4928ee",
+      "embeddedSourceCommit": null,
+      "checksCount": 0
+    },
+    "video-editor/portable/video-editor-validation.json": {
+      "sha256": "da9c85a1eda96b6b74d5c689cf94fd15338a54c50a2c1fcb4d8f97a5200cd72a",
+      "embeddedSourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+      "checksCount": 19
+    },
+    "video-editor/portable/video-editor-source-color-validation.json": {
+      "sha256": "00f16c221ef271d7993afca8f736a7cbb73e29b3b158c782209eeda95d8439c1",
+      "embeddedSourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+      "checksCount": 0
+    },
+    "video-editor/portable/video-editor-random-seek-validation.json": {
+      "sha256": "d7eecf15e0985b3cf41aea0cd2552837c5e0dbca813f41cddbfb8a0c8c7aed28",
+      "embeddedSourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+      "checksCount": 0
+    },
+    "video-editor/portable/video-editor-timing-precision-validation.json": {
+      "sha256": "12126ef305910c4c416e51fd657597f7ff5342356285afdf6e5f2bfd47d74d88",
+      "embeddedSourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+      "checksCount": 0
+    },
+    "video-editor/portable/video-editor-timing-undo-validation.json": {
+      "sha256": "d8ed9302f575d3186a415586482519b759098aab0db18108c123e8baceff39e6",
+      "embeddedSourceCommit": "293830bcc78ab98ecb174fedb0ed05d2cd5913d1",
+      "checksCount": 0
+    },
+    "video-editor/portable/video-editor-high-cadence-validation.json": {
+      "sha256": "e33166b5f8157ccf7b9c11891322f5e1a349d088e5868a060af0d712d09399bd",
+      "embeddedSourceCommit": null,
+      "checksCount": 0
+    },
+    "video-editor/portable/video-editor-high-endpoint-validation.json": {
+      "sha256": "1880c93d1c98417a80782978379776ad0e1deef11ad2722df47f197678776586",
+      "embeddedSourceCommit": null,
+      "checksCount": 0
+    },
+    "video-editor/portable/video-editor-balanced-cadence-validation.json": {
+      "sha256": "16acf67877f0619ca09ef2df48951b3cae658141d08bd31934df7ffb1611f84f",
+      "embeddedSourceCommit": null,
+      "checksCount": 0
+    },
+    "video-editor/portable/video-editor-balanced-endpoint-validation.json": {
+      "sha256": "d3b924ddbb47f2a319a57243e3f80cb3123018909518ce498ad4203521014a07",
+      "embeddedSourceCommit": null,
+      "checksCount": 0
+    },
+    "video-editor/portable/video-editor-compact-cadence-validation.json": {
+      "sha256": "2a3082a81eae4d7330c1966a72b47b8ab0130e30bf183e527a6b464bcdc1e45b",
+      "embeddedSourceCommit": null,
+      "checksCount": 0
+    },
+    "video-editor/portable/video-editor-compact-endpoint-validation.json": {
+      "sha256": "faf94c4590c8a652e844201840d1cb19d363f00fe55d1624ab0e6b4e2c245705",
+      "embeddedSourceCommit": null,
+      "checksCount": 0
+    },
+    "video-editor/portable/video-editor-source-endpoints.json": {
+      "sha256": "6967f560bdc94016e8579577cdff376e3f85e408b8a50966a485f8627ffcc987",
+      "embeddedSourceCommit": null,
+      "checksCount": 0
+    },
+    "installer/installer-validation.json": {
+      "sha256": "aaa34317055455044b8a4bf98831393537bf0d989f827c35ab34d50b13cd1b4c",
+      "embeddedSourceCommit": null,
+      "checksCount": 51
+    }
+  },
+  "video-editor": {
+    "precisionPassed": true,
+    "undoPassed": true,
+    "sourceColorPassed": true,
+    "colorChecksCount": 96,
+    "maximumActualMeanRgbChannelDelta": 1,
+    "seekCounters": [
+      15,
+      99,
+      15,
+      56,
+      121,
+      15
+    ]
+  },
+  "video-editor/portable": {
+    "precisionPassed": true,
+    "undoPassed": true,
+    "sourceColorPassed": true,
+    "colorChecksCount": 96,
+    "maximumActualMeanRgbChannelDelta": 1,
+    "seekCounters": [
+      15,
+      99,
+      15,
+      56,
+      122,
+      15
+    ]
+  },
+  "x64InstallerSha256FromNativeLifecycle": "9e296529ec45726ad7d36282e156f1a4a2b12a6bc43828ea58efd019fda8a19b",
+  "fourK": {
+    "durationSeconds": 1.6267,
+    "frames": 49,
+    "exportSeconds": 2.9912045,
+    "exportFramesPerSecond": 16.38136075283385,
+    "maxDispatcherGapMilliseconds": 77.989,
+    "peakPrivateMiB": 1308.78515625,
+    "cancellationSeconds": 0.0730649,
+    "memoryPhases": [
+      {
+        "name": "recordingFixture",
+        "peakPrivateMiB": 1166.33203125,
+        "peakWorkingMiB": 808.40625
+      },
+      {
+        "name": "editorPreview",
+        "peakPrivateMiB": 503.09765625,
+        "peakWorkingMiB": 605.0703125
+      },
+      {
+        "name": "primaryExport",
+        "peakPrivateMiB": 1192.03515625,
+        "peakWorkingMiB": 1024.171875
+      },
+      {
+        "name": "outputValidation",
+        "peakPrivateMiB": 895.0859375,
+        "peakWorkingMiB": 1001.49609375
+      },
+      {
+        "name": "activeCancel",
+        "peakPrivateMiB": 1293.44140625,
+        "peakWorkingMiB": 1128.2421875
+      },
+      {
+        "name": "balancedExport",
+        "peakPrivateMiB": 811.78125,
+        "peakWorkingMiB": 808.69921875
+      },
+      {
+        "name": "balancedValidation",
+        "peakPrivateMiB": 796.09375,
+        "peakWorkingMiB": 899.890625
+      },
+      {
+        "name": "stepFixture",
+        "peakPrivateMiB": 1308.78515625,
+        "peakWorkingMiB": 1145.54296875
+      }
+    ],
+    "acceptanceFailures": []
+  },
+  "focusedNativeWindowEvidence": {
+    "path": "windows-editor-native-during.png",
+    "sha256": "16184dbc15d06a9672af7621ba459d152259d19c17a2e98366173d479ee2486d",
+    "sourceArtifact": "windows-native-video-editor-evidence",
+    "originalPath": "video-editor/video-editor-during.png",
+    "inputs": "Synthetic moving source; automated native pointer and labelled annotation fixture inputs. Actual native editor HWND capture."
+  },
+  "testedReleaseAssets": {
+    "Slightshot-windows-x64.zip": {
+      "sha256": "b5457c511cdd403cf96b078334a7ee3fa7285505e1a41308ae00e5a45d6f4e7c",
+      "bytes": 75865075
+    },
+    "Slightshot-windows-x64-setup.exe": {
+      "sha256": "9e296529ec45726ad7d36282e156f1a4a2b12a6bc43828ea58efd019fda8a19b",
+      "bytes": 56000210
+    },
+    "Slightshot-windows-arm64.zip": {
+      "sha256": "8f4ad747de7cb7e40d7504013f7908d18c7d482ef5ffe117eaaeb4114397987d",
+      "bytes": 70956730
+    },
+    "Slightshot-windows-arm64-setup.exe": {
+      "sha256": "3c260f87bff889bc2eaa20215850b1e4a9810de388572d61fd097da7bc4b386b",
+      "bytes": 49862226
+    }
+  }
+}

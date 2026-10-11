@@ -1,0 +1,30 @@
+<?xml version="1.0" standalone="yes"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
+    <channel>
+        <title>Slightshot</title>
+        <item>
+            <title>1.5.1</title>
+            <pubDate>Sun, 11 Oct 2026 00:40:33 +0000</pubDate>
+            <sparkle:version>195</sparkle:version>
+            <sparkle:shortVersionString>1.5.1</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>27.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/jmpijll/slightshot/releases/download/v1.5.1/Slightshot-1.5.1.dmg" length="2306638" type="application/octet-stream" sparkle:edSignature="t+UDvvH+cTZI0HE1M/xZEgyys1ASgRG1x5UU4BybUQSYLug6h/lAemMYX62F1t5zJJDjtyUFZtG3xliqJsamDg=="/>
+        </item>
+        <item>
+            <title>1.5.0</title>
+            <pubDate>Sat, 10 Oct 2026 22:46:07 +0000</pubDate>
+            <sparkle:version>12</sparkle:version>
+            <sparkle:shortVersionString>1.5.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>27.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/jmpijll/slightshot/releases/download/v1.5.0/Slightshot-1.5.0.dmg" length="2306605" type="application/octet-stream" sparkle:edSignature="1+PHhJWyyStBt1cgEv1Cttoi4QtzDBsZNpkbqB3F8hw+xnd2clJgSUvjnIz8gYQx4ehApaldWUqW7hnc2tPNCg=="/>
+        </item>
+        <item>
+            <title>1.4.2</title>
+            <pubDate>Fri, 09 Oct 2026 20:57:36 +0000</pubDate>
+            <sparkle:version>11</sparkle:version>
+            <sparkle:shortVersionString>1.4.2</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>27.0</sparkle:minimumSystemVersion>
+            <enclosure url="https://github.com/jmpijll/slightshot/releases/download/v1.4.2/Slightshot-1.4.2.dmg" length="2076701" type="application/octet-stream" sparkle:edSignature="cOt56CsU+oCeQMJwaxZGxPVuLE0NwmjjJu8c3yxJh0XAhj2t3sPVlatikRLpHFMw6aXx3Y2JAJ1ns0a2vBHSCw=="/>
+        </item>
+    </channel>
+</rss>
