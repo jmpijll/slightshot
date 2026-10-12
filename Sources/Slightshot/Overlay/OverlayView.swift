@@ -535,8 +535,8 @@ extension OverlayView {
     }
 
     /// The clipboard scroll view also routes here before scrolling its viewport.
-    func handleSizeScroll(_ event: NSEvent) -> Bool {
-        let point = location(of: event)
+    func handleSizeScroll(_ event: NSEvent, at location: CGPoint? = nil) -> Bool {
+        let point = location ?? self.location(of: event)
         guard let selection, selection.contains(point), let tool = activeTool,
               AnnotationSizeScroll.supports(tool), textEntry == nil,
               !isDraggingSelection else { sizeScroll.reset(); return false }

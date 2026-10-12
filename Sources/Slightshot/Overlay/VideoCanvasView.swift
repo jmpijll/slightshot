@@ -143,6 +143,10 @@ final class VideoCanvasView: NSView {
 
     override func scrollWheel(with event: NSEvent) {
         let point = convert(event.locationInWindow, from: nil)
+        handleSizeScroll(event, at: point)
+    }
+
+    func handleSizeScroll(_ event: NSEvent, at point: CGPoint) {
         guard sourceImage != nil, imageRect.contains(point), let tool,
               AnnotationSizeScroll.supports(tool), textEntry == nil else {
             sizeScroll.reset()

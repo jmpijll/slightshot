@@ -146,7 +146,13 @@ final class AnnotationSizeReview: NSObject, NSApplicationDelegate, OverlayViewDe
         cg.location = CGPoint(x: screen.x, y: NSScreen.screens[0].frame.height - screen.y)
         cg.setIntegerValueField(.mouseEventWindowUnderMousePointer, value: Int64(view.window!.windowNumber))
         guard let event = NSEvent(cgEvent: cg) else { throw CaptureError.failed("Missing scroll event") }
-        view.scrollWheel(with: event)
+        if let editor = view as? OverlayView {
+            guard editor.handleSizeScroll(event, at: point) else {
+                throw CaptureError.failed("Review scroll was not handled")
+            }
+        } else if let video = view as? VideoCanvasView {
+            video.handleSizeScroll(event, at: point)
+        }
     }
 
     private func snapshot(_ view: NSView, name: String) throws {
