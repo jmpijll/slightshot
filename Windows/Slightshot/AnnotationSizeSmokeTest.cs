@@ -13,7 +13,7 @@ namespace Slightshot;
 // Native WPF editors, synthetic source, automated production scroll-handler calls.
 internal static class AnnotationSizeSmokeTest
 {
-    internal static void Run(string directory, List<string> checks)
+    internal static async Task RunAsync(string directory, List<string> checks)
     {
         var source = Fixture();
         foreach (bool clipboard in new[] { false, true })
@@ -24,6 +24,14 @@ internal static class AnnotationSizeSmokeTest
                 : new OverlayWindow(new CapturedDisplay(source.Image, 0, 0, 800, 600, 1), settings, false, _ => { }, () => { }, (_, _, _) => { });
             window.PrepareSmokeFixture(new(60, 60, 680, 500), []);
             var root = (FrameworkElement)window.Content;
+            if (clipboard)
+            {
+                // ScrollViewer needs a presentation source for its viewport and
+                // the editor's point-to-window transform before native rendering.
+                window.Show();
+                await Task.Delay(100);
+                window.UpdateLayout();
+            }
             Layout(root, 800, 600);
             var surface = Field<OverlaySurface>(window, "surface");
             var toolbar = Field<Toolbar>(window, "toolbar");
@@ -114,6 +122,11 @@ internal static class AnnotationSizeSmokeTest
     {
         root.UpdateLayout();
         var bitmap = new RenderTargetBitmap((int)root.ActualWidth, (int)root.ActualHeight, 96, 96, PixelFormats.Pbgra32); bitmap.Render(root);
+        var pixels = new byte[bitmap.PixelWidth * bitmap.PixelHeight * 4]; bitmap.CopyPixels(pixels, bitmap.PixelWidth * 4, 0);
+        int redPixels = 0;
+        for (int offset = 0; offset < pixels.Length; offset += 4)
+            if (pixels[offset + 2] > 180 && pixels[offset + 1] < 120 && pixels[offset] < 120) redPixels++;
+        Require(redPixels > 1400, "native evidence includes the source annotations, not only toolbar chrome");
         using var stream = File.Create(Path.Combine(directory, name + ".png")); OutputService.Encode(bitmap, ImageFormat.Png, 1).Save(stream);
     }
     private static T Field<T>(object target, string name) => (T)target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(target)!;

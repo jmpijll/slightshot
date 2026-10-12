@@ -71,11 +71,20 @@ jobs:
       - name: Render native WPF parity fixtures and test image export
         shell: pwsh
         run: |
+          $env:SLIGHTSHOT_SOURCE_COMMIT = git rev-parse HEAD
           $app = Resolve-Path Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe
           $output = Join-Path $PWD Windows/artifacts/parity
           $process = Start-Process $app -ArgumentList '--smoke-test', $output -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw "Native WPF smoke test failed with exit code $($process.ExitCode)" }
           Get-Content "$output/validation.json"
+      - name: Upload scroll sizing review evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-native-scroll-evidence
+          path: Windows/artifacts/parity/scroll-*
+          if-no-files-found: warn
+          retention-days: 7
       - name: Test clipboard image editor, native window, original pixels and output retry
         shell: pwsh
         run: |
