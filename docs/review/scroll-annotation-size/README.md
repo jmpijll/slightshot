@@ -61,9 +61,11 @@ does not capture the desktop, register global shortcuts or claim tray ownership.
 
 ## Windows native evidence
 
-Source `c6c6c83` runs on the native Windows WPF runner in
-[run 38214311104](https://github.com/jmpijll/slightshot/actions/runs/38214311104).
-The subsequent macOS fixture correction changes no Windows code.
+The current images use source `1583d85dfdcd11d53287cc3c059393fb95ed7d98`,
+the GitHub PR test merge containing branch commit `7ac5ca7`. They come from
+[native run 38215451948](https://github.com/jmpijll/slightshot/actions/runs/38215451948).
+The clipboard fixture attaches a visible WPF window before rendering its viewport.
+Every saved image must also pass a red annotation pixel check.
 
 The fixture uses a synthetic 800×600 source and automated production scroll-handler
 calls. Native WPF controls and the production annotation factories render the
@@ -85,6 +87,12 @@ After scrolling down to 2 pt and drawing another arrow:
 
 ![Windows decreased size and indicator](windows-capture-decreased.png)
 
+The loaded clipboard editor uses the same interaction:
+
+![Windows clipboard scroll up, 9 pt](windows-clipboard-increased.png)
+
+![Windows clipboard scroll down, 2 pt](windows-clipboard-decreased.png)
+
 Text and the native video annotation canvas:
 
 ![Windows 26 pt text](windows-capture-text.png)
@@ -93,8 +101,10 @@ Text and the native video annotation canvas:
 
 The [native report](windows-validation.json) and
 [extracted portable app report](windows-portable-validation.json) are preserved
-here. The full run passed, including real recording, video editor, 4K export,
-portable app and installer lifecycle checks.
+here. The earlier full native run at source `c6c6c83`,
+[run 38214311104](https://github.com/jmpijll/slightshot/actions/runs/38214311104),
+passed real recording, video editor, 4K export, portable app and installer lifecycle
+checks. The portable report is from that run.
 
 ## Checks
 
