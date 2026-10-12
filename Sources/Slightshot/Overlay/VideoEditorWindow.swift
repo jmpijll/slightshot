@@ -151,6 +151,7 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
         let thickness = NSSlider(value: 4, minValue: 1, maxValue: 12, target: self, action: #selector(widthChanged))
         thickness.setAccessibilityLabel("Annotation thickness")
         thickness.widthAnchor.constraint(equalToConstant: 80).isActive = true
+        canvas.onWidthChange = { [weak thickness] width in thickness?.doubleValue = Double(width) }
         let row = NSStackView(views: [select, bar, color, thickness])
         row.spacing = 10
         return row
@@ -185,6 +186,7 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
 
     private func setTool(_ tool: Tool?) {
         pause()
+        canvas.resetSizeScroll()
         canvas.tool = tool
         for (value, button) in toolButtons { button.isSelectedItem = value == tool }
         makeFirstResponder(canvas)

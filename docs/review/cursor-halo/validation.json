@@ -1,0 +1,21 @@
+{
+  "capture": "ScreenCaptureKit recording of the live native editor window only; no desktop pixels or audio.",
+  "checks": [
+    "Arrow grows from 1 to 12 pt",
+    "Second arrow shrinks from 12 to 1 pt",
+    "Text grows from 10 to 46 pt",
+    "Halo grows and shrinks around the pointer, with no visible text",
+    "Indicator automatically disappears after scrolling stops"
+  ],
+  "interaction": "Automated mouse gestures and production scroll-handler calls on a synthetic 800×560 image. The visible native crosshair marks injected pointer coordinates; it is part of the fixture.",
+  "platform": "macOS 27 / AppKit",
+  "sourceCommit": "1c0207efa6a34de7bdfa5344cc98d91669f58010",
+  "variant": "Production cursor halo, with a native crosshair fixture marking injected pointer positions.",
+  "video": "mac-native-source.mp4 is the untouched ScreenCaptureKit recording. mac-preview.mp4 is the same recording normalized to 30 fps, H.264 with fast start; no altered UI.",
+  "stills": {
+    "mac-small.png": 1.5,
+    "mac-large.png": 3.5,
+    "mac-shrunk.png": 8,
+    "mac-expired.png": 4.85
+  }
+}

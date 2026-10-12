@@ -77,6 +77,7 @@ internal sealed class Toolbar
     private readonly ToolbarButton redoButton;
     private readonly FrostedPanel tools, actions;
     private FrostedPanel? palette;
+    private Slider? widthSlider;
     private RectD toolsRect;
     private readonly List<SwatchButton> swatches = [];
     private static Tool? lastTool;
@@ -146,7 +147,8 @@ internal sealed class Toolbar
         tools.Visibility = actions.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
         if (palette != null) palette.Visibility = tools.Visibility;
     }
-    public void HidePalette() { if (palette != null) host.Children.Remove(palette); palette = null; swatches.Clear(); }
+    public void HidePalette() { if (palette != null) host.Children.Remove(palette); palette = null; widthSlider = null; swatches.Clear(); }
+    public void SyncWidth() { if (widthSlider != null) widthSlider.Value = settings.LineWidth; }
     private void TogglePalette()
     {
         if (palette != null) { HidePalette(); return; }
@@ -163,6 +165,7 @@ internal sealed class Toolbar
             column.Children.Add(line);
         }
         var slider = new Slider { Minimum = 1, Maximum = 12, Value = settings.LineWidth, Width = 140, Height = 18, ToolTip = "Thickness", IsMoveToPointEnabled = true };
+        widthSlider = slider;
         AutomationProperties.SetName(slider, "Thickness");
         slider.ValueChanged += (_, _) => { settings.LineWidth = slider.Value; changed(); };
         column.Children.Add(slider);

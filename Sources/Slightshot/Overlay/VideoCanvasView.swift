@@ -12,6 +12,10 @@ final class VideoCanvasView: NSView {
     var tool: Tool?
     var color: NSColor = .systemRed
     var lineWidth: CGFloat = 4
+    var fontSize: CGFloat = 24
+    var onWidthChange: ((CGFloat) -> Void)?
+    private var sizeScroll = AnnotationSizeScroll()
+    private let sizeIndicator = AnnotationSizeIndicator()
     var annotations: [VideoAnnotation] = []
     var selectedID: UUID?
     var time: TimeInterval = 0
@@ -36,6 +40,25 @@ final class VideoCanvasView: NSView {
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
     override var isFlipped: Bool { true }
     override var acceptsFirstResponder: Bool { true }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        window?.acceptsMouseMovedEvents = true
+        updateTrackingAreas()
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for area in trackingAreas { removeTrackingArea(area) }
+        addTrackingArea(NSTrackingArea(rect: bounds,
+            options: [.mouseMoved, .mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self))
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        sizeIndicator.move(to: convert(event.locationInWindow, from: nil), in: self)
+    }
+
+    override func mouseExited(with event: NSEvent) { sizeIndicator.hide() }
 
     var imageRect: CGRect {
         let scale = min(bounds.width / sourceSize.width, bounds.height / sourceSize.height)
@@ -94,6 +117,7 @@ final class VideoCanvasView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        sizeIndicator.hide()
         commitTextEntry()
         guard imageRect.contains(convert(event.locationInWindow, from: nil)), sourceImage != nil else { return }
         onPause?()
@@ -114,6 +138,7 @@ final class VideoCanvasView: NSView {
     }
 
     override func mouseDragged(with event: NSEvent) {
+        sizeIndicator.move(to: convert(event.locationInWindow, from: nil), in: self)
         guard anchor != nil else { return }
         let point = sourcePoint(event)
         points.append(point)
@@ -135,6 +160,40 @@ final class VideoCanvasView: NSView {
         points = []
         refresh()
     }
+
+    override func scrollWheel(with event: NSEvent) {
+        let point = convert(event.locationInWindow, from: nil)
+        handleSizeScroll(event, at: point)
+    }
+
+    func handleSizeScroll(_ event: NSEvent, at point: CGPoint) {
+        guard sourceImage != nil, imageRect.contains(point), let tool,
+              AnnotationSizeScroll.supports(tool), textEntry == nil else {
+            sizeScroll.reset()
+            super.scrollWheel(with: event)
+            return
+        }
+        guard event.momentumPhase.isEmpty else { return }
+        if event.phase.contains(.began) { sizeScroll.reset() }
+        let delta = event.scrollingDeltaY * (event.isDirectionInvertedFromDevice ? -1 : 1)
+        guard let change = sizeScroll.adjust(tool: tool, width: lineWidth, fontSize: fontSize,
+                                            delta: delta, precise: event.hasPreciseScrollingDeltas) else { return }
+        if change.isText {
+            fontSize = change.value
+        } else {
+            lineWidth = change.value
+            onWidthChange?(change.value)
+            if var annotation = live {
+                let scale = max(0.001, imageRect.width / sourceSize.width)
+                annotation.lineWidth = change.value * tool.widthMultiplier / scale
+                live = annotation
+                refresh()
+            }
+        }
+        sizeIndicator.show(change, at: point, in: self)
+    }
+
+    func resetSizeScroll() { sizeScroll.reset(); sizeIndicator.hide() }
 
     private func makeAnnotation(at point: CGPoint, constrained: Bool) -> Annotation? {
         guard let start = anchor, let tool else { return nil }
@@ -158,7 +217,7 @@ final class VideoCanvasView: NSView {
         }
         let scale = max(0.001, imageRect.width / sourceSize.width)
         return Annotation(shape: shape, color: color, lineWidth: lineWidth * tool.widthMultiplier / scale,
-                          alpha: tool.strokeAlpha, fontSize: 24 / scale,
+                          alpha: tool.strokeAlpha, fontSize: fontSize / scale,
                           rasterScale: tool == .blur || tool == .pixelate ? 1 / scale : 1,
                           stepScale: tool == .step ? 1 / scale : 1)
     }
@@ -166,11 +225,11 @@ final class VideoCanvasView: NSView {
     private func beginText(at point: CGPoint) {
         let scale = imageRect.width / sourceSize.width
         let origin = CGPoint(x: imageRect.minX + point.x * scale, y: imageRect.minY + point.y * scale)
-        let entry = TextEntryView(origin: origin, color: color, fontSize: 24,
+        let entry = TextEntryView(origin: origin, color: color, fontSize: fontSize,
                                   maxWidth: imageRect.maxX - origin.x)
         textOrigin = CGPoint(x: point.x + entry.textContainerInset.width / scale,
                              y: point.y + entry.textContainerInset.height / scale)
-        textFontSize = 24 / scale
+        textFontSize = fontSize / scale
         entry.onCommit = { [weak self] _ in self?.commitTextEntry() }
         entry.onCancel = { [weak self] in
             self?.textEntry?.removeFromSuperview()

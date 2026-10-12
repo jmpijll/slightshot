@@ -1,0 +1,39 @@
+{
+  "decode": "Normalized MP4 decodes without errors using ffmpeg",
+  "frames": [
+    {
+      "frame": "mac-small.png",
+      "pointer": [
+        1060,
+        344
+      ],
+      "ringTopOffsetBeyondCrosshair": 28
+    },
+    {
+      "frame": "mac-large.png",
+      "pointer": [
+        1060,
+        344
+      ],
+      "ringTopOffsetBeyondCrosshair": 54
+    },
+    {
+      "frame": "mac-shrunk.png",
+      "pointer": [
+        1060,
+        634
+      ],
+      "ringTopOffsetBeyondCrosshair": null
+    },
+    {
+      "frame": "mac-expired.png",
+      "pointer": [
+        1060,
+        344
+      ],
+      "ringTopOffsetBeyondCrosshair": null
+    }
+  ],
+  "visualReview": "Full native frames inspected: centered translucent coral circle with white ring, no size text; larger/smaller arrow and halo; expires after scroll. No personal content.",
+  "limitations": "Automated review fixture, not physical Windows wheel input. Crosshair in macOS capture marks fixture coordinates and overlaps the minimum halo."
+}

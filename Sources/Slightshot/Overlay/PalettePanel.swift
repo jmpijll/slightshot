@@ -92,6 +92,8 @@ final class PalettePanel: NSView {
 
     @objc private func widthChanged() { onWidth(CGFloat(slider.doubleValue)) }
 
+    func setWidth(_ width: CGFloat) { slider.doubleValue = Double(width) }
+
     private func select(_ color: NSColor) {
         for cell in swatchButtons { cell.isPicked = cell.color.hexString == color.hexString }
     }

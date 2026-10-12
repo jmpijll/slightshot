@@ -20,6 +20,28 @@ if CommandLine.arguments.contains("--redo-review") {
     exit(EXIT_SUCCESS)
 }
 
+if let index = CommandLine.arguments.firstIndex(of: "--annotation-size-review") {
+    let app = NSApplication.shared
+    let path = CommandLine.arguments.indices.contains(index + 1)
+        ? CommandLine.arguments[index + 1] : "build/annotation-size-review"
+    let review = AnnotationSizeReview(directory: URL(fileURLWithPath: path, isDirectory: true))
+    app.delegate = review
+    app.setActivationPolicy(.regular)
+    withExtendedLifetime(review) { app.run() }
+    exit(EXIT_SUCCESS)
+}
+
+if let index = CommandLine.arguments.firstIndex(of: "--annotation-size-halo-demo") {
+    let app = NSApplication.shared
+    let path = CommandLine.arguments.indices.contains(index + 1)
+        ? CommandLine.arguments[index + 1] : "build/annotation-size-halo-demo"
+    let demo = AnnotationHaloDemo(directory: URL(fileURLWithPath: path, isDirectory: true))
+    app.delegate = demo
+    app.setActivationPolicy(.regular)
+    withExtendedLifetime(demo) { app.run() }
+    exit(EXIT_SUCCESS)
+}
+
 if CommandLine.arguments.contains("--delayed-review") {
     let app = NSApplication.shared
     let evidenceFlag = CommandLine.arguments.firstIndex(of: "--delayed-review-evidence")

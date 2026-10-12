@@ -1,0 +1,10 @@
+{
+  "platform": "Windows WPF",
+  "sourceCommit": "c6c6c83bb1c9689286e19e40f67d2d271157e730",
+  "source": "Synthetic 800\u00D7600 image. Automated production scroll-handler calls and annotation factory. Native WPF control renders; no manual desktop interaction.",
+  "checks": [
+    "scroll-capture: up/down, new text, fixed tools, outside selection, draft text, original widths, redo and palette synchronization passed",
+    "scroll-clipboard: up/down, new text, fixed tools, outside selection, draft text, original widths, redo and palette synchronization passed",
+    "scroll-video: production wheel handler, zoom-correct annotation size, text sizing and native indicator passed"
+  ]
+}

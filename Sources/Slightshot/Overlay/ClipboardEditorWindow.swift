@@ -3,7 +3,7 @@ import AppKit
 /// A normal native image window; imported pixels never acquire monitor geometry.
 final class ClipboardEditorWindow: NSWindow, NSWindowDelegate {
     var onClose: (() -> Void)?
-    private let scrollView = NSScrollView()
+    private let scrollView = ClipboardScrollView()
     private let editor: OverlayView
     private var scrollObserver: NSObjectProtocol?
 
@@ -30,6 +30,7 @@ final class ClipboardEditorWindow: NSWindow, NSWindowDelegate {
         scrollView.minMagnification = 1
         scrollView.maxMagnification = max(4, editor.source.scale)
         scrollView.documentView = editor
+        scrollView.editor = editor
         scrollView.contentView.postsBoundsChangedNotifications = true
         host.addSubview(scrollView)
         editor.prepareClipboardEditor(toolbarHost: host)
@@ -78,6 +79,14 @@ final class ClipboardEditorWindow: NSWindow, NSWindowDelegate {
 
 private final class ClipboardEditorHost: NSView {
     override var isFlipped: Bool { true }
+}
+
+private final class ClipboardScrollView: NSScrollView {
+    weak var editor: OverlayView?
+
+    override func scrollWheel(with event: NSEvent) {
+        if editor?.handleSizeScroll(event) != true { super.scrollWheel(with: event) }
+    }
 }
 
 final class ClipboardEditorWindows: OverlayPresentation {

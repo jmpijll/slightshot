@@ -1,6 +1,7 @@
 using Slightshot.Core;
 
 int checks = 0;
+checks += AnnotationSizeScrollChecks.Run();
 checks += DelayedCaptureChecks.Run();
 checks += AnnotationHistoryChecks.Run();
 checks += VideoAnnotationChecks.Run();
