@@ -89,7 +89,7 @@ internal sealed class OverlayWindow : Window
         surface.MouseLeftButtonDown += MouseDownOnSurface; surface.MouseMove += MouseMoved; surface.MouseLeftButtonUp += MouseUpOnSurface;
         surface.MouseRightButtonDown += (_, _) => cancel();
         surface.PreviewMouseWheel += SizeScrolled;
-        surface.MouseLeave += (_, _) => { surface.MagnifierPoint = null; surface.InvalidateVisual(); };
+        surface.MouseLeave += (_, _) => { sizeIndicator.Hide(); surface.MagnifierPoint = null; surface.InvalidateVisual(); };
         PreviewKeyDown += KeyPressed;
         Loaded += (_, _) => Refresh();
     }
@@ -151,6 +151,7 @@ internal sealed class OverlayWindow : Window
     private void MouseMoved(object sender, MouseEventArgs e)
     {
         var p = Position(e);
+        sizeIndicator.Move(surface.TranslatePoint(e.GetPosition(surface), toolbarChrome), toolbarChrome);
         switch (drag)
         {
             case Drag.NewSelection: surface.Selection = Shift ? SelectionGeometry.Square(anchor, p, Bounds) : RectD.Between(anchor, p); break;

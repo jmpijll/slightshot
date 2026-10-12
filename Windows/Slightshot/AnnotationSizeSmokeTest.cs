@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Automation;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -16,6 +17,7 @@ internal static class AnnotationSizeSmokeTest
     internal static async Task RunAsync(string directory, List<string> checks)
     {
         var source = Fixture();
+        CheckHaloRendering();
         foreach (bool clipboard in new[] { false, true })
         {
             var settings = new Settings { LineWidth = 3, FontSize = 18, PlaySound = false };
@@ -41,6 +43,7 @@ internal static class AnnotationSizeSmokeTest
             Require(window.ChangeSizeAt(new(580, 270), 720) && settings.LineWidth == 9, "up increases to 9");
             AddArrow(window, surface, 270);
             window.ChangeSizeAt(new(580, 270), 120); window.ChangeSizeAt(new(580, 270), -120);
+            CheckHaloPosition(window, surface, root, new(580, 270), new(false, 9));
             Save(root, directory, prefix + "-increased");
             Require(window.ChangeSizeAt(new(580, 420), -840) && settings.LineWidth == 2, "down decreases to 2");
             AddArrow(window, surface, 420);
@@ -69,7 +72,7 @@ internal static class AnnotationSizeSmokeTest
             Require(slider.Value == settings.LineWidth, "palette slider synchronizes with wheel");
             Require(Descendants(root).OfType<AnnotationSizeIndicator>().Any(i => i.Visibility == Visibility.Visible), "native size indicator shown");
             window.Close();
-            checks.Add($"{prefix}: up/down, new text, fixed tools, outside selection, draft text, original widths, redo and palette synchronization passed");
+            checks.Add($"{prefix}: up/down, new text, fixed tools, outside selection, draft text, original widths, redo, palette synchronization and pointer-centered halo passed");
         }
 
         var videoSettings = new Settings { LineWidth = 3, FontSize = 18 };
@@ -96,6 +99,38 @@ internal static class AnnotationSizeSmokeTest
             source = "Synthetic 800×600 image. Automated production scroll-handler calls and annotation factory. Native WPF control renders; no manual desktop interaction.",
             checks = checks.Where(c => c.StartsWith("scroll-"))
         }, new JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    private static void CheckHaloPosition(OverlayWindow window, OverlaySurface surface, FrameworkElement root, Point point, AnnotationSizeChange change)
+    {
+        var halo = Descendants(root).OfType<AnnotationSizeIndicator>().Single();
+        var host = Field<Canvas>(window, "toolbarChrome");
+        var expected = surface.TranslatePoint(point, host);
+        Require(Math.Abs(halo.Width - change.IndicatorDiameter) < 0.001 && halo.Width == halo.Height, "halo scales with current thickness");
+        Require(Math.Abs(Canvas.GetLeft(halo) + halo.Width / 2 - expected.X) < 0.001 &&
+            Math.Abs(Canvas.GetTop(halo) + halo.Height / 2 - expected.Y) < 0.001, "halo is centered on the injected pointer");
+        halo.Move(new(expected.X + 20, expected.Y + 10), host);
+        Require(Math.Abs(Canvas.GetLeft(halo) + halo.Width / 2 - expected.X - 20) < 0.001, "visible halo follows pointer movement");
+        halo.Move(expected, host);
+    }
+
+    private static void CheckHaloRendering()
+    {
+        var host = new Canvas(); var halo = new AnnotationSizeIndicator();
+        halo.Show(new(false, 12), new(35, 35), host);
+        Layout(host, 70, 70);
+        var bitmap = new RenderTargetBitmap(70, 70, 96, 96, PixelFormats.Pbgra32); bitmap.Render(host);
+        var pixels = new byte[70 * 70 * 4]; bitmap.CopyPixels(pixels, 70 * 4, 0);
+        byte Alpha(int x, int y) => pixels[(y * 70 + x) * 4 + 3];
+        Require(Alpha(8, 8) == 0, "halo has transparent corners, not a text panel");
+        Require(Alpha(35, 35) is > 20 and < 70, "halo fill remains translucent over the source");
+        Require(Alpha(35, 9) > 80, "halo has a visible ring");
+        Require(!halo.IsHitTestVisible && VisualTreeHelper.GetChildrenCount(halo) == 0, "halo never intercepts input and contains no visible text");
+        Require(FrameworkElementAutomationPeer.CreatePeerForElement(halo).GetName() == "Thickness 12 pt", "halo retains its accessible size");
+        halo.Show(new(false, 1), new(2, 3), host);
+        Require(Canvas.GetLeft(halo) + halo.Width / 2 == 2 && Canvas.GetTop(halo) + halo.Height / 2 == 3,
+            "halo stays centered at viewport edges rather than jumping away from the pointer");
+        halo.Hide();
     }
 
     private static void AddArrow(OverlayWindow window, OverlaySurface surface, double y)

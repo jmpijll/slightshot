@@ -24,6 +24,15 @@ internal static class AnnotationSizeScrollChecks
         Equal(4, scroll.Adjust(Tool.Arrow, 3, 18, 0.75));
         Equal(null, scroll.Adjust(Tool.Arrow, 3, 18, 0.75));
         Equal(null, scroll.Adjust(Tool.Text, 3, 18, 0.25));
+        foreach (var (text, value, diameter) in new[] { (false, 1.0, 18.0), (false, 12.0, 54.0),
+            (true, 10.0, 18.0), (true, 48.0, 54.0), (false, -10.0, 18.0), (false, 100.0, 54.0), (false, double.NaN, 18.0) })
+        {
+            if (new AnnotationSizeChange(text, value).IndicatorDiameter != diameter) throw new InvalidOperationException("Halo size bounds");
+            checks++;
+        }
+        if (new AnnotationSizeChange(false, 9).IndicatorDiameter >= new AnnotationSizeChange(false, 10).IndicatorDiameter)
+            throw new InvalidOperationException("Halo grows as size increases");
+        checks++;
         Equal(20, scroll.Adjust(Tool.Text, 3, 18, 0.75));
         scroll.Reset();
         Equal(null, scroll.Adjust(Tool.Text, 3, 18, 0.25));

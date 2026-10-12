@@ -5,6 +5,13 @@ nonisolated struct AnnotationSizeChange: Equatable {
     let value: CGFloat
 
     var label: String { "\(isText ? "Text size" : "Thickness") \(Int(value.rounded())) pt" }
+
+    var indicatorDiameter: CGFloat {
+        let lower: CGFloat = isText ? 10 : 1
+        let upper: CGFloat = isText ? 48 : 12
+        let normalized = value.isFinite ? min(1, max(0, (value - lower) / (upper - lower))) : 0
+        return 18 + normalized * 36
+    }
 }
 
 /// Converts wheel ticks or accumulated trackpad motion into bounded style changes.

@@ -168,6 +168,7 @@ final class OverlayView: NSView {
     }
 
     override func mouseExited(with event: NSEvent) {
+        sizeIndicator.hide()
         hideMagnifier()
     }
 
@@ -226,6 +227,7 @@ final class OverlayView: NSView {
 
     override func mouseDragged(with event: NSEvent) {
         let point = clampToBounds(location(of: event))
+        moveSizeIndicator(at: location(of: event))
 
         switch drag {
         case .none:
@@ -296,6 +298,7 @@ final class OverlayView: NSView {
     }
 
     private func updateCursor(at point: CGPoint) {
+        moveSizeIndicator(at: point)
         guard let selection else { NSCursor.crosshair.set(); return }
         if let handle = SelectionHandle.hit(point, in: selection, zoom: viewingZoom) {
             handle.cursor.set()
@@ -328,14 +331,6 @@ final class OverlayView: NSView {
         }
         return Annotation(shape: shape, color: color, lineWidth: width,
                           alpha: tool.strokeAlpha, fontSize: fontSize)
-    }
-
-    /// Shift-constrains a line to the nearest 45° increment.
-    func axisLocked(from start: CGPoint, to end: CGPoint) -> CGPoint {
-        let dx = end.x - start.x, dy = end.y - start.y
-        let angle = (atan2(dy, dx) / (.pi / 4)).rounded() * (.pi / 4)
-        let length = hypot(dx, dy)
-        return CGPoint(x: start.x + cos(angle) * length, y: start.y + sin(angle) * length)
     }
 
     // MARK: - Text tool
@@ -530,6 +525,11 @@ extension OverlayView {
 }
 
 extension OverlayView {
+    private func moveSizeIndicator(at point: CGPoint) {
+        let host = toolbarHost ?? self
+        sizeIndicator.move(to: convert(point, to: host), in: host)
+    }
+
     override func scrollWheel(with event: NSEvent) {
         if !handleSizeScroll(event) { super.scrollWheel(with: event) }
     }

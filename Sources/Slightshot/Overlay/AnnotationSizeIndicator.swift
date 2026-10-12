@@ -1,51 +1,48 @@
 import AppKit
 
-/// Transient editor chrome, never included by the annotation renderer.
+/// A transient size halo centered on the pointer, outside the annotation renderer.
 final class AnnotationSizeIndicator: NSView {
-    private let label = NSTextField(labelWithString: "")
     private var dismissal: Task<Void, Never>?
 
     init() {
-        super.init(frame: CGRect(x: 0, y: 0, width: 150, height: 32))
+        super.init(frame: CGRect(x: 0, y: 0, width: 18, height: 18))
         wantsLayer = true
-        layer?.cornerRadius = 9
-        layer?.masksToBounds = true
-        layer?.borderWidth = 1
-        layer?.borderColor = NSColor.white.withAlphaComponent(0.18).cgColor
-        let effect = NSVisualEffectView(frame: bounds)
-        effect.autoresizingMask = [.width, .height]
-        effect.material = .hudWindow
-        effect.blendingMode = .withinWindow
-        effect.state = .active
-        effect.appearance = NSAppearance(named: .vibrantDark)
-        addSubview(effect)
-        label.font = .systemFont(ofSize: 12, weight: .semibold)
-        label.textColor = .white
-        label.frame = CGRect(x: 12, y: 8, width: 126, height: 17)
-        addSubview(label)
+        setAccessibilityElement(true)
+        setAccessibilityRole(.image)
         isHidden = true
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
 
+    override func draw(_ dirtyRect: NSRect) {
+        let circle = NSBezierPath(ovalIn: bounds.insetBy(dx: 1, dy: 1))
+        NSColor(hex: "#FF3B30")!.withAlphaComponent(0.14).setFill()
+        circle.fill()
+        NSColor.white.withAlphaComponent(0.95).setStroke()
+        circle.lineWidth = 1.25
+        circle.stroke()
+    }
+
     func show(_ change: AnnotationSizeChange, at point: CGPoint, in host: NSView) {
         dismissal?.cancel()
-        label.stringValue = change.label
         setAccessibilityLabel(change.label)
         if superview !== host { removeFromSuperview(); host.addSubview(self) }
-        var origin = CGPoint(x: point.x + 18, y: point.y + 18)
-        if origin.x + frame.width > host.bounds.maxX - 4 { origin.x = point.x - frame.width - 18 }
-        if origin.y + frame.height > host.bounds.maxY - 4 { origin.y = point.y - frame.height - 18 }
-        origin.x = max(host.bounds.minX + 4, min(origin.x, host.bounds.maxX - frame.width - 4))
-        origin.y = max(host.bounds.minY + 4, min(origin.y, host.bounds.maxY - frame.height - 4))
-        setFrameOrigin(origin)
+        let diameter = change.indicatorDiameter
+        frame = CGRect(x: point.x - diameter / 2, y: point.y - diameter / 2,
+                       width: diameter, height: diameter)
+        needsDisplay = true
         isHidden = false
         dismissal = Task { [weak self] in
             try? await Task.sleep(for: .seconds(1.2))
             guard !Task.isCancelled else { return }
             self?.isHidden = true
         }
+    }
+
+    func move(to point: CGPoint, in host: NSView) {
+        guard !isHidden, superview === host else { return }
+        setFrameOrigin(CGPoint(x: point.x - frame.width / 2, y: point.y - frame.height / 2))
     }
 
     func hide() { dismissal?.cancel(); isHidden = true }

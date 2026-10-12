@@ -41,6 +41,25 @@ final class VideoCanvasView: NSView {
     override var isFlipped: Bool { true }
     override var acceptsFirstResponder: Bool { true }
 
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        window?.acceptsMouseMovedEvents = true
+        updateTrackingAreas()
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for area in trackingAreas { removeTrackingArea(area) }
+        addTrackingArea(NSTrackingArea(rect: bounds,
+            options: [.mouseMoved, .mouseEnteredAndExited, .activeAlways, .inVisibleRect], owner: self))
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        sizeIndicator.move(to: convert(event.locationInWindow, from: nil), in: self)
+    }
+
+    override func mouseExited(with event: NSEvent) { sizeIndicator.hide() }
+
     var imageRect: CGRect {
         let scale = min(bounds.width / sourceSize.width, bounds.height / sourceSize.height)
         let size = CGSize(width: sourceSize.width * scale, height: sourceSize.height * scale)
@@ -119,6 +138,7 @@ final class VideoCanvasView: NSView {
     }
 
     override func mouseDragged(with event: NSEvent) {
+        sizeIndicator.move(to: convert(event.locationInWindow, from: nil), in: self)
         guard anchor != nil else { return }
         let point = sourcePoint(event)
         points.append(point)

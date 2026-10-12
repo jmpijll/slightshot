@@ -74,7 +74,8 @@ or Print, or failing a save, keeps the screenshot editable so you can try again.
 
 With a drawing tool selected, scroll up over the canvas to increase thickness
 and down to decrease it. The text tool changes the size of your next text note.
-A temporary indicator beside the pointer shows the current size. Thickness stays
+A temporary circle around the pointer grows or shrinks with the current size,
+then disappears when scrolling stops. It follows pointer motion while visible. Thickness stays
 between 1 and 12 points, and text between 10 and 48 points. This works in capture,
 clipboard and recording editors on Mac and Windows. Existing marks and text being
 typed keep their size. Select, Blur, Pixelate and Numbered steps keep normal scroll

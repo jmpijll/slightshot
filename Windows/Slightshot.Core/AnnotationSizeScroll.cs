@@ -3,6 +3,15 @@ namespace Slightshot.Core;
 public sealed record AnnotationSizeChange(bool IsText, double Value)
 {
     public string Label => $"{(IsText ? "Text size" : "Thickness")} {Math.Round(Value):0} pt";
+    public double IndicatorDiameter
+    {
+        get
+        {
+            double lower = IsText ? 10 : 1, upper = IsText ? 48 : 12;
+            double normalized = double.IsFinite(Value) ? Math.Clamp((Value - lower) / (upper - lower), 0, 1) : 0;
+            return 18 + normalized * 36;
+        }
+    }
 }
 
 public sealed class AnnotationSizeScroll

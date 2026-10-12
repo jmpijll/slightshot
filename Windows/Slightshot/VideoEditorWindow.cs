@@ -84,6 +84,8 @@ internal sealed class VideoEditorWindow : Window
         viewport = new Border { Background = Brushes.Black, CornerRadius = new CornerRadius(6), Child = videoContent, ClipToBounds = true };
         surface.SizeChangedByWheel = (change, point) => sizeIndicator.Show(change, surface.TranslatePoint(point, sizeChrome), sizeChrome);
         surface.PreviewMouseLeftButtonDown += (_, _) => sizeIndicator.Hide();
+        surface.MouseMove += (_, e) => sizeIndicator.Move(surface.TranslatePoint(e.GetPosition(surface), sizeChrome), sizeChrome);
+        surface.MouseLeave += (_, _) => sizeIndicator.Hide();
         Grid.SetColumn(viewport, 1); root.Children.Add(viewport);
         viewport.SizeChanged += (_, _) => surface.ViewScale = Math.Max(0.05, Math.Min(viewport.ActualWidth / source.Width, viewport.ActualHeight / source.Height));
 

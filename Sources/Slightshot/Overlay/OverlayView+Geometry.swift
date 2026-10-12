@@ -13,4 +13,12 @@ extension OverlayView {
         return CGRect(corner: anchor, corner: end).clamped(to: source.bounds)
     }
 
+    /// Shift-constrains a line to the nearest 45° increment.
+    func axisLocked(from start: CGPoint, to end: CGPoint) -> CGPoint {
+        let dx = end.x - start.x, dy = end.y - start.y
+        let angle = (atan2(dy, dx) / (.pi / 4)).rounded() * (.pi / 4)
+        let length = hypot(dx, dy)
+        return CGPoint(x: start.x + cos(angle) * length, y: start.y + sin(angle) * length)
+    }
+
 }
