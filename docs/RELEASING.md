@@ -2,43 +2,34 @@
 
 ## Current status
 
-Version [1.5.1](https://github.com/jmpijll/slightshot/releases/tag/v1.5.1) is live
+Version [1.6.0](https://github.com/jmpijll/slightshot/releases/tag/v1.6.0) is live
 with a signed, Apple-notarised Mac DMG and unsigned Windows x64/ARM64 setup and
-portable previews. This patch corrects macOS update discovery: releases and local
-bundles now share the full Git-history build counter. Build 195 is newer than the
-observed 1.4.0/build 128 and the published 1.5.0/build 12.
+portable previews. Scroll up or down over the annotation canvas to change the
+size of new marks. A translucent circle centered on the cursor grows and shrinks
+with the size, follows cursor movement and disappears after scrolling stops.
+Screenshot, clipboard and recording editors support it on both platforms.
 
+Release source: `f9edab1c9864d17a502ca589b67dd885cceda056`. Mac build 207 uses the
+full source Git-history counter and exceeds the previous public build 195.
 All five public downloads passed checksum, size, version and provenance checks.
-Mac app and DMG signatures, stapled tickets, Gatekeeper, runtime linkage and the
-live Sparkle signature passed. The public 1.4.0 application's embedded key also
-verifies the final 1.5.1 DMG. Native information-only Sparkle probes with isolated
-1.4.0/build 128, 162 and 9 metadata discover the actual published 1.5.1/build 195.
-The running affected 1.4.0/build 128 app also offers 1.5.1 when checked manually.
-See [published-file validation](review/releases/v1.5.1-validation.json) and the
-[release review](review/releases/v1.5.1/README.md) for native evidence and scope.
+The Mac app and DMG passed Developer ID signature, stapled-ticket, Gatekeeper and
+runtime-linkage checks. The deployed Sparkle feed matches its committed bytes,
+and its Ed25519 signature authenticates the final DMG with both the current
+embedded key and the immutable public 1.4.0 application's key.
 
-The exact-tag Windows native editor, 4K, extracted portable x64 and installer
-lifecycle checks passed. The live feed and Homebrew cask point to the verified
-final Mac download. The pinned appcast generator retains the three latest
-entries per update branch. Windows updates remain manual. ARM64 is cross-built
-and inspected; native ARM64 desktop acceptance remains pending.
+The exact-tag Windows native editor, scroll halo, recording, timed editor, 4K,
+extracted portable x64 and installer lifecycle checks passed. Windows updates
+remain manual. ARM64 is cross-built and inspected; native ARM64 desktop
+acceptance remains pending. See the [release verification](review/releases/v1.6.0/README.md)
+and [published-file validation](review/releases/v1.6.0-validation.json).
 
-The timed video editor from 1.5.0 retains its screenshot tools, per-mark start/end
-intervals, playback, scrubbing, Undo/Redo and MP4 saving. This patch changes
-release metadata and publication checks; editor code is unchanged. The published
-1.5.0 app's first measured Blur gesture took 1.145 seconds, versus 16.96 ms when
-warm. That first-use delay remains recorded in the
-[1.5.0 review](review/releases/v1.5.0/README.md).
-
-The GitHub Release workflow uses the repository secrets listed below to sign
-and notarise both the app and disk image. The local Developer ID certificate,
-Sparkle keys and `slightshot` notarisation profile are configured; the local
-Keychain profile is not available to GitHub-hosted runners.
-
-Manual runs default to verification: they keep a signed, notarised DMG as a
-seven-day Actions artifact and exercise Sparkle signing, without publishing or
-changing the public feed. Regular CI separately offers an ad-hoc-signed review
-DMG; see [builds and runners](CI.md).
+The release workflow publishes after Windows validation and Mac notarisation,
+then commits the signed update feed and explicitly deploys Pages. The local
+Developer ID certificate, Sparkle keys and `slightshot` notarisation profile are
+configured; the local Keychain profile is not available to GitHub-hosted runners.
+Manual verification runs leave **publish** disabled and preserve a signed,
+notarised DMG as a seven-day artifact without changing public downloads or feed.
+Regular CI provides an ad-hoc-signed review DMG; see [builds and runners](CI.md).
 
 ## Set up Apple notarisation locally
 
@@ -97,7 +88,7 @@ Run the Release workflow from the branch to check, using the next unpublished
 version and leaving **publish** disabled:
 
 ```bash
-gh workflow run release.yml --ref BRANCH -f version=1.5.2 -F publish=false
+gh workflow run release.yml --ref BRANCH -f version=1.6.1 -F publish=false
 ```
 
 A successful run confirms certificate import, app and DMG notarisation,
@@ -135,8 +126,8 @@ Apple signing secrets. See [Windows installation and local builds](windows.md#in
 Commit and push the release changes to `main`, then create a new version tag:
 
 ```bash
-git tag v1.5.2
-git push origin v1.5.2
+git tag v1.6.1
+git push origin v1.6.1
 ```
 
 Use a new version for every published binary. Do not replace an existing download
@@ -157,7 +148,7 @@ push workflow. See [GitHub's workflow event rules](https://docs.github.com/en/ac
 ### Local release
 
 ```bash
-NOTARY_PROFILE=slightshot make release VERSION=1.5.2
+NOTARY_PROFILE=slightshot make release VERSION=1.6.1
 ```
 
 This produces a signed, notarised disk image locally. It does not publish a
@@ -190,7 +181,7 @@ After the release is live, update `version` and `sha256` in
 [Casks/slightshot.rb](../Casks/slightshot.rb) using the final stapled disk image:
 
 ```bash
-shasum -a 256 build/Slightshot-1.5.2.dmg
+shasum -a 256 build/Slightshot-1.6.1.dmg
 ```
 
 ## Check release scripts
@@ -211,7 +202,7 @@ blocks publication. The workflow checks out full history; do not substitute a
 workflow-run counter. Verify the next release's metadata before building with:
 
 ```bash
-python3 Scripts/release_metadata.py --version 1.5.2 --appcast public/appcast.xml
+python3 Scripts/release_metadata.py --version 1.6.1 --appcast public/appcast.xml
 ```
 
 ```bash

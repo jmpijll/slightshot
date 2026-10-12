@@ -1,0 +1,410 @@
+{
+  "version": "1.6.0",
+  "build": "207",
+  "team": "PAW49RLWAA",
+  "mac_architecture": "arm64",
+  "minimum_macos": "27.0",
+  "sha256": "3f1cb8a94ebbebde5edfe3ef884f57d6364932a3109dcd0b179d7a31664f5941",
+  "bytes": 2364817,
+  "dmg_url": "https://github.com/jmpijll/slightshot/releases/download/v1.6.0/Slightshot-1.6.0.dmg",
+  "checks": {
+    "image": "Controlegetal berekenen van 'Protective Master Boot Record (MBR : 0)'\u2026\nProtective Master Boot Record (MBR :: Geverifieerd: CRC32 $029D0B08\nControlegetal berekenen van 'GPT Header (Primary GPT Header : 1)'\u2026\n GPT Header (Primary GPT Header : 1): Geverifieerd: CRC32 $D27DC1F3\nControlegetal berekenen van 'GPT Partition Data (Primary GPT Table : 2)'\u2026\nGPT Partition Data (Primary GPT Tabl: Geverifieerd: CRC32 $918AD360\nControlegetal berekenen van ' (Apple_Free : 3)'\u2026\n                    (Apple_Free : 3): Geverifieerd: CRC32 $00000000\nControlegetal berekenen van 'disk image (Apple_APFS : 4)'\u2026\n         disk image (Apple_APFS : 4): Geverifieerd: CRC32 $07B621FB\nControlegetal berekenen van ' (Apple_Free : 5)'\u2026\n                    (Apple_Free : 5): Geverifieerd: CRC32 $00000000\nControlegetal berekenen van 'GPT Partition Data (Backup GPT Table : 6)'\u2026\nGPT Partition Data (Backup GPT Table: Geverifieerd: CRC32 $918AD360\nControlegetal berekenen van 'GPT Header (Backup GPT Header : 7)'\u2026\n  GPT Header (Backup GPT Header : 7): Geverifieerd: CRC32 $4F531FF8\nGeverifieerd: CRC32 $1BEB2F7D\nhdiutil: verify: checksum of \"Slightshot-1.6.0.dmg\" is VALID",
+    "dmg_signature": "Slightshot-1.6.0.dmg: valid on disk\nSlightshot-1.6.0.dmg: satisfies its Designated Requirement",
+    "dmg_ticket": "Processing: Slightshot-1.6.0.dmg\nThe validate action worked!",
+    "dmg_gatekeeper": "Slightshot-1.6.0.dmg: accepted\nsource=Notarized Developer ID",
+    "app_signature": "--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\n--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Autoupdate\n--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/Updater.app\n--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Downloader.xpc\n--prepared:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/XPCServices/Installer.xpc\n--validated:mounted-image/Slightshot.app/Contents/Frameworks/Sparkle.framework/Versions/Current/.\nmounted-image/Slightshot.app: valid on disk\nmounted-image/Slightshot.app: satisfies its Designated Requirement",
+    "app_ticket": "Processing: mounted-image/Slightshot.app\nThe validate action worked!",
+    "app_gatekeeper": "mounted-image/Slightshot.app: accepted\nsource=Notarized Developer ID",
+    "app_runtime_linkage": "Slightshot runtime linkage verified",
+    "sparkle_signature": "Verified Ed25519 against the live public appcast and the downloaded app embedded key; the key matches previous releases.",
+    "legacy_public_app_update_signature": "The actual key extracted from the immutable signed public 1.4.0/build9 bundle verifies this final public DMG against the live feed."
+  },
+  "feed_url": "https://jmpijll.github.io/slightshot/appcast.xml",
+  "feed_sha256": "976a60465bd19f01e815f36c6a60e725a68c8dddec4c31f5c08e6adf9fd6ccab",
+  "tracked_appcast_sha256": "976a60465bd19f01e815f36c6a60e725a68c8dddec4c31f5c08e6adf9fd6ccab",
+  "deployed_source_hash_matches": true,
+  "feed_builds": {
+    "1.6.0": "207",
+    "1.5.1": "195",
+    "1.5.0": "12"
+  },
+  "feed_retention": {
+    "sparkle_version": "2.10.0",
+    "maximum_versions_per_branch": 3,
+    "policy": "Pinned generate_appcast default retains the latest three items per branch.",
+    "source": "https://github.com/sparkle-project/Sparkle/blob/2.10.0/generate_appcast/main.swift#L77",
+    "previous_deployed_feed_sha256": "76dd4f483755929990936daff4e55b3dcb914637752e3242e3ce9bb452de2873",
+    "preserved_items": [
+      {
+        "version": "1.5.1",
+        "build": "195",
+        "item_fields_unchanged": true,
+        "signed_enclosure_unchanged": true
+      },
+      {
+        "version": "1.5.0",
+        "build": "12",
+        "item_fields_unchanged": true,
+        "signed_enclosure_unchanged": true
+      }
+    ],
+    "pruned_versions": [
+      "1.4.2"
+    ]
+  },
+  "feed_versions": [
+    "1.6.0",
+    "1.5.1",
+    "1.5.0"
+  ],
+  "github_digest_verified": true,
+  "github_size_verified": true,
+  "legacy_update_trust": {
+    "version": "1.4.0",
+    "build": "9",
+    "source_commit": "58fd64431a215af2fceb2733ff83a4c5c9fd0be3",
+    "dmg_sha256": "725db9d357aac22d5283b689ac9b224ee6c80a1c7b3c9f1284a52d9edbd3cbec",
+    "actual_legacy_key_verifies_current_dmg": true,
+    "scope": "Cryptographic archive verification with the key previously extracted from the actual signed public bundle; this does not run or install the update."
+  },
+  "source_commit": "f9edab1c9864d17a502ca589b67dd885cceda056",
+  "release_url": "https://github.com/jmpijll/slightshot/releases/tag/v1.6.0",
+  "published_at_utc": "2026-10-12T13:32:38Z",
+  "verified_at": "2026-10-12T13:34:52.041925+00:00",
+  "run_url": "https://github.com/jmpijll/slightshot/actions/runs/38244709922",
+  "pages_run_url": "https://github.com/jmpijll/slightshot/actions/runs/38256414703",
+  "release_checks": {
+    "source_commit": "f9edab1c9864d17a502ca589b67dd885cceda056",
+    "run_url": "https://github.com/jmpijll/slightshot/actions/runs/38244709922",
+    "status": "passed",
+    "jobs": [
+      {
+        "name": "Build, notarise and publish",
+        "conclusion": "success"
+      },
+      {
+        "name": "Windows preview and native checks / build-and-render",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "pages_checks": {
+    "source_commit": "062bcf7dd11f83ded1aed1ad8a7c9b5780a1142a",
+    "run_url": "https://github.com/jmpijll/slightshot/actions/runs/38256414703",
+    "status": "passed",
+    "jobs": [
+      {
+        "name": "deploy",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "build_policy": {
+    "method": "git rev-list --count of the exact release source commit in full history",
+    "source_commit": "f9edab1c9864d17a502ca589b67dd885cceda056",
+    "expected_cf_bundle_version": "207",
+    "release_workflow_run_number": 14,
+    "workflow_run_number_is_not_bundle_version": true,
+    "reported_128_host_can_order_new_release": true,
+    "regression_162_host_can_order_new_release": true
+  },
+  "windows": {
+    "checked_at_utc": "2026-10-12T13:34:39.895686+00:00",
+    "repository": "jmpijll/slightshot",
+    "expected_version": "1.6.0",
+    "source": "GitHub release API and downloaded published files",
+    "source_commit": "f9edab1c9864d17a502ca589b67dd885cceda056",
+    "release_url": "https://github.com/jmpijll/slightshot/releases/tag/v1.6.0",
+    "published_at_utc": "2026-10-12T13:32:38Z",
+    "assets": [
+      {
+        "asset": "Slightshot-windows-x64.zip",
+        "url": "https://github.com/jmpijll/slightshot/releases/download/v1.6.0/Slightshot-windows-x64.zip",
+        "github_asset_digest": "sha256:ad6ebe661aa0bb87807bd04e0571c82929f414a7941578b315e74631d0ff5213",
+        "github_digest_matches": true,
+        "github_size_matches": true,
+        "status": "passed",
+        "architecture": "x64",
+        "archive_bytes": 75870171,
+        "archive_sha256": "ad6ebe661aa0bb87807bd04e0571c82929f414a7941578b315e74631d0ff5213",
+        "archive_entries": [
+          "Slightshot.exe"
+        ],
+        "zip_crc_verified": true,
+        "executable_bytes": 199132511,
+        "executable_sha256": "62fe6a239f734bde16e864c1445fba3e2fbe6b12dea942a376150f7cf4a0c988",
+        "pe_machine": "0x8664",
+        "pe_format": "PE32+",
+        "product_version_source_commit": "f9edab1c9864d17a502ca589b67dd885cceda056",
+        "product_version_source_commit_matches": true,
+        "version_strings": [
+          {
+            "CompanyName": "Slightshot",
+            "FileDescription": "Slightshot",
+            "FileVersion": "1.6.0.0",
+            "InternalName": "Slightshot.dll",
+            "LegalCopyright": "",
+            "OriginalFilename": "Slightshot.dll",
+            "ProductName": "Slightshot",
+            "ProductVersion": "1.6.0+f9edab1c9864d17a502ca589b67dd885cceda056",
+            "Assembly Version": "1.6.0.0"
+          }
+        ],
+        "raw_version_strings": [
+          {
+            "CompanyName": "Slightshot",
+            "FileDescription": "Slightshot",
+            "FileVersion": "1.6.0.0",
+            "InternalName": "Slightshot.dll",
+            "LegalCopyright": " ",
+            "OriginalFilename": "Slightshot.dll",
+            "ProductName": "Slightshot",
+            "ProductVersion": "1.6.0+f9edab1c9864d17a502ca589b67dd885cceda056",
+            "Assembly Version": "1.6.0.0"
+          }
+        ],
+        "fixed_versions": [
+          {
+            "product": "1.6.0.0",
+            "file": "1.6.0.0"
+          }
+        ]
+      },
+      {
+        "asset": "Slightshot-windows-arm64.zip",
+        "url": "https://github.com/jmpijll/slightshot/releases/download/v1.6.0/Slightshot-windows-arm64.zip",
+        "github_asset_digest": "sha256:6c1455e4ecf9a4afe268b682274b793bcb22cdbaf16b163c98eeaee3d0d66716",
+        "github_digest_matches": true,
+        "github_size_matches": true,
+        "status": "passed",
+        "architecture": "arm64",
+        "archive_bytes": 70975435,
+        "archive_sha256": "6c1455e4ecf9a4afe268b682274b793bcb22cdbaf16b163c98eeaee3d0d66716",
+        "archive_entries": [
+          "Slightshot.exe"
+        ],
+        "zip_crc_verified": true,
+        "executable_bytes": 212985052,
+        "executable_sha256": "64ab21fffebcb8ec106314895375eaeb22099d1648bdd30074891be70183dd79",
+        "pe_machine": "0xaa64",
+        "pe_format": "PE32+",
+        "product_version_source_commit": "f9edab1c9864d17a502ca589b67dd885cceda056",
+        "product_version_source_commit_matches": true,
+        "version_strings": [
+          {
+            "CompanyName": "Slightshot",
+            "FileDescription": "Slightshot",
+            "FileVersion": "1.6.0.0",
+            "InternalName": "Slightshot.dll",
+            "LegalCopyright": "",
+            "OriginalFilename": "Slightshot.dll",
+            "ProductName": "Slightshot",
+            "ProductVersion": "1.6.0+f9edab1c9864d17a502ca589b67dd885cceda056",
+            "Assembly Version": "1.6.0.0"
+          }
+        ],
+        "raw_version_strings": [
+          {
+            "CompanyName": "Slightshot",
+            "FileDescription": "Slightshot",
+            "FileVersion": "1.6.0.0",
+            "InternalName": "Slightshot.dll",
+            "LegalCopyright": " ",
+            "OriginalFilename": "Slightshot.dll",
+            "ProductName": "Slightshot",
+            "ProductVersion": "1.6.0+f9edab1c9864d17a502ca589b67dd885cceda056",
+            "Assembly Version": "1.6.0.0"
+          }
+        ],
+        "fixed_versions": [
+          {
+            "product": "1.6.0.0",
+            "file": "1.6.0.0"
+          }
+        ]
+      }
+    ],
+    "installer_assets": [
+      {
+        "asset": "Slightshot-windows-x64-setup.exe",
+        "url": "https://github.com/jmpijll/slightshot/releases/download/v1.6.0/Slightshot-windows-x64-setup.exe",
+        "github_asset_digest": "sha256:4e3ab5b48a6e4f22f8aeb740b53ae0a1e1fe4b7eadd3fedd4ed76e843f65c04e",
+        "github_digest_matches": true,
+        "github_size_matches": true,
+        "status": "passed",
+        "bytes": 56018045,
+        "sha256": "4e3ab5b48a6e4f22f8aeb740b53ae0a1e1fe4b7eadd3fedd4ed76e843f65c04e",
+        "bootstrapper_architecture": "x86",
+        "bootstrapper_pe_machine": "0x014c",
+        "bootstrapper_pe_format": "PE32",
+        "target_architecture": "x64",
+        "target_architecture_source": "Published asset name and reviewed Inno Setup architecture selection; corresponding native payload is checked in its portable archive.",
+        "payload_inspected": false,
+        "native_execution_rerun": false,
+        "version_strings": [
+          {
+            "Comments": "This installation was built with Inno Setup.",
+            "CompanyName": "Jamie van der Pijll",
+            "FileDescription": "Slightshot installer",
+            "FileVersion": "1.6.0.0",
+            "LegalCopyright": "",
+            "OriginalFileName": "",
+            "ProductName": "Slightshot",
+            "ProductVersion": "1.6.0"
+          }
+        ],
+        "raw_version_strings": [
+          {
+            "Comments": "This installation was built with Inno Setup.",
+            "CompanyName": "Jamie van der Pijll                                         ",
+            "FileDescription": "Slightshot installer                                        ",
+            "FileVersion": "1.6.0.0             ",
+            "LegalCopyright": "                                                                                                    ",
+            "OriginalFileName": "                                                  ",
+            "ProductName": "Slightshot                                                  ",
+            "ProductVersion": "1.6.0                                             "
+          }
+        ],
+        "fixed_versions": [
+          {
+            "product": "1.6.0.0",
+            "file": "1.6.0.0"
+          }
+        ]
+      },
+      {
+        "asset": "Slightshot-windows-arm64-setup.exe",
+        "url": "https://github.com/jmpijll/slightshot/releases/download/v1.6.0/Slightshot-windows-arm64-setup.exe",
+        "github_asset_digest": "sha256:ff5ad1ae70d40dff94ab8961e8952a5cba6b03fe634e235ddded80d3780651f5",
+        "github_digest_matches": true,
+        "github_size_matches": true,
+        "status": "passed",
+        "bytes": 49896209,
+        "sha256": "ff5ad1ae70d40dff94ab8961e8952a5cba6b03fe634e235ddded80d3780651f5",
+        "bootstrapper_architecture": "x86",
+        "bootstrapper_pe_machine": "0x014c",
+        "bootstrapper_pe_format": "PE32",
+        "target_architecture": "arm64",
+        "target_architecture_source": "Published asset name and reviewed Inno Setup architecture selection; corresponding native payload is checked in its portable archive.",
+        "payload_inspected": false,
+        "native_execution_rerun": false,
+        "version_strings": [
+          {
+            "Comments": "This installation was built with Inno Setup.",
+            "CompanyName": "Jamie van der Pijll",
+            "FileDescription": "Slightshot installer",
+            "FileVersion": "1.6.0.0",
+            "LegalCopyright": "",
+            "OriginalFileName": "",
+            "ProductName": "Slightshot",
+            "ProductVersion": "1.6.0"
+          }
+        ],
+        "raw_version_strings": [
+          {
+            "Comments": "This installation was built with Inno Setup.",
+            "CompanyName": "Jamie van der Pijll                                         ",
+            "FileDescription": "Slightshot installer                                        ",
+            "FileVersion": "1.6.0.0             ",
+            "LegalCopyright": "                                                                                                    ",
+            "OriginalFileName": "                                                  ",
+            "ProductName": "Slightshot                                                  ",
+            "ProductVersion": "1.6.0                                             "
+          }
+        ],
+        "fixed_versions": [
+          {
+            "product": "1.6.0.0",
+            "file": "1.6.0.0"
+          }
+        ]
+      }
+    ],
+    "native_execution": {
+      "rerun": false,
+      "release_workflow_url": "https://github.com/jmpijll/slightshot/actions/runs/38244709922",
+      "native_x64": "Exact-source native Windows workflow checks passed; public-file validator does not rerun native execution.",
+      "native_arm64": "Not performed; cross-built package inspection only."
+    },
+    "native_execution_provenance": {
+      "release_workflow_url": "https://github.com/jmpijll/slightshot/actions/runs/38244709922",
+      "source_commit": "f9edab1c9864d17a502ca589b67dd885cceda056",
+      "run_number": 14,
+      "release_run_status_at_validation": "completed",
+      "release_run_conclusion_at_validation": "success",
+      "job": "Windows preview and native checks / build-and-render",
+      "job_url": "https://github.com/jmpijll/slightshot/actions/runs/38244709922/job/114834429795",
+      "job_conclusion": "success",
+      "native_checks": [
+        {
+          "step": "Test selection, layout and output geometry",
+          "conclusion": "success"
+        },
+        {
+          "step": "Build native app with warnings as errors",
+          "conclusion": "success"
+        },
+        {
+          "step": "Render native WPF parity fixtures and test image export",
+          "conclusion": "success"
+        },
+        {
+          "step": "Test clipboard image editor, native window, original pixels and output retry",
+          "conclusion": "success"
+        },
+        {
+          "step": "Test native video recording, export quality, cancellation and retry",
+          "conclusion": "success"
+        },
+        {
+          "step": "Test timed video editor, native pointer drawing and rendered MP4 annotations",
+          "conclusion": "success"
+        },
+        {
+          "step": "Benchmark real 4K preview, timed effects, export and cancellation",
+          "conclusion": "success"
+        },
+        {
+          "step": "Test delayed capture on the real Windows desktop",
+          "conclusion": "success"
+        },
+        {
+          "step": "Package and verify single-file archives",
+          "conclusion": "success"
+        },
+        {
+          "step": "Test the extracted x64 app from a path containing spaces",
+          "conclusion": "success"
+        },
+        {
+          "step": "Build per-user Windows installers",
+          "conclusion": "success"
+        },
+        {
+          "step": "Test installation, upgrade, installed app and uninstallation",
+          "conclusion": "success"
+        }
+      ],
+      "native_x64_installer_execution": "Passed installation, upgrade, running-app/downgrade guards and uninstall in the exact-tag release workflow; not rerun by this public-file validator.",
+      "native_arm64_installer_execution": "Not performed; ARM64 installer and native payload are cross-built and inspected. Native ARM64 desktop acceptance remains pending."
+    },
+    "status": "passed"
+  },
+  "feature_verification": "Exact-tag Windows release workflow passed the native timed video editor, pointer/range/history/seek/color/export/recovery checks, whole-4K acceptance and extracted portable x64 editor checks. The public-file validator inspects workflow step conclusions and downloaded package metadata; it does not rerun those native fixtures.",
+  "status": "passed",
+  "homebrew": {
+    "version": "1.6.0",
+    "sha256": "3f1cb8a94ebbebde5edfe3ef884f57d6364932a3109dcd0b179d7a31664f5941",
+    "source": "Candidate repository cask fetched against the final published disk image.",
+    "fetch_status": "passed",
+    "verified_at": "2026-10-12T13:38:19.159116+00:00",
+    "command": "HOMEBREW_NO_AUTO_UPDATE=1 brew fetch --cask codex/slightshot-validation-1-6-0-434d02fc/slightshot",
+    "candidate_cask_path": "/Users/jamievanderpijll/slightshot/Casks/slightshot.rb",
+    "temporary_tap_name": "codex/slightshot-validation-1-6-0-434d02fc",
+    "candidate_cask_sha256": "473d8b5596455be44d98f591fdedf664d4a5c49abbb97f059e073f8d719fea63",
+    "ruby_syntax": "Syntax OK",
+    "cached_download_sha256_matches": true,
+    "cached_download_size_matches": true,
+    "temporary_tap": "Local validation copy of the candidate cask; removed after the check."
+  }
+}
