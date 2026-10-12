@@ -17,6 +17,8 @@ internal sealed class VideoAnnotationSurface : FrameworkElement
     private Annotation? live;
     private PointD anchor;
     private double gestureScale = 1;
+    private readonly AnnotationSizeScroll sizeScroll = new();
+    internal Action<AnnotationSizeChange, Point>? SizeChangedByWheel { get; set; }
     private readonly List<PointD> points = [];
     internal TimeSpan Position { get; set; }
     internal Tool? ActiveTool { get; set; }
@@ -63,6 +65,28 @@ internal sealed class VideoAnnotationSurface : FrameworkElement
         gestureScale = Math.Max(0.05, ViewScale);
         anchor = point; points.Clear(); points.Add(point); live = Make(point); CaptureMouse(); Refresh(); e.Handled = true;
     }
+    protected override void OnMouseWheel(MouseWheelEventArgs e)
+    {
+        base.OnMouseWheel(e);
+        e.Handled = ChangeSizeAt(e.GetPosition(this), e.Delta);
+    }
+    internal bool ChangeSizeAt(Point point, int delta)
+    {
+        if (frame == null || ActiveTool is not { } tool || !AnnotationSizeScroll.Supports(tool) ||
+            point.X < 0 || point.Y < 0 || point.X > Width || point.Y > Height)
+        { sizeScroll.Reset(); return false; }
+        if (delta == 0) return false;
+        if (sizeScroll.Adjust(tool, settings.LineWidth, settings.FontSize, delta / 120.0) is not { } change) return true;
+        if (change.IsText) settings.FontSize = change.Value;
+        else
+        {
+            settings.LineWidth = change.Value;
+            if (live != null) { live = live with { Width = change.Value / gestureScale }; Refresh(); }
+        }
+        SizeChangedByWheel?.Invoke(change, point);
+        return true;
+    }
+    internal void ResetSizeScroll() => sizeScroll.Reset();
     protected override void OnMouseMove(MouseEventArgs e)
     {
         base.OnMouseMove(e);

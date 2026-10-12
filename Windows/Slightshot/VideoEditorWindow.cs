@@ -20,6 +20,8 @@ internal sealed class VideoEditorWindow : Window
     private readonly Stopwatch clock = new();
     private readonly Dictionary<Tool, ToolbarButton> tools = [];
     private readonly VideoAnnotationSurface surface;
+    private readonly Canvas sizeChrome = new();
+    private readonly AnnotationSizeIndicator sizeIndicator = new();
     private readonly Border viewport;
     private readonly Button play = new() { Content = "Play", Width = 65, Padding = new Thickness(10, 5, 10, 5) };
     private readonly Slider playhead;
@@ -78,7 +80,10 @@ internal sealed class VideoEditorWindow : Window
         surface.AnnotationCreated = AddAnnotation; surface.SelectionRequested = SelectAnnotation;
         surface.TextRequested = BeginText; surface.PauseRequested = Pause;
         var videoBox = new Viewbox { Stretch = Stretch.Uniform, Child = surface };
-        viewport = new Border { Background = Brushes.Black, CornerRadius = new CornerRadius(6), Child = videoBox, ClipToBounds = true };
+        var videoContent = new Grid(); videoContent.Children.Add(videoBox); videoContent.Children.Add(sizeChrome);
+        viewport = new Border { Background = Brushes.Black, CornerRadius = new CornerRadius(6), Child = videoContent, ClipToBounds = true };
+        surface.SizeChangedByWheel = (change, point) => sizeIndicator.Show(change, surface.TranslatePoint(point, sizeChrome), sizeChrome);
+        surface.PreviewMouseLeftButtonDown += (_, _) => sizeIndicator.Hide();
         Grid.SetColumn(viewport, 1); root.Children.Add(viewport);
         viewport.SizeChanged += (_, _) => surface.ViewScale = Math.Max(0.05, Math.Min(viewport.ActualWidth / source.Width, viewport.ActualHeight / source.Height));
 
@@ -206,6 +211,7 @@ internal sealed class VideoEditorWindow : Window
     }
     private void SelectTool(Tool? tool)
     {
+        surface.ResetSizeScroll(); sizeIndicator.Hide();
         CommitText(); Pause(); surface.CancelGesture(); surface.ActiveTool = tool;
         surface.Cursor = tool == null ? Cursors.Arrow : tool == Tool.Text ? Cursors.IBeam : Cursors.Cross;
         foreach (var pair in tools) { pair.Value.Selected = pair.Key == tool; pair.Value.InvalidateVisual(); }

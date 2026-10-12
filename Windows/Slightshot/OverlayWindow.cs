@@ -33,6 +33,8 @@ internal sealed class OverlayWindow : Window
     private RectD resizeOriginal;
     private readonly List<PointD> points = [];
     private bool copyOnRelease;
+    private readonly AnnotationSizeScroll sizeScroll = new();
+    private readonly AnnotationSizeIndicator sizeIndicator = new();
     private RectD Bounds => imageSource.Bounds;
 
     public OverlayWindow(CapturedDisplay display, Settings settings, bool underPointer, Action<OverlayWindow> takeOver, Action cancel, Action<OverlayWindow, CaptureAction, BitmapSource> complete, Action<CapturedDisplay, RectD>? record = null)
@@ -82,10 +84,11 @@ internal sealed class OverlayWindow : Window
             SizeChanged += (_, _) => Refresh();
             surface.Selection = Bounds;
         }
-        toolbar = new Toolbar(toolbarChrome, imageSource, settings, _ => { CommitText(); surface.MagnifierPoint = null; Refresh(); }, () => { Refresh(); }, Undo, Redo, Perform, cancel, BeginRecording, display != null);
+        toolbar = new Toolbar(toolbarChrome, imageSource, settings, _ => { sizeScroll.Reset(); sizeIndicator.Hide(); CommitText(); surface.MagnifierPoint = null; Refresh(); }, () => { Refresh(); }, Undo, Redo, Perform, cancel, BeginRecording, display != null);
 
         surface.MouseLeftButtonDown += MouseDownOnSurface; surface.MouseMove += MouseMoved; surface.MouseLeftButtonUp += MouseUpOnSurface;
         surface.MouseRightButtonDown += (_, _) => cancel();
+        surface.PreviewMouseWheel += SizeScrolled;
         surface.MouseLeave += (_, _) => { surface.MagnifierPoint = null; surface.InvalidateVisual(); };
         PreviewKeyDown += KeyPressed;
         Loaded += (_, _) => Refresh();
@@ -97,6 +100,7 @@ internal sealed class OverlayWindow : Window
     private static bool Control => Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
     private void MouseDownOnSurface(object sender, MouseButtonEventArgs e)
     {
+        sizeIndicator.Hide();
         takeOver(this); surface.ShowHint = false; CommitText(); var p = Position(e);
         if (e.ClickCount == 2 && toolbar.ActiveTool != Tool.Step && surface.Selection is { } twice && twice.Contains(p)) { DefaultPerform(); return; }
         if (surface.Selection is { } selection)
@@ -110,6 +114,28 @@ internal sealed class OverlayWindow : Window
             if (selection.Contains(p)) { drag = Drag.MoveSelection; grabOffset = new(p.X - selection.Left, p.Y - selection.Top); surface.CaptureMouse(); return; }
         }
         StartSelection(p);
+    }
+
+    private void SizeScrolled(object sender, MouseWheelEventArgs e)
+        => e.Handled = ChangeSizeAt(e.GetPosition(surface), e.Delta);
+
+    internal bool ChangeSizeAt(Point point, int delta)
+    {
+        if (surface.Selection is not { } selection || !selection.Contains(new(point.X, point.Y)) ||
+            toolbar.ActiveTool is not { } tool || !AnnotationSizeScroll.Supports(tool) || textEntry != null ||
+            drag is Drag.NewSelection or Drag.ResizeSelection or Drag.MoveSelection)
+        { sizeScroll.Reset(); return false; }
+        if (delta == 0) return false;
+        if (sizeScroll.Adjust(tool, settings.LineWidth, settings.FontSize, delta / 120.0) is not { } change) return true;
+        if (change.IsText) settings.FontSize = change.Value;
+        else
+        {
+            settings.LineWidth = change.Value; toolbar.SyncWidth();
+            if (surface.LiveAnnotation is { } live) surface.LiveAnnotation = live with { Width = change.Value };
+        }
+        sizeIndicator.Show(change, surface.TranslatePoint(point, toolbarChrome), toolbarChrome);
+        Refresh();
+        return true;
     }
 
     private void StartSelection(PointD point)

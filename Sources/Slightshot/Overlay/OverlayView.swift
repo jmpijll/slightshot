@@ -28,10 +28,12 @@ final class OverlayView: NSView {
 
     private let screenshotView: ScreenshotView
     private let dimView = DimView()
-    private let canvas = CanvasView()
+    let canvas = CanvasView()
     private var magnifier: MagnifierView?
-    private var textEntry: TextEntryView?
-    private lazy var toolbars: ToolbarController = {
+    var textEntry: TextEntryView?
+    private var sizeScroll = AnnotationSizeScroll()
+    private let sizeIndicator = AnnotationSizeIndicator()
+    lazy var toolbars: ToolbarController = {
         let controller = ToolbarController(host: toolbarHost ?? self, color: color, lineWidth: lineWidth,
                                            allowsRecording: capturedDisplay != nil)
         controller.delegate = self
@@ -47,8 +49,8 @@ final class OverlayView: NSView {
             layoutToolbars()
         }
     }
-    private var annotations: [Annotation] = [] { didSet { canvas.annotations = annotations } }
-    private var undoneAnnotations: [Annotation] = [] {
+    var annotations: [Annotation] = [] { didSet { canvas.annotations = annotations } }
+    var undoneAnnotations: [Annotation] = [] {
         didSet { updateRedoAvailability() }
     }
     private var activeTool: Tool? { toolbars.activeTool }
@@ -176,6 +178,7 @@ final class OverlayView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        sizeIndicator.hide()
         delegate?.overlayDidTakeOver(self)
         canvas.showHint = false
         commitTextEntry()
@@ -292,18 +295,6 @@ final class OverlayView: NSView {
         delegate?.overlayDidCancel(self)
     }
 
-    private func clampToBounds(_ point: CGPoint) -> CGPoint {
-        CGPoint(x: min(max(0, point.x), source.size.width),
-                y: min(max(0, point.y), source.size.height))
-    }
-
-    private func squared(_ rect: CGRect, from anchor: CGPoint, to point: CGPoint) -> CGRect {
-        let side = max(abs(point.x - anchor.x), abs(point.y - anchor.y))
-        let end = CGPoint(x: anchor.x + (point.x < anchor.x ? -side : side),
-                          y: anchor.y + (point.y < anchor.y ? -side : side))
-        return CGRect(corner: anchor, corner: end).clamped(to: source.bounds)
-    }
-
     private func updateCursor(at point: CGPoint) {
         guard let selection else { NSCursor.crosshair.set(); return }
         if let handle = SelectionHandle.hit(point, in: selection, zoom: viewingZoom) {
@@ -340,7 +331,7 @@ final class OverlayView: NSView {
     }
 
     /// Shift-constrains a line to the nearest 45° increment.
-    private func axisLocked(from start: CGPoint, to end: CGPoint) -> CGPoint {
+    func axisLocked(from start: CGPoint, to end: CGPoint) -> CGPoint {
         let dx = end.x - start.x, dy = end.y - start.y
         let angle = (atan2(dy, dx) / (.pi / 4)).rounded() * (.pi / 4)
         let length = hypot(dx, dy)
@@ -383,7 +374,7 @@ final class OverlayView: NSView {
                                       lineWidth: lineWidth, alpha: 1, fontSize: fontSize))
     }
 
-    private func cancelTextEntry() {
+    func cancelTextEntry() {
         textEntry?.removeFromSuperview()
         textEntry = nil
         updateRedoAvailability()
@@ -391,7 +382,6 @@ final class OverlayView: NSView {
     }
 
     // MARK: - Magnifier
-
     private func updateMagnifier(at point: CGPoint) {
         guard Settings.shared.showMagnifier, selection == nil || isDraggingSelection else {
             hideMagnifier()
@@ -539,10 +529,50 @@ extension OverlayView {
     }
 }
 
+extension OverlayView {
+    override func scrollWheel(with event: NSEvent) {
+        if !handleSizeScroll(event) { super.scrollWheel(with: event) }
+    }
+
+    /// The clipboard scroll view also routes here before scrolling its viewport.
+    func handleSizeScroll(_ event: NSEvent) -> Bool {
+        let point = location(of: event)
+        guard let selection, selection.contains(point), let tool = activeTool,
+              AnnotationSizeScroll.supports(tool), textEntry == nil,
+              !isDraggingSelection else { sizeScroll.reset(); return false }
+        if case .moveSelection = drag { sizeScroll.reset(); return false }
+        guard event.scrollingDeltaY != 0 else { return false }
+        // Momentum must not keep changing the style after the fingers leave the trackpad.
+        guard event.momentumPhase.isEmpty else { return true }
+        if event.phase.contains(.began) { sizeScroll.reset() }
+        let delta = event.scrollingDeltaY * (event.isDirectionInvertedFromDevice ? -1 : 1)
+        if let change = sizeScroll.adjust(tool: tool, width: lineWidth, fontSize: fontSize,
+                                          delta: delta, precise: event.hasPreciseScrollingDeltas) {
+            if change.isText {
+                fontSize = change.value
+                Settings.shared.fontSize = Double(change.value)
+            } else {
+                lineWidth = change.value
+                toolbars.setLineWidth(change.value)
+                if var live = canvas.liveAnnotation {
+                    live.lineWidth = change.value * tool.widthMultiplier
+                    canvas.liveAnnotation = live
+                }
+            }
+            let host = toolbarHost ?? self
+            sizeIndicator.show(change, at: convert(point, to: host), in: host)
+        }
+        return true
+    }
+
+}
+
 // MARK: - ToolbarControllerDelegate
 
 extension OverlayView: ToolbarControllerDelegate {
     func toolbarDidChangeTool(_ tool: Tool?) {
+        sizeScroll.reset()
+        sizeIndicator.hide()
         commitTextEntry()
         hideMagnifier()
     }
@@ -567,29 +597,4 @@ extension OverlayView: ToolbarControllerDelegate {
     }
 
     func toolbarDidRequestClose() { delegate?.overlayDidCancel(self) }
-}
-
-// MARK: - Annotation history
-
-extension OverlayView {
-    func undo() {
-        if textEntry != nil { cancelTextEntry(); return }
-        guard let annotation = annotations.popLast() else { return }
-        undoneAnnotations.append(annotation)
-    }
-
-    func redo() {
-        guard textEntry == nil, canvas.liveAnnotation == nil,
-              let annotation = undoneAnnotations.popLast() else { return }
-        annotations.append(annotation)
-    }
-
-    private func updateRedoAvailability() {
-        toolbars.setCanRedo(textEntry == nil && canvas.liveAnnotation == nil && !undoneAnnotations.isEmpty)
-    }
-
-    private func commitAnnotation(_ annotation: Annotation) {
-        undoneAnnotations.removeAll()
-        annotations.append(annotation)
-    }
 }

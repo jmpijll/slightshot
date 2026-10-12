@@ -63,6 +63,13 @@ final class ToolbarController {
         redoButton?.isEnabled = available
     }
 
+    func setLineWidth(_ width: CGFloat) {
+        lineWidth = width
+        palette?.setWidth(width)
+        Settings.shared.lineWidth = Double(width)
+        delegate?.toolbarDidChangeLineWidth(width)
+    }
+
     private func toggle(_ tool: Tool) {
         select(activeTool == tool ? nil : tool)
     }
@@ -187,9 +194,7 @@ final class ToolbarController {
         let panel = PalettePanel(selected: color, width: lineWidth) { [weak self] picked in
             self?.apply(color: picked)
         } onWidth: { [weak self] width in
-            self?.lineWidth = width
-            Settings.shared.lineWidth = Double(width)
-            self?.delegate?.toolbarDidChangeLineWidth(width)
+            self?.setLineWidth(width)
         }
         host.addSubview(panel)
         palette = panel
