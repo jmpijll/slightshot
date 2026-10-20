@@ -250,8 +250,8 @@ internal static class RecordingSmokeTest
         }
         finally
         {
-            if (!host.HasExited) { host.Kill(); await host.WaitForExitAsync(); }
-            Directory.Delete(fixture, true);
+            if (!host.HasExited) { host.Kill(entireProcessTree: true); await host.WaitForExitAsync(); }
+            try { Directory.Delete(fixture, true); } catch (IOException) { }
         }
     }
     private static (int Mismatched, double MeanError) Difference(byte[] actual, byte[] expected, int expectedStride, int width, int height, int fromX = 0)
