@@ -519,7 +519,7 @@ internal static class VideoEditorSmokeTest
             sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
             sourceDurationSeconds = source.Duration.TotalSeconds,
             annotationSourceSeconds = new[] { 1.0, 3.0 },
-            method = "Trim handles are dragged with native pointer input; exact fields and buttons are operated automatically. Each MP4 is exported through the production plain (MediaTranscoder) or annotated (frame) path and decoded again. Frame counters are eight binary cells drawn into each synthetic source frame.",
+            method = "Trim handles are dragged with native pointer input; exact fields and buttons are operated automatically. Each MP4 is exported through the production VideoAnnotationExport entry point with annotations (annotated), with none (plain) or with all of them outside the trim (outside), then decoded again. Frame counters are eight binary cells drawn into each synthetic source frame.",
             exports = evidence
         }, new JsonSerializerOptions { WriteIndented = true }));
         async Task ExportAsync(string path, RecordingQuality quality, VideoTrim kept, IReadOnlyList<TimedAnnotation> marks, double during, double after)
@@ -546,13 +546,11 @@ internal static class VideoEditorSmokeTest
                 if (index > 0) Save(frame, Path.Combine(directory, $"{name}-{(index == 1 ? "during" : "after")}.png"));
             }
             double blurDuring = blur[1], blurAfter = blur[2];
-            bool framePath = kept.Clip(marks).Length > 0;
             double endSeconds = TimeSpan.FromTicks(cadence.LastPresentationTicks + cadence.LastDurationTicks).TotalSeconds;
             evidence.Add(new
             {
                 path, quality, trimStartSeconds = kept.Start.TotalSeconds, trimEndSeconds = kept.End.TotalSeconds, keptSeconds = kept.Length.TotalSeconds,
                 decodedDurationSeconds = decoded.Duration.TotalSeconds, lastFrameEndSeconds = endSeconds, expectedFrames, actualFrames = cadence.Frames,
-                exportPath = framePath ? "annotated frame export" : "plain MediaTranscoder export",
                 outputSecondsChecked = samples.Select(sample => sample.TotalSeconds),
                 expectedSourceCounters = expectedCounters, actualOutputCounters = counters,
                 blurMeanDeltaDuringAnnotation = blurDuring, blurMeanDeltaAfterAnnotation = blurAfter
@@ -562,19 +560,10 @@ internal static class VideoEditorSmokeTest
             Require(decoded.Width == width && decoded.Height == height, "trimmed export keeps dimensions " + label);
             Require(Math.Abs(decoded.Duration.TotalSeconds - kept.Length.TotalSeconds) < 0.1, $"trimmed export lasts {kept.Length.TotalSeconds:0.00}s, not {decoded.Duration.TotalSeconds:0.00}s, {label}");
             Require(Math.Abs(cadence.FirstPresentationTicks) <= 1, "trimmed export starts at time zero " + label);
-            if (framePath)
-            {
-                Require(cadence.Frames == expectedFrames && Math.Abs(endSeconds - kept.Length.TotalSeconds) <= (double)(interval + 10000) / TimeSpan.TicksPerSecond, "annotated trimmed export has every planned frame " + label);
-                Require(counters.SequenceEqual(expectedCounters), "annotated trimmed export starts at the trim start frame and keeps source timing " + label);
-                Require(blurDuring > 35 && blurAfter < 25, "annotations are clipped to the trim and shifted with it " + label);
-            }
-            else
-            {
-                // The transcoder chooses its own first sample, so allow two
-                // capture frames instead of the frame path's exact identity.
-                Require(counters.Zip(expectedCounters, (actual, expected) => Math.Abs(actual - expected)).All(error => error <= 2), "plain trimmed export starts near the trim start frame " + label);
-                Require(blurDuring < 25 && blurAfter < 25, "plain trimmed export has no annotations " + label);
-            }
+            Require(cadence.Frames == expectedFrames && Math.Abs(endSeconds - kept.Length.TotalSeconds) <= (double)(interval + 10000) / TimeSpan.TicksPerSecond, "trimmed export has every planned frame " + label);
+            Require(counters.SequenceEqual(expectedCounters), "trimmed export starts at the trim start frame and keeps source timing " + label);
+            if (kept.Clip(marks).Length > 0) Require(blurDuring > 35 && blurAfter < 25, "annotations are clipped to the trim and shifted with it " + label);
+            else Require(blurDuring < 25 && blurAfter < 25, "trimmed export without visible annotations has no effects " + label);
         }
         foreach (var quality in Enum.GetValues<RecordingQuality>())
         {
@@ -582,7 +571,7 @@ internal static class VideoEditorSmokeTest
             await ExportAsync("plain", quality, trim, [], 2.0, 3.1);
         }
         await ExportAsync("outside", RecordingQuality.High, new VideoTrim(Seconds(3.1), Seconds(4)), edit.Annotations, 3.1, 3.6);
-        checks.Add("Every quality exports the 1.5–3.5 second trim through both the annotated frame path and the plain MediaTranscoder path. Decoded MP4s last the kept 2 seconds and start at the trim start frame. Annotations at 1–3 seconds appear only in the first 1.5 output seconds. A trim after every annotation falls back to the plain path without effects.");
+        checks.Add("Every quality exports the 1.5–3.5 second trim with annotations and without. Each decoded MP4 has every planned frame of the kept 2 seconds and the exact source frames from the trim start. Annotations at 1–3 seconds appear only in the first 1.5 output seconds. A trim after every annotation exports no effects.");
     }
     private sealed record SourceColorEvidence(double Seconds, string Patch, string Comparison,
         double[] ReferenceMeanRGB, double[] ActualMeanRGB, double[] MeanAbsoluteRGBChannelDelta);

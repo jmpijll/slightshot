@@ -11,9 +11,9 @@ internal static class VideoAnnotationExport
         IReadOnlyList<TimedAnnotation> annotations, CancellationToken cancellation, IProgress<double>? progress = null, VideoExportMetrics? metrics = null, VideoTrim? trim = null)
     {
         RecordingExport.ValidateDestination(source, destination);
-        if (annotations.Count == 0)
+        if (annotations.Count == 0 && trim is null)
         {
-            await RecordingExport.SaveAsync(source, destination, quality, width, height, cancellation, progress, trim);
+            await RecordingExport.SaveAsync(source, destination, quality, width, height, cancellation, progress);
             return;
         }
         string staging = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(destination))!, ".slightshot-" + Guid.NewGuid().ToString("N") + ".mp4");
@@ -29,9 +29,11 @@ internal static class VideoAnnotationExport
             var kept = (trim ?? VideoTrim.Whole(duration)).Within(duration);
             if (kept.Length <= TimeSpan.Zero) throw new InvalidOperationException("The trimmed recording has no video frames.");
             var visible = kept.Clip(annotations);
-            if (visible.Length == 0)
+            // MediaTranscoder rejects TrimStartTime/TrimStopTime on stream
+            // transcodes (E_POINTER), so any trim uses this frame-exact path.
+            if (visible.Length == 0 && kept == VideoTrim.Whole(duration))
             {
-                await RecordingExport.SaveAsync(source, destination, quality, width, height, cancellation, progress, trim);
+                await RecordingExport.SaveAsync(source, destination, quality, width, height, cancellation, progress);
                 return;
             }
             TimeSpan length = kept.Length;
@@ -65,7 +67,7 @@ internal static class VideoAnnotationExport
                     metrics?.AddDecode(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
                     if (nextFrame == 0) metrics?.RecordMemory("firstFrameDecoded");
                     measured = Stopwatch.GetTimestamp();
-                    await renderer.ComposeAsync(pixels, sourceWidth, sourceHeight, position, visible, cancellation);
+                    if (visible.Length > 0) await renderer.ComposeAsync(pixels, sourceWidth, sourceHeight, position, visible, cancellation);
                     metrics?.AddRender(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
                     var sampleDuration = TimeSpan.FromTicks(Math.Min(TimeSpan.TicksPerSecond / rate, length.Ticks - position.Ticks));
                     measured = Stopwatch.GetTimestamp();
