@@ -42,6 +42,10 @@ public readonly record struct RecordingGeometry(int SourceWidth, int SourceHeigh
     {
         if (sourceWidth <= 0 || sourceHeight <= 0) throw new ArgumentOutOfRangeException(nameof(sourceWidth), "A recording needs a nonempty region.");
         var size = RecordingQuality.High.Dimensions(requestedWidth, requestedHeight);
-        return new(sourceWidth, sourceHeight, size.Width, size.Height);
+        return new(Crop(sourceWidth, size.Width), Crop(sourceHeight, size.Height), size.Width, size.Height);
     }
+
+    // Rounding an odd axis down to even drops its last pixel row or column;
+    // resampling the rest by a fraction of a pixel would soften every frame.
+    private static int Crop(int source, int encoded) => encoded == (source & ~1) ? encoded : source;
 }

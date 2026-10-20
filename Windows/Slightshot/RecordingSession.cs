@@ -32,8 +32,9 @@ internal sealed class RecordingSession : IDisposable
     private int frames;
     private int stopping;
     private Task? completion;
-    internal string DirectoryPath { get; } = Path.Combine(Path.GetTempPath(), "Slightshot-Recording-" + Guid.NewGuid().ToString("N"));
-    internal string SourcePath => Path.Combine(DirectoryPath, "source.mp4");
+    internal RecordingDirectory Files { get; }
+    internal string DirectoryPath => Files.DirectoryPath;
+    internal string SourcePath => Files.SourcePath;
     internal int Width { get; }
     internal int Height { get; }
     internal TimeSpan Duration => clock.Elapsed;
@@ -46,15 +47,15 @@ internal sealed class RecordingSession : IDisposable
         int area = checked(width * height);
         capturePixels = new byte[checked(area * 4)];
         frameBuffers = new(checked(area + area / 2));
-        Directory.CreateDirectory(DirectoryPath);
+        Files = RecordingDirectory.Create();
     }
 
     internal static RecordingSession Create(CapturedDisplay display, RectD selection, bool includeCursor, bool nativeResolution)
     {
         RectD region = selection.ToPixels(display.Scale, display.Scale, display.PixelWidth, display.PixelHeight);
-        var size = RecordingQuality.High.Dimensions(nativeResolution ? (int)region.Width : (int)Math.Ceiling(selection.Width), nativeResolution ? (int)region.Height : (int)Math.Ceiling(selection.Height));
-        var capture = new GdiRecordingCapture(display.Left + (int)region.X, display.Top + (int)region.Y, (int)region.Width, (int)region.Height, size.Width, size.Height, includeCursor);
-        try { return new(size.Width, size.Height, capture.Capture, capture); }
+        var geometry = RecordingGeometry.Create((int)region.Width, (int)region.Height, nativeResolution ? (int)region.Width : (int)Math.Ceiling(selection.Width), nativeResolution ? (int)region.Height : (int)Math.Ceiling(selection.Height));
+        var capture = new GdiRecordingCapture(display.Left + (int)region.X, display.Top + (int)region.Y, geometry, includeCursor);
+        try { return new(geometry.Width, geometry.Height, capture.Capture, capture); }
         catch { capture.Dispose(); throw; }
     }
 
@@ -202,6 +203,73 @@ internal sealed class RecordingSession : IDisposable
             Interlocked.Exchange(ref captureResource, null)?.Dispose();
             stopSignal.Dispose(); abortSignal.Dispose(); samples.Dispose();
         }
-        try { Directory.Delete(DirectoryPath, true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+        Files.Dispose();
+    }
+}
+
+// One recording's temporary files. The owner lock marks the directory as live
+// while this process holds it; a crash or forced sign-out releases the lock.
+internal sealed class RecordingDirectory : IDisposable
+{
+    private FileStream? owner;
+    internal string DirectoryPath { get; }
+    internal string SourcePath => Path.Combine(DirectoryPath, "source.mp4");
+    private string KeepPath => Path.Combine(DirectoryPath, RecordingDirectories.KeepFile);
+    internal DateTime KeptAt => File.GetLastWriteTime(KeepPath);
+
+    private RecordingDirectory(string path, FileStream owner) { DirectoryPath = path; this.owner = owner; }
+
+    internal static RecordingDirectory Create()
+    {
+        string path = Path.Combine(Path.GetTempPath(), RecordingDirectories.Prefix + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(path);
+        try { return new(path, Lock(path, FileMode.CreateNew)); }
+        catch { Delete(path); throw; }
+    }
+
+    // Marks the source to survive a session end so the next launch offers it again.
+    internal void Keep() => File.WriteAllBytes(KeepPath, []);
+
+    // Deletes leftovers whose owner is gone and adopts kept recordings.
+    internal static List<RecordingDirectory> Sweep()
+    {
+        var kept = new List<RecordingDirectory>();
+        List<string> candidates;
+        try { candidates = Directory.EnumerateDirectories(Path.GetTempPath(), RecordingDirectories.Prefix + "*").ToList(); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { return kept; }
+        foreach (string path in candidates)
+        {
+            FileStream? owner = null;
+            try
+            {
+                RecordingOwner status;
+                try { owner = Lock(path, FileMode.Open); status = RecordingOwner.Exited; }
+                catch (FileNotFoundException) { status = RecordingOwner.Missing; }
+                // A sharing violation means another live process holds the lock.
+                catch (IOException) { status = RecordingOwner.Running; }
+                bool keep = File.Exists(Path.Combine(path, RecordingDirectories.KeepFile)) && File.Exists(Path.Combine(path, "source.mp4"));
+                switch (RecordingDirectories.Classify(status, keep, DateTime.UtcNow - Directory.GetCreationTimeUtc(path)))
+                {
+                    case RecordingDirectoryState.Recoverable: kept.Add(new(path, owner ?? Lock(path, FileMode.OpenOrCreate))); owner = null; break;
+                    case RecordingDirectoryState.Stale: owner?.Dispose(); owner = null; Delete(path); break;
+                }
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException) { }
+            finally { owner?.Dispose(); }
+        }
+        return kept;
+    }
+
+    private static FileStream Lock(string directory, FileMode mode) => new(Path.Combine(directory, RecordingDirectories.OwnerFile), mode, FileAccess.ReadWrite, FileShare.None);
+    private static void Delete(string path)
+    {
+        try { Directory.Delete(path, true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
+    }
+
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref owner, null) is not { } held) return;
+        held.Dispose();
+        Delete(DirectoryPath);
     }
 }
