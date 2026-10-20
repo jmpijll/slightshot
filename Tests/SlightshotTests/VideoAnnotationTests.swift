@@ -27,6 +27,30 @@ struct VideoAnnotationTests {
         #expect(clipped.start == 2 && clipped.end == 2)
     }
 
+    @Test func trimsAreClampedHalfOpenAndShiftKeptAnnotationTimes() throws {
+        #expect(VideoTrim.whole(8) == VideoTrim(start: 0, end: 8, recording: 8))
+        #expect(VideoTrim(start: -1, end: 20, recording: 8).isWhole(of: 8))
+        #expect(VideoTrim(start: .nan, end: .infinity, recording: 8).isWhole(of: 8))
+        let reversed = VideoTrim(start: 5, end: 2, recording: 8)
+        #expect(reversed.start == 5 && abs(reversed.duration - VideoTrim.minimumLength) < 1e-9)
+        let atEnd = VideoTrim(start: 8, end: 8, recording: 8)
+        #expect(atEnd.end == 8 && abs(atEnd.duration - VideoTrim.minimumLength) < 1e-9)
+        let trim = VideoTrim(start: 1.5, end: 6, recording: 8)
+        #expect(trim.contains(1.5) && trim.contains(5.999) && !trim.contains(6) && !trim.contains(1.49))
+        #expect(trim.clamp(0) == 1.5 && trim.clamp(3) == 3)
+        #expect(trim.clamp(7) < 6 && trim.contains(trim.clamp(7)), "The playhead must stay on a kept frame.")
+
+        let mark = annotation(.rectangle(CGRect(x: 0, y: 0, width: 20, height: 20)))
+        let inside = try #require(VideoAnnotation(annotation: mark, start: 2, end: 5).trimmed(to: trim))
+        #expect(inside.id == mark.id && inside.start == 0.5 && inside.end == 3.5)
+        let overlapping = try #require(VideoAnnotation(annotation: mark, start: 0, end: 8).trimmed(to: trim))
+        #expect(overlapping.start == 0 && overlapping.end == 4.5)
+        let tail = try #require(VideoAnnotation(annotation: mark, start: 5.5, end: 7.5).trimmed(to: trim))
+        #expect(tail.start == 4 && tail.end == 4.5)
+        #expect(VideoAnnotation(annotation: mark, start: 0, end: 1.5).trimmed(to: trim) == nil)
+        #expect(VideoAnnotation(annotation: mark, start: 6, end: 8).trimmed(to: trim) == nil)
+    }
+
     @Test func preparedExportMatchesScreenshotDrawingAndEffectOrder() throws {
         let source = try fixture(frame: 0)
         let shapes: [Annotation.Shape] = [
@@ -118,6 +142,41 @@ struct VideoAnnotationTests {
             }
         }
         #expect(try Data(contentsOf: source) == sourceBytes)
+    }
+
+    @Test func trimmedExportShiftsKeptMarksAndDropsMarksOutsideTheTrim() async throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("source.mp4")
+        try await createVideo(at: source)
+        let destination = directory.appendingPathComponent("trimmed.mp4")
+        let annotations = [
+            VideoAnnotation(annotation: annotation(.line(from: CGPoint(x: 175, y: 140),
+                                                          to: CGPoint(x: 290, y: 140))), start: 0.4, end: 0.8),
+            VideoAnnotation(annotation: annotation(.pixelate(CGRect(x: 85, y: 20, width: 55, height: 55))),
+                            start: 0, end: 1),
+            VideoAnnotation(annotation: annotation(.rectangle(CGRect(x: 200, y: 20, width: 80, height: 40))),
+                            start: 0, end: 0.25),
+        ]
+        let trim = VideoTrim(start: 0.3, end: 0.9, recording: 1)
+        try await RecordingExport.save(source: source, to: destination, quality: .high,
+                                       annotations: annotations, trim: trim)
+        #expect(abs(try await AVURLAsset(url: destination).load(.duration).seconds - 0.6) <= 1.0 / 30)
+        // Export time t shows source time t + 0.3. The source turns from red to
+        // blue detail at 0.5 s, so 0.25 s must already be blue.
+        let start = try await Self.frame(in: destination, at: 0)
+        let marked = try await Self.frame(in: destination, at: 0.3)
+        let blue = try await Self.frame(in: destination, at: 0.25)
+        let end = try await Self.frame(in: destination, at: 0.55)
+        #expect(abs(pixel(start, x: 230, y: 140)[0] - pixel(start, x: 230, y: 155)[0]) < 20)
+        #expect(pixel(marked, x: 230, y: 140)[0] > 200)
+        #expect(abs(pixel(end, x: 230, y: 140)[0] - pixel(end, x: 230, y: 155)[0]) < 20)
+        let red = pixel(start, x: 110, y: 45)
+        let shifted = pixel(blue, x: 110, y: 45)
+        #expect(red[0] > red[2] + 50)
+        #expect(shifted[2] > shifted[0] + 50)
+        #expect(abs(pixel(start, x: 240, y: 20)[0] - pixel(start, x: 240, y: 100)[0]) < 20,
+                "A mark that ends before the trim must not be rendered.")
     }
 
     @Test(arguments: [false, true])

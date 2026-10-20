@@ -59,6 +59,47 @@ struct RecordingExportTests {
                                     duration: asset.load(.duration), sourceFramesPerSecond: 24)
     }
 
+    @MainActor @Test(arguments: [false, true])
+    func trimmedExportsKeepOnlyTheTrimAtEveryQuality(annotated: Bool) async throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("source.mp4")
+        try await createMovingVideo(at: source)
+        let annotations = annotated ? [VideoAnnotation(annotation: Annotation(
+            shape: .line(from: CGPoint(x: 100, y: 100), to: CGPoint(x: 300, y: 100)),
+            color: .red, lineWidth: 8), start: 0, end: 2)] : []
+        let trim = VideoTrim(start: 0.5, end: 1.7, recording: 2)
+        for quality in RecordingQuality.allCases {
+            let destination = directory.appendingPathComponent("\(quality.rawValue).mp4")
+            try await RecordingExport.save(source: source, to: destination, quality: quality,
+                                           annotations: annotations, trim: trim)
+            let asset = AVURLAsset(url: destination)
+            #expect(try await asset.load(.isPlayable))
+            let track = try #require(try await asset.loadTracks(withMediaType: .video).first)
+            let duration = try await asset.load(.duration)
+            #expect(abs(duration.seconds - trim.duration) <= 1 / Double(quality.framesPerSecond),
+                    "\(quality.title): \(duration.seconds) s; trim is \(trim.duration) s")
+            try await verifyFrameCadence(asset: asset, track: track, quality: quality, duration: duration)
+        }
+    }
+
+    @Test func wholeTrimExportsLikeAnUntrimmedRecording() async throws {
+        let directory = try temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let source = directory.appendingPathComponent("source.mp4")
+        try await createMovingVideo(at: source)
+        let duration = try await AVURLAsset(url: source).load(.duration).seconds
+        let untrimmed = directory.appendingPathComponent("untrimmed.mp4")
+        let whole = directory.appendingPathComponent("whole.mp4")
+        try await RecordingExport.save(source: source, to: untrimmed, quality: .balanced)
+        try await RecordingExport.save(source: source, to: whole, quality: .balanced, trim: .whole(duration))
+        // Two untrimmed exports differ byte for byte because the H.264 encoder is
+        // not deterministic. Compare the stream layout a player sees instead.
+        let expected = try await streamLayout(of: untrimmed)
+        #expect(expected.timestamps.count == 48)
+        #expect(try await streamLayout(of: whole) == expected)
+    }
+
     @Test func cancellationAndBadSourcePreserveExistingDestination() async throws {
         let directory = try temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -153,6 +194,27 @@ struct RecordingExportTests {
             #expect(abs(next - previous - interval) < 0.001,
                     "\(quality.title): frame interval \(next - previous); expected \(interval)")
         }
+    }
+
+    private struct StreamLayout: Equatable {
+        let duration: CMTime
+        let size: CGSize
+        let timestamps: [CMTime]
+    }
+
+    nonisolated(nonsending) private func streamLayout(of url: URL) async throws -> StreamLayout {
+        let asset = AVURLAsset(url: url)
+        let track = try #require(try await asset.loadTracks(withMediaType: .video).first)
+        let reader = try AVAssetReader(asset: asset)
+        let provider = reader.outputProvider(for: AVAssetReaderTrackOutput(track: track, outputSettings: nil))
+        try reader.start()
+        var timestamps: [CMTime] = []
+        while let sample = try await provider.next() {
+            guard sample.contentType == .dataBuffer, sample.presentationTimeStamp.isNumeric else { continue }
+            timestamps.append(sample.presentationTimeStamp)
+        }
+        return StreamLayout(duration: try await asset.load(.duration), size: try await track.load(.naturalSize),
+                            timestamps: timestamps)
     }
 
     private func temporaryDirectory() throws -> URL {

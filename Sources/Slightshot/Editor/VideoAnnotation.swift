@@ -75,7 +75,8 @@ nonisolated struct VideoTrim: Equatable, Sendable {
 
     func contains(_ time: TimeInterval) -> Bool { time >= start && time < end }
 
-    func clamp(_ time: TimeInterval) -> TimeInterval { min(max(start, time), end) }
+    /// The nearest kept time. The exclusive end itself would show the first removed frame.
+    func clamp(_ time: TimeInterval) -> TimeInterval { min(max(start, time), max(start, end - 1.0 / 600)) }
 }
 
 extension VideoAnnotation {
