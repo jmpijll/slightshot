@@ -57,6 +57,13 @@ downgrades are rejected. Settings live separately in
 `%LOCALAPPDATA%\Slightshot\settings.json` and are preserved, as are saved
 screenshots and recordings.
 
+If that file cannot be read, Slightshot copies it to
+`settings.corrupt-<date>-<time>.json` in the same folder, starts with the
+defaults and shows a notification once. Individual invalid values, such as an
+empty shortcut, an unknown image format or a line width outside 1–12, are reset
+or brought into range while the other settings are kept. The original file is
+copied the same way, and the notification names the changed settings.
+
 Remove the installed app through **Windows Settings › Apps › Installed apps**.
 Uninstall removes the installed program, its shortcuts and a launch-at-login
 entry that points to that installation. It leaves settings and saved captures
@@ -113,7 +120,9 @@ one file at its root. CI uses the same profile for review artifacts and releases
 The portable `Slightshot.exe` runs from any folder without administrator rights.
 On first launch, .NET extracts bundled native libraries into its cache
 under `%TEMP%/.net`; later launches reuse that cache. Launch at login is available
-in Settings. See [Microsoft's single-file deployment documentation](https://learn.microsoft.com/en-us/dotnet/core/deploying/single-file/overview).
+in Settings. It starts the copy you enabled it from, and the switch shows as on
+only in that copy. If you move a portable copy, or run a different one, the
+switch shows as off; turn it on again to start that copy at login instead. See [Microsoft's single-file deployment documentation](https://learn.microsoft.com/en-us/dotnet/core/deploying/single-file/overview).
 
 ### Build an installer
 

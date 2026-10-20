@@ -85,7 +85,7 @@ public partial class App : System.Windows.Application
         }
         instance = new Mutex(true, "Local\\Slightshot", out ownsInstance);
         if (!ownsInstance) { Shutdown(); return; }
-        settings = Settings.Load();
+        settings = Settings.Load(out string? settingsNotice);
         recording = new RecordingCoordinator(settings);
         SessionEnding += (_, args) => args.Cancel = recording.KeepForSessionEnd();
         trayIcon = CreateTrayIcon();
@@ -96,6 +96,7 @@ public partial class App : System.Windows.Application
         ConfigureDelayedCapture();
         hotKeys = new HotKeyService(id => Dispatcher.InvokeAsync(() => { if (id == 1) BeginCapture(); else FullScreen(id == 2 ? CaptureAction.Save : CaptureAction.Copy); }));
         UpdateSettings();
+        if (settingsNotice != null) tray.ShowBalloonTip(8000, "Settings reset", settingsNotice, Forms.ToolTipIcon.Warning);
         recording.Recover();
     }
 

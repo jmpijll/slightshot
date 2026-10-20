@@ -8,6 +8,7 @@ checks += VideoAnnotationChecks.Run();
 checks += ExactSizeBufferPoolChecks.Run();
 checks += Nv12ToBgraChecks.Run();
 checks += RecordingRobustnessChecks.Run();
+checks += SettingsFileChecks.Run();
 void Equal<T>(T expected, T actual, string message)
 {
     if (!EqualityComparer<T>.Default.Equals(expected, actual)) throw new InvalidOperationException($"{message}: expected {expected}, got {actual}");

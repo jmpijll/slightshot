@@ -22,6 +22,7 @@ internal static class SmokeTest
         ScreenshotRetrySmokeTest.Run(directory, checks);
         StepSmokeTest.Run(directory, checks);
         RedoSmokeTest.Run(directory, checks);
+        SettingsRecoverySmokeTest.Run(directory, checks);
         await AnnotationSizeSmokeTest.RunAsync(directory, checks);
         foreach (double scale in new[] { 1.0, 1.25, 1.5, 2.0 })
         {
