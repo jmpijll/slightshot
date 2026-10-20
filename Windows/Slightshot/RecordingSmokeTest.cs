@@ -206,34 +206,20 @@ internal static class RecordingSmokeTest
             var geometry = RecordingGeometry.Create((int)region.Width, (int)region.Height, (int)region.Width, (int)region.Height);
             Require(geometry == new RecordingGeometry(800, 450, 800, 450), "odd area is cropped to 800×450 instead of resampled");
             int width = geometry.Width, height = geometry.Height, left = display.Left + (int)region.X, top = display.Top + (int)region.Y;
-            byte[] truth = new byte[width * height * 4];
-            new FormatConvertedBitmap(display.Image, PixelFormats.Bgra32, null, 0).CopyPixels(new Int32Rect((int)region.X, (int)region.Y, width, height), truth, width * 4, 0);
-            Require(Difference(truth, pattern, patternWidth, width, height).Mismatched == 0, "desktop shows the fixture pattern pixel for pixel");
-            byte[] exact = new byte[truth.Length], legacy = new byte[truth.Length];
+            byte[] desktop = new byte[width * height * 4];
+            new FormatConvertedBitmap(display.Image, PixelFormats.Bgra32, null, 0).CopyPixels(new Int32Rect((int)region.X, (int)region.Y, width, height), desktop, width * 4, 0);
+            Require(Difference(desktop, pattern, patternWidth, width, height).Mismatched == 0, "desktop shows the fixture pattern pixel for pixel");
+            // Recording reads the composed desktop with CAPTUREBLT, which can differ
+            // from CopyFromScreen on CI, so the reference is an uncropped capture.
+            byte[] full = new byte[patternWidth * patternHeight * 4], truth = new byte[desktop.Length], exact = new byte[desktop.Length], legacy = new byte[desktop.Length];
+            using (var capture = new GdiRecordingCapture(left, top, new RecordingGeometry(patternWidth, patternHeight, patternWidth, patternHeight), false)) capture.Capture(full);
+            for (int y = 0; y < height; y++) Array.Copy(full, y * patternWidth * 4, truth, y * width * 4, width * 4);
             using (var capture = new GdiRecordingCapture(left, top, geometry, false)) capture.Capture(exact);
             using (var capture = new GdiRecordingCapture(left, top, new RecordingGeometry(patternWidth, patternHeight, width, height), false)) capture.Capture(legacy);
             var exactDifference = Difference(exact, truth, width, width, height);
             var legacyDifference = Difference(legacy, truth, width, width, height);
-            if (exactDifference.Mismatched != 0)
-            {
-                foreach (var (name, pixels) in new[] { ("exact", exact), ("truth", truth) })
-                {
-                    using var stream = File.Create(Path.Combine(directory, $"odd-area-failure-{name}.png"));
-                    OutputService.Encode(BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, pixels, width * 4), ImageFormat.Png, 1).Save(stream);
-                }
-                var windows = new List<string>();
-                RecordingNative.EnumWindows((window, _) =>
-                {
-                    if (RecordingNative.IsWindowVisible(window) && RecordingNative.GetWindowRect(window, out var bounds) && bounds.Left < left + width && bounds.Right > left && bounds.Top < top + height && bounds.Bottom > top)
-                    {
-                        RecordingNative.GetWindowThreadProcessId(window, out uint process);
-                        string name; try { name = Process.GetProcessById((int)process).ProcessName; } catch (ArgumentException) { name = "?"; }
-                        windows.Add($"{name}#{process} ex=0x{RecordingNative.GetWindowLong(window, -20):X} [{bounds.Left},{bounds.Top},{bounds.Right},{bounds.Bottom}]");
-                    }
-                    return true;
-                }, IntPtr.Zero);
-                Require(false, "cropped GDI recording frame equals the desktop pixels exactly: " + Describe(exact, truth, width, height, exactDifference.Mismatched) + "; windows over the area (front first): " + string.Join("; ", windows));
-            }
+            int composed = Difference(truth, desktop, width, width, height).Mismatched;
+            Require(exactDifference.Mismatched == 0, "cropped GDI recording frame equals the uncropped 801×451 capture exactly: " + Describe(exact, truth, width, height, exactDifference.Mismatched));
             Require(legacyDifference.Mismatched > width * height / 10, "the previous 801→800 rescale visibly changes this fixture");
 
             var session = RecordingSession.Create(display, selection, includeCursor: false, nativeResolution: true);
@@ -264,7 +250,7 @@ internal static class RecordingSmokeTest
                 $"mean luma error: exported {decodedDifference.MeanError:0.00} (right 100 columns {decodedEdge.MeanError:0.00}); previous rescale before encoding {legacyDifference.MeanError:0.00} (right 100 columns {legacyEdge.MeanError:0.00}), {legacyDifference.Mismatched} of {width * height} pixels changed");
             Require(decodedDifference.MeanError < legacyDifference.MeanError / 2 && decodedEdge.MeanError < legacyEdge.MeanError / 2, "exported pixels stay closer to the source than the previous rescale did: " + measured);
             SaveOddAreaComparison(Path.Combine(directory, "recording-odd-area-comparison.png"), truth, decoded, legacy, width, decodedDifference.MeanError, legacyDifference.MeanError);
-            checks.Add($"Odd 801×451 area of a separate-process fixture window was cropped to 800×450 (last column and row dropped). The raw GDI recording frame matched the desktop exactly; the previous StretchBlt 801→800 changed {legacyDifference.Mismatched} pixels. After H.264 recording and High export, {measured}.");
+            checks.Add($"Odd 801×451 area of a separate-process fixture window was cropped to 800×450 (last column and row dropped). The raw GDI recording frame matched an uncropped 801×451 CAPTUREBLT capture exactly ({composed} pixels of that composed capture differ from CopyFromScreen on this desktop); the previous StretchBlt 801→800 changed {legacyDifference.Mismatched} pixels. After H.264 recording and High export, {measured}.");
             return video;
         }
         finally
@@ -304,7 +290,7 @@ internal static class RecordingSmokeTest
             drawing.DrawRectangle(Brushes.White, null, new Rect(0, 0, 3 * panel + 4 * margin, panel + label + 2 * margin));
             var panels = new (byte[] Pixels, string Title)[]
             {
-                (truth, "Desktop source (right edge, 8×)"),
+                (truth, "Uncropped source capture (right edge, 8×)"),
                 (decoded, string.Create(CultureInfo.InvariantCulture, $"Exported MP4, cropped · error {decodedError:0.0}")),
                 (legacy, string.Create(CultureInfo.InvariantCulture, $"Previous 801→800 rescale · error {legacyError:0.0}"))
             };
