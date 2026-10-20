@@ -62,6 +62,26 @@ struct VideoTrimEditorTests {
         #expect(editor.window.reviewTrim.start == 0.5)
         editor.window.reviewUndo()
         #expect(editor.window.reviewTrim == VideoTrim(start: 0, end: 1.5, recording: 2), "One drag is one step.")
+
+        let fractional = try await Editor(frameCount: 61)
+        let duration = 61.0 / 30
+        fractional.commit("0.5", into: fractional.trimStart)
+        fractional.window.reviewUndo()
+        try fractional.drag(fractional.handles, through: [0])
+        #expect(fractional.window.reviewTrim == .whole(duration), "A click must preserve the exact recording end.")
+        fractional.window.reviewRedo()
+        #expect(fractional.window.reviewTrim == VideoTrim(start: 0.5, end: duration, recording: duration))
+        try fractional.drag(fractional.handles, through: [0.5, 0.7])
+        #expect(fractional.window.reviewTrim.start == 0.7)
+        #expect(fractional.window.reviewTrim.end == duration, "Dragging start never rounds the fixed end.")
+    }
+
+    @Test func seekingUpdatesTheTrimTimelinePlayhead() async throws {
+        let editor = try await Editor()
+        editor.handles.needsDisplay = false
+        await editor.window.reviewSeek(to: 1)
+        #expect(editor.handles.playhead == 1)
+        #expect(editor.handles.needsDisplay)
     }
 
     @Test func undoReplacesAPendingSeekOutsideTheRestoredTrim() async throws {
@@ -95,12 +115,13 @@ struct VideoTrimEditorTests {
     private(set) var saved: VideoEdit?
     private let directory: URL
 
-    init() async throws {
+    init(frameCount: Int = 60) async throws {
         directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false)
         let source = directory.appendingPathComponent("source.mp4")
-        try await Self.writeVideo(to: source)
-        window = VideoEditorWindow(source: source, duration: 2, sourceSize: CGSize(width: 160, height: 90))
+        try await Self.writeVideo(to: source, frameCount: frameCount)
+        window = VideoEditorWindow(source: source, duration: Double(frameCount) / 30,
+                                   sourceSize: CGSize(width: 160, height: 90))
         window.contentView?.layoutSubtreeIfNeeded()
         let views = Self.descendants(window.contentView!)
         let fields = views.compactMap { $0 as? NSTextField }
@@ -152,7 +173,7 @@ struct VideoTrimEditorTests {
 
     private static func descendants(_ view: NSView) -> [NSView] { view.subviews.flatMap { [$0] + descendants($0) } }
 
-    private static func writeVideo(to url: URL) async throws {
+    private static func writeVideo(to url: URL, frameCount: Int) async throws {
         let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
             AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: 160, AVVideoHeightKey: 90,
@@ -162,7 +183,7 @@ struct VideoTrimEditorTests {
         let receiver = writer.inputPixelBufferReceiver(for: input, pixelBufferAttributes: attributes)
         try writer.start()
         writer.startSession(atSourceTime: .zero)
-        for frame in 0..<60 {
+        for frame in 0..<frameCount {
             let pixel = try CVMutablePixelBuffer(attributes)
             let buffer = CVReadOnlyPixelBuffer(pixel)
             try await RecordingExport.appendWhenReady {
@@ -170,7 +191,7 @@ struct VideoTrimEditorTests {
             }
         }
         receiver.finish()
-        writer.endSession(atSourceTime: CMTime(value: 2, timescale: 1))
+        writer.endSession(atSourceTime: CMTime(value: Int64(frameCount), timescale: 30))
         await writer.finishWriting()
         #expect(writer.status == .completed)
     }
