@@ -24,6 +24,7 @@ private struct GeneralTab: View {
     @Bindable private var settings = Settings.shared
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var notificationsDenied = false
+    @State private var requestingNotifications = false
 
     var body: some View {
         Form {
@@ -35,7 +36,12 @@ private struct GeneralTab: View {
                 Toggle("Play a shutter sound", isOn: $settings.playSound)
                 Toggle("Show a notification after saving", isOn: $settings.showNotification)
                     .onChange(of: settings.showNotification) { _, isOn in
-                        Task { notificationsDenied = isOn ? !(await SaveNotification.requestAuthorization()) : false }
+                        Task {
+                            guard isOn else { notificationsDenied = false; return }
+                            requestingNotifications = true
+                            notificationsDenied = !(await SaveNotification.requestAuthorization())
+                            requestingNotifications = false
+                        }
                     }
                 if settings.showNotification && notificationsDenied {
                     LabeledContent {
@@ -47,8 +53,9 @@ private struct GeneralTab: View {
                     }
                 }
             }
-            .task {
-                if settings.showNotification { notificationsDenied = await SaveNotification.isDenied() }
+            .task { await refreshNotificationsDenied() }
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                Task { await refreshNotificationsDenied() }
             }
 
             Section {
@@ -93,6 +100,13 @@ private struct GeneralTab: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    /// Catches a change made on the linked System Settings page once the user comes back.
+    private func refreshNotificationsDenied() async {
+        // macOS reports a prompt that is still on screen as denied; the request gives the real answer.
+        guard settings.showNotification, !requestingNotifications else { return }
+        notificationsDenied = await SaveNotification.isDenied()
     }
 }
 

@@ -24,9 +24,8 @@ enum OutputService {
 
     // MARK: - Clipboard
 
-    static func copyToClipboard(_ image: CGImage) {
+    static func copyToClipboard(_ image: CGImage, to pasteboard: NSPasteboard = .general) {
         let rep = NSBitmapImageRep(cgImage: image)
-        let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
 
         let item = NSPasteboardItem()
@@ -50,12 +49,6 @@ enum OutputService {
     @discardableResult
     static func save(_ image: CGImage) -> URL? {
         let settings = Settings.shared
-        let format = settings.imageFormat
-        guard let data = Renderer.encode(image, as: format, quality: settings.jpegQuality) else {
-            presentError("Slightshot could not encode the image.")
-            return nil
-        }
-
         let directory = settings.saveDirectory
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -65,24 +58,18 @@ enum OutputService {
         }
 
         let url = uniqueURL(in: directory, base: filename(size: CGSize(width: image.width, height: image.height)),
-                            ext: format.fileExtension)
-        do {
-            try data.write(to: url, options: .atomic)
-        } catch {
-            presentError("Could not save to \(url.path): \(error.localizedDescription)")
-            return nil
-        }
-
-        if settings.copyAfterSave { copyToClipboard(image) }
-        if settings.showNotification {
-            SaveNotification.post(savedFile: url, image: image, copied: settings.copyAfterSave)
-        }
-        return url
+                            ext: settings.imageFormat.fileExtension)
+        return write(image, to: url)
     }
 
     /// Shows a standard save panel, starting in the configured folder.
     @discardableResult
-    static func saveAs(_ image: CGImage) -> URL? {
+    static func saveAs(_ image: CGImage, chooseURL: @MainActor (CGImage) -> URL? = runSavePanel) -> URL? {
+        guard let url = chooseURL(image) else { return nil }
+        return write(image, to: url)
+    }
+
+    private static func runSavePanel(for image: CGImage) -> URL? {
         let settings = Settings.shared
         let format = settings.imageFormat
 
@@ -95,17 +82,27 @@ enum OutputService {
         panel.level = .popUpMenu   // above the capture overlay
 
         NSApp.activate(ignoringOtherApps: true)
-        guard panel.runModal() == .OK, let url = panel.url,
-              let data = Renderer.encode(image, as: format, quality: settings.jpegQuality)
-        else { return nil }
+        return panel.runModal() == .OK ? panel.url : nil
+    }
 
+    /// Save and Save As both end here, so each successful save copies and notifies once.
+    static func write(_ image: CGImage, to url: URL, pasteboard: NSPasteboard = .general) -> URL? {
+        let settings = Settings.shared
+        guard let data = Renderer.encode(image, as: settings.imageFormat, quality: settings.jpegQuality) else {
+            presentError("Slightshot could not encode the image.")
+            return nil
+        }
         do {
             try data.write(to: url, options: .atomic)
         } catch {
             presentError("Could not save to \(url.path): \(error.localizedDescription)")
             return nil
         }
-        if settings.copyAfterSave { copyToClipboard(image) }
+
+        if settings.copyAfterSave { copyToClipboard(image, to: pasteboard) }
+        if settings.showNotification {
+            SaveNotification.post(savedFile: url, image: image, copied: settings.copyAfterSave)
+        }
         return url
     }
 
@@ -207,18 +204,23 @@ enum SaveNotification {
         return URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension\(id)")!
     }
 
+    /// Tests replace this to count requests instead of showing them.
+    static var deliver: @MainActor (UNNotificationRequest) -> Void = add
+
     static func post(savedFile: URL, image: CGImage, copied: Bool) {
-        guard let center else { return }
         let content = content(savedFile: savedFile, image: image, copied: copied)
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        deliver(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
+    }
+
+    private static func add(_ request: UNNotificationRequest) {
         Task {
             do {
-                try await center.add(request)
+                try await center?.add(request)
             } catch {
                 Log.output.error("Save notification failed: \(error.localizedDescription, privacy: .public)")
             }
             // Normally already moved into the notification store; this removes a copy it rejected.
-            for attachment in content.attachments { try? FileManager.default.removeItem(at: attachment.url) }
+            for attachment in request.content.attachments { try? FileManager.default.removeItem(at: attachment.url) }
         }
     }
 
