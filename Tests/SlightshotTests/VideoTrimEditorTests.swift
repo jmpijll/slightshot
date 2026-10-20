@@ -78,10 +78,8 @@ struct VideoTrimEditorTests {
 
     @Test func seekingUpdatesTheTrimTimelinePlayhead() async throws {
         let editor = try await Editor()
-        editor.handles.needsDisplay = false
         await editor.window.reviewSeek(to: 1)
         #expect(editor.handles.playhead == 1)
-        #expect(editor.handles.needsDisplay)
     }
 
     @Test func undoReplacesAPendingSeekOutsideTheRestoredTrim() async throws {

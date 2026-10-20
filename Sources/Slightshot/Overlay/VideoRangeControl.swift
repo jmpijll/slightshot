@@ -14,7 +14,7 @@ final class VideoRangeControl: NSView {
     var onBeginChange: (() -> Void)?
     var onChange: ((TimeInterval, TimeInterval) -> Void)?
     var onEndChange: (() -> Void)?
-    private var draggingStart = false
+    private(set) var draggingStart = false
 
     override var isFlipped: Bool { true }
     private var track: CGRect { bounds.insetBy(dx: 10, dy: 10) }

@@ -290,8 +290,10 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
     private func updatePlayhead(_ time: TimeInterval) {
         scrubber.doubleValue = time
         clock.stringValue = String(format: "%.2f / %.2f s", time, duration)
-        range.playhead = time
-        range.needsDisplay = true
+        for control in [range, trimControl] {
+            control.playhead = time
+            control.needsDisplay = true
+        }
     }
 
     private func add(_ annotation: Annotation) {
@@ -428,7 +430,6 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
         default: super.keyDown(with: event)
         }
     }
-
 }
 
 // MARK: - History
@@ -506,8 +507,8 @@ extension VideoEditorWindow {
             self.beginChange()
         }
         trimControl.onChange = { [weak self] start, end in
-            guard let self else { return }
-            let edge: VideoTrim.Edge = start != self.edit.trim.start ? .start : .end
+            guard let self, start != self.edit.trim.start || end != self.edit.trim.end else { return }
+            let edge: VideoTrim.Edge = self.trimControl.draggingStart ? .start : .end
             self.moveTrim(edge, to: edge == .start ? start : end)
         }
         trimControl.onEndChange = { [weak self] in self?.endChange() }
@@ -557,7 +558,6 @@ extension VideoEditorWindow {
 }
 
 // MARK: - Review fixtures
-
 extension VideoEditorWindow {
     // Review fixtures drive the same commit, selection, timing and history paths as native controls.
     func reviewAddAnnotation(_ value: VideoAnnotation) {
