@@ -66,9 +66,24 @@ internal static class SettingsFileChecks
             Require(!partial.Value.Sound, "valid fields beside invalid ones are kept");
             Require(partial.Recovery is { BackupPath: not null } && string.Join(",", partial.Recovery.ResetFields) == "Format,Width,Name,Shortcut", "reset fields are reported in declaration order");
 
-            string rejected = Fixture("rejected", Encoding.UTF8.GetBytes("""{"Shortcut":{"Key":65,"Modifiers":0},"Width":99}"""));
-            var validated = SettingsFile.Read<FixtureSettings>(rejected, now, value => value is not FixtureKey { Modifiers: 0 });
-            Require(validated.Value.Shortcut == new FixtureKey(0x39, 6) && validated.Value.Width == 99 && validated.Recovery?.ResetFields.SequenceEqual(["Shortcut"]) == true, "the caller's validator rejects a field");
+            object? Repair(string field, object value) => (field, value) switch
+            {
+                (_, FixtureKey { Modifiers: 0 }) => null,
+                (nameof(FixtureSettings.Width), double width) => Math.Clamp(width, 1, 12),
+                (nameof(FixtureSettings.Name), string name) => string.IsNullOrWhiteSpace(name) ? null : name,
+                _ => value
+            };
+            string rejected = Fixture("rejected", Encoding.UTF8.GetBytes("""{"Shortcut":{"Key":65,"Modifiers":0},"Width":7}"""));
+            var validated = SettingsFile.Read<FixtureSettings>(rejected, now, Repair);
+            Require(validated.Value.Shortcut == new FixtureKey(0x39, 6) && validated.Value.Width == 7 && validated.Recovery?.ResetFields.SequenceEqual(["Shortcut"]) == true, "a repair returning null resets the field to its default");
+            string clamped = Fixture("clamped", Encoding.UTF8.GetBytes("""{"Width":40}"""));
+            var repaired = SettingsFile.Read<FixtureSettings>(clamped, now, Repair);
+            Require(repaired.Value.Width == 12 && repaired.Recovery is { BackupPath: not null } && repaired.Recovery.ResetFields.SequenceEqual(["Width"]), "a repair that changes a value is reported and backed up");
+            string blank = Fixture("blank", Encoding.UTF8.GetBytes("""{"Name":" "}"""));
+            var defaulted = SettingsFile.Read<FixtureSettings>(blank, now, Repair);
+            Require(defaulted.Value.Name == "default" && defaulted.Recovery?.ResetFields.SequenceEqual(["Name"]) == true, "a blank value rejected by the repair is reported");
+            var unchanged = SettingsFile.Read<FixtureSettings>(valid, now, Repair);
+            Require(unchanged.Recovery == null && Directory.GetFiles(Path.GetDirectoryName(valid)!).Length == 1, "values the repair keeps are not reported");
 
             var again = SettingsFile.Read<FixtureSettings>(fields, now);
             Require(again.Recovery?.BackupPath is { } second && second != partial.Recovery!.BackupPath && File.Exists(partial.Recovery.BackupPath!), "a second backup in the same second does not replace the first");

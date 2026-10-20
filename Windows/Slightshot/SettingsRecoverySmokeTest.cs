@@ -45,7 +45,31 @@ internal static class SettingsRecoverySmokeTest
         report.Add("Null/invalid hotkeys, enums 9/5/9 → defaults; LineWidth 40 → 12, JpegQuality 0.01 → 0.3; PlaySound false kept");
         report.Add($"  Notice: {fieldNotice}");
         report.Add("  Production HotKeyService.Register(settings) ran without an exception");
-        checks.Add("Settings recovery: truncated JSON backed up before defaults are saved, one notice; null/invalid hotkeys and undefined enums fall back, ranges clamp, HotKeyService registers the result");
+
+        (string Field, string Json, Func<Settings, bool> Repaired)[] repairs =
+        [
+            (nameof(Settings.AnnotationColor), """{"AnnotationColor": "#123456"}""", loaded => loaded.AnnotationColor == "#FF3B30"),
+            (nameof(Settings.SaveDirectory), """{"SaveDirectory": " "}""", loaded => loaded.SaveDirectory == defaults.SaveDirectory),
+            (nameof(Settings.LineWidth), """{"LineWidth": 40}""", loaded => loaded.LineWidth == 12),
+            (nameof(Settings.FontSize), """{"FontSize": 4}""", loaded => loaded.FontSize == 10),
+            (nameof(Settings.DimOpacity), """{"DimOpacity": 2}""", loaded => loaded.DimOpacity == 0.85),
+            (nameof(Settings.JpegQuality), """{"JpegQuality": 0.01}""", loaded => loaded.JpegQuality == 0.3)
+        ];
+        foreach (var (field, json, repaired) in repairs)
+        {
+            string path = Fixture(fixtures, "repair-" + field, json);
+            byte[] before = File.ReadAllBytes(path);
+            var loaded = Settings.Load(path, out string? repairNotice);
+            string[] copies = Directory.GetFiles(Path.GetDirectoryName(path)!, "settings.corrupt-*.json");
+            Require(repaired(loaded), $"{field} is repaired");
+            Require(repairNotice?.Contains(field, StringComparison.Ordinal) == true && copies.Length == 1 && File.ReadAllBytes(copies[0]).SequenceEqual(before), $"{field} repair keeps a backup and names the field");
+        }
+        string inRange = Fixture(fixtures, "in-range", """{"LineWidth": 5, "FontSize": 24, "DimOpacity": 0.3, "JpegQuality": 0.8, "AnnotationColor": "#0A84FF", "SaveDirectory": "C:\\Shots"}""");
+        Settings.Load(inRange, out string? inRangeNotice);
+        Require(inRangeNotice == null && Directory.GetFiles(Path.GetDirectoryName(inRange)!).Length == 1, "in-range values load without a backup or notice");
+        report.Add($"Each alone → backup + notice: {string.Join(", ", repairs.Select(repair => repair.Json.Trim('{', '}')))}");
+        report.Add("In-range LineWidth/FontSize/DimOpacity/JpegQuality/colour/folder → no backup, no notice");
+        checks.Add("Settings recovery: truncated JSON backed up before defaults are saved, one notice; null/invalid hotkeys and undefined enums fall back, HotKeyService registers the result; each clamp, colour and blank-folder repair alone keeps a backup and names the field; in-range values cause neither");
 
         string executable = Environment.ProcessPath!;
         using var run = Registry.CurrentUser.CreateSubKey(RunKey);

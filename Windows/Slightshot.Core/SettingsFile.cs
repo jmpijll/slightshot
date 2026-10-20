@@ -10,7 +10,8 @@ public sealed record SettingsRead<T>(T Value, SettingsRecovery? Recovery);
 
 public static class SettingsFile
 {
-    public static SettingsRead<T> Read<T>(string path, DateTime now, Func<object, bool>? accept = null) where T : class, new()
+    // repair returns the value to keep, or null to use the default; any change is reported.
+    public static SettingsRead<T> Read<T>(string path, DateTime now, Func<string, object, object?>? repair = null) where T : class, new()
     {
         if (!File.Exists(path)) return new(new(), null);
         byte[] bytes;
@@ -28,8 +29,10 @@ public static class SettingsFile
                 object? field;
                 try { field = element.Deserialize(property.PropertyType); }
                 catch (Exception ex) when (ex is JsonException or NotSupportedException) { field = null; }
-                if (field == null || field is Enum && !Enum.IsDefined(property.PropertyType, field) || accept?.Invoke(field) == false) reset.Add(property.Name);
-                else property.SetValue(value, field);
+                if (field is Enum && !Enum.IsDefined(property.PropertyType, field)) field = null;
+                object? kept = field == null || repair == null ? field : repair(property.Name, field);
+                if (kept != null) property.SetValue(value, kept);
+                if (kept == null || !Equals(kept, field)) reset.Add(property.Name);
             }
         }
         catch (JsonException) { return new(new(), new([], Backup(path, bytes, now))); }

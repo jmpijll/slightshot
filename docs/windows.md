@@ -60,8 +60,9 @@ screenshots and recordings.
 If that file cannot be read, Slightshot copies it to
 `settings.corrupt-<date>-<time>.json` in the same folder, starts with the
 defaults and shows a notification once. Individual invalid values, such as an
-empty shortcut or an unknown image format, fall back to their defaults while the
-other settings are kept; the original file is copied the same way.
+empty shortcut, an unknown image format or a line width outside 1–12, are reset
+or brought into range while the other settings are kept. The original file is
+copied the same way, and the notification names the changed settings.
 
 Remove the installed app through **Windows Settings › Apps › Installed apps**.
 Uninstall removes the installed program, its shortcuts and a launch-at-login

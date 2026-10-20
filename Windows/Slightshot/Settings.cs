@@ -34,7 +34,7 @@ public sealed class Settings
     public static Settings Load(out string? notice) => Load(SettingsPath, out notice);
     internal static Settings Load(string path, out string? notice)
     {
-        var (settings, recovery) = SettingsFile.Read<Settings>(path, DateTime.Now, value => value is not HotKey { IsValid: false });
+        var (settings, recovery) = SettingsFile.Read<Settings>(path, DateTime.Now, Repair);
         settings.path = path;
         settings.preserveFile = recovery is { BackupPath: null };
         notice = recovery switch
@@ -44,16 +44,21 @@ public sealed class Settings
             { ResetFields.Count: 0 } => $"Slightshot could not read its settings and is using the defaults. The old file was kept as {Path.GetFileName(recovery.BackupPath)}.",
             _ => $"Some settings were invalid and were reset: {string.Join(", ", recovery.ResetFields.Take(3))}{(recovery.ResetFields.Count > 3 ? $" and {recovery.ResetFields.Count - 3} more" : "")}. The old file was kept as {Path.GetFileName(recovery.BackupPath)}."
         };
-        settings.JpegQuality = Clamp(settings.JpegQuality, 0.3, 1, 0.9);
-        settings.DimOpacity = Clamp(settings.DimOpacity, 0, 0.85, 0.45);
-        settings.LineWidth = Clamp(settings.LineWidth, 1, 12, 3);
-        settings.FontSize = Clamp(settings.FontSize, 10, 48, 18);
-        if (string.IsNullOrWhiteSpace(settings.SaveDirectory)) settings.SaveDirectory = new Settings().SaveDirectory;
-        if (!OverlayStyle.Swatches.Contains(settings.AnnotationColor)) settings.AnnotationColor = "#FF3B30";
         return settings;
     }
 
-    private static double Clamp(double value, double min, double max, double fallback) => double.IsFinite(value) ? Math.Clamp(value, min, max) : fallback;
+    private static object? Repair(string field, object value) => (field, value) switch
+    {
+        (nameof(JpegQuality), double quality) => Clamp(quality, 0.3, 1),
+        (nameof(DimOpacity), double opacity) => Clamp(opacity, 0, 0.85),
+        (nameof(LineWidth), double width) => Clamp(width, 1, 12),
+        (nameof(FontSize), double size) => Clamp(size, 10, 48),
+        (nameof(SaveDirectory), string directory) => string.IsNullOrWhiteSpace(directory) ? null : directory,
+        (nameof(AnnotationColor), string color) => OverlayStyle.Swatches.Contains(color) ? color : null,
+        (_, HotKey { IsValid: false }) => null,
+        _ => value
+    };
+    private static double? Clamp(double value, double min, double max) => double.IsFinite(value) ? Math.Clamp(value, min, max) : null;
     public void Save()
     {
         if (preserveFile) return;
