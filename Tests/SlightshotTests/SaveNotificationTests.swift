@@ -1,5 +1,6 @@
 import AppKit
 import Testing
+import UserNotifications
 @testable import Slightshot
 
 @MainActor
@@ -37,6 +38,51 @@ struct SaveNotificationTests {
         for attachment in content.attachments { try? FileManager.default.removeItem(at: attachment.url) }
         #expect(content.title == "Saved and copied to clipboard")
         #expect(content.body == "Screenshot.png")
+    }
+
+    @Test func saveSaveAsAndCopyAfterSaveEachPostExactlyOneNotification() throws {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SaveNotificationTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let settings = Settings.shared
+        let original = (settings.saveDirectory, settings.imageFormat, settings.showNotification, settings.copyAfterSave)
+        let originalDeliver = SaveNotification.deliver
+        var posted: [UNNotificationRequest] = []
+        defer {
+            (settings.saveDirectory, settings.imageFormat) = (original.0, original.1)
+            (settings.showNotification, settings.copyAfterSave) = (original.2, original.3)
+            SaveNotification.deliver = originalDeliver
+            for attachment in posted.flatMap(\.content.attachments) {
+                try? FileManager.default.removeItem(at: attachment.url)
+            }
+            try? FileManager.default.removeItem(at: folder)
+        }
+        settings.saveDirectory = folder
+        settings.imageFormat = .png
+        settings.showNotification = true
+        settings.copyAfterSave = false
+        SaveNotification.deliver = { posted.append($0) }
+        let image = try fixture(width: 64, height: 32)
+        let board = NSPasteboard.withUniqueName()
+        defer { board.releaseGlobally() }
+
+        let saved = try #require(OutputService.save(image))
+        #expect(posted.map(\.content.title) == ["Saved"])
+
+        let chosen = folder.appendingPathComponent("Chosen.png")
+        #expect(OutputService.saveAs(image, chooseURL: { _ in chosen }) == chosen)
+        #expect(posted.map(\.content.title) == ["Saved", "Saved"])
+        #expect(posted.last?.content.body == "Chosen.png")
+
+        settings.copyAfterSave = true
+        let copied = folder.appendingPathComponent("Copied.png")
+        #expect(OutputService.write(image, to: copied, pasteboard: board) == copied)
+        #expect(posted.map(\.content.title) == ["Saved", "Saved", "Saved and copied to clipboard"])
+        #expect(board.data(forType: .png) != nil)
+
+        OutputService.copyToClipboard(image, to: board)
+        #expect(posted.count == 3)
+        for url in [saved, chosen, copied] { #expect(FileManager.default.fileExists(atPath: url.path)) }
     }
 
     private func fixture(width: Int, height: Int) throws -> CGImage {
