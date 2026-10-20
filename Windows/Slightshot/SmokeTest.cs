@@ -22,6 +22,7 @@ internal static class SmokeTest
         ScreenshotRetrySmokeTest.Run(directory, checks);
         StepSmokeTest.Run(directory, checks);
         RedoSmokeTest.Run(directory, checks);
+        SettingsRecoverySmokeTest.Run(directory, checks);
         await AnnotationSizeSmokeTest.RunAsync(directory, checks);
         foreach (double scale in new[] { 1.0, 1.25, 1.5, 2.0 })
         {
@@ -74,10 +75,11 @@ internal static class SmokeTest
             }
         }
         await AppTextSmokeTest.RunAsync(directory, checks);
+        await UpdateCheckSmokeTest.RunAsync(directory, checks);
         File.WriteAllText(Path.Combine(directory, "validation.json"), JsonSerializer.Serialize(new
         {
-            platform = "Windows WPF / native About MessageBox",
-            source = "Automated native CI fixture. General settings and About window captures are cropped desktop pixels; overlay/export inputs and renderer boards are synthetic. No manual interaction recording.",
+            platform = "Windows WPF / native About and update MessageBoxes",
+            source = "Automated native CI fixture. General settings, About and update-check window captures are cropped desktop pixels; update checks use stubbed GitHub responses (no network); overlay/export inputs and renderer boards are synthetic. No manual interaction recording.",
             appTextFixture = new { defaultAction = "StayOpen", aboutText = AppInfo.AboutText }, checks
         }, new JsonSerializerOptions { WriteIndented = true }));
     }

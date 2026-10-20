@@ -85,7 +85,7 @@ public partial class App : System.Windows.Application
         }
         instance = new Mutex(true, "Local\\Slightshot", out ownsInstance);
         if (!ownsInstance) { Shutdown(); return; }
-        settings = Settings.Load();
+        settings = Settings.Load(out string? settingsNotice);
         recording = new RecordingCoordinator(settings);
         trayIcon = CreateTrayIcon();
         tray = new Forms.NotifyIcon { Icon = trayIcon, Text = "Slightshot", Visible = true };
@@ -95,6 +95,7 @@ public partial class App : System.Windows.Application
         ConfigureDelayedCapture();
         hotKeys = new HotKeyService(id => Dispatcher.InvokeAsync(() => { if (id == 1) BeginCapture(); else FullScreen(id == 2 ? CaptureAction.Save : CaptureAction.Copy); }));
         UpdateSettings();
+        if (settingsNotice != null) tray.ShowBalloonTip(8000, "Settings reset", settingsNotice, Forms.ToolTipIcon.Warning);
     }
 
     private void UpdateSettings()
@@ -119,7 +120,7 @@ public partial class App : System.Windows.Application
         Add(menu, "Open Screenshots Folder", () => { try { Directory.CreateDirectory(settings.SaveDirectory); Open(settings.SaveDirectory); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Error(ex.Message); } });
         menu.Items.Add(new Forms.ToolStripSeparator());
         Add(menu, "Settings…", ShowSettings);
-        Add(menu, "Download updates…", () => Open(AppInfo.ReleaseUrl));
+        Add(menu, "Check for Updates…", () => _ = UpdateCheck.RunAsync(preferences));
         Add(menu, "About Slightshot", () => MessageBox.Show(AppInfo.AboutText, "About Slightshot", MessageBoxButton.OK));
         menu.Items.Add(new Forms.ToolStripSeparator()); Add(menu, "Quit Slightshot", Quit);
         return menu;

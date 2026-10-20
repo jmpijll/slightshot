@@ -29,8 +29,16 @@ ARM64 desktop acceptance.
 Windows preview binaries, including setup, are unsigned. An installer does not
 remove Windows security warnings. Updates are downloaded manually from
 [Releases](https://github.com/jmpijll/slightshot/releases).
-**Download updates…** in the tray menu or General settings opens the latest
-release. About and Settings show the version embedded in the running executable.
+**Check for Updates…** in the tray menu or General settings sends one request to
+GitHub's latest-release API, waits at most 10 seconds, and compares its
+`MAJOR.MINOR.PATCH` tag with the running version. It reports that Slightshot is
+up to date, or names the newer version and offers to open its release page.
+Prerelease tags are never offered. A network failure, timeout or unexpected
+response says so and offers the Releases page instead. The request has no
+authentication and carries only a `Slightshot/<version>` User-Agent; there is
+no background polling. About and Settings show the version embedded in the
+running executable.
+See the [update check dialogs and native validation](review/windows-update-check/README.md).
 
 See the [1.5.1 published-file validation and native editor evidence](review/releases/v1.5.1/README.md).
 
@@ -48,6 +56,13 @@ existing installation to upgrade. Reinstalling the same version is allowed;
 downgrades are rejected. Settings live separately in
 `%LOCALAPPDATA%\Slightshot\settings.json` and are preserved, as are saved
 screenshots and recordings.
+
+If that file cannot be read, Slightshot copies it to
+`settings.corrupt-<date>-<time>.json` in the same folder, starts with the
+defaults and shows a notification once. Individual invalid values, such as an
+empty shortcut, an unknown image format or a line width outside 1–12, are reset
+or brought into range while the other settings are kept. The original file is
+copied the same way, and the notification names the changed settings.
 
 Remove the installed app through **Windows Settings › Apps › Installed apps**.
 Uninstall removes the installed program, its shortcuts and a launch-at-login
@@ -105,7 +120,9 @@ one file at its root. CI uses the same profile for review artifacts and releases
 The portable `Slightshot.exe` runs from any folder without administrator rights.
 On first launch, .NET extracts bundled native libraries into its cache
 under `%TEMP%/.net`; later launches reuse that cache. Launch at login is available
-in Settings. See [Microsoft's single-file deployment documentation](https://learn.microsoft.com/en-us/dotnet/core/deploying/single-file/overview).
+in Settings. It starts the copy you enabled it from, and the switch shows as on
+only in that copy. If you move a portable copy, or run a different one, the
+switch shows as off; turn it on again to start that copy at login instead. See [Microsoft's single-file deployment documentation](https://learn.microsoft.com/en-us/dotnet/core/deploying/single-file/overview).
 
 ### Build an installer
 
@@ -268,7 +285,7 @@ and the Windows executable icon is converted from the existing Mac app artwork.
 Windows uses Segoe UI and the same original toolbar glyphs as Mac. The shared
 source is `Resources/UI/icons.json`; Apple's system fonts remain platform-specific. Frosted material and text shadow are
 approximations of AppKit rather than identical OS rendering. Windows update
-delivery is manual. Setup packages provide installation and upgrades; code signing
+checks run on request and delivery is manual. Setup packages provide installation and upgrades; code signing
 and an automatic updater are not yet provided. GDI screen capture targets the ordinary desktop; protected video
 and HDR-specific colour management are outside this first version.
 

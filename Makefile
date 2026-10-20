@@ -4,7 +4,7 @@
 # so no Xcode project file needs to be kept in sync.
 
 SHELL := /bin/bash
-VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo 0.0.0)
+VERSION ?= $(or $(shell git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//'),0.0.0)
 APP := build/Slightshot.app
 DMG := build/Slightshot-$(VERSION).dmg
 
@@ -19,7 +19,7 @@ help:
 	@echo "make release     app + dmg + notarize"
 	@echo "make icon        regenerate app, menu bar and README artwork"
 	@echo "make test        verify annotation rendering and video export"
-	@echo "make lint        run SwiftLint"
+	@echo "make lint        run SwiftLint in strict mode"
 	@echo "make clean       remove build artefacts"
 
 build:
@@ -55,7 +55,7 @@ test:
 	swift test
 
 lint:
-	@command -v swiftlint > /dev/null && swiftlint --quiet || echo "swiftlint not installed; skipping"
+	@if command -v swiftlint > /dev/null; then swiftlint --strict --quiet; else echo "swiftlint not installed; skipping"; fi
 
 clean:
 	swift package clean

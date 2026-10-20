@@ -1,0 +1,25 @@
+# source 9bd9a83
+
+$ make lint
+[exit 0]
+
+$ # temporary force cast appended to Sources/Slightshot/App/StatusItemController.swift
+$ make lint
+Sources/Slightshot/App/StatusItemController.swift:110:36: error: Force Cast Violation: Force casts should be avoided (force_cast)
+swiftlint not installed; skipping
+[exit 0]
+
+$ # SwiftLint absent from PATH
+$ make lint
+swiftlint not installed; skipping
+[exit 0]
+
+$ # tagless clone: 0 tags
+$ make -n release
+VERSION= ./Scripts/bundle.sh
+./Scripts/notarize.sh build/Slightshot.app
+VERSION= ./Scripts/make_dmg.sh
+./Scripts/notarize.sh build/Slightshot-.dmg
+echo "==> build/Slightshot-.dmg is ready to publish"
+[exit 0]
+
