@@ -8,6 +8,7 @@ namespace Slightshot;
 internal sealed class RecordingCoordinator(Settings settings)
 {
     private const string UnsavedReason = "An unsaved recording is open in Slightshot.";
+    private static readonly TimeSpan FinalizeTimeout = TimeSpan.FromSeconds(3);
     private RecordingSession? session;
     private RecordingDirectory? files;
     private RecordingPanel? recordingPanel;
@@ -17,7 +18,7 @@ internal sealed class RecordingCoordinator(Settings settings)
     private VideoEditorWindow? editorWindow;
     private CancellationTokenSource? exportCancellation;
     private Task? work;
-    private bool terminating;
+    private bool terminating, keepWhenFinished;
     internal bool IsBusy => files != null;
 
     internal void Begin(CapturedDisplay display, RectD selection)
@@ -31,7 +32,7 @@ internal sealed class RecordingCoordinator(Settings settings)
             files = current.Files;
             current.Started += () => Application.Current.Dispatcher.InvokeAsync(() => { if (session == current && !terminating) recordingPanel?.Started(() => current.Duration); });
             recordingPanel = new RecordingPanel(display, selection, () => { CloseRecordingControls(); current.Stop(); });
-            recordingOutline = new RecordingOutline(display, selection);
+            recordingOutline = new RecordingOutline(display, current.Bounds);
             recordingOutline.Show();
             recordingPanel.Show();
             BlockShutdown(recordingPanel);
@@ -54,15 +55,30 @@ internal sealed class RecordingCoordinator(Settings settings)
     }
 
     // Windows may end the session despite the cancel (critical shutdown, or
-    // "Shut down anyway"), so the source is kept for the next launch first.
+    // "Sign out anyway") and terminate the process as soon as this returns, so
+    // only a finalized MP4 is marked to be kept for the next launch.
     internal bool KeepForSessionEnd()
     {
         if (files == null || terminating) return false;
-        try { files.Keep(); }
-        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { System.Diagnostics.Debug.WriteLine("Could not keep recording for next launch: " + error.Message); }
-        // A stopped recording finalizes its MP4, so a forced end leaves it playable.
-        if (recordingPanel != null) { CloseRecordingControls(); session?.Stop(); }
+        if (session is { } current && current.RunAsync() is { IsCompleted: false } recording)
+        {
+            CloseRecordingControls(); current.Stop();
+            // The encoder completes on worker threads, so a bounded wait on the
+            // dispatcher cannot deadlock it.
+            try
+            {
+                if (!recording.Wait(FinalizeTimeout)) { keepWhenFinished = true; return true; }
+            }
+            catch (AggregateException) { return false; }
+        }
+        Keep(files);
         return true;
+    }
+
+    private static void Keep(RecordingDirectory recording)
+    {
+        try { recording.Keep(); }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException) { System.Diagnostics.Debug.WriteLine("Could not keep recording for next launch: " + error.Message); }
     }
 
     private async Task CompleteAsync(RecordingSession current)
@@ -70,6 +86,7 @@ internal sealed class RecordingCoordinator(Settings settings)
         try
         {
             await current.RunAsync();
+            if (keepWhenFinished) Keep(current.Files);
             CloseRecordingControls();
             if (!terminating) await EditAsync(current.Files);
         }
@@ -92,16 +109,23 @@ internal sealed class RecordingCoordinator(Settings settings)
             if (terminating) continue;
             files = recording;
             bool keep = false;
+            VideoFrameSource? source = null;
             try
             {
-                bool open = reopen(recording);
+                // An unplayable source was cut off before its MP4 was finalized.
+                source = await OpenPlayableAsync(recording.SourcePath);
                 keep = terminating;
-                if (open && !keep) await EditAsync(recording);
+                if (source == null || keep || !reopen(recording)) continue;
+                keep = terminating;
+                if (keep) continue;
+                VideoFrameSource opened = source; source = null;
+                await EditAsync(recording, opened);
             }
             catch (OperationCanceledException) { }
             catch (Exception error) { if (!terminating) MessageBox.Show($"Slightshot could not reopen the unsaved recording.\n\n{error.Message}", "Slightshot", MessageBoxButton.OK, MessageBoxImage.Warning); }
             finally
             {
+                source?.Dispose();
                 if (!keep) recording.Dispose();
                 Release();
             }
@@ -112,9 +136,26 @@ internal sealed class RecordingCoordinator(Settings settings)
         $"Slightshot kept an unsaved recording when Windows ended your session on {recording.KeptAt:g}.\n\nOpen it in the editor now? Choose No to delete it.",
         "Slightshot", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
 
-    private async Task EditAsync(RecordingDirectory recording)
+    private static async Task<VideoFrameSource?> OpenPlayableAsync(string path)
     {
-        var source = await VideoFrameSource.OpenAsync(recording.SourcePath);
+        VideoFrameSource? source = null;
+        try
+        {
+            source = await VideoFrameSource.OpenAsync(path);
+            await source.GetFrameAsync(TimeSpan.Zero);
+            return source;
+        }
+        // Media Foundation reports a truncated MP4 through several exception types.
+        catch (Exception error) when (error is not OperationCanceledException)
+        {
+            System.Diagnostics.Debug.WriteLine("Kept recording is not playable: " + error.Message);
+            source?.Dispose(); return null;
+        }
+    }
+
+    private async Task EditAsync(RecordingDirectory recording, VideoFrameSource? opened = null)
+    {
+        var source = opened ?? await VideoFrameSource.OpenAsync(recording.SourcePath);
         if (terminating) { source.Dispose(); return; }
         try { editorWindow = new VideoEditorWindow(source, settings, annotations => ChooseDestinationAsync(recording.SourcePath, source.Width, source.Height, annotations)); }
         catch { source.Dispose(); throw; }
@@ -179,7 +220,7 @@ internal sealed class RecordingCoordinator(Settings settings)
     {
         progressWindow?.Close(); progressWindow = null;
         exportCancellation?.Dispose(); exportCancellation = null;
-        files = null;
+        files = null; keepWhenFinished = false;
     }
 
     private void CloseRecordingControls()

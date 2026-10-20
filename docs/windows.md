@@ -302,7 +302,8 @@ Windows display affinity, including recording controls. The selected region is
 cropped in physical monitor pixels; capture stays paced with a bounded pool of up to four BGRA
 buffers, returned only after the native encoder has processed each sample. Disconnected displays report an error.
 H.264 needs even dimensions, so an odd-sized area drops its last pixel column or
-row and is copied pixel for pixel. Only areas wider than 4096 pixels, or
+row and is copied pixel for pixel; the recording boundary shows that cropped
+area. Only areas wider than 4096 pixels, or
 point-resolution recordings on HiDPI displays, are resampled.
 
 Saving writes beside the destination, then replaces it after a complete MP4 is
@@ -317,11 +318,13 @@ leave recordings behind.
 
 Signing out, restarting or shutting down while a recording or the video editor
 is open cancels the session end. Windows lists Slightshot with "An unsaved
-recording is open in Slightshot." so you can return and save. A running
-recording stops so its MP4 is finalized. Windows can still end the session when
-you choose to sign out anyway, or for a forced update restart. Slightshot marks
-the source to be kept before answering. At the next launch it offers to reopen
-the kept recording in the editor; declining deletes it. The Mac app asks Save,
+recording is open in Slightshot." so you can return and save. Windows can still
+end the session when you choose to sign out anyway, or for a forced update
+restart, and may close Slightshot right after it answers. So before answering,
+Slightshot stops a running recording, waits up to three seconds for its MP4 to
+be finalized, and marks the source to be kept. At the next launch it checks that
+the kept recording still decodes and offers to reopen it in the editor;
+declining deletes it, and an unplayable source is deleted without asking. The Mac app asks Save,
 Discard or Cancel instead, but Windows does not allow dialogs during sign-out.
 The maintainer's 8 October 2026 desktop acceptance covers the overall recording
 workflow. Exclusion under real Windows composition, mixed-DPI region placement

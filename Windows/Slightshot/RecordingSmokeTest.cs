@@ -106,9 +106,9 @@ internal static class RecordingSmokeTest
         Require(!Directory.Exists(temporary), "temporary source directory cleaned");
         await ValidateSessionEndingsAsync(checks);
         checks.Add("Temporary source directory removed after recording/export release their file handles.");
-        string oddVideo = await ValidateOddAreaAsync(directory, checks);
+        await ValidateOddAreaAsync(directory, checks);
         ValidateTemporarySweep(checks);
-        await ValidateSessionEndAsync(oddVideo, checks);
+        await ValidateSessionEndAsync(directory, checks);
         File.WriteAllText(Path.Combine(directory, "recording-validation.json"), JsonSerializer.Serialize(new { platform = "Windows native WPF / MediaTranscoder", source = "Real recording-control HWNDs plus moving synthetic BGRA video. Native display affinity, UI rendering, media encode/decode and lifecycle evidence; not a manual desktop recording or proof of GDI exclusion.", checks }, new JsonSerializerOptions { WriteIndented = true }));
     }
     private static async Task RequireDecodedColorAsync(MediaComposition composition, TimeSpan position, byte[] expected)
@@ -161,7 +161,7 @@ internal static class RecordingSmokeTest
     }
     // GDI capture of another process's window: Slightshot excludes its own
     // windows from recordings, so a PowerShell form shows the fixture pattern.
-    private static async Task<string> ValidateOddAreaAsync(string directory, List<string> checks)
+    private static async Task ValidateOddAreaAsync(string directory, List<string> checks)
     {
         const int patternWidth = 801, patternHeight = 451, screenX = 100, screenY = 100;
         byte[] pattern = new byte[patternWidth * patternHeight * 4];
@@ -251,7 +251,6 @@ internal static class RecordingSmokeTest
             Require(decodedDifference.MeanError < legacyDifference.MeanError / 2 && decodedEdge.MeanError < legacyEdge.MeanError / 2, "exported pixels stay closer to the source than the previous rescale did: " + measured);
             SaveOddAreaComparison(Path.Combine(directory, "recording-odd-area-comparison.png"), truth, decoded, legacy, width, decodedDifference.MeanError, legacyDifference.MeanError);
             checks.Add($"Odd 801×451 area of a separate-process fixture window was cropped to 800×450 (last column and row dropped). The raw GDI recording frame matched an uncropped 801×451 CAPTUREBLT capture exactly ({composed} pixels of that composed capture differ from CopyFromScreen on this desktop); the previous StretchBlt 801→800 changed {legacyDifference.Mismatched} pixels. After H.264 recording and High export, {measured}.");
-            return video;
         }
         finally
         {
@@ -338,13 +337,17 @@ internal static class RecordingSmokeTest
         checks.Add("Startup sweep deleted a crashed session (owner lock released) and an old unlocked directory, and left a directory still being created and a live, locked session in place.");
     }
 
-    private static async Task ValidateSessionEndAsync(string video, List<string> checks)
+    private static async Task ValidateSessionEndAsync(string directory, List<string> checks)
     {
         var settings = new Settings();
         var coordinator = new RecordingCoordinator(settings);
         var display = ScreenCapture.UnderPointer(ScreenCapture.CaptureAll(false));
-        coordinator.Begin(display, new RectD(40, 40, 320, 180));
+        coordinator.Begin(display, new RectD(40 / display.Scale, 40 / display.Scale, 321 / display.Scale, 181 / display.Scale));
         Require(coordinator.IsBusy, "coordinator started a native recording");
+        var outline = Application.Current.Windows.OfType<RecordingOutline>().Single();
+        Require(RecordingNative.GetWindowRect(new WindowInteropHelper(outline).Handle, out var outlineBounds)
+            && outlineBounds.Left == display.Left + 40 && outlineBounds.Top == display.Top + 40
+            && outlineBounds.Right - outlineBounds.Left == 320 && outlineBounds.Bottom - outlineBounds.Top == 180, "odd 321×181 selection shows its boundary around the cropped 320×180 capture");
         var panel = Application.Current.Windows.OfType<RecordingPanel>().Single();
         Require(BlockReason(panel) == "An unsaved recording is open in Slightshot.", "recording HUD registers a Windows shutdown block reason");
         string recordingDirectory = Directory.EnumerateDirectories(Path.GetTempPath(), RecordingDirectories.Prefix + "*")
@@ -356,7 +359,16 @@ internal static class RecordingSmokeTest
             });
         await Task.Delay(1000);
         Require(coordinator.KeepForSessionEnd(), "session end during a recording asks Windows to cancel");
+        // Windows may terminate the process as soon as the handler returns:
+        // snapshot the files before the dispatcher runs anything else.
         Require(File.Exists(Path.Combine(recordingDirectory, RecordingDirectories.KeepFile)), "session end keeps the recording for the next launch");
+        string terminated = Path.Combine(directory, "recording-session-end.mp4");
+        File.Copy(Path.Combine(recordingDirectory, "source.mp4"), terminated, overwrite: true);
+        using (var snapshot = await VideoFrameSource.OpenAsync(terminated))
+        {
+            await snapshot.GetFrameAsync(TimeSpan.Zero);
+            Require(snapshot.Width == 320 && snapshot.Height == 180 && snapshot.Duration > TimeSpan.FromSeconds(0.1), "source on disk when the session-end handler returns is a finalized, decodable MP4");
+        }
         var editor = await WaitForAsync(() => Application.Current.Windows.OfType<VideoEditorWindow>().SingleOrDefault(), "session end stops the recording and opens the editor");
         Require(BlockReason(editor) == "An unsaved recording is open in Slightshot.", "editor registers a Windows shutdown block reason");
         Require(coordinator.KeepForSessionEnd(), "session end with the editor open asks Windows to cancel");
@@ -364,11 +376,12 @@ internal static class RecordingSmokeTest
         await coordinator.ShutdownAsync();
         Require(!coordinator.IsBusy && !Directory.Exists(recordingDirectory), "quitting Slightshot removes the recording directory");
 
-        string Kept()
+        string Kept(bool interrupted = false)
         {
             string path = Path.Combine(Path.GetTempPath(), RecordingDirectories.Prefix + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(path);
-            File.Copy(video, Path.Combine(path, "source.mp4"));
+            byte[] source = File.ReadAllBytes(terminated);
+            File.WriteAllBytes(Path.Combine(path, "source.mp4"), interrupted ? source[..1024] : source);
             File.WriteAllBytes(Path.Combine(path, RecordingDirectories.OwnerFile), []);
             File.WriteAllBytes(Path.Combine(path, RecordingDirectories.KeepFile), []);
             return path;
@@ -379,6 +392,12 @@ internal static class RecordingSmokeTest
         declining.Recover(recording => { asked++; return false; });
         await WaitForAsync(() => declining.IsBusy ? null : (object?)true, "declined recovery finishes");
         Require(asked == 1 && !Directory.Exists(discarded), "declining the next-launch offer deletes the kept recording");
+        string cutOff = Kept(interrupted: true);
+        var validating = new RecordingCoordinator(settings);
+        asked = 0;
+        validating.Recover(recording => { asked++; return true; });
+        await WaitForAsync(() => validating.IsBusy ? null : (object?)true, "unplayable kept recording is checked");
+        Require(asked == 0 && !Directory.Exists(cutOff), "a kept source cut off before finalizing is deleted without an offer");
 
         string reopened = Kept();
         var recovering = new RecordingCoordinator(settings);
@@ -390,7 +409,7 @@ internal static class RecordingSmokeTest
         editor.CloseFixture();
         await WaitForAsync(() => recovering.IsBusy ? null : (object?)true, "closing the recovered editor finishes");
         Require(!Directory.Exists(reopened), "closing the recovered editor removes its directory");
-        checks.Add("Session end during a real recording returned cancel, wrote the keep marker, stopped and finalized the MP4 and opened the editor; the HUD and editor HWNDs registered the shutdown block reason. A live kept session was never swept and Quit removed it. At the next launch a kept recording from an ended session was offered: No deleted it, Yes reopened it in the editor under a fresh owner lock, and closing the editor removed it.");
+        checks.Add("An odd 321×181 selection showed its boundary around the cropped 320×180 capture. Session end during a real recording returned cancel only after the encoder finalized the MP4: the source copied at the moment the handler returned (as if Windows terminated the process then) decoded at 320×180, and the keep marker was already written. The editor then opened; the HUD and editor HWNDs registered the shutdown block reason. A live kept session was never swept and Quit removed it. At the next launch a kept source truncated to 1 KB was deleted without an offer; a playable one was offered: No deleted it, Yes reopened it in the editor under a fresh owner lock, and closing the editor removed it.");
     }
     private static string? BlockReason(Window window)
     {

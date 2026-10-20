@@ -37,6 +37,8 @@ internal sealed class RecordingSession : IDisposable
     internal string SourcePath => Files.SourcePath;
     internal int Width { get; }
     internal int Height { get; }
+    // Captured source area in display points; an odd-sized selection loses its last pixel column or row.
+    internal RectD Bounds { get; private init; }
     internal TimeSpan Duration => clock.Elapsed;
     internal event Action? Started;
 
@@ -55,7 +57,7 @@ internal sealed class RecordingSession : IDisposable
         RectD region = selection.ToPixels(display.Scale, display.Scale, display.PixelWidth, display.PixelHeight);
         var geometry = RecordingGeometry.Create((int)region.Width, (int)region.Height, nativeResolution ? (int)region.Width : (int)Math.Ceiling(selection.Width), nativeResolution ? (int)region.Height : (int)Math.Ceiling(selection.Height));
         var capture = new GdiRecordingCapture(display.Left + (int)region.X, display.Top + (int)region.Y, geometry, includeCursor);
-        try { return new(geometry.Width, geometry.Height, capture.Capture, capture); }
+        try { return new(geometry.Width, geometry.Height, capture.Capture, capture) { Bounds = new(region.X / display.Scale, region.Y / display.Scale, geometry.SourceWidth / display.Scale, geometry.SourceHeight / display.Scale) }; }
         catch { capture.Dispose(); throw; }
     }
 
