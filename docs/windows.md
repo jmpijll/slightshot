@@ -302,8 +302,8 @@ preferences apply.
 To cut the start or end, drag the two **Trim** handles above the playhead or
 type exact start and end times in seconds. The trim starts as the whole
 recording, so saving without touching it keeps every frame. Play and scrubbing
-stay inside the trim, Undo and Redo include trim changes, and **Reset trim**
-restores the whole recording. Annotations keep their times; any part outside
+stay inside the trim, Undo and Redo include trim changes, and **Keep whole
+recording** resets the trim. Annotations keep their times; any part outside
 the trim is left out of the saved MP4, and timing inside it shifts with the new
 start. Every quality saves only the trimmed range.
 

@@ -29,7 +29,7 @@ internal sealed class VideoEditorWindow : Window
     private readonly ListBox marks = new() { MinHeight = 90, MaxHeight = 190, Background = Brushes.Transparent, BorderThickness = new Thickness(0) };
     private readonly VideoRangeSlider range, trimRange;
     private readonly TextBox begin, end, trimStart, trimEnd;
-    private readonly TextBlock trimLength = new() { MinWidth = 82, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 0, 0) };
+    private readonly TextBlock trimLength = new() { MinWidth = 72, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
     private readonly Button resetTrim;
     private readonly TextBlock beginLabel = new(), endLabel = new(), hint = new() { TextWrapping = TextWrapping.Wrap };
     private readonly StackPanel timing;
@@ -131,7 +131,7 @@ internal sealed class VideoEditorWindow : Window
         footer.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         footer.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         footer.Children.Add(new TextBlock { Text = "Trim", FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
-        trimRange = new VideoRangeSlider(source.Duration, History.MinimumDuration, "Trim") { Margin = new Thickness(14, 0, 0, 6) };
+        trimRange = new VideoRangeSlider(source.Duration, History.MinimumDuration, "Trim", "#FFCC00") { Margin = new Thickness(14, 0, 0, 6) };
         trimRange.EditBeginning += () => { Pause(); History.BeginTrimEdit(); };
         trimRange.RangeChanged += async (start, finish) =>
         {
@@ -144,17 +144,18 @@ internal sealed class VideoEditorWindow : Window
         trimRange.EditCompleted += () => { History.CommitTimingEdit(); UpdateControls(); };
         Grid.SetColumn(trimRange, 1); footer.Children.Add(trimRange);
         trimStart = TimeField("Trim start time in seconds"); trimEnd = TimeField("Trim end time in seconds");
-        trimStart.Width = trimEnd.Width = 64; trimStart.Margin = new Thickness(10, 0, 0, 0);
+        trimStart.Width = trimEnd.Width = 60;
         trimStart.LostKeyboardFocus += (_, _) => ChangeTrim(true); trimEnd.LostKeyboardFocus += (_, _) => ChangeTrim(false);
         trimStart.PreviewKeyDown += (_, e) => { if (e.Key == Key.Enter) { ChangeTrim(true); e.Handled = true; } };
         trimEnd.PreviewKeyDown += (_, e) => { if (e.Key == Key.Enter) { ChangeTrim(false); e.Handled = true; } };
-        resetTrim = new Button { Content = "Reset trim", Padding = new Thickness(10, 4, 10, 4), Margin = new Thickness(12, 0, 0, 0) };
+        resetTrim = new Button { Content = "Keep whole recording", Padding = new Thickness(10, 4, 10, 4), Margin = new Thickness(12, 0, 0, 0) };
         resetTrim.Click += (_, _) => { Pause(); History.SetTrim(TimeSpan.Zero, source.Duration); UpdateControls(); };
         var trimFields = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 0, 6) };
+        trimFields.Children.Add(new TextBlock { Text = "keep", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 6, 0) });
         trimFields.Children.Add(trimStart);
-        trimFields.Children.Add(new TextBlock { Text = "–", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 6, 0) });
+        trimFields.Children.Add(new TextBlock { Text = "to", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(6, 0, 6, 0) });
         trimFields.Children.Add(trimEnd);
-        trimFields.Children.Add(new TextBlock { Text = "s", VerticalAlignment = VerticalAlignment.Center, Foreground = (Brush)Resources["SecondaryBrush"], Margin = new Thickness(5, 0, 0, 0) });
+        trimFields.Children.Add(new TextBlock { Text = "s ·", VerticalAlignment = VerticalAlignment.Center, Foreground = (Brush)Resources["SecondaryBrush"], Margin = new Thickness(5, 0, 0, 0) });
         trimFields.Children.Add(trimLength); trimFields.Children.Add(resetTrim);
         Grid.SetColumn(trimFields, 2); Grid.SetColumnSpan(trimFields, 2); footer.Children.Add(trimFields);
         Grid.SetRow(play, 1);
@@ -243,7 +244,7 @@ internal sealed class VideoEditorWindow : Window
         if (!double.TryParse(field.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out double seconds) || !double.IsFinite(seconds)) { UpdateControls(); return; }
         var time = TimeSpan.FromSeconds(Math.Clamp(seconds, 0, source.Duration.TotalSeconds));
         Pause(); History.SetTrim(startChanged ? time : trim.Start, startChanged ? trim.End : time);
-        UpdateControls(); KeepPlayheadInTrim();
+        UpdateControls(); _ = SeekAsync(startChanged ? History.Trim.Start : History.Trim.End);
     }
     private void DeleteSelected() { CommitText(); History.DeleteSelected(); UpdateControls(); surface.Refresh(); }
     private void ChangeTiming(bool startChanged)
@@ -334,6 +335,7 @@ internal sealed class VideoEditorWindow : Window
                 for (int index = 0; index < History.Items.Count; index++)
                 {
                     var item = History.Items[index]; string label = item.Annotation.Tool == Tool.Text ? item.Annotation.Text.Replace('\n', ' ') : item.Annotation.Tool.ToString();
+                    if (History.Trim.Clip([item]).Length == 0) label += " (trimmed out)";
                     var row = new ListBoxItem { Content = $"{index + 1}. {label}", Tag = item.Id, ToolTip = $"{Time(item.Begin)} – {Time(item.End)}", Padding = new Thickness(5, 6, 5, 6), Foreground = Foreground };
                     marks.Items.Add(row); if (item.Id == History.SelectedId) marks.SelectedItem = row;
                 }
@@ -351,7 +353,8 @@ internal sealed class VideoEditorWindow : Window
             var trim = History.Trim;
             trimRange.SetRange(trim.Start.TotalSeconds, trim.End.TotalSeconds);
             trimStart.Text = Seconds(trim.Start); trimEnd.Text = Seconds(trim.End);
-            trimLength.Text = "Length " + Time(trim.Length);
+            trimLength.Text = trim.Length.TotalSeconds.ToString("0.00", CultureInfo.CurrentCulture) + " s kept";
+            range.SetKept(trim.Start.TotalSeconds, trim.End.TotalSeconds);
             resetTrim.IsEnabled = trim != VideoTrim.Whole(source.Duration);
             undo.IsEnabled = History.CanUndo; redo.IsEnabled = History.CanRedo;
             delete.IsEnabled = entire.IsEnabled = selected != null;

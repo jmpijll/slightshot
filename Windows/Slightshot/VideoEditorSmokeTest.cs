@@ -482,11 +482,11 @@ internal static class VideoEditorSmokeTest
         EnterTime(trimStart, 1.5); EnterTime(trimEnd, 3.5);
         var trim = editor.History.Trim;
         Require(trim == new VideoTrim(Seconds(1.5), Seconds(3.5)) && trimStart.Text == Field(trim.Start) && trimEnd.Text == Field(trim.End), "exact trim fields set the kept range");
-        ClickContent(editor, "Reset trim");
-        Require(editor.History.Trim == whole, "Reset trim keeps the whole recording");
+        ClickContent(editor, "Keep whole recording");
+        Require(editor.History.Trim == whole, "Keep whole recording resets the trim");
         ClickTooltip(editor, "Undo  Ctrl+Z");
-        Require(editor.History.Trim == trim, "real Undo restores the trim after Reset trim");
-        checks.Add("Trim defaults to the whole recording. Two native trim handles, exact start/end fields, Reset trim and real Undo/Redo change the kept range; it ends at 1.5–3.5 seconds.");
+        Require(editor.History.Trim == trim, "real Undo restores the trim after Keep whole recording");
+        checks.Add("Trim defaults to the whole recording. Two native trim handles, exact start/end fields, Keep whole recording and real Undo/Redo change the kept range; it ends at 1.5–3.5 seconds.");
 
         await editor.SeekAsync(Seconds(0.2));
         Require(editor.Position == trim.Start, "seeking before the trim stops at the trim start");
