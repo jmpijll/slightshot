@@ -25,6 +25,7 @@ final class ApplicationCommandInbox {
     private let ownerDescriptor: Int32
     private let ownerID: UUID
     private let now: () -> Date
+    private let reportExpired: (ApplicationCommand, TimeInterval) -> Void
     private var watchSource: DispatchSourceFileSystemObject?
 
     static func userDirectory() throws -> URL {
@@ -33,9 +34,11 @@ final class ApplicationCommandInbox {
             .appendingPathComponent("com.jmpijll.slightshot/Commands", isDirectory: true)
     }
 
-    init(directory: URL, now: @escaping () -> Date = Date.init) throws {
+    init(directory: URL, now: @escaping () -> Date = Date.init,
+         reportExpired: @escaping (ApplicationCommand, TimeInterval) -> Void = logExpired) throws {
         self.directory = directory
         self.now = now
+        self.reportExpired = reportExpired
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true,
                                                attributes: [.posixPermissions: 0o700])
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
@@ -108,7 +111,7 @@ final class ApplicationCommandInbox {
             }
             var state = try Self.read(directory)
             guard state.owner == ownerID else { throw RoutingError.ownerUnavailable }
-            state.requests.removeAll { !isRecent($0, at: now()) }
+            removeExpired(from: &state.requests, at: now())
             guard state.requests.count < 16 else { throw RoutingError.inboxFull }
             state.requests.append(Request(command: command, date: now()))
             try Self.write(state, directory: directory)
@@ -121,16 +124,35 @@ final class ApplicationCommandInbox {
             var state = try Self.read(directory)
             guard state.owner == ownerID else { throw RoutingError.ownerUnavailable }
             guard !state.requests.isEmpty else { return [] }
-            let commands = state.requests.filter { isRecent($0, at: now()) }.map(\.command)
+            removeExpired(from: &state.requests, at: now())
+            let commands = state.requests.map(\.command)
             state.requests.removeAll()
             try Self.write(state, directory: directory)
             return commands
         }
     }
 
+    // A capture that starts long after the user asked for it is a surprise, so stale
+    // requests are dropped rather than delivered late. Report each one so it is never silent.
+    private func removeExpired(from requests: inout [Request], at date: Date) {
+        for request in requests where !isRecent(request, at: date) {
+            reportExpired(request.command, date.timeIntervalSince(request.date))
+        }
+        requests.removeAll { !isRecent($0, at: date) }
+    }
+
     private func isRecent(_ request: Request, at date: Date) -> Bool {
         let age = date.timeIntervalSince(request.date)
         return age >= 0 && age <= 10
+    }
+
+    nonisolated static func logExpired(_ command: ApplicationCommand, age: TimeInterval) {
+        let name = switch command {
+        case .capture(let capture): capture.rawValue
+        case .reopen: "reopen"
+        }
+        let seconds = String(format: "%.1f", age)
+        Log.app.error("Dropped forwarded command \(name, privacy: .public) after \(seconds, privacy: .public) s")
     }
 
     private static func withInboxLock<T>(_ directory: URL, perform: () throws -> T) throws -> T {
