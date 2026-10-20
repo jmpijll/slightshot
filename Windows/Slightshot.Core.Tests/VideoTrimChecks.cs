@@ -1,0 +1,78 @@
+using Slightshot.Core;
+
+internal static class VideoTrimChecks
+{
+    internal static int Run()
+    {
+        int checks = 0;
+        void Require(bool condition, string message)
+        {
+            if (!condition) throw new InvalidOperationException("Video trim: " + message);
+            checks++;
+        }
+        TimeSpan Seconds(double value) => TimeSpan.FromSeconds(value);
+        var duration = Seconds(5);
+        var history = new VideoAnnotationHistory(duration);
+        Require(history.Trim == VideoTrim.Whole(duration) && !history.CanUndo, "a new recording keeps its whole length without an undo step");
+
+        var blur = history.Add(new(Tool.Blur, [new(40, 50), new(120, 90)], "#FF3B30", 3));
+        history.SetTiming(Seconds(1), Seconds(3));
+        var arrow = history.Add(new(Tool.Arrow, [new(200, 20), new(80, 60)], "#0A84FF", 3));
+        history.SetTiming(Seconds(4), Seconds(4.5));
+        var marks = history.ExportSnapshot();
+
+        history.BeginTrimEdit();
+        history.PreviewTrim(Seconds(0.5), Seconds(4));
+        history.PreviewTrim(Seconds(2), Seconds(3.5));
+        history.CommitTimingEdit();
+        Require(history.Trim == new VideoTrim(Seconds(2), Seconds(3.5)) && history.Trim.Length == Seconds(1.5), "a trim drag sets both ends");
+        Require(history.ExportSnapshot().SequenceEqual(marks, new SameTiming()), "trimming keeps annotation source times");
+        history.Undo();
+        Require(history.Trim == VideoTrim.Whole(duration), "one undo reverses an entire trim drag");
+        history.Redo();
+        Require(history.Trim == new VideoTrim(Seconds(2), Seconds(3.5)), "redo restores the trim");
+
+        history.SetTrim(Seconds(-1), Seconds(9));
+        Require(history.Trim == VideoTrim.Whole(duration), "trim clamps to the recording");
+        history.SetTrim(duration, TimeSpan.Zero);
+        Require(history.Trim.Length == history.MinimumDuration && history.Trim.End == duration, "crossed trim handles keep one frame");
+        var exact = TimeSpan.FromTicks(31_234_567);
+        history.SetTrim(Seconds(1), exact);
+        Require(history.Trim == new VideoTrim(Seconds(1), exact), "trim keeps exact endpoint ticks");
+
+        int undoable = 0; while (history.Undo()) undoable++;
+        Require(history.Trim == VideoTrim.Whole(duration) && history.Items.Count == 0, "undo walks back through trims and annotations in order");
+        while (history.Redo()) undoable--;
+        Require(undoable == 0 && history.Trim == new VideoTrim(Seconds(1), exact) && history.Items.Count == 2, "redo replays the same trims and annotations");
+        history.SetTrim(Seconds(1), exact);
+        history.Undo();
+        Require(history.Trim != new VideoTrim(Seconds(1), exact), "setting an unchanged trim adds no undo step");
+        history.Redo();
+
+        history.Select(blur.Id); history.DeleteSelected(); history.Undo();
+        Require(history.Trim == new VideoTrim(Seconds(1), exact), "annotation undo leaves the trim alone");
+
+        var trim = new VideoTrim(Seconds(2), Seconds(3.5));
+        var clipped = trim.Clip(marks);
+        Require(clipped.Length == 1 && clipped[0].Id == blur.Id, "annotations wholly outside the trim are left out of the export");
+        Require(clipped[0].Begin == TimeSpan.Zero && clipped[0].End == Seconds(1), "a partly kept annotation is clipped and moved to the exported timeline");
+        Require(clipped[0].Annotation.Points.SequenceEqual(blur.Annotation.Points), "clipping keeps source coordinates");
+        var inside = new VideoTrim(Seconds(0.5), Seconds(4.25)).Clip(marks);
+        Require(inside[0].Begin == Seconds(0.5) && inside[0].End == Seconds(2.5) && inside[1].Begin == Seconds(3.5) && inside[1].End == Seconds(3.75), "trimmed annotation times shift by the trim start and end at the trim end");
+        Require(VideoTrim.Whole(duration).Clip(marks).SequenceEqual(marks), "an untrimmed export keeps every annotation unchanged");
+        Require(new VideoTrim(Seconds(3), Seconds(4)).Clip(marks).Length == 0, "an annotation ending at the trim start is not exported");
+        Require(new VideoTrim(Seconds(0), Seconds(1)).Clip(marks).Length == 0, "an annotation starting at the trim end is not exported");
+        Require(new VideoTrim(Seconds(2.9), Seconds(4.1)).Clip(marks).Select(item => item.Id).SequenceEqual(new[] { blur.Id, arrow.Id }), "clipping keeps drawing order");
+
+        Require(trim.Clamp(Seconds(1)) == Seconds(2) && trim.Clamp(Seconds(4)) == Seconds(3.5) && trim.Clamp(Seconds(2.5)) == Seconds(2.5), "playhead positions clamp into the trim");
+        Require(new VideoTrim(Seconds(2), Seconds(9)).Within(duration) == new VideoTrim(Seconds(2), duration), "export clamps a trim to the decoded duration");
+        Require(new VideoTrim(Seconds(7), Seconds(9)).Within(duration).Length == TimeSpan.Zero, "a trim past the decoded end is empty");
+        return checks;
+    }
+
+    private sealed class SameTiming : IEqualityComparer<TimedAnnotation>
+    {
+        public bool Equals(TimedAnnotation? first, TimedAnnotation? second) => first?.Id == second?.Id && first?.Begin == second?.Begin && first?.End == second?.End;
+        public int GetHashCode(TimedAnnotation item) => item.Id.GetHashCode();
+    }
+}
