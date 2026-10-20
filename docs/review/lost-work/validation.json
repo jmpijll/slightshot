@@ -5,7 +5,7 @@
   "fixture" : "--lost-work-review: synthetic movie in a real ScreenRecordingSession folder; ScreenCaptureKit callbacks simulated; coordinator, editor, quit prompt and save panel are production code",
   "macOS" : "Version 27.0.1 (Build 26A434)",
   "passed" : true,
-  "sourceCommit" : "8eba8448f0ff4a289b916b44608cc0f30975b48b",
+  "sourceCommit" : "4ba9230e19a363c47392bba7f0c1deb6a1f8e87f",
   "steps" : [
     {
       "step" : "Wrote a synthetic 4-second 960x540 movie as the recording"

@@ -1,7 +1,7 @@
 # Unsaved recording protection review
 
 Captured on 20 October 2026 on macOS 27.0.1, Apple silicon, from source commit
-`8eba8448f0ff4a289b916b44608cc0f30975b48b` built as a Developer ID signed
+`4ba9230e19a363c47392bba7f0c1deb6a1f8e87f` built as a Developer ID signed
 `Slightshot.app` and started with `--lost-work-review`.
 
 The fixture writes a synthetic four-second movie into a real
