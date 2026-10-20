@@ -38,6 +38,7 @@ response says so and offers the Releases page instead. The request has no
 authentication and carries only a `Slightshot/<version>` User-Agent; there is
 no background polling. About and Settings show the version embedded in the
 running executable.
+See the [update check dialogs and native validation](review/windows-update-check/README.md).
 
 See the [1.5.1 published-file validation and native editor evidence](review/releases/v1.5.1/README.md).
 
