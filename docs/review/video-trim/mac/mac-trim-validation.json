@@ -21,7 +21,7 @@
   },
   "exports": [
     {
-      "bytes": 88074,
+      "bytes": 87811,
       "durationSeconds": 4.5,
       "expectedFrameCount": 68,
       "file": "trimmed-compact.mp4",
@@ -60,7 +60,7 @@
     "captionRedFractionAtExport0_25s": 0,
     "firstFrameMarkerDifferenceBySourceSecond": {
       "0.00": 8.679115013774105,
-      "1.00": 7.387594696969697,
+      "1.00": 7.383694903581267,
       "1.25": 7.796341253443527,
       "1.50": 3.8602530991735535,
       "1.75": 8.0721935261708,
@@ -70,28 +70,28 @@
   "interaction": "Automated: synthetic mouse drags on the native trim handles, typed trim fields, ⌘Z/⌘⇧Z key equivalents, Play and Save MP4 button clicks. Exports use RecordingExport.save with the edit returned by Save MP4.",
   "platform": "macOS",
   "playback": {
-    "firstSampleSeconds": 1.509121417,
-    "maximumSeconds": 5.974969667,
-    "minimumSeconds": 1.509121417,
+    "firstSampleSeconds": 1.524799125,
+    "maximumSeconds": 5.991697709,
+    "minimumSeconds": 1.524799125,
     "pressedPlayAtSeconds": 6,
-    "samples": 82,
-    "stoppedAtSeconds": 5.974969667
+    "samples": 81,
+    "stoppedAtSeconds": 5.991697709
   },
   "result": "Passed",
   "savedTrimSeconds": [
     1.5,
     6
   ],
-  "sourceCommit": "7c3ce7468b0c1aeed6d27f6e0e5a6d43d80de4b2",
+  "sourceCommit": "4f4b213d19bbf87ad98da58a51c09cb1a2404a26",
   "storedExports": [
     "trimmed-high.mp4"
   ],
   "trimSteps": [
     {
-      "playheadSeconds": 1.3999999999999997,
+      "playheadSeconds": 1.4,
       "step": "Dragged the start handle to about 1.4 s",
       "trimSeconds": [
-        1.3999999999999997,
+        1.4,
         8
       ]
     },
@@ -99,7 +99,7 @@
       "playheadSeconds": 6.198333333333333,
       "step": "Dragged the end handle to about 6.2 s",
       "trimSeconds": [
-        1.3999999999999997,
+        1.4,
         6.2
       ]
     },
