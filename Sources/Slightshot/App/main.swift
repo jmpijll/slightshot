@@ -42,6 +42,18 @@ if let index = CommandLine.arguments.firstIndex(of: "--annotation-size-halo-demo
     exit(EXIT_SUCCESS)
 }
 
+if let index = CommandLine.arguments.firstIndex(of: "--text-tool-review") {
+    let app = NSApplication.shared
+    app.mainMenu = EditMenu.makeMainMenu()
+    let path = CommandLine.arguments.indices.contains(index + 1)
+        ? CommandLine.arguments[index + 1] : "build/text-tool-review"
+    let review = TextToolReview(directory: URL(fileURLWithPath: path, isDirectory: true))
+    app.delegate = review
+    app.setActivationPolicy(.accessory)
+    withExtendedLifetime(review) { app.run() }
+    exit(EXIT_SUCCESS)
+}
+
 if CommandLine.arguments.contains("--delayed-review") {
     let app = NSApplication.shared
     let evidenceFlag = CommandLine.arguments.firstIndex(of: "--delayed-review-evidence")
