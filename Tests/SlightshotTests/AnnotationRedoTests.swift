@@ -81,6 +81,8 @@ struct AnnotationRedoTests {
         try editor.draw(.step, from: CGPoint(x: 42, y: 42))
         editor.view.undo()
         try editor.press(at: CGPoint(x: -10, y: -10))
+        #expect(editor.redoButton.isEnabled, "A press outside the selection is not a new selection yet.")
+        try editor.drag(to: CGPoint(x: 30, y: 30))
         #expect(!editor.redoButton.isEnabled)
         editor.view.redo()
     }
@@ -162,6 +164,8 @@ struct AnnotationRedoTests {
         }
 
         func press(at point: CGPoint) throws { view.mouseDown(with: try mouse(.leftMouseDown, at: point)) }
+
+        func drag(to point: CGPoint) throws { view.mouseDragged(with: try mouse(.leftMouseDragged, at: point)) }
 
         func key(_ character: String, shift: Bool = false) throws {
             view.keyDown(with: try keyEvent(character, shift: shift))

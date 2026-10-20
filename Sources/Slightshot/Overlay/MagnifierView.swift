@@ -45,6 +45,18 @@ final class MagnifierView: NSView {
 
     var currentColor: NSColor { pickedColor }
 
+    /// Sits below-right of the crosshair, flipping near the display edges.
+    /// `point` and `bounds` are in the overlay's flipped coordinates.
+    static func origin(following point: CGPoint, in bounds: CGRect) -> CGPoint {
+        let size = totalSize
+        var origin = CGPoint(x: point.x + 18, y: point.y + 18)
+        if origin.x + size.width > bounds.maxX - 6 { origin.x = point.x - 18 - size.width }
+        if origin.y + size.height > bounds.maxY - 6 { origin.y = point.y - 18 - size.height }
+        origin.x = min(max(6, origin.x), bounds.maxX - size.width - 6)
+        origin.y = min(max(6, origin.y), bounds.maxY - size.height - 6)
+        return origin
+    }
+
     override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
 
@@ -55,17 +67,24 @@ final class MagnifierView: NSView {
         // Magnified pixels, nearest-neighbour so individual pixels stay square.
         let span = Self.pixelsAcross
         let half = span / 2
-        let px = Int((point.x * source.scale).rounded(.down)) - half
-        let py = Int((point.y * source.scale).rounded(.down)) - half
-        if let crop = source.image.cropping(to: CGRect(x: px, y: py, width: span, height: span)) {
+        let cell = Self.zoomSide / CGFloat(span)
+        let requested = CGRect(x: Int((point.x * source.scale).rounded(.down)) - half,
+                               y: Int((point.y * source.scale).rounded(.down)) - half,
+                               width: span, height: span)
+        let visible = requested.intersection(CGRect(x: 0, y: 0, width: source.image.width,
+                                                    height: source.image.height))
+        if !visible.isNull, let crop = source.image.cropping(to: visible) {
+            // Pixels past the display edge stay black, so the centre cell is still the one under the crosshair.
+            let destination = CGRect(x: zoomRect.minX + (visible.minX - requested.minX) * cell,
+                                     y: zoomRect.maxY - (visible.maxY - requested.minY) * cell,
+                                     width: visible.width * cell, height: visible.height * cell)
             ctx.saveGState()
             ctx.interpolationQuality = .none
-            ctx.draw(crop, in: zoomRect)
+            ctx.draw(crop, in: destination)
             ctx.restoreGState()
         }
 
         // Pixel grid.
-        let cell = Self.zoomSide / CGFloat(span)
         NSColor.white.withAlphaComponent(0.12).setStroke()
         let grid = NSBezierPath()
         grid.lineWidth = 1 / (window?.backingScaleFactor ?? 2)

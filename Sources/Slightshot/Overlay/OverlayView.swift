@@ -42,8 +42,10 @@ final class OverlayView: NSView {
 
     // MARK: Editing state
 
+    /// On a captured display the selection sits on the device pixel grid so its outline matches the export.
     private var selection: CGRect? {
         didSet {
+            if capturedDisplay != nil { selection = selection?.pixelAligned(scale: source.scale) }
             canvas.selection = selection
             dimView.update(hole: selection)
             layoutToolbars()
@@ -61,6 +63,7 @@ final class OverlayView: NSView {
 
     private enum DragState {
         case none
+        case pendingSelection(anchor: CGPoint)
         case newSelection(anchor: CGPoint)
         case moveSelection(grabOffset: CGPoint)
         case resizeSelection(SelectionHandle)
@@ -103,7 +106,7 @@ final class OverlayView: NSView {
         canvas.onSourceVisibilityChanged = { [weak screenshotView] rect in screenshotView?.exclude(rect) }
         canvas.sourceImage = source.image
         canvas.imageScale = source.scale
-        canvas.alignSelectionToPoints = capturedDisplay != nil
+        canvas.alignSelectionToPoints = false
         canvas.dimensionScale = capturedDisplay == nil ? source.scale : 1
         canvas.accent = color
         canvas.showDimensions = settings.showDimensions
@@ -201,7 +204,7 @@ final class OverlayView: NSView {
                     beginTextEntry(at: point)
                 } else {
                     drag = .drawing(start: point, points: [point])
-                    if tool == .step {
+                    if [.step, .pen, .marker].contains(tool) {
                         canvas.liveAnnotation = makeAnnotation(start: point, current: point,
                                                                points: [point], constrained: false)
                     }
@@ -216,27 +219,34 @@ final class OverlayView: NSView {
             }
         }
 
-        // Anywhere else: start a fresh selection.
-        annotations.removeAll()
-        undoneAnnotations.removeAll()
+        // Anywhere else: a fresh selection, which discards the current one only once the press is dragged.
         copyOnRelease = event.modifierFlags.contains(.command)
         let anchor = clampToBounds(point)
+        if selection == nil { beginNewSelection(at: anchor) } else { drag = .pendingSelection(anchor: anchor) }
+    }
+
+    private func beginNewSelection(at anchor: CGPoint) {
+        annotations.removeAll()
+        undoneAnnotations.removeAll()
         drag = .newSelection(anchor: anchor)
-        self.selection = CGRect(corner: anchor, corner: anchor)
+        selection = CGRect(corner: anchor, corner: anchor)
     }
 
     override func mouseDragged(with event: NSEvent) {
         let point = clampToBounds(location(of: event))
         moveSizeIndicator(at: location(of: event))
+        if case .pendingSelection(let anchor) = drag, point.distance(to: anchor) * viewingZoom >= 4 {
+            beginNewSelection(at: anchor)
+        }
 
         switch drag {
-        case .none:
+        case .none, .pendingSelection:
             break
 
         case .newSelection(let anchor):
-            var rect = CGRect(corner: anchor, corner: point)
-            if event.modifierFlags.contains(.shift) { rect = squared(rect, from: anchor, to: point) }
-            selection = rect
+            selection = event.modifierFlags.contains(.shift)
+                ? CGRect(square: anchor, toward: point, within: source.bounds)
+                : CGRect(corner: anchor, corner: point)
             updateMagnifier(at: point)
 
         case .moveSelection(let grabOffset):
@@ -323,7 +333,9 @@ final class OverlayView: NSView {
         case .pen, .marker: shape = .stroke(points: points)
         case .line: shape = .line(from: start, to: end)
         case .arrow: shape = .arrow(from: start, to: end)
-        case .rectangle: shape = .rectangle(CGRect(corner: start, corner: end))
+        case .rectangle:
+            shape = .rectangle(constrained ? CGRect(square: start, toward: current, within: selection ?? source.bounds)
+                                           : CGRect(corner: start, corner: current))
         case .blur: shape = .blur(CGRect(corner: start, corner: current))
         case .pixelate: shape = .pixelate(CGRect(corner: start, corner: current))
         case .step: shape = .step(number: Annotation.nextStepNumber(in: annotations), center: start)
@@ -393,15 +405,7 @@ final class OverlayView: NSView {
         }
 
         loupe.move(to: point)
-
-        // Sits below-right of the crosshair, flipping near the display edges.
-        let size = MagnifierView.totalSize
-        var origin = CGPoint(x: point.x + 18, y: point.y + 18)
-        if origin.x + size.width > bounds.maxX - 6 { origin.x = point.x - 18 - size.width }
-        if origin.y + size.height > bounds.maxY - 6 { origin.y = point.y - 18 - size.height }
-        origin.x = min(max(6, origin.x), bounds.maxX - size.width - 6)
-        origin.y = min(max(6, origin.y), bounds.maxY - size.height - 6)
-        loupe.setFrameOrigin(origin)
+        loupe.setFrameOrigin(MagnifierView.origin(following: point, in: bounds))
     }
 
     private var isDraggingSelection: Bool {
@@ -500,16 +504,12 @@ extension OverlayView {
         guard let selection, selection.width > 0, selection.height > 0 else { return }
         hideMagnifier()
         guard let image = Renderer.flatten(image: source.image, scale: source.scale,
-                                           selection: capturedDisplay == nil ? selection : selection.pixelAligned,
+                                           selection: selection,
                                            annotations: annotations) else {
             OutputService.presentError("Slightshot could not render the selection.")
             return
         }
         delegate?.overlay(self, didComplete: action, image: image)
-    }
-
-    private var viewingZoom: CGFloat {
-        capturedDisplay == nil ? max(0.01, convert(CGRect(x: 0, y: 0, width: 1, height: 1), to: nil).width) : 1
     }
 
     func prepareClipboardEditor(toolbarHost: NSView) {

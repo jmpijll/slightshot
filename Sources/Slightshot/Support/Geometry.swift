@@ -8,10 +8,24 @@ nonisolated extension CGRect {
                   width: abs(a.x - b.x), height: abs(a.y - b.y))
     }
 
-    /// Rounds to whole pixels so the crop lands on exact pixel boundaries.
-    var pixelAligned: CGRect {
-        CGRect(x: minX.rounded(.down), y: minY.rounded(.down),
-               width: width.rounded(), height: height.rounded())
+    /// A square from `anchor` sized by the longer drag axis, kept inside `bounds`.
+    init(square anchor: CGPoint, toward point: CGPoint, within bounds: CGRect) {
+        let dx = point.x - anchor.x, dy = point.y - anchor.y
+        let side = max(0, min(max(abs(dx), abs(dy)),
+                              dx < 0 ? anchor.x - bounds.minX : bounds.maxX - anchor.x,
+                              dy < 0 ? anchor.y - bounds.minY : bounds.maxY - anchor.y))
+        self.init(corner: anchor, corner: CGPoint(x: anchor.x + (dx < 0 ? -side : side),
+                                                  y: anchor.y + (dy < 0 ? -side : side)))
+    }
+
+    /// Rounds every edge to the nearest whole pixel so the crop lands on exact pixel boundaries.
+    var pixelAligned: CGRect { pixelAligned(scale: 1) }
+
+    /// Rounds every edge to the nearest device pixel at `scale` pixels per point.
+    func pixelAligned(scale: CGFloat) -> CGRect {
+        func snap(_ value: CGFloat) -> CGFloat { (value * scale).rounded() / scale }
+        let left = snap(minX), top = snap(minY)
+        return CGRect(x: left, y: top, width: snap(maxX) - left, height: snap(maxY) - top)
     }
 
     func clamped(to bounds: CGRect) -> CGRect {
