@@ -70,5 +70,5 @@ See [the validation record](review/releases/signing-validation.json) for the tes
 
 Each published release has a validation record of its downloaded public files
 under [review/releases](review/releases/). From 1.4.1 onward, a release folder
-such as [v1.6.0](review/releases/v1.6.0/README.md) also links the publication
+such as [v1.7.0](review/releases/v1.7.0/README.md) also links the publication
 and Pages runs and the native evidence for that release.
