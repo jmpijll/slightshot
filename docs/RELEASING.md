@@ -2,26 +2,29 @@
 
 ## Current status
 
-Version [1.6.0](https://github.com/jmpijll/slightshot/releases/tag/v1.6.0) is live
+Version [1.7.0](https://github.com/jmpijll/slightshot/releases/tag/v1.7.0) is live
 with a signed, Apple-notarised Mac DMG and unsigned Windows x64/ARM64 setup and
-portable previews. Scroll up or down over the annotation canvas to change the
-size of new marks. A translucent circle centered on the cursor grows and shrinks
-with the size, follows cursor movement and disappears after scrolling stops.
-Screenshot, clipboard and recording editors support it on both platforms.
+portable previews. This release protects unsaved Mac work, fixes editor text,
+selection and shortcut behavior, improves Windows recording and settings
+recovery, adds an on-demand Windows update check, and adds recording trim on
+both platforms. The release also hardens publication and export bookkeeping.
 
-Release source: `f9edab1c9864d17a502ca589b67dd885cceda056`. Mac build 207 uses the
-full source Git-history counter and exceeds the previous public build 195.
-All five public downloads passed checksum, size, version and provenance checks.
-The Mac app and DMG passed Developer ID signature, stapled-ticket, Gatekeeper and
-runtime-linkage checks. The deployed Sparkle feed matches its committed bytes,
-and its Ed25519 signature authenticates the final DMG with both the current
-embedded key and the immutable public 1.4.0 application's key.
+Release source: `c03ad49dbf1c19578d0cee0e10fb502a79e3b016`. Mac build 350 uses the
+full source Git-history counter and exceeds the previous public build 207.
+All five public downloads passed independent checksum, size and version checks.
+Both portable Windows executables embed the release source commit in their
+ProductVersion. The Mac app and DMG passed Developer ID signature, stapled-ticket
+and Gatekeeper checks. The live Sparkle feed matches the committed feed at
+`3cf1cc65cd8a6daaebe04bf595ce972ccf63ca95` and passes the public-download gate.
+The exact-source release run passed Windows validation, Mac notarisation,
+feed signing and publication.
 
-The exact-tag Windows native editor, scroll halo, recording, timed editor, 4K,
-extracted portable x64 and installer lifecycle checks passed. Windows updates
-remain manual. ARM64 is cross-built and inspected; native ARM64 desktop
-acceptance remains pending. See the [release verification](review/releases/v1.6.0/README.md)
-and [published-file validation](review/releases/v1.6.0-validation.json).
+Windows previews remain unsigned. Print Screen callback registration and
+detection passed on CI without a physical key. ARM64 is cross-built and
+inspected only. Real Windows sign-out and a real Sparkle install-and-relaunch
+were not exercised end to end. See the
+[release verification](review/releases/v1.7.0/README.md) and
+[published-file validation](review/releases/v1.7.0-validation.json).
 
 The release workflow publishes after Windows validation, Mac notarisation and
 an independent check of the update feed's signature. A separate publish job

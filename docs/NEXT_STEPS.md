@@ -1,13 +1,15 @@
-# Focus after 1.6.0
+# Focus after 1.7.0
 
-[1.6.0](https://github.com/jmpijll/slightshot/releases/tag/v1.6.0) is the
-current release. A code audit on 20 October 2026 filed issues #38 to #49. The
-next release is planned to collect their fixes.
+[1.7.0](https://github.com/jmpijll/slightshot/releases/tag/v1.7.0) is the
+current release. It includes the 20 October 2026 audit fixes for issues #38 to
+#49, plus the inbox test fix in #58 and staging-bookkeeping fix in #70.
+[Release verification](review/releases/v1.7.0/README.md) links their merged PRs
+and review evidence.
 
 ## Audit fixes
 
-Each issue gets its own pull request with visual evidence and an
-independent review. See each issue for its current state.
+The following audit issues shipped in 1.7.0. Each fix has its own pull request
+with review evidence and an independent review.
 
 | Issue | Reported problem or request |
 | --- | --- |
@@ -29,7 +31,7 @@ would change the default capture path goes behind a setting.
 
 ## Use the app and fix concrete problems
 
-After the audit fixes, prioritize problems found while using Slightshot:
+Prioritize problems found while using Slightshot:
 broken capture or editor interactions, output failures, and measured
 performance or memory regressions. Verify fixes on the affected native platform
 and retain a focused review diff with actual visual evidence when the UI changes.
@@ -46,6 +48,7 @@ outside this scope. Add features only when real usage shows a concrete need.
 | [1.5.0](https://github.com/jmpijll/slightshot/releases/tag/v1.5.0) | Timed video annotations in a native recording editor on Mac and Windows ([#33](https://github.com/jmpijll/slightshot/pull/33)). |
 | [1.5.1](https://github.com/jmpijll/slightshot/releases/tag/v1.5.1) | macOS update discovery with one shared build counter ([#35](https://github.com/jmpijll/slightshot/pull/35)). |
 | [1.6.0](https://github.com/jmpijll/slightshot/releases/tag/v1.6.0) | Scroll to resize new annotations, with a cursor circle showing the size ([#37](https://github.com/jmpijll/slightshot/pull/37)). |
+| [1.7.0](https://github.com/jmpijll/slightshot/releases/tag/v1.7.0) | Audit fixes #38 to #49 cover release checks, tooling, Mac unsaved work, notifications, text, shortcuts and selection, Windows launch, recording, settings and updates, and recording trim. Merged PRs [#50](https://github.com/jmpijll/slightshot/pull/50), [#51](https://github.com/jmpijll/slightshot/pull/51), [#52](https://github.com/jmpijll/slightshot/pull/52), [#53](https://github.com/jmpijll/slightshot/pull/53), [#54](https://github.com/jmpijll/slightshot/pull/54), [#55](https://github.com/jmpijll/slightshot/pull/55), [#56](https://github.com/jmpijll/slightshot/pull/56), [#57](https://github.com/jmpijll/slightshot/pull/57), [#59](https://github.com/jmpijll/slightshot/pull/59), [#60](https://github.com/jmpijll/slightshot/pull/60), [#63](https://github.com/jmpijll/slightshot/pull/63), [#64](https://github.com/jmpijll/slightshot/pull/64), and [#65](https://github.com/jmpijll/slightshot/pull/65). Inbox test #58 shipped in [#62](https://github.com/jmpijll/slightshot/pull/62), and staging bookkeeping #70 in [#71](https://github.com/jmpijll/slightshot/pull/71). Version preparation shipped in [#69](https://github.com/jmpijll/slightshot/pull/69). |
 
 Each release has a [published-file validation record](review/releases/).
 Earlier releases are listed on the

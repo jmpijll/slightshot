@@ -1,0 +1,10 @@
+{
+  "captured_at_utc": "2026-10-20T16:23:57.779227+00:00",
+  "platform": "macOS, T3 collaborative browser, incognito profile",
+  "release_url": "https://github.com/jmpijll/slightshot/releases/tag/v1.7.0",
+  "release_source_commit": "c03ad49dbf1c19578d0cee0e10fb502a79e3b016",
+  "release_tag": "v1.7.0",
+  "release_image": "release-status.png",
+  "capture_method": "Unauthenticated public GitHub page rendered in the browser; screenshot contains no signed-in account or fixture data.",
+  "release_image_sha256": "45874acb778b24b6daf19cfa21f756ab325186805ed596c53588d17c4bd9f15c"
+}
