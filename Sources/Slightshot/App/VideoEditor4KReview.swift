@@ -159,7 +159,7 @@ extension VideoEditor4KReview {
         let previous = window.onSave
         defer { window.onSave = previous }
         var result: [VideoAnnotation]?
-        window.onSave = { result = $0 }
+        window.onSave = { result = $0.annotations }
         save.performClick(nil)
         guard let result, result.count == expectedCount else {
             throw RecordingError.failed("Expected \(expectedCount) native marks in the video editor.")

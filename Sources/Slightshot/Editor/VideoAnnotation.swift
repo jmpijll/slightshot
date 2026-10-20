@@ -88,3 +88,9 @@ extension VideoAnnotation {
         return Self(annotation: annotation, start: lower - trim.start, end: upper - trim.start)
     }
 }
+
+/// Everything Undo restores and Save exports from the recording editor.
+struct VideoEdit {
+    var annotations: [VideoAnnotation] = []
+    var trim: VideoTrim
+}

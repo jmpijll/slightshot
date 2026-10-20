@@ -1,11 +1,15 @@
 import AppKit
 
-/// A single selected annotation's visible interval, with two draggable handles.
+/// An interval of the recording with two draggable handles: the kept trim or a
+/// selected annotation's visible period.
 final class VideoRangeControl: NSView {
     var duration: TimeInterval = 1
-    var start: TimeInterval = 0
-    var end: TimeInterval = 1
+    var start: TimeInterval = 0 { didSet { needsDisplay = true } }
+    var end: TimeInterval = 1 { didSet { needsDisplay = true } }
     var playhead: TimeInterval = 0
+    var tint = NSColor.controlAccentColor
+    /// Dims the parts of the timeline that Save removes.
+    var kept: VideoTrim? { didSet { needsDisplay = true } }
     var isEnabled = false { didSet { needsDisplay = true } }
     var onBeginChange: (() -> Void)?
     var onChange: ((TimeInterval, TimeInterval) -> Void)?
@@ -19,12 +23,18 @@ final class VideoRangeControl: NSView {
         NSColor.quaternaryLabelColor.setFill()
         NSBezierPath(roundedRect: track, xRadius: 4, yRadius: 4).fill()
         if isEnabled {
-            NSColor.controlAccentColor.withAlphaComponent(0.5).setFill()
+            tint.withAlphaComponent(0.5).setFill()
             CGRect(x: x(start), y: track.minY, width: x(end) - x(start), height: track.height).fill()
-            NSColor.controlAccentColor.setFill()
+            tint.setFill()
             for time in [start, end] {
                 NSBezierPath(roundedRect: CGRect(x: x(time) - 5, y: track.minY - 5,
                     width: 10, height: track.height + 10), xRadius: 3, yRadius: 3).fill()
+            }
+        }
+        if let kept, !kept.isWhole(of: duration) {
+            NSColor.windowBackgroundColor.withAlphaComponent(0.7).setFill()
+            for (from, to) in [(0, kept.start), (kept.end, duration)] where to > from {
+                CGRect(x: x(from) - 5, y: track.minY - 5, width: x(to) - x(from) + 10, height: track.height + 10).fill()
             }
         }
         NSColor.labelColor.setFill()

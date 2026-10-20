@@ -63,9 +63,7 @@ private final class VideoEditorReviewDelegate: NSObject, NSApplicationDelegate {
                 window.backgroundColor = .windowBackgroundColor
                 window.contentView?.appearance = window.appearance
                 window.onDiscard = { NSApp.terminate(nil) }
-                window.onSave = { [weak self] annotations in
-                    self?.saveReview(source: source, annotations: annotations)
-                }
+                window.onSave = { [weak self] edit in self?.saveReview(source: source, edit: edit) }
                 editor = window
                 window.center()
                 window.makeKeyAndOrderFront(nil)
@@ -83,12 +81,12 @@ private final class VideoEditorReviewDelegate: NSObject, NSApplicationDelegate {
         RunLoop.main.add(timer, forMode: .common)
     }
 
-    private func saveReview(source: URL, annotations: [VideoAnnotation]) {
+    private func saveReview(source: URL, edit: VideoEdit) {
         Task {
             do {
                 try await RecordingExport.save(source: source,
                     to: directory.appendingPathComponent("edited-video.mp4"),
-                    quality: .high, annotations: annotations)
+                    quality: .high, annotations: edit.annotations, trim: edit.trim)
                 editor?.title = "Slightshot video editor · exported edited-video.mp4"
             } catch { writeFailure(error) }
         }

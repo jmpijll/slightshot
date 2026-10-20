@@ -125,12 +125,12 @@ final class RecordingCoordinator {
     private func presentEditor(source: URL, size: CGSize, duration: TimeInterval) {
         phase = .editing
         let window = VideoEditorWindow(source: source, duration: duration, sourceSize: size)
-        window.onSave = { [weak self] annotations in
+        window.onSave = { [weak self] edit in
             guard let self, self.phase == .editing, !self.isTerminating else { return }
             self.phase = .saving
             self.editor?.orderOut(nil)
             self.saveTask = Task {
-                if await self.chooseDestination(source: source, size: size, annotations: annotations) {
+                if await self.chooseDestination(source: source, size: size, edit: edit) {
                     self.reset()
                 } else if !self.isTerminating {
                     self.phase = .editing
@@ -147,7 +147,7 @@ final class RecordingCoordinator {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    private func chooseDestination(source: URL, size: CGSize, annotations: [VideoAnnotation]) async -> Bool {
+    private func chooseDestination(source: URL, size: CGSize, edit: VideoEdit) async -> Bool {
         var proposedURL: URL?
         while !isTerminating, !Task.isCancelled {
             let panel = NSSavePanel()
@@ -171,7 +171,7 @@ final class RecordingCoordinator {
             Settings.shared.recordingQuality = quality
             let task = Task {
                 try await RecordingExport.save(source: source, to: destination, quality: quality,
-                                               annotations: annotations)
+                                               annotations: edit.annotations, trim: edit.trim)
             }
             exportTask = task
             let progress = RecordingExportPanel { [weak self] in self?.exportTask?.cancel() }
