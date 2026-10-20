@@ -1,5 +1,6 @@
 import AppKit
 import AVFoundation
+import Synchronization
 import Testing
 @testable import Slightshot
 
@@ -240,23 +241,49 @@ struct RecordingSessionCompletionTests {
         #expect(!FileManager.default.fileExists(atPath: staging.path))
     }
 
+    @Test func concurrentStagingUpdatesKeepEveryUnfinishedParent() {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let first = (0..<128).map { root.appendingPathComponent("first-\($0)") }
+        let second = (0..<128).map { root.appendingPathComponent("second-\($0)") }
+        defer {
+            for parent in first + second { RecordingExport.forgetStagingParent(parent) }
+        }
+        func remembered() -> Set<String> {
+            Set(RecordingExport.stagingParents.filter { $0.deletingLastPathComponent().path == root.path }.map(\.path))
+        }
+
+        DispatchQueue.concurrentPerform(iterations: first.count) { index in
+            RecordingExport.rememberStagingParent(first[index])
+        }
+        #expect(remembered() == Set(first.map(\.path)))
+
+        DispatchQueue.concurrentPerform(iterations: first.count) { index in
+            RecordingExport.forgetStagingParent(first[index])
+            RecordingExport.rememberStagingParent(second[index])
+        }
+        #expect(remembered() == Set(second.map(\.path)))
+
+        DispatchQueue.concurrentPerform(iterations: second.count) { index in
+            RecordingExport.forgetStagingParent(second[index])
+        }
+        #expect(remembered().isEmpty)
+    }
+
     @Test func anExportRemembersItsStagingFolderUntilItFinishes() async throws {
         let parent = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: false)
         defer { try? FileManager.default.removeItem(at: parent) }
         let source = parent.appendingPathComponent("source.mp4")
         try await writeMovie(to: source, seconds: 2)
-        let export = Task {
-            try await RecordingExport.save(source: source, to: parent.appendingPathComponent("saved.mp4"),
-                                           quality: .high)
-        }
-        var remembered = false
-        for _ in 0..<200 where !remembered {
-            remembered = RecordingExport.stagingParents.contains { $0.path == parent.path }
-            if !remembered { try await Task.sleep(for: .milliseconds(5)) }
-        }
-        try await export.value
-        #expect(remembered, "A running export records where it stages")
+        let remembered = Mutex(false)
+        try await RecordingExport.save(source: source, to: parent.appendingPathComponent("saved.mp4"),
+                                       quality: .high, onStagingCreated: { directory in
+            #expect(directory.deletingLastPathComponent().path == parent.path)
+            remembered.withLock { value in
+                value = RecordingExport.stagingParents.contains { $0.path == parent.path }
+            }
+        })
+        #expect(remembered.withLock { $0 }, "A running export records where it stages")
         #expect(!RecordingExport.stagingParents.contains { $0.path == parent.path })
         #expect(try FileManager.default.contentsOfDirectory(atPath: parent.path)
             .contains { $0.hasPrefix(RecordingExport.stagingPrefix) } == false)

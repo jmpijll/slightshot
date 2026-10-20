@@ -83,29 +83,37 @@ nonisolated enum RecordingError: LocalizedError {
 nonisolated enum RecordingExport {
     static let stagingPrefix = ".slightshot-"
     private static let stagingParentsKey = "RecordingExportStagingParents"
+    private static let stagingParentsLock = NSLock()
 
     /// Folders where an export staged its output and has not yet cleaned up.
     /// Launch sweeps them, since a crash can leave staging beside any destination.
     static var stagingParents: [URL] {
-        (UserDefaults.standard.stringArray(forKey: stagingParentsKey) ?? []).map { URL(fileURLWithPath: $0) }
+        stagingParentsLock.withLock {
+            (UserDefaults.standard.stringArray(forKey: stagingParentsKey) ?? []).map { URL(fileURLWithPath: $0) }
+        }
     }
 
     static func forgetStagingParent(_ parent: URL) {
-        let paths = UserDefaults.standard.stringArray(forKey: stagingParentsKey) ?? []
-        UserDefaults.standard.set(paths.filter { $0 != parent.path }, forKey: stagingParentsKey)
+        stagingParentsLock.withLock {
+            let paths = UserDefaults.standard.stringArray(forKey: stagingParentsKey) ?? []
+            UserDefaults.standard.set(paths.filter { $0 != parent.path }, forKey: stagingParentsKey)
+        }
     }
 
-    private static func rememberStagingParent(_ parent: URL) {
-        let paths = UserDefaults.standard.stringArray(forKey: stagingParentsKey) ?? []
-        guard !paths.contains(parent.path) else { return }
-        UserDefaults.standard.set(paths + [parent.path], forKey: stagingParentsKey)
+    static func rememberStagingParent(_ parent: URL) {
+        stagingParentsLock.withLock {
+            let paths = UserDefaults.standard.stringArray(forKey: stagingParentsKey) ?? []
+            guard !paths.contains(parent.path) else { return }
+            UserDefaults.standard.set(paths + [parent.path], forKey: stagingParentsKey)
+        }
     }
 
     /// Snapshot the editor's AppKit marks before entering the encoder worker.
     /// Only immutable cropped overlays cross the actor boundary.
     /// A trim keeps only its range, starting at zero; marks outside it are dropped.
     @MainActor static func save(source: URL, to destination: URL, quality: RecordingQuality,
-                                annotations: [VideoAnnotation] = [], trim: VideoTrim? = nil) async throws {
+                                annotations: [VideoAnnotation] = [], trim: VideoTrim? = nil,
+                                onStagingCreated: (@Sendable (URL) -> Void)? = nil) async throws {
         try Task.checkCancellation()
         try validateDestination(source: source, destination: destination)
         let annotations = trim.map { trim in annotations.compactMap { $0.trimmed(to: trim) } } ?? annotations
@@ -124,7 +132,7 @@ nonisolated enum RecordingExport {
                                                        duration: trim?.duration ?? duration.seconds)
         }
         try await savePrepared(source: source, to: destination, quality: quality, trim: trim,
-                               annotations: prepared)
+                               annotations: prepared, onStagingCreated: onStagingCreated)
     }
 
     private static func validateDestination(source: URL, destination: URL) throws {
@@ -172,11 +180,12 @@ nonisolated enum RecordingExport {
     /// file is replaced only after a complete, playable MP4 has been written.
     @concurrent private static func savePrepared(
         source: URL, to destination: URL, quality: RecordingQuality, trim: VideoTrim?,
-        annotations: [VideoFrameRenderer.PreparedAnnotation]
+        annotations: [VideoFrameRenderer.PreparedAnnotation], onStagingCreated: (@Sendable (URL) -> Void)? = nil
     ) async throws {
         try Task.checkCancellation()
         let (stagingDirectory, removeStaging) = try makeStagingDirectory(beside: destination)
         defer { removeStaging() }
+        onStagingCreated?(stagingDirectory)
         let staged = stagingDirectory.appendingPathComponent("recording.mp4")
 
         let asset = AVURLAsset(url: source)
