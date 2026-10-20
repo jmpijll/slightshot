@@ -34,27 +34,9 @@ nonisolated enum ShortcutRejection: Equatable, Sendable {
 
     func message(for combo: KeyCombo) -> String {
         switch self {
-        case .interceptsTyping: "\(combo.displayString) would block typing. Include ⌘ or ⌃."
-        case .duplicate(let owner): "\(combo.displayString) is already used by \(owner.title)."
-        case .unavailable: "\(combo.displayString) could not be registered."
-        }
-    }
-}
-
-extension KeyCombo {
-    /// Whether an enabled macOS keyboard shortcut, such as Spotlight's ⌘Space,
-    /// uses this combination. macOS may handle it before Slightshot sees it.
-    var isMacOSShortcut: Bool {
-        var array: Unmanaged<CFArray>?
-        guard CopySymbolicHotKeys(&array) == noErr,
-              let shortcuts = array?.takeRetainedValue() as? [[String: Any]]
-        else { return false }
-        let modifierMask = UInt32(cmdKey | shiftKey | optionKey | controlKey)
-        return shortcuts.contains { shortcut in
-            shortcut[kHISymbolicHotKeyEnabled as String] as? Bool == true
-                && shortcut[kHISymbolicHotKeyCode as String] as? Int == Int(keyCode)
-                && (shortcut[kHISymbolicHotKeyModifiers as String] as? Int).map { UInt32($0) & modifierMask }
-                    == carbonModifiers
+        case .interceptsTyping: "\(combo.keysString) would block typing. Include ⌘ or ⌃."
+        case .duplicate(let owner): "\(combo.keysString) is already used by \(owner.title)."
+        case .unavailable: "\(combo.keysString) could not be registered."
         }
     }
 }

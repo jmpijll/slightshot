@@ -53,8 +53,11 @@ nonisolated struct KeyCombo: Equatable, Hashable, Sendable {
 
     // MARK: - Display
 
-    var displayString: String {
-        guard !isEmpty else { return "None" }
+    var displayString: String { isEmpty ? "None" : keysString }
+
+    /// The modifiers and key. Unlike `displayString` it shows a bare A, whose
+    /// key code is 0, as "A" rather than as the cleared shortcut.
+    var keysString: String {
         var s = ""
         if carbonModifiers & UInt32(controlKey) != 0 { s += "\u{2303}" }
         if carbonModifiers & UInt32(optionKey) != 0 { s += "\u{2325}" }

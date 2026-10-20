@@ -143,12 +143,9 @@ private struct ShortcutsTab: View {
 
     private func warning(for action: HotKeyAction) -> String? {
         if let rejection = rejections[action] { return rejection }
+        guard hotKeys.unavailable.contains(action) else { return nil }
         let combo = settings[keyPath: action.setting]
-        if hotKeys.unavailable.contains(action) {
-            return "\(action.title): \(ShortcutRejection.unavailable.message(for: combo)) Choose another shortcut."
-        }
-        guard !combo.isEmpty, combo.isMacOSShortcut else { return nil }
-        return "\(action.title): \(combo.displayString) is also a macOS shortcut and may not reach Slightshot."
+        return "\(action.title): \(ShortcutRejection.unavailable.message(for: combo)) Choose another shortcut."
     }
 
     private static let overlayShortcuts: [(String, String)] = [

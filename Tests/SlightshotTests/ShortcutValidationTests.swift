@@ -74,6 +74,8 @@ struct ShortcutValidationTests {
         ))
         #expect(ShortcutRejection.check(KeyCombo(event: bareA), for: .captureArea, assigned: [:])
             == .interceptsTyping)
+        #expect(ShortcutRejection.interceptsTyping.message(for: KeyCombo(event: bareA))
+            == "A would block typing. Include ⌘ or ⌃.")
     }
 
     @Test func recorderRefusesBareKeysAndClearsOnlyOnEscape() throws {
@@ -99,11 +101,6 @@ struct ShortcutValidationTests {
 
         try recorder.handleKeyDown(key(kVK_Escape, "\u{1B}"))
         #expect(recorder.combo == .none && cleared == 1)
-    }
-
-    @Test func macOSShortcutsAreWarnedAboutButNotRefused() {
-        #expect(!combo(kVK_F18, cmdKey | controlKey | optionKey | shiftKey).isMacOSShortcut)
-        #expect(ShortcutRejection.check(combo(kVK_Space, cmdKey), for: .captureArea, assigned: [:]) == nil)
     }
 
     /// Another app holding a combo exclusively must not stop Slightshot from
