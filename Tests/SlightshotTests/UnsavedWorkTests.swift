@@ -99,6 +99,10 @@ struct QuitGuardTests {
         let process = Process()
         process.executableURL = executable
         process.arguments = ["--quit-guard-probe"]
+        // Xcode and SwiftPM builds place Sparkle differently; reuse the copy this test loaded.
+        let sparkle = try #require(Bundle(identifier: "org.sparkle-project.Sparkle"))
+        process.environment = ProcessInfo.processInfo.environment.merging(
+            ["DYLD_FRAMEWORK_PATH": sparkle.bundleURL.deletingLastPathComponent().path]) { _, new in new }
         let output = Pipe()
         process.standardOutput = output
         try process.run()
@@ -274,26 +278,25 @@ struct RecordingSessionCompletionTests {
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
             AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: size, AVVideoHeightKey: size,
         ])
-        let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-            kCVPixelBufferWidthKey as String: size, kCVPixelBufferHeightKey as String: size,
-        ])
-        writer.add(input)
-        #expect(writer.startWriting())
+        let attributes = CVPixelBufferCreationAttributes(pixelFormatType: .init(rawValue: kCVPixelFormatType_32BGRA),
+                                                         size: .init(width: size, height: size))
+        let receiver = writer.inputPixelBufferReceiver(for: input, pixelBufferAttributes: attributes)
+        try writer.start()
         writer.startSession(atSourceTime: .zero)
-        let frames = seconds * 10
-        for frame in 0...frames {
-            while !input.isReadyForMoreMediaData { try await Task.sleep(for: .milliseconds(5)) }
-            let pool = try #require(adaptor.pixelBufferPool)
-            var buffer: CVPixelBuffer?
-            CVPixelBufferPoolCreatePixelBuffer(nil, pool, &buffer)
-            let pixels = try #require(buffer)
-            CVPixelBufferLockBaseAddress(pixels, [])
-            memset(CVPixelBufferGetBaseAddress(pixels), Int32(frame * 20 % 255), CVPixelBufferGetDataSize(pixels))
-            CVPixelBufferUnlockBaseAddress(pixels, [])
-            #expect(adaptor.append(pixels, withPresentationTime: CMTime(value: CMTimeValue(frame), timescale: 10)))
+        for frame in 0..<(seconds * 10) {
+            let pixel = try CVMutablePixelBuffer(attributes)
+            pixel.withUnsafeBuffer { buffer in
+                CVPixelBufferLockBaseAddress(buffer, [])
+                defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
+                memset(CVPixelBufferGetBaseAddress(buffer), Int32(frame * 20 % 255), CVPixelBufferGetDataSize(buffer))
+            }
+            let buffer = CVReadOnlyPixelBuffer(pixel)
+            try await RecordingExport.appendWhenReady {
+                try receiver.appendImmediately(buffer, with: CMTime(value: CMTimeValue(frame), timescale: 10))
+            }
         }
-        input.markAsFinished()
+        receiver.finish()
+        writer.endSession(atSourceTime: CMTime(value: CMTimeValue(seconds), timescale: 1))
         await writer.finishWriting()
         #expect(writer.status == .completed)
     }

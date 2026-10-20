@@ -219,33 +219,32 @@ private final class LostWorkReviewDelegate: NSObject, NSApplicationDelegate {
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
             AVVideoCodecKey: AVVideoCodecType.h264, AVVideoWidthKey: width, AVVideoHeightKey: height,
         ])
-        let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sourcePixelBufferAttributes: [
-            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA,
-            kCVPixelBufferWidthKey as String: width, kCVPixelBufferHeightKey as String: height,
-        ])
-        writer.add(input)
-        guard writer.startWriting() else { throw writer.error ?? RecordingError.empty }
+        let attributes = CVPixelBufferCreationAttributes(pixelFormatType: .init(rawValue: kCVPixelFormatType_32BGRA),
+                                                         size: .init(width: width, height: height))
+        let receiver = writer.inputPixelBufferReceiver(for: input, pixelBufferAttributes: attributes)
+        try writer.start()
         writer.startSession(atSourceTime: .zero)
-        for frame in 0..<(framesPerSecond * seconds) {
-            while !input.isReadyForMoreMediaData { try await Task.sleep(for: .milliseconds(5)) }
-            let pool = try require(adaptor.pixelBufferPool, "The movie buffer pool is unavailable.")
-            var buffer: CVPixelBuffer?
-            CVPixelBufferPoolCreatePixelBuffer(nil, pool, &buffer)
-            let pixels = try require(buffer, "A movie frame could not be allocated.")
-            CVPixelBufferLockBaseAddress(pixels, [])
-            let context = try require(CGContext(
-                data: CVPixelBufferGetBaseAddress(pixels), width: width, height: height, bitsPerComponent: 8,
-                bytesPerRow: CVPixelBufferGetBytesPerRow(pixels), space: CGColorSpaceCreateDeviceRGB(),
-                bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue),
-                "A movie frame context could not be created.")
-            drawFrame(frame, of: framesPerSecond * seconds, in: context, size: CGSize(width: width, height: height))
-            CVPixelBufferUnlockBaseAddress(pixels, [])
-            guard adaptor.append(pixels, withPresentationTime: CMTime(value: CMTimeValue(frame),
-                                                                       timescale: CMTimeScale(framesPerSecond))) else {
-                throw writer.error ?? RecordingError.empty
+        let count = framesPerSecond * seconds
+        for frame in 0..<count {
+            let pixel = try CVMutablePixelBuffer(attributes)
+            pixel.withUnsafeBuffer { buffer in
+                CVPixelBufferLockBaseAddress(buffer, [])
+                defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
+                guard let context = CGContext(
+                    data: CVPixelBufferGetBaseAddress(buffer), width: width, height: height, bitsPerComponent: 8,
+                    bytesPerRow: CVPixelBufferGetBytesPerRow(buffer), space: CGColorSpaceCreateDeviceRGB(),
+                    bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue)
+                else { return }
+                drawFrame(frame, of: count, in: context, size: CGSize(width: width, height: height))
+            }
+            let buffer = CVReadOnlyPixelBuffer(pixel)
+            try await RecordingExport.appendWhenReady {
+                try receiver.appendImmediately(buffer, with: CMTime(value: CMTimeValue(frame),
+                                                                    timescale: CMTimeScale(framesPerSecond)))
             }
         }
-        input.markAsFinished()
+        receiver.finish()
+        writer.endSession(atSourceTime: CMTime(value: CMTimeValue(seconds), timescale: 1))
         await writer.finishWriting()
         guard writer.status == .completed else { throw writer.error ?? RecordingError.empty }
         record("Wrote a synthetic 4-second 960x540 movie as the recording")
