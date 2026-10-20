@@ -93,11 +93,14 @@ struct RecordingExportTests {
         let whole = directory.appendingPathComponent("whole.mp4")
         try await RecordingExport.save(source: source, to: untrimmed, quality: .balanced)
         try await RecordingExport.save(source: source, to: whole, quality: .balanced, trim: .whole(duration))
-        // Two untrimmed exports differ byte for byte because the H.264 encoder is
-        // not deterministic. Compare the stream layout a player sees instead.
+        // H.264 encoding and decode order can vary between identical exports.
+        // Compare the presentation timeline a player sees instead.
         let expected = try await streamLayout(of: untrimmed)
         #expect(expected.timestamps.count == 48)
-        #expect(try await streamLayout(of: whole) == expected)
+        let actual = try await streamLayout(of: whole)
+        #expect(actual.duration == expected.duration)
+        #expect(actual.size == expected.size)
+        #expect(actual.timestamps == expected.timestamps)
     }
 
     @Test func cancellationAndBadSourcePreserveExistingDestination() async throws {
@@ -196,7 +199,7 @@ struct RecordingExportTests {
         }
     }
 
-    private struct StreamLayout: Equatable {
+    private struct StreamLayout {
         let duration: CMTime
         let size: CGSize
         let timestamps: [CMTime]
@@ -213,6 +216,7 @@ struct RecordingExportTests {
             guard sample.contentType == .dataBuffer, sample.presentationTimeStamp.isNumeric else { continue }
             timestamps.append(sample.presentationTimeStamp)
         }
+        timestamps.sort()
         return StreamLayout(duration: try await asset.load(.duration), size: try await track.load(.naturalSize),
                             timestamps: timestamps)
     }
