@@ -13,6 +13,7 @@ final class VideoRangeControl: NSView {
     var isEnabled = false { didSet { needsDisplay = true } }
     var onBeginChange: (() -> Void)?
     var onChange: ((TimeInterval, TimeInterval) -> Void)?
+    var onEndChange: (() -> Void)?
     private var draggingStart = false
 
     override var isFlipped: Bool { true }
@@ -57,5 +58,34 @@ final class VideoRangeControl: NSView {
         if draggingStart { start = min(time, end - gap) } else { end = max(time, start + gap) }
         onChange?(start, end)
         needsDisplay = true
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        guard isEnabled else { return }
+        onEndChange?()
+    }
+}
+
+/// Editor time fields show hundredths of a second in the user's locale.
+enum VideoTimeText {
+    private static let format: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        return formatter
+    }()
+
+    static func string(_ time: TimeInterval) -> String { format.string(for: time) ?? "" }
+
+    /// Accepts the user's locale (1,50) and a period (1.50).
+    static func parse(_ text: String) -> TimeInterval? {
+        let text = text.trimmingCharacters(in: .whitespaces)
+        guard let value = format.number(from: text)?.doubleValue ?? Double(text), value.isFinite else { return nil }
+        return value
+    }
+
+    /// The typed time, or nil when the text is unchanged or not a number.
+    static func edited(_ text: String, committed: TimeInterval) -> TimeInterval? {
+        text == string(committed) ? nil : parse(text)
     }
 }

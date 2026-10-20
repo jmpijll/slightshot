@@ -37,6 +37,7 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
     private var edit: VideoEdit
     private var undoStates: [VideoEdit] = []
     private var redoStates: [VideoEdit] = []
+    private var changeOrigin: VideoEdit?
     private var selectedID: UUID?
 
     init(source: URL, duration: TimeInterval, sourceSize: CGSize) {
@@ -95,9 +96,10 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
             guard let self else { return }
             self.canvas.commitTextEntry()
             self.pause()
-            self.rememberChange()
+            self.beginChange()
         }
         range.onChange = { [weak self] start, end in self?.updateRange(start: start, end: end) }
+        range.onEndChange = { [weak self] in self?.endChange() }
         range.toolTip = "Drag the left and right handles to choose when the selected annotation appears."
         range.heightAnchor.constraint(equalToConstant: 36).isActive = true
         hint.font = .systemFont(ofSize: 12)
@@ -183,15 +185,13 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
         return row
     }
 
+    /// Return, Tab, clicking elsewhere and Save all commit a typed time. The
+    /// editor parses it, so text that is not a number reverts instead of
+    /// keeping the field in edit mode.
     private func configureTimeField(_ field: NSTextField, action: Selector) {
-        let formatter = NumberFormatter()
-        formatter.minimum = 0
-        formatter.maximum = NSNumber(value: duration)
-        formatter.maximumFractionDigits = 2
-        formatter.minimumFractionDigits = 2
-        field.formatter = formatter
         field.target = self
         field.action = action
+        field.cell?.sendsActionOnEndEditing = true
         field.widthAnchor.constraint(equalToConstant: 70).isActive = true
     }
 
@@ -243,6 +243,7 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
         seekRevision += 1
         let revision = seekRevision
         isSeeking = true
+        defer { if revision == seekRevision { isSeeking = false } }
         let target = min(max(0, time), max(0, duration - 1.0 / 600))
         let cmTime = CMTime(seconds: target, preferredTimescale: 600)
         _ = await player.seek(to: cmTime, toleranceBefore: .zero, toleranceAfter: .zero)
@@ -253,14 +254,14 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
             generator.requestedTimeToleranceBefore = .zero
             generator.requestedTimeToleranceAfter = .zero
             let frame = try await generator.image(at: cmTime)
-            guard !Task.isCancelled, revision == seekRevision else { return }
+            // A trim change while this frame loads schedules its own seek.
+            guard !Task.isCancelled, revision == seekRevision, edit.trim.clamp(target) == target else { return }
             canvas.showFrame(frame.image, at: target)
             updatePlayhead(target)
         } catch {
             guard !Task.isCancelled, revision == seekRevision else { return }
             hint.stringValue = "The video preview could not be loaded. You can retry or save the recording."
         }
-        if revision == seekRevision { isSeeking = false }
     }
 
     private func renderPlayback() {
@@ -293,11 +294,6 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
         range.needsDisplay = true
     }
 
-    private func rememberChange() {
-        undoStates.append(edit)
-        redoStates.removeAll()
-    }
-
     private func add(_ annotation: Annotation) {
         rememberChange()
         edit.annotations.append(VideoAnnotation(annotation: annotation, start: 0, end: duration))
@@ -314,13 +310,17 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
     }
 
     @objc private func timeChanged(_ sender: NSTextField) {
-        let enteredTime = sender.doubleValue
+        let text = sender.stringValue
         canvas.commitTextEntry()
-        rememberChange()
         // Committing a caption selects it and refreshes both fields. Preserve
         // the entered endpoint, while its other endpoint comes from that caption.
-        updateRange(start: sender === fromField ? enteredTime : fromField.doubleValue,
-                    end: sender === toField ? enteredTime : toField.doubleValue)
+        guard let selected = edit.annotations.first(where: { $0.id == selectedID }) else { return }
+        let committed = sender === fromField ? selected.start : selected.end
+        guard let time = VideoTimeText.edited(text, committed: committed) else { refreshControls(); return }
+        recordChange {
+            updateRange(start: sender === fromField ? time : selected.start,
+                        end: sender === toField ? time : selected.end)
+        }
     }
 
     private func updateRange(start: TimeInterval, end: TimeInterval) {
@@ -335,8 +335,7 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
     @objc private func wholeVideo() {
         canvas.commitTextEntry()
         guard selectedID != nil else { return }
-        rememberChange()
-        updateRange(start: 0, end: duration)
+        recordChange { updateRange(start: 0, end: duration) }
     }
 
     @objc private func deleteAnnotation() {
@@ -346,23 +345,6 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
         edit.annotations.removeAll { $0.id == selectedID }
         selectedID = edit.annotations.last?.id
         refreshControls()
-    }
-
-    private func performUndo() {
-        canvas.commitTextEntry()
-        guard let previous = undoStates.popLast() else { return }
-        redoStates.append(edit)
-        edit = previous
-        refreshControls()
-        keepPlayheadInTrim()
-    }
-
-    private func performRedo() {
-        guard let next = redoStates.popLast() else { return }
-        undoStates.append(edit)
-        edit = next
-        refreshControls()
-        keepPlayheadInTrim()
     }
 
     private func refreshControls() {
@@ -381,14 +363,14 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
         fromField.isEnabled = selected != nil
         toField.isEnabled = selected != nil
         deleteButton?.isEnabled = selected != nil
-        fromField.doubleValue = selected?.start ?? 0
-        toField.doubleValue = selected?.end ?? duration
+        fromField.stringValue = VideoTimeText.string(selected?.start ?? 0)
+        toField.stringValue = VideoTimeText.string(selected?.end ?? duration)
         range.isEnabled = selected != nil
         range.start = selected?.start ?? 0
         range.end = selected?.end ?? duration
         range.kept = trim
-        trimFromField.doubleValue = trim.start
-        trimToField.doubleValue = trim.end
+        trimFromField.stringValue = VideoTimeText.string(trim.start)
+        trimToField.stringValue = VideoTimeText.string(trim.end)
         trimLength.stringValue = String(format: "%.2f s kept", trim.duration)
         trimControl.start = trim.start
         trimControl.end = trim.end
@@ -402,7 +384,20 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
         canvas.refresh()
     }
 
-    @objc func saveRecording() { canvas.commitTextEntry(); pause(); onSave?(edit) }
+    @objc func saveRecording() {
+        canvas.commitTextEntry()
+        commitTimeField()
+        pause()
+        onSave?(edit)
+    }
+
+    /// Save, including the quit prompt's Save, includes a time typed without Return.
+    private func commitTimeField() {
+        guard let editor = firstResponder as? NSTextView, editor.isFieldEditor,
+              let field = editor.delegate as? NSTextField,
+              [fromField, toField, trimFromField, trimToField].contains(field) else { return }
+        makeFirstResponder(nil)
+    }
     @objc private func discardRecording() { pause(); onDiscard?() }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool { discardRecording(); return false }
@@ -436,8 +431,60 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
 
 }
 
+// MARK: - History
+
+extension VideoEditorWindow {
+    private func rememberChange() {
+        undoStates.append(edit)
+        redoStates.removeAll()
+    }
+
+    private func beginChange() { changeOrigin = edit }
+
+    /// Timing edits record one Undo step, and only when a time actually changed,
+    /// so a stationary click or an unchanged field keeps Redo available.
+    private func endChange() {
+        guard let origin = changeOrigin else { return }
+        changeOrigin = nil
+        guard origin.timing != edit.timing else { return }
+        undoStates.append(origin)
+        redoStates.removeAll()
+        undoButton?.isEnabled = true
+        redoButton?.isEnabled = false
+    }
+
+    private func recordChange(_ change: () -> Void) {
+        beginChange()
+        change()
+        endChange()
+    }
+
+    private func performUndo() {
+        canvas.commitTextEntry()
+        guard let previous = undoStates.popLast() else { return }
+        redoStates.append(edit)
+        restore(previous)
+    }
+
+    private func performRedo() {
+        guard let next = redoStates.popLast() else { return }
+        undoStates.append(edit)
+        restore(next)
+    }
+
+    /// A seek started for the replaced state may still be loading, so always
+    /// replace it with one inside the restored trim.
+    private func restore(_ state: VideoEdit) {
+        edit = state
+        refreshControls()
+        scheduleSeek(edit.trim.clamp(canvas.time))
+    }
+}
+
 // MARK: - Trim
 
+/// Trim times are hundredths of a second, as the fields show them, except
+/// where the recording end or the minimum length stops an edge.
 extension VideoEditorWindow {
     private func makeTrimControls() -> NSView {
         for field in [trimFromField, trimToField] {
@@ -456,9 +503,14 @@ extension VideoEditorWindow {
             guard let self else { return }
             self.canvas.commitTextEntry()
             self.pause()
-            self.rememberChange()
+            self.beginChange()
         }
-        trimControl.onChange = { [weak self] start, end in self?.updateTrim(start: start, end: end) }
+        trimControl.onChange = { [weak self] start, end in
+            guard let self else { return }
+            let edge: VideoTrim.Edge = start != self.edit.trim.start ? .start : .end
+            self.moveTrim(edge, to: edge == .start ? start : end)
+        }
+        trimControl.onEndChange = { [weak self] in self?.endChange() }
         trimControl.toolTip = "Drag the yellow handles to choose which part of the recording Save keeps."
         trimControl.setAccessibilityLabel("Kept part of the recording")
         trimControl.heightAnchor.constraint(equalToConstant: 36).isActive = true
@@ -470,28 +522,29 @@ extension VideoEditorWindow {
     }
 
     @objc private func trimTimeChanged(_ sender: NSTextField) {
-        let enteredTime = sender.doubleValue
+        let text = sender.stringValue
         canvas.commitTextEntry()
+        let edge: VideoTrim.Edge = sender === trimFromField ? .start : .end
+        let committed = edge == .start ? edit.trim.start : edit.trim.end
+        guard let time = VideoTimeText.edited(text, committed: committed) else { refreshControls(); return }
         pause()
-        let start = sender === trimFromField ? enteredTime : edit.trim.start
-        let end = sender === trimToField ? enteredTime : edit.trim.end
-        guard VideoTrim(start: start, end: end, recording: duration) != edit.trim else { refreshControls(); return }
-        rememberChange()
-        updateTrim(start: start, end: end)
+        recordChange { moveTrim(edge, to: time) }
     }
 
     @objc private func keepWholeRecording() {
         canvas.commitTextEntry()
         guard !edit.trim.isWhole(of: duration) else { return }
         pause()
-        rememberChange()
-        updateTrim(start: 0, end: duration)
+        recordChange { setTrim(.whole(duration)) }
+    }
+
+    private func moveTrim(_ edge: VideoTrim.Edge, to time: TimeInterval) {
+        setTrim(edit.trim.moving(edge, to: (time * 100).rounded() / 100, recording: duration))
     }
 
     /// Moving an edge shows the frame at that edge: the first kept frame for the
     /// start and the last kept frame for the end.
-    private func updateTrim(start: TimeInterval, end: TimeInterval) {
-        let trim = VideoTrim(start: start, end: end, recording: duration)
+    private func setTrim(_ trim: VideoTrim) {
         let previous = edit.trim
         edit.trim = trim
         refreshControls()
@@ -500,13 +553,6 @@ extension VideoEditorWindow {
         } else if trim.end != previous.end {
             scheduleSeek(trim.clamp(trim.end))
         }
-    }
-
-    private func keepPlayheadInTrim() {
-        let time = edit.trim.clamp(canvas.time)
-        guard time != canvas.time else { return }
-        pause()
-        scheduleSeek(time)
     }
 }
 
@@ -532,10 +578,7 @@ extension VideoEditorWindow {
         select(edit.annotations[index].id)
     }
     func reviewSetRange(start: TimeInterval, end: TimeInterval) {
-        rememberChange(); updateRange(start: start, end: end)
-    }
-    func reviewSetTrim(start: TimeInterval, end: TimeInterval) {
-        rememberChange(); updateTrim(start: start, end: end)
+        recordChange { updateRange(start: start, end: end) }
     }
     func reviewUndo() { performUndo() }
     func reviewRedo() { performRedo() }

@@ -69,7 +69,20 @@ nonisolated struct VideoTrim: Equatable, Sendable {
         self.end = end.isFinite ? min(limit, max(lower + gap, end)) : limit
     }
 
+    enum Edge { case start, end }
+
     static func whole(_ recording: TimeInterval) -> Self { Self(start: 0, end: recording, recording: recording) }
+
+    /// Moves one edge and never the other. The moved edge stops the minimum
+    /// length away from the fixed one, the same rule for typing and dragging.
+    func moving(_ edge: Edge, to time: TimeInterval, recording: TimeInterval) -> Self {
+        let gap = min(Self.minimumLength, recording)
+        let time = time.isFinite ? time : (edge == .start ? start : end)
+        return switch edge {
+        case .start: Self(start: min(time, end - gap), end: end, recording: recording)
+        case .end: Self(start: start, end: max(time, start + gap), recording: recording)
+        }
+    }
 
     func isWhole(of recording: TimeInterval) -> Bool { self == .whole(recording) }
 
@@ -94,4 +107,7 @@ extension VideoAnnotation {
 struct VideoEdit {
     var annotations: [VideoAnnotation] = []
     var trim: VideoTrim
+
+    /// Every time the editor's timing controls can change.
+    var timing: [TimeInterval] { [trim.start, trim.end] + annotations.flatMap { [$0.start, $0.end] } }
 }
