@@ -154,7 +154,7 @@ final class TextToolReview: NSObject, NSApplicationDelegate, OverlayViewDelegate
         try png.write(to: directory.appendingPathComponent(name + ".png"))
     }
 
-    private static func copy(_ item: NSPasteboardItem) -> NSPasteboardItem {
+    static func copy(_ item: NSPasteboardItem) -> NSPasteboardItem {
         let copy = NSPasteboardItem()
         for type in item.types {
             if let data = item.data(forType: type) { copy.setData(data, forType: type) }
@@ -303,7 +303,7 @@ final class TextToolShortcutCheck: NSObject, NSApplicationDelegate, OverlayViewD
 
     /// One row per run-loop turn, and only once the app is active and its window key.
     private func runNextRow(attempt: Int = 0) {
-        guard let row = rows.first else { return finish(nil) }
+        guard let row = rows.first else { return runFieldCheck() }
         row.window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         guard NSApp.isActive, row.window.isKeyWindow || attempt > 40 else {
@@ -336,6 +336,56 @@ final class TextToolShortcutCheck: NSObject, NSApplicationDelegate, OverlayViewD
         report += "| \(shortcut.name) | \(row.label) | \(row.focus)\(focused ? "" : " (refused focus)")"
             + "\(key ? "" : " (window not key)") | \(describe(before: before, view: row.view)) |\n"
     }
+
+    /// Paste, Undo, Redo, Select All, Cut and Paste again in an ordinary text field,
+    /// like the video editor's time fields, through the Edit menu.
+    private func runFieldCheck(attempt: Int = 0) {
+        let window = fieldWindow ?? {
+            let window = NSWindow(contentRect: CGRect(x: 0, y: 0, width: 300, height: 60),
+                                  styleMask: .titled, backing: .buffered, defer: false)
+            window.isReleasedWhenClosed = false
+            window.contentView?.addSubview(NSTextField(frame: CGRect(x: 20, y: 18, width: 260, height: 24)))
+            window.center()
+            fieldWindow = window
+            return window
+        }()
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        guard NSApp.isActive, window.isKeyWindow || attempt > 40 else {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [self] in runFieldCheck(attempt: attempt + 1) }
+            return
+        }
+        guard let field = window.contentView?.subviews.first as? NSTextField, window.makeFirstResponder(field),
+              let editor = field.currentEditor() else { return finish(CaptureError.failed("Missing text field")) }
+        let board = NSPasteboard.general
+        let saved = board.pasteboardItems?.map(TextToolReview.copy) ?? []
+        board.clearContents()
+        board.setString("00:01.5", forType: .string)
+        report += "\n| Text field key | Field text after | Selection |\n| --- | --- | --- |\n"
+        let steps = [
+            Shortcut(name: "⌘V paste", characters: "v", code: 9, modifiers: .command),
+            Shortcut(name: "⌘Z undo", characters: "z", code: 6, modifiers: .command),
+            Shortcut(name: "⇧⌘Z redo", characters: "Z", code: 6, modifiers: [.command, .shift]),
+            Shortcut(name: "⌘A select all", characters: "a", code: 0, modifiers: .command),
+            Shortcut(name: "⌘X cut", characters: "x", code: 7, modifiers: .command),
+            Shortcut(name: "⌘V paste", characters: "v", code: 9, modifiers: .command),
+        ]
+        for step in steps {
+            guard let event = NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: step.modifiers,
+                timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber, context: nil,
+                characters: step.characters, charactersIgnoringModifiers: step.characters, isARepeat: false,
+                keyCode: step.code) else { continue }
+            NSApp.sendEvent(event)
+            report += "| \(step.name) | \(editor.string.isEmpty ? "(empty)" : "`\(editor.string)`") "
+                + "| \(editor.selectedRange.location),\(editor.selectedRange.length) |\n"
+        }
+        board.clearContents()
+        if !saved.isEmpty { board.writeObjects(saved) }
+        window.orderOut(nil)
+        finish(nil)
+    }
+
+    private var fieldWindow: NSWindow?
 
     private func finish(_ error: Error?) {
         if let error {
