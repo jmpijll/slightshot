@@ -22,11 +22,11 @@ nonisolated enum ShortcutRejection: Equatable, Sendable {
     case duplicate(HotKeyAction)
     case unavailable
 
-    /// Checks a combination for `action` against the other actions' shortcuts.
+    /// Checks a recorded combination for `action` against the other actions'
+    /// shortcuts. Clearing a shortcut is not a recording and is never checked.
     /// Registration is checked separately, by `HotKeyCenter.rejection`.
     static func check(_ combo: KeyCombo, for action: HotKeyAction,
                       assigned: [HotKeyAction: KeyCombo]) -> ShortcutRejection? {
-        guard !combo.isEmpty else { return nil }
         if combo.interceptsTyping { return .interceptsTyping }
         let owner = HotKeyAction.allCases.first { $0 != action && assigned[$0] == combo }
         return owner.map(ShortcutRejection.duplicate)
@@ -36,7 +36,25 @@ nonisolated enum ShortcutRejection: Equatable, Sendable {
         switch self {
         case .interceptsTyping: "\(combo.displayString) would block typing. Include ⌘ or ⌃."
         case .duplicate(let owner): "\(combo.displayString) is already used by \(owner.title)."
-        case .unavailable: "\(combo.displayString) is reserved by macOS or another app."
+        case .unavailable: "\(combo.displayString) could not be registered."
+        }
+    }
+}
+
+extension KeyCombo {
+    /// Whether an enabled macOS keyboard shortcut, such as Spotlight's ⌘Space,
+    /// uses this combination. macOS may handle it before Slightshot sees it.
+    var isMacOSShortcut: Bool {
+        var array: Unmanaged<CFArray>?
+        guard CopySymbolicHotKeys(&array) == noErr,
+              let shortcuts = array?.takeRetainedValue() as? [[String: Any]]
+        else { return false }
+        let modifierMask = UInt32(cmdKey | shiftKey | optionKey | controlKey)
+        return shortcuts.contains { shortcut in
+            shortcut[kHISymbolicHotKeyEnabled as String] as? Bool == true
+                && shortcut[kHISymbolicHotKeyCode as String] as? Int == Int(keyCode)
+                && (shortcut[kHISymbolicHotKeyModifiers as String] as? Int).map { UInt32($0) & modifierMask }
+                    == carbonModifiers
         }
     }
 }
@@ -80,11 +98,11 @@ final class HotKeyCenter {
     func rejection(for combo: KeyCombo, action: HotKeyAction,
                    assigned: [HotKeyAction: KeyCombo]) -> ShortcutRejection? {
         if let rejection = ShortcutRejection.check(combo, for: action, assigned: assigned) { return rejection }
-        guard !combo.isEmpty, combo != assigned[action] else { return nil }
+        guard combo != assigned[action] else { return nil }
         var ref: EventHotKeyRef?
         let status = RegisterEventHotKey(combo.keyCode, combo.carbonModifiers,
                                          EventHotKeyID(signature: Self.signature, id: 0),
-                                         GetApplicationEventTarget(), Self.options, &ref)
+                                         GetApplicationEventTarget(), 0, &ref)
         guard status == noErr, let ref else { return .unavailable }
         UnregisterEventHotKey(ref)
         return nil
@@ -111,7 +129,7 @@ final class HotKeyCenter {
         let hotKeyID = EventHotKeyID(signature: Self.signature, id: id)
         let status = RegisterEventHotKey(
             combo.keyCode, combo.carbonModifiers, hotKeyID,
-            GetApplicationEventTarget(), Self.options, &ref
+            GetApplicationEventTarget(), 0, &ref
         )
         guard status == noErr, let ref else {
             Log.hotkeys.error("Could not register \(combo.displayString, privacy: .public) (OSStatus \(status))")
@@ -141,9 +159,6 @@ final class HotKeyCenter {
 
     /// Four-char code 'SLSH'.
     nonisolated static let signature: OSType = 0x534C_5348
-    /// Without exclusivity Carbon accepts combos macOS keeps for itself, such as
-    /// ⌘Space and ⌘Tab, and they never fire. Exclusive registration fails instead.
-    private static let options = OptionBits(kEventHotKeyExclusive)
 }
 
 private nonisolated func slightshotHotKeyHandler(

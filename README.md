@@ -168,7 +168,7 @@ Redo restores the original mark; adding a new annotation or starting a new selec
 clears Redo. While typing, the text field keeps its native Undo and Redo shortcuts.
 
 You can change the three capture shortcuts in Settings. On macOS, a shortcut needs ⌘ or ⌃
-unless it uses a function key, and Settings refuses one that another action or macOS already uses.
+unless it uses a function key, and Settings refuses one that another action already uses.
 
 | Action | macOS | Windows |
 | --- | --- | --- |

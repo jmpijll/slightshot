@@ -1,4 +1,5 @@
 import AppKit
+import Carbon.HIToolbox
 import SwiftUI
 
 /// Click, then press a combination. Escape clears it, Return leaves it unchanged.
@@ -7,6 +8,7 @@ final class ShortcutRecorderView: NSView {
     var combo: KeyCombo { didSet { needsDisplay = true } }
     /// Returns false to refuse a combination and keep listening.
     var onRecord: ((KeyCombo) -> Bool)?
+    var onClear: (() -> Void)?
 
     private var recording = false { didSet { needsDisplay = true } }
     private var monitor: Any?
@@ -44,28 +46,29 @@ final class ShortcutRecorderView: NSView {
         // the main menu would otherwise swallow.
         monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
             guard let self, self.recording else { return event }
-            guard event.type == .keyDown else { return nil }
-
-            if event.keyCode == 53 {           // Escape clears
-                self.apply(.none)
-                return nil
-            }
-            if event.keyCode == 36 {           // Return confirms without changing
-                self.stopRecording()
-                return nil
-            }
-            self.apply(KeyCombo(event: event))
+            if event.type == .keyDown { self.handleKeyDown(event) }
             return nil
         }
     }
 
-    private func apply(_ newCombo: KeyCombo) {
-        guard onRecord?(newCombo) ?? true else {
-            NSSound.beep()
-            return
+    func handleKeyDown(_ event: NSEvent) {
+        guard recording else { return }
+        switch Int(event.keyCode) {
+        case kVK_Escape:
+            combo = .none
+            onClear?()
+            stopRecording()
+        case kVK_Return:
+            stopRecording()
+        default:
+            let recorded = KeyCombo(event: event)
+            guard onRecord?(recorded) ?? true else {
+                NSSound.beep()
+                return
+            }
+            combo = recorded
+            stopRecording()
         }
-        combo = newCombo
-        stopRecording()
     }
 
     private func stopRecording() {
@@ -114,6 +117,7 @@ final class ShortcutRecorderView: NSView {
 struct ShortcutRecorder: NSViewRepresentable {
     let combo: KeyCombo
     let onRecord: (KeyCombo) -> Bool
+    let onClear: () -> Void
 
     func makeNSView(context: Context) -> ShortcutRecorderView {
         ShortcutRecorderView(combo: combo)
@@ -121,6 +125,7 @@ struct ShortcutRecorder: NSViewRepresentable {
 
     func updateNSView(_ view: ShortcutRecorderView, context: Context) {
         view.onRecord = onRecord
+        view.onClear = onClear
         if view.combo != combo { view.combo = combo }
     }
 }

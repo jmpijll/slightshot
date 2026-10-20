@@ -31,7 +31,6 @@ struct ShortcutValidationTests {
         #expect(ShortcutRejection.check(.saveFullScreen, for: .captureArea, assigned: assigned)
             == .duplicate(.saveFullScreen))
         #expect(ShortcutRejection.check(.captureArea, for: .captureArea, assigned: assigned) == nil)
-        #expect(ShortcutRejection.check(.none, for: .saveFullScreen, assigned: assigned) == nil)
         #expect(ShortcutRejection.check(.copyFullScreen, for: .captureArea, assigned: assigned) == nil)
         #expect(ShortcutRejection.duplicate(.saveFullScreen).message(for: .saveFullScreen)
             == "⇧⌘8 is already used by Capture full screen.")
@@ -75,6 +74,36 @@ struct ShortcutValidationTests {
         ))
         #expect(ShortcutRejection.check(KeyCombo(event: bareA), for: .captureArea, assigned: [:])
             == .interceptsTyping)
+    }
+
+    @Test func recorderRefusesBareKeysAndClearsOnlyOnEscape() throws {
+        func key(_ code: Int, _ characters: String) throws -> NSEvent {
+            try #require(NSEvent.keyEvent(
+                with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: 0, context: nil,
+                characters: characters, charactersIgnoringModifiers: characters, isARepeat: false,
+                keyCode: UInt16(code)
+            ))
+        }
+        let click = try #require(NSEvent.mouseEvent(
+            with: .leftMouseDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: 0,
+            context: nil, eventNumber: 0, clickCount: 1, pressure: 1
+        ))
+        let recorder = ShortcutRecorderView(combo: .captureArea)
+        var cleared = 0
+        recorder.onRecord = { ShortcutRejection.check($0, for: .captureArea, assigned: [:]) == nil }
+        recorder.onClear = { cleared += 1 }
+
+        recorder.mouseDown(with: click)
+        try recorder.handleKeyDown(key(kVK_ANSI_A, "a"))
+        #expect(recorder.combo == .captureArea && cleared == 0)
+
+        try recorder.handleKeyDown(key(kVK_Escape, "\u{1B}"))
+        #expect(recorder.combo == .none && cleared == 1)
+    }
+
+    @Test func macOSShortcutsAreWarnedAboutButNotRefused() {
+        #expect(!combo(kVK_F18, cmdKey | controlKey | optionKey | shiftKey).isMacOSShortcut)
+        #expect(ShortcutRejection.check(combo(kVK_Space, cmdKey), for: .captureArea, assigned: [:]) == nil)
     }
 
     /// Another app holding a combo exclusively must not stop Slightshot from
