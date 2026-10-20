@@ -8,10 +8,10 @@ namespace Slightshot;
 internal static class VideoAnnotationExport
 {
     internal static async Task SaveAsync(string source, string destination, RecordingQuality quality, int width, int height,
-        IReadOnlyList<TimedAnnotation> annotations, CancellationToken cancellation, IProgress<double>? progress = null, VideoExportMetrics? metrics = null)
+        IReadOnlyList<TimedAnnotation> annotations, CancellationToken cancellation, IProgress<double>? progress = null, VideoExportMetrics? metrics = null, VideoTrim? trim = null)
     {
         RecordingExport.ValidateDestination(source, destination);
-        if (annotations.Count == 0)
+        if (annotations.Count == 0 && trim is null)
         {
             await RecordingExport.SaveAsync(source, destination, quality, width, height, cancellation, progress);
             return;
@@ -26,6 +26,18 @@ internal static class VideoAnnotationExport
             int sourceWidth = checked((int)metadata.Width), sourceHeight = checked((int)metadata.Height);
             TimeSpan duration = metadata.Duration;
             if (sourceWidth <= 0 || sourceHeight <= 0 || duration <= TimeSpan.Zero) throw new InvalidOperationException("This recording has no playable video frames.");
+            var kept = (trim ?? VideoTrim.Whole(duration)).Within(duration);
+            if (kept.Length <= TimeSpan.Zero) throw new InvalidOperationException("The trimmed recording has no video frames.");
+            var visible = kept.Clip(annotations);
+            // MediaTranscoder rejects TrimStartTime/TrimStopTime on stream
+            // transcodes (E_POINTER), so any trim uses this frame-exact path.
+            if (visible.Length == 0 && kept == VideoTrim.Whole(duration))
+            {
+                await RecordingExport.SaveAsync(source, destination, quality, width, height, cancellation, progress);
+                return;
+            }
+            TimeSpan length = kept.Length;
+            TimeSpan? exclusiveEnd = kept == VideoTrim.Whole(duration) ? null : kept.End;
             metrics?.RecordMemory("metadataReady");
             // Declared before worker leases, so disposal returns these mutable
             // pixels only after encoder, renderer and decoder have drained.
@@ -37,7 +49,7 @@ internal static class VideoAnnotationExport
             // Source warmup finishes before encoder creation, so instrumentation
             // attributes their native memory separately and reuses the first frame.
             long measured = Stopwatch.GetTimestamp();
-            await sequential.GetFrameAsync(TimeSpan.Zero, pixels, cancellation);
+            await sequential.GetFrameAsync(TimeSpan.Zero, pixels, cancellation, exclusiveEnd);
             metrics?.AddDecode(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
             metrics?.RecordMemory("decoderWarmupComplete");
             int rate = quality.FramesPerSecond();
@@ -50,21 +62,21 @@ internal static class VideoAnnotationExport
                 {
                     cancellation.ThrowIfCancellationRequested();
                     var position = TimeSpan.FromTicks(nextFrame * TimeSpan.TicksPerSecond / rate);
-                    if (position >= duration) break;
+                    if (position >= length) break;
                     measured = Stopwatch.GetTimestamp();
-                    await sequential.GetFrameAsync(position, pixels, cancellation);
+                    await sequential.GetFrameAsync(kept.Start + position, pixels, cancellation, exclusiveEnd);
                     metrics?.AddDecode(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
                     if (nextFrame == 0) metrics?.RecordMemory("firstFrameDecoded");
                     measured = Stopwatch.GetTimestamp();
-                    await renderer.ComposeAsync(pixels, sourceWidth, sourceHeight, position, annotations, cancellation);
+                    if (visible.Length > 0) await renderer.ComposeAsync(pixels, sourceWidth, sourceHeight, position, visible, cancellation);
                     metrics?.AddRender(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
-                    var sampleDuration = TimeSpan.FromTicks(Math.Min(TimeSpan.TicksPerSecond / rate, duration.Ticks - position.Ticks));
+                    var sampleDuration = TimeSpan.FromTicks(Math.Min(TimeSpan.TicksPerSecond / rate, length.Ticks - position.Ticks));
                     measured = Stopwatch.GetTimestamp();
                     await writer.WriteAsync(pixels, position, sampleDuration, cancellation, metrics);
                     metrics?.AddWriter(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
                     nextFrame++; metrics?.AddSubmittedFrame();
                     if (nextFrame is 1 or 15 or 30) metrics?.RecordMemory("submittedFrame" + nextFrame);
-                    progress?.Report(Math.Min(100, (position + sampleDuration).TotalSeconds / duration.TotalSeconds * 100));
+                    progress?.Report(Math.Min(100, (position + sampleDuration).TotalSeconds / length.TotalSeconds * 100));
                 }
                 if (nextFrame == 0) throw new InvalidOperationException("No edited frames were exported.");
                 await writer.FinishAsync(cancellation);

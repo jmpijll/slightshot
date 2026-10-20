@@ -327,10 +327,19 @@ and HDR-specific colour management are outside this first version.
 
 Select an area, then click **Record** in the existing action bar. The frozen
 overlay closes and a compact timer/Stop control appears beside the live area.
-Stop opens a save dialog with file name, destination and a compression slider.
-The choice is remembered for the next recording. This matches the Mac workflow
-without extra setup before capture. Recording is silent; the existing cursor
-and full-resolution capture preferences apply.
+Stop opens the **Edit recording** window. **Save MP4…** opens a save dialog with
+file name, destination and a compression slider. The choice is remembered for
+the next recording. This matches the Mac workflow without extra setup before
+capture. Recording is silent; the existing cursor and full-resolution capture
+preferences apply.
+
+To cut the start or end, drag the two **Trim** handles above the playhead or
+type exact start and end times in seconds. The trim starts as the whole
+recording, so saving without touching it keeps every frame. Play and scrubbing
+stay inside the trim, Undo and Redo include trim changes, and **Keep whole
+recording** resets the trim. Annotations keep their times; any part outside
+the trim is left out of the saved MP4, and timing inside it shifts with the new
+start. Every quality saves only the trimmed range.
 
 | Quality | Maximum side | Frame rate |
 | --- | --- | --- |

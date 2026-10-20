@@ -1,0 +1,15 @@
+{
+  "sourceHead": "733e79d82cb67bc8db54e464c93eefa17e730520",
+  "sourceFile": "video-editor-high.mp4",
+  "run": 39441195651,
+  "oracle": "ffprobe sample PTS normalized to first sample; IDs independently decoded by ffmpeg from binary cells",
+  "exclusiveEndTicks": 25000000,
+  "requestTicks": 24999999,
+  "oldToleranceSampleTicks": 25000000,
+  "oldFrameID": 70,
+  "expectedSampleTicks": 24666666,
+  "expectedFrameID": 69,
+  "oldViolatesExclusiveEnd": true,
+  "verification": "Old selection predicate replayed against native artifact timestamps; IDs independently decoded with ffmpeg. This is a timestamp replay, not a live Windows UI run.",
+  "timestampConversion": "Encoded rational timestamps converted to integer 100 ns ticks by truncation, then normalized to first sample."
+}

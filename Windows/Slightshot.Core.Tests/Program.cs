@@ -5,6 +5,7 @@ checks += AnnotationSizeScrollChecks.Run();
 checks += DelayedCaptureChecks.Run();
 checks += AnnotationHistoryChecks.Run();
 checks += VideoAnnotationChecks.Run();
+checks += VideoTrimChecks.Run();
 checks += ExactSizeBufferPoolChecks.Run();
 checks += Nv12ToBgraChecks.Run();
 checks += LaunchChecks.Run();

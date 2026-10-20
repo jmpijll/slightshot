@@ -157,7 +157,7 @@ internal sealed class RecordingCoordinator(Settings settings)
     {
         var source = opened ?? await VideoFrameSource.OpenAsync(recording.SourcePath);
         if (terminating) { source.Dispose(); return; }
-        try { editorWindow = new VideoEditorWindow(source, settings, annotations => ChooseDestinationAsync(recording.SourcePath, source.Width, source.Height, annotations)); }
+        try { editorWindow = new VideoEditorWindow(source, settings, edit => ChooseDestinationAsync(recording.SourcePath, source.Width, source.Height, edit)); }
         catch { source.Dispose(); throw; }
         editorWindow.Show();
         BlockShutdown(editorWindow);
@@ -166,7 +166,7 @@ internal sealed class RecordingCoordinator(Settings settings)
         editorWindow = null;
     }
 
-    private async Task<bool> ChooseDestinationAsync(string sourcePath, int width, int height, IReadOnlyList<TimedAnnotation> annotations)
+    private async Task<bool> ChooseDestinationAsync(string sourcePath, int width, int height, VideoEdit edit)
     {
         if (terminating) return false;
         saveWindow = new RecordingSaveWindow(settings, width, height, null) { Owner = editorWindow };
@@ -186,7 +186,7 @@ internal sealed class RecordingCoordinator(Settings settings)
             try { settings.Save(); }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException) { System.Diagnostics.Debug.WriteLine("Could not persist recording quality: " + error.Message); }
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(proposed))!);
-            await VideoAnnotationExport.SaveAsync(sourcePath, proposed, quality, width, height, annotations, exportCancellation.Token, progress);
+            await VideoAnnotationExport.SaveAsync(sourcePath, proposed, quality, width, height, edit.Annotations, exportCancellation.Token, progress, trim: edit.Trim);
             return true;
         }
         catch (OperationCanceledException) { return false; }

@@ -35,13 +35,13 @@ internal sealed class VideoSequentialDecoder : IDisposable
         try { await decoder.ready.Task.ConfigureAwait(false); return decoder; }
         catch { decoder.Dispose(); throw; }
     }
-    internal Task GetFrameAsync(TimeSpan position, byte[] output, CancellationToken cancellation)
+    internal Task GetFrameAsync(TimeSpan position, byte[] output, CancellationToken cancellation, TimeSpan? exclusiveEnd = null)
     {
         cancellation.ThrowIfCancellationRequested();
         var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         requests.Add(() =>
         {
-            try { reader!.CopyFrame(position, output, cancellation); completed.TrySetResult(); }
+            try { reader!.CopyFrame(position, output, cancellation, exclusiveEnd); completed.TrySetResult(); }
             catch (OperationCanceledException) { completed.TrySetCanceled(cancellation); }
             catch (Exception error) { completed.TrySetException(error); }
         }, cancellation);
@@ -82,7 +82,7 @@ internal sealed class VideoSequentialDecoder : IDisposable
         private readonly bool canSeek;
         private byte[] current = [], next = [];
         private ExactSizeBufferPool.BufferLease? currentLease, nextLease;
-        private long nextTime, sourceOrigin, lastPosition;
+        private long currentTime, nextTime, sourceOrigin, lastPosition;
         private bool hasCurrent, hasNext, ended, hasOrigin;
         internal NativeReader(string path, int width, int height, bool metadataOnly, VideoExportMetrics? metrics, bool canSeek)
         {
@@ -230,7 +230,7 @@ internal sealed class VideoSequentialDecoder : IDisposable
             }
             return new(timestamps.Count, timestamps.Count == 0 ? 0 : timestamps[0], timestamps.Count == 0 ? 0 : timestamps[^1], finalDuration, timestamps);
         }
-        internal void CopyFrame(TimeSpan position, byte[] output, CancellationToken cancellation)
+        internal void CopyFrame(TimeSpan position, byte[] output, CancellationToken cancellation, TimeSpan? exclusiveEnd)
         {
             cancellation.ThrowIfCancellationRequested();
             if (canSeek && hasOrigin && (position.Ticks < lastPosition || position.Ticks - lastPosition > TimeSpan.TicksPerSecond))
@@ -248,17 +248,31 @@ internal sealed class VideoSequentialDecoder : IDisposable
                     if (canSeek && position.Ticks > TimeSpan.TicksPerSecond)
                     {
                         Seek(position);
-                        hasCurrent = Read(current, out _, cancellation);
+                        hasCurrent = Read(current, out rawTime, cancellation);
                         if (!hasCurrent) throw new InvalidOperationException("No video sample was available at this recording position.");
                     }
                 }
+                currentTime = checked(rawTime - sourceOrigin);
+            }
+            if (exclusiveEnd is { } end && currentTime >= end.Ticks)
+            {
+                // A preceding permissive request or a native seek can leave
+                // the first excluded frame cached. Replay from the source
+                // origin so the preceding kept sample is still available.
+                if (!canSeek) throw new InvalidOperationException("No decoded frame is inside the trimmed recording.");
+                Seek(TimeSpan.Zero);
+                hasCurrent = Read(current, out long rawTime, cancellation);
+                if (!hasCurrent) throw new InvalidOperationException("No video samples could be decoded.");
+                currentTime = checked(rawTime - sourceOrigin);
+                if (currentTime >= end.Ticks) throw new InvalidOperationException("No decoded frame is inside the trimmed recording.");
             }
             if (!hasNext && !ended) hasNext = ReadAhead(cancellation);
             // Subtracting two rational frame timestamps can differ from the
             // zero-based output grid by one 100 ns tick after quantization.
-            while (hasNext && (nextTime <= position.Ticks || nextTime == position.Ticks + 1))
+            while (hasNext && (exclusiveEnd is null || nextTime < exclusiveEnd.Value.Ticks)
+                && (nextTime <= position.Ticks || nextTime == position.Ticks + 1))
             {
-                (current, next) = (next, current); hasNext = ReadAhead(cancellation);
+                (current, next) = (next, current); currentTime = nextTime; hasNext = ReadAhead(cancellation);
             }
             Buffer.BlockCopy(current, 0, output, 0, current.Length);
             lastPosition = position.Ticks;
