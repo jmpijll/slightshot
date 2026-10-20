@@ -127,6 +127,14 @@ fields let you enter exact times in seconds. Undo and Redo also restore
 timing changes and deleted annotations. Marks stay at a fixed position; they
 do not follow moving content.
 
+On macOS, cut the start or end of a recording with the yellow trim handles
+below the playhead slider, or type exact times in the **Trim: keep … to …
+seconds** fields. Playback and scrubbing stay inside the kept part, and Save
+MP4 exports only that part at every quality. Trimming does not change
+annotation times: the saved video shows the kept part of each annotation's
+period and leaves out annotations that fall entirely outside the trim. **Keep
+whole recording** resets the trim, and Undo and Redo include trim changes.
+
 Choose **Save MP4…**, select a destination and adjust its quality slider:
 **Small & fast**, **Balanced**, or **High quality**. The choice is remembered.
 Small exports use a lower resolution, frame rate and bitrate; high quality

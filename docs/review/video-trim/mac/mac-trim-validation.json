@@ -1,0 +1,131 @@
+{
+  "annotationsSourceSeconds": {
+    "arrow": [
+      2,
+      5
+    ],
+    "blur": [
+      5,
+      7.5
+    ],
+    "caption": [
+      0,
+      1
+    ]
+  },
+  "demoVideo": "mac-trim-demo.mp4: ScreenCaptureKit recording of the editor window only, re-encoded to 1560 px wide with ffmpeg (libx264 CRF 24)",
+  "editorScreenshot": {
+    "file": "mac-trim-editor.png (downscaled to 1300 px wide and palette-quantized for the PR)",
+    "playheadSeconds": 3.5,
+    "source": "ScreenCaptureKit screenshot of the running native VideoEditorWindow; synthetic source movie."
+  },
+  "exports": [
+    {
+      "bytes": 88074,
+      "durationSeconds": 4.5,
+      "expectedFrameCount": 68,
+      "file": "trimmed-compact.mp4",
+      "frameCount": 68,
+      "framesPerSecond": 15,
+      "quality": "Small & fast",
+      "trimSeconds": 4.5
+    },
+    {
+      "bytes": 118059,
+      "durationSeconds": 4.5,
+      "expectedFrameCount": 108,
+      "file": "trimmed-balanced.mp4",
+      "frameCount": 108,
+      "framesPerSecond": 24,
+      "quality": "Balanced",
+      "trimSeconds": 4.5
+    },
+    {
+      "bytes": 116453,
+      "durationSeconds": 4.5,
+      "expectedFrameCount": 108,
+      "file": "trimmed-high.mp4",
+      "frameCount": 108,
+      "framesPerSecond": 24,
+      "quality": "High quality",
+      "trimSeconds": 4.5
+    }
+  ],
+  "fixture": "Synthetic 960×540, 8 second movie at 24 fps with a burned-in source time stamp. Demo Reviewer and demo@example.invalid are fixture inputs. No desktop pixels or personal data.",
+  "frames": {
+    "arrowRedFractionAtExport0_25s": 0,
+    "arrowRedFractionAtExport2s": 0.0407716049382716,
+    "blurDifferenceFromSourceAtExport3s": 6.264925373134329,
+    "blurDifferenceFromSourceAtExport4_25s": 32.50961857379768,
+    "captionRedFractionAtExport0_25s": 0,
+    "firstFrameMarkerDifferenceBySourceSecond": {
+      "0.00": 8.679115013774105,
+      "1.00": 7.387594696969697,
+      "1.25": 7.796341253443527,
+      "1.50": 3.8602530991735535,
+      "1.75": 8.0721935261708,
+      "2.00": 9.049690082644629
+    }
+  },
+  "interaction": "Automated: synthetic mouse drags on the native trim handles, typed trim fields, ⌘Z/⌘⇧Z key equivalents, Play and Save MP4 button clicks. Exports use RecordingExport.save with the edit returned by Save MP4.",
+  "platform": "macOS",
+  "playback": {
+    "firstSampleSeconds": 1.509121417,
+    "maximumSeconds": 5.974969667,
+    "minimumSeconds": 1.509121417,
+    "pressedPlayAtSeconds": 6,
+    "samples": 82,
+    "stoppedAtSeconds": 5.974969667
+  },
+  "result": "Passed",
+  "savedTrimSeconds": [
+    1.5,
+    6
+  ],
+  "sourceCommit": "7c3ce7468b0c1aeed6d27f6e0e5a6d43d80de4b2",
+  "storedExports": [
+    "trimmed-high.mp4"
+  ],
+  "trimSteps": [
+    {
+      "playheadSeconds": 1.3999999999999997,
+      "step": "Dragged the start handle to about 1.4 s",
+      "trimSeconds": [
+        1.3999999999999997,
+        8
+      ]
+    },
+    {
+      "playheadSeconds": 6.198333333333333,
+      "step": "Dragged the end handle to about 6.2 s",
+      "trimSeconds": [
+        1.3999999999999997,
+        6.2
+      ]
+    },
+    {
+      "playheadSeconds": 5.998333333333333,
+      "step": "Typed exact start 1.5 s and end 6 s into the trim fields",
+      "trimSeconds": [
+        1.5,
+        6
+      ]
+    },
+    {
+      "playheadSeconds": 5.998333333333333,
+      "step": "⌘Z undoes the typed end",
+      "trimSeconds": [
+        1.5,
+        6.2
+      ]
+    },
+    {
+      "playheadSeconds": 5.998333333333333,
+      "step": "⌘⇧Z redoes the typed end",
+      "trimSeconds": [
+        1.5,
+        6
+      ]
+    }
+  ]
+}
