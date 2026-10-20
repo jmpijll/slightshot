@@ -1,52 +1,52 @@
-# Focus after 1.4.0
+# Focus after 1.6.0
 
-The bounded follow-ups after 1.3.0 are merged and shipped in
-[1.4.0](https://github.com/jmpijll/slightshot/releases/tag/v1.4.0).
+[1.6.0](https://github.com/jmpijll/slightshot/releases/tag/v1.6.0) is the
+current release. A code audit on 20 October 2026 filed issues #38 to #49. The
+next release is planned to collect their fixes.
 
-| Work | Result |
+## Audit fixes
+
+Each issue gets its own pull request with visual evidence and an
+independent review. See each issue for its current state.
+
+| Issue | Reported problem or request |
 | --- | --- |
-| [Windows installer (#20)](https://github.com/jmpijll/slightshot/pull/20) | Per-user x64/ARM64 setup packages alongside the portable ZIPs, with settings preserved across upgrades. |
-| [Visual review evidence (#21)](https://github.com/jmpijll/slightshot/pull/21) | Every PR includes focused screenshots or a short video of the implemented result. |
-| [Five-second area capture (#22)](https://github.com/jmpijll/slightshot/pull/22) | An explicit menu/tray action gives time to arrange transient content before capture. |
-| [Annotation Redo (#23)](https://github.com/jmpijll/slightshot/pull/23) | Restore undone marks, text, raster effects and numbered steps through the toolbar or shortcut. |
-| [macOS review-build startup (#24)](https://github.com/jmpijll/slightshot/pull/24) | Ad-hoc review bundles load their runtime dependencies; Developer ID release signing retains the hardened runtime. |
-| [Clipboard image editor (#25)](https://github.com/jmpijll/slightshot/pull/25) | Crop or annotate a copied image in a normal editor window with Fit/100% viewing and original pixel/transparency preservation. |
+| [#38](https://github.com/jmpijll/slightshot/issues/38) | Release workflow can publish half a release and trusts unverified signing tools. |
+| [#39](https://github.com/jmpijll/slightshot/issues/39) | `make lint` never fails, VERSION fallback is broken, docs describe old releases. |
+| [#40](https://github.com/jmpijll/slightshot/issues/40) | macOS: quitting or a stream error deletes unsaved recordings and annotations. |
+| [#41](https://github.com/jmpijll/slightshot/issues/41) | macOS: save notification may move the saved file and needs a relaunch to work. |
+| [#42](https://github.com/jmpijll/slightshot/issues/42) | macOS: committed text wraps and sits differently from typed text; paste does not work. |
+| [#43](https://github.com/jmpijll/slightshot/issues/43) | macOS: shortcut settings accept unusable combos and hide registration failures. |
+| [#44](https://github.com/jmpijll/slightshot/issues/44) | macOS: clicking outside the selection deletes annotations; Shift-rectangle and edge precision. |
+| [#45](https://github.com/jmpijll/slightshot/issues/45) | Windows: Print Screen cannot be bound, crashes are silent, second launch does nothing. |
+| [#46](https://github.com/jmpijll/slightshot/issues/46) | Windows: crashed recordings stay in `%TEMP%` and odd-sized areas are rescaled. |
+| [#47](https://github.com/jmpijll/slightshot/issues/47) | Windows: corrupt settings are overwritten and launch-at-login can point at a moved copy. |
+| [#48](https://github.com/jmpijll/slightshot/issues/48) | Windows: check for updates from inside the app. |
+| [#49](https://github.com/jmpijll/slightshot/issues/49) | Trim the start and end of a recording before saving. |
 
-All six PRs include durable visual evidence and passed independent review.
-The combined implementation passed Mac/Windows/Linux CI and native Mac/Windows
-checks before publication. See the
-[published-file validation](review/releases/v1.4.0-validation.json) and the
-native evidence linked from each PR. These additions stay behind explicit
-menu/tray actions or editor shortcuts, keeping ordinary capture fast and familiar.
+Changes keep the current toolbars and default shortcuts. New behavior that
+would change the default capture path goes behind a setting.
 
 ## Use the app and fix concrete problems
 
-This release completes the agreed scope. Prioritize problems found while using
-Slightshot: broken capture or editor interactions, output failures, and measured
+After the audit fixes, prioritize problems found while using Slightshot:
+broken capture or editor interactions, output failures, and measured
 performance or memory regressions. Verify fixes on the affected native platform
 and retain a focused review diff with actual visual evidence when the UI changes.
 
-History, uploads, OCR and new multi-display behavior remain outside this scope.
-Add features only when real usage shows a concrete need.
+History, uploads, OCR, audio recording and new multi-display behavior remain
+outside this scope. Add features only when real usage shows a concrete need.
 
-## Previously shipped in 1.3.0
+## Shipped since 1.4.0
 
-The six bounded follow-ups identified after 1.2.0 are merged and shipped in
-[1.3.0](https://github.com/jmpijll/slightshot/releases/tag/v1.3.0).
-
-| Work | Result |
+| Release | Change |
 | --- | --- |
-| [Screenshot retry](https://github.com/jmpijll/slightshot/pull/16) | Keep selection, annotations and Undo after cancellation or failed output; retry or explicitly close. |
-| [Windows version/update polish](https://github.com/jmpijll/slightshot/pull/14) | Show the actual executable version and link to manual downloads. |
-| [Numbered steps](https://github.com/jmpijll/slightshot/pull/15) | One additional annotation tool, current colour, Undo and numbering per screenshot. |
-| [Mac command routing](https://github.com/jmpijll/slightshot/pull/17) | Strict capture URLs and one owner for cold/warm launches, with existing busy guards. |
-| [Windows recording buffers](https://github.com/jmpijll/slightshot/pull/18) | A lazy pool of at most four buffers, reused only after native processing. |
-| [Raster allocations](https://github.com/jmpijll/slightshot/pull/19) | Scalar Mac pixelation totals and pooled Windows blur scratch storage, with identical output pixels. |
+| [1.4.1](https://github.com/jmpijll/slightshot/releases/tag/v1.4.1) | Clearer About text, settings labels and project descriptions ([#28](https://github.com/jmpijll/slightshot/pull/28)). |
+| [1.4.2](https://github.com/jmpijll/slightshot/releases/tag/v1.4.2) | Windows-key combinations can be recorded as global shortcuts ([#31](https://github.com/jmpijll/slightshot/pull/31)). |
+| [1.5.0](https://github.com/jmpijll/slightshot/releases/tag/v1.5.0) | Timed video annotations in a native recording editor on Mac and Windows ([#33](https://github.com/jmpijll/slightshot/pull/33)). |
+| [1.5.1](https://github.com/jmpijll/slightshot/releases/tag/v1.5.1) | macOS update discovery with one shared build counter ([#35](https://github.com/jmpijll/slightshot/pull/35)). |
+| [1.6.0](https://github.com/jmpijll/slightshot/releases/tag/v1.6.0) | Scroll to resize new annotations, with a cursor circle showing the size ([#37](https://github.com/jmpijll/slightshot/pull/37)). |
 
-Each PR passed independent review and native CI. The combined implementation
-also passed Mac/Windows/Linux CI and desktop Mac acceptance before merging.
-The exact release commit passed 39 Swift tests, 111 Windows core checks, 14 Python
-tests, strict lint and a warning-free Windows build. See the
-[published-file validation](review/releases/v1.3.0-validation.json),
-[raster measurements](review/performance/README.md) and
-[recording allocation measurements](recording-buffer-allocations.md).
+Each release has a [published-file validation record](review/releases/).
+Earlier releases are listed on the
+[releases page](https://github.com/jmpijll/slightshot/releases).

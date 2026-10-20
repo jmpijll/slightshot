@@ -238,4 +238,5 @@ long colorAllocation = GC.GetAllocatedBytesForCurrentThread();
 for (int iteration = 0; iteration < 100; iteration++) BgraToNv12.Convert(colorWarmInput, colorWarmOutput, 8, 2);
 Equal(0L, GC.GetAllocatedBytesForCurrentThread() - colorAllocation, "NV12 conversion allocates no per-frame storage");
 checks += await RecordingFrameBufferChecks.RunAsync();
-Console.WriteLine($"Passed {checks} Windows parity geometry, pixel-boundary, style, filename and recording buffer checks.");
+checks += await ReleaseCheckChecks.RunAsync();
+Console.WriteLine($"Passed {checks} Windows parity geometry, pixel-boundary, style, filename, recording buffer and update checks.");

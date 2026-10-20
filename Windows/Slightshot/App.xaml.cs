@@ -120,7 +120,7 @@ public partial class App : System.Windows.Application
         Add(menu, "Open Screenshots Folder", () => { try { Directory.CreateDirectory(settings.SaveDirectory); Open(settings.SaveDirectory); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Error(ex.Message); } });
         menu.Items.Add(new Forms.ToolStripSeparator());
         Add(menu, "Settings…", ShowSettings);
-        Add(menu, "Download updates…", () => Open(AppInfo.ReleaseUrl));
+        Add(menu, "Check for Updates…", () => _ = UpdateCheck.RunAsync(preferences));
         Add(menu, "About Slightshot", () => MessageBox.Show(AppInfo.AboutText, "About Slightshot", MessageBoxButton.OK));
         menu.Items.Add(new Forms.ToolStripSeparator()); Add(menu, "Quit Slightshot", Quit);
         return menu;
