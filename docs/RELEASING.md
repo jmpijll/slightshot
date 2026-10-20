@@ -178,8 +178,10 @@ The feed is committed only after its downloads are public, so `main` never lists
 an update that Sparkle cannot download. Pages also refuses to deploy a feed
 unless every download it lists is an `https://` URL that ends, after redirects,
 in HTTP 200 over HTTPS at the expected length. Network errors, 429 and 5xx
-responses are retried up to five times, honouring `Retry-After`; any other
-response fails at once. This applies to every Pages run, including a manual
+responses are retried up to five times, honouring `Retry-After` in seconds or
+as a date, for at most 25 seconds each time; any other response fails at
+once. Each download, retries included, must finish within two minutes, and the
+whole check within four. This applies to every Pages run, including a manual
 dispatch or another push to `public/`.
 
 ### If publication fails

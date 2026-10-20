@@ -267,7 +267,8 @@ jobs:
     if: needs.release.outputs.publish == 'true'
     name: Publish release and update feed
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Covers uploads plus the bounded download wait and Pages deployment below.
+    timeout-minutes: 60
     permissions:
       contents: write
       actions: write
@@ -340,9 +341,11 @@ jobs:
           done
           gh release edit "$TAG" --draft=false
 
+      # Three gate runs of at most four minutes each, plus one minute of waits.
       - name: Wait for public downloads
+        timeout-minutes: 15
         run: |
-          for attempt in 1 2 3 4 5 6; do
+          for attempt in 1 2 3; do
             python3 Scripts/release_metadata.py --check-downloads feed/appcast.xml && exit 0
             sleep $((attempt * 10))
           done
@@ -381,6 +384,7 @@ jobs:
 
       # A push made with GITHUB_TOKEN does not trigger the Pages push workflow.
       - name: Deploy the update feed
+        timeout-minutes: 20
         run: |
           run_id="$(gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/pages.yml/dispatches" \
             -f ref=main -F return_run_details=true --jq .workflow_run_id)"

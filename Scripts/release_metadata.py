@@ -3,7 +3,10 @@
 
 With --check-downloads, require every appcast enclosure to be a public HTTPS download."""
 import argparse
+import datetime
+import email.utils
 import http.client
+import math
 from pathlib import Path
 import re
 import subprocess
@@ -60,36 +63,61 @@ def release_build(repository, version, appcasts):
 
 DOWNLOAD_ATTEMPTS = 5
 MAX_RETRY_DELAY = 25
+SOCKET_TIMEOUT = 20
+# Wall-clock limits, so a server that trickles bytes cannot hold the gate open.
+DOWNLOAD_BUDGET = 120
+GATE_BUDGET = 240
 
 
-def download_size(url):
-    """Return the byte count of a public HTTPS download, retrying transient failures."""
+def retry_delay(retry_after, fallback):
+    """Seconds to wait from a Retry-After header in either delta-seconds or HTTP-date form."""
+    if retry_after.isdigit():
+        seconds = int(retry_after)
+    else:
+        try:
+            when = email.utils.parsedate_to_datetime(retry_after)
+        except (TypeError, ValueError, IndexError):
+            return fallback
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=datetime.timezone.utc)
+        seconds = math.ceil((when - datetime.datetime.now(datetime.timezone.utc)).total_seconds())
+    return min(max(seconds, 0), MAX_RETRY_DELAY)
+
+
+def download_size(url, deadline):
+    """Return the byte count of a public HTTPS download, retrying transient failures until deadline."""
+    expired = ValueError(f"{url} did not finish downloading within its time limit.")
     for attempt in range(1, DOWNLOAD_ATTEMPTS + 1):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise expired
         delay = 2 ** attempt
         try:
-            with urllib.request.urlopen(url, timeout=20) as response:
+            with urllib.request.urlopen(url, timeout=min(SOCKET_TIMEOUT, remaining)) as response:
                 final = response.geturl()
                 if response.status != 200 or urllib.parse.urlsplit(final).scheme != "https":
                     raise ValueError(f"{url} answered HTTP {response.status} from {final}; "
                                      "expected 200 over HTTPS.")
                 size = 0
-                while chunk := response.read(1 << 20):
+                while chunk := response.read1(1 << 16):
                     size += len(chunk)
+                    if time.monotonic() > deadline:
+                        raise expired
                 return size
         except urllib.error.HTTPError as error:
             if (error.code != 429 and error.code < 500) or attempt == DOWNLOAD_ATTEMPTS:
                 raise ValueError(f"{url} is not publicly available: {error}") from error
-            retry_after = error.headers.get("Retry-After", "")
-            if retry_after.isdigit():
-                delay = min(int(retry_after), MAX_RETRY_DELAY)
+            delay = retry_delay(error.headers.get("Retry-After", ""), delay)
         except (urllib.error.URLError, http.client.HTTPException, OSError) as error:
             if attempt == DOWNLOAD_ATTEMPTS:
                 raise ValueError(f"{url} is not publicly available: {error}") from error
-        print(f"{url}: attempt {attempt} failed; retrying in {delay}s", file=sys.stderr)
+        delay = min(delay, max(deadline - time.monotonic(), 0))
+        print(f"{url}: attempt {attempt} failed; retrying in {delay:.0f}s", file=sys.stderr)
         time.sleep(delay)
 
 
 def check_downloads(appcast):
+    gate_deadline = time.monotonic() + GATE_BUDGET
     root = ET.parse(appcast).getroot()
     channel = root.find("channel")
     if root.tag != "rss" or channel is None:
@@ -99,7 +127,7 @@ def check_downloads(appcast):
         parts = urllib.parse.urlsplit(url)
         if parts.scheme != "https" or not parts.netloc:
             raise ValueError(f"{url!r} is not an https:// download URL.")
-        size = download_size(url)
+        size = download_size(url, min(time.monotonic() + DOWNLOAD_BUDGET, gate_deadline))
         if str(size) != length:
             raise ValueError(f"{url} has {size} bytes; the appcast expects {length}.")
         print(f"{url}: {size} bytes")

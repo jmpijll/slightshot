@@ -1,4 +1,5 @@
 """Exercise the release build policy with real Git histories and appcasts."""
+import email.utils
 import hashlib
 import http.server
 import json
@@ -12,6 +13,7 @@ import sys
 import tempfile
 import textwrap
 import threading
+import time
 import unittest
 
 SCRIPT = Path(__file__).resolve().parents[1] / "Scripts/release_metadata.py"
@@ -167,12 +169,16 @@ class ReleaseMetadataTests(unittest.TestCase):
 
 
 TRUSTING_RUNNER = """
-import runpy, ssl, sys, urllib.request
-context = ssl.create_default_context(cafile=sys.argv.pop(1))
+import importlib.util, json, ssl, sys, urllib.request
+cafile, script, overrides = sys.argv[1:4]
+context = ssl.create_default_context(cafile=cafile)
 urllib.request.install_opener(urllib.request.build_opener(urllib.request.HTTPSHandler(context=context)))
-sys.argv[0] = sys.argv[1]
-del sys.argv[1]
-runpy.run_path(sys.argv[0], run_name="__main__")
+spec = importlib.util.spec_from_file_location("release_metadata", script)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+vars(module).update(json.loads(overrides))
+sys.argv = [script, *sys.argv[4:]]
+sys.exit(module.main())
 """
 
 
@@ -200,6 +206,25 @@ class DownloadCheckTests(unittest.TestCase):
                 if name == "dropped-once.dmg" and count == 1:
                     self.close_connection = True
                     return
+                if name == "trickle.dmg":
+                    self.send_response(200)
+                    self.send_header("Content-Length", "1000")
+                    self.end_headers()
+                    try:
+                        for _ in range(1000):
+                            self.wfile.write(b"x")
+                            self.wfile.flush()
+                            time.sleep(0.2)
+                    except OSError:
+                        pass
+                    return
+                if name.startswith("dated-") and count == 1:
+                    when = 0 if name == "dated-past-once.dmg" else time.time() + 3600
+                    self.send_response(503)
+                    self.send_header("Retry-After", email.utils.formatdate(when, usegmt=True))
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    return
                 if name in ("busy-once.dmg", "limited-once.dmg") and count == 1 or name == "down.dmg":
                     self.send_response(429 if name.startswith("limited") else 503)
                     self.send_header("Retry-After", "0")
@@ -215,7 +240,8 @@ class DownloadCheckTests(unittest.TestCase):
                     self.end_headers()
                 elif name == "forbidden.dmg":
                     self.send_error(403)
-                elif name in ("ok.dmg", "dropped-once.dmg", "busy-once.dmg", "limited-once.dmg", "partial.dmg"):
+                elif name in ("ok.dmg", "dropped-once.dmg", "busy-once.dmg", "limited-once.dmg", "partial.dmg",
+                              "dated-past-once.dmg", "dated-future-once.dmg"):
                     self.send_response(206 if name == "partial.dmg" else 200)
                     self.send_header("Content-Length", str(len(payload)))
                     self.end_headers()
@@ -241,7 +267,7 @@ class DownloadCheckTests(unittest.TestCase):
     def setUp(self):
         self.requests.clear()
 
-    def check(self, *enclosures):
+    def check(self, *enclosures, **overrides):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         appcast = Path(directory.name) / "appcast.xml"
@@ -249,7 +275,8 @@ class DownloadCheckTests(unittest.TestCase):
             f'<item><enclosure url="{url if ":" in url else self.base + url}" length="{length}"/></item>'
             for url, length in enclosures) + "</channel></rss>")
         return subprocess.run([sys.executable, "-c", TRUSTING_RUNNER, str(self.certificate), str(SCRIPT),
-                               "--check-downloads", str(appcast)], text=True, capture_output=True)
+                               json.dumps(overrides), "--check-downloads", str(appcast)],
+                              text=True, capture_output=True, timeout=60)
 
     def test_public_https_downloads_with_matching_lengths_pass(self):
         result = self.check(("ok.dmg", self.size), ("redirected.dmg", self.size))
@@ -291,6 +318,24 @@ class DownloadCheckTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("down.dmg is not publicly available: HTTP Error 503", result.stderr)
         self.assertEqual(self.requests["down.dmg"], 5)
+
+    def test_retry_after_http_dates_are_honoured_and_capped(self):
+        result = self.check(("dated-past-once.dmg", self.size), ("dated-future-once.dmg", self.size),
+                            MAX_RETRY_DELAY=1)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("dated-past-once.dmg: attempt 1 failed; retrying in 0s", result.stderr)
+        self.assertIn("dated-future-once.dmg: attempt 1 failed; retrying in 1s", result.stderr)
+
+    def test_trickling_download_stops_at_its_time_limit(self):
+        for limits in ({"DOWNLOAD_BUDGET": 1.5}, {"GATE_BUDGET": 1.5}):
+            with self.subTest(limits=limits):
+                self.requests.clear()
+                started = time.monotonic()
+                result = self.check(("trickle.dmg", 1000), **limits)
+                self.assertLess(time.monotonic() - started, 10)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("trickle.dmg did not finish downloading within its time limit", result.stderr)
+                self.assertEqual(self.requests["trickle.dmg"], 1)
 
     def test_length_mismatch_blocks_the_feed(self):
         result = self.check(("ok.dmg", self.size + 1))

@@ -70,3 +70,33 @@ https://github.com/jmpijll/slightshot/releases/download/v1.6.0/Slightshot-1.6.0.
 https://github.com/jmpijll/slightshot/releases/download/v1.5.1/Slightshot-1.5.1.dmg: 2306638 bytes
 https://github.com/jmpijll/slightshot/releases/download/v1.5.0/Slightshot-1.5.0.dmg: 2306605 bytes
 exit=0
+
+# Review round 3: wall-clock limits and HTTP-date Retry-After (2026-10-20T13:59Z)
+# Limits in Scripts/release_metadata.py: 120 s per download including retries, 240 s for the whole gate, 20 s per socket wait.
+# Tests shrink the limits through the test runner only; the trickle server sends one byte every 0.2 s of a 1000-byte body (about 200 s).
+
+test_length_mismatch_blocks_the_feed ... ok
+test_non_https_enclosures_are_rejected_before_any_request ... ok
+test_only_a_final_https_200_counts_as_public ... ok
+test_pages_checks_downloads_before_uploading_the_feed ... ok
+test_persistent_server_errors_stop_after_five_attempts ... ok
+test_public_https_downloads_with_matching_lengths_pass ... ok
+test_retry_after_http_dates_are_honoured_and_capped ... ok
+test_transient_failures_are_retried ... ok
+test_trickling_download_stops_at_its_time_limit ... ok
+test_unavailable_download_blocks_the_feed_without_retrying ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests
+
+OK
+
+## Mutation check: each change to Scripts/release_metadata.py makes the named test fail
+deadline check removed from body reads  -> test_trickling_download_stops_at_its_time_limit (both limits; test subprocess times out)
+overall gate budget removed             -> test_trickling_download_stops_at_its_time_limit (GATE_BUDGET)
+HTTP-date Retry-After ignored           -> test_retry_after_http_dates_are_honoured_and_capped
+25 s Retry-After cap removed            -> test_retry_after_http_dates_are_honoured_and_capped (test subprocess times out)
+
+## Workflow time bounds
+pages.yml deploy job: timeout-minutes 10 (gate at most 4 min)
+release.yml publish job: timeout-minutes 60; 'Wait for public downloads' timeout-minutes 15 (3 gate runs x 4 min + 1 min of waits = 13 min); 'Deploy the update feed' timeout-minutes 20 (Pages job at most 10 min plus queueing)
