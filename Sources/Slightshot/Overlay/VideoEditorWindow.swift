@@ -519,6 +519,7 @@ extension VideoEditorWindow {
         updateRange(start: value.start, end: value.end)
     }
     var reviewCurrentTime: TimeInterval { canvas.time }
+    var reviewTrim: VideoTrim { edit.trim }
 
     func reviewSeek(to time: TimeInterval) async {
         seekTask?.cancel()
