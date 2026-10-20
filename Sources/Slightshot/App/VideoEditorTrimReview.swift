@@ -103,7 +103,7 @@ import AVFoundation
         record("Dragged the end handle to about 6.2 s")
         for (field, time) in [(controls.startField, keptStart), (controls.endField, keptEnd)] {
             // Type what a user would type in the current locale, such as 1,50.
-            field.stringValue = field.formatter?.string(for: time) ?? String(time)
+            field.stringValue = VideoTimeText.string(time)
             field.sendAction(field.action, to: field.target)
             try await Task.sleep(for: .milliseconds(500))
         }
