@@ -81,6 +81,26 @@ nonisolated enum RecordingError: LocalizedError {
 }
 
 nonisolated enum RecordingExport {
+    static let stagingPrefix = ".slightshot-"
+    private static let stagingParentsKey = "RecordingExportStagingParents"
+
+    /// Folders where an export staged its output and has not yet cleaned up.
+    /// Launch sweeps them, since a crash can leave staging beside any destination.
+    static var stagingParents: [URL] {
+        (UserDefaults.standard.stringArray(forKey: stagingParentsKey) ?? []).map { URL(fileURLWithPath: $0) }
+    }
+
+    static func forgetStagingParent(_ parent: URL) {
+        let paths = UserDefaults.standard.stringArray(forKey: stagingParentsKey) ?? []
+        UserDefaults.standard.set(paths.filter { $0 != parent.path }, forKey: stagingParentsKey)
+    }
+
+    private static func rememberStagingParent(_ parent: URL) {
+        let paths = UserDefaults.standard.stringArray(forKey: stagingParentsKey) ?? []
+        guard !paths.contains(parent.path) else { return }
+        UserDefaults.standard.set(paths + [parent.path], forKey: stagingParentsKey)
+    }
+
     /// Snapshot the editor's AppKit marks before entering the encoder worker.
     /// Only immutable cropped overlays cross the actor boundary.
     /// A trim keeps only its range, starting at zero; marks outside it are dropped.
@@ -124,6 +144,29 @@ nonisolated enum RecordingExport {
         }
     }
 
+    /// AVFoundation may create auxiliary .sb files beside its output. Keep the
+    /// entire job in a private, locked directory so cancellation removes those
+    /// too, while the final move still stays on the destination filesystem.
+    private static func makeStagingDirectory(beside destination: URL) throws -> (URL, () -> Void) {
+        let parent = destination.deletingLastPathComponent()
+        let directory = parent.appendingPathComponent(stagingPrefix + UUID().uuidString, isDirectory: true)
+        rememberStagingParent(parent)
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false,
+                                                    attributes: [.posixPermissions: 0o700])
+            let lock = try FolderLock(directory: directory)
+            return (directory, {
+                try? FileManager.default.removeItem(at: directory)
+                lock.release()
+                forgetStagingParent(parent)
+            })
+        } catch {
+            try? FileManager.default.removeItem(at: directory)
+            forgetStagingParent(parent)
+            throw error
+        }
+    }
+
     /// Reader and writer backpressure keep encoding off the main actor.
     /// The output is staged alongside its destination; an existing
     /// file is replaced only after a complete, playable MP4 has been written.
@@ -132,14 +175,8 @@ nonisolated enum RecordingExport {
         annotations: [VideoFrameRenderer.PreparedAnnotation]
     ) async throws {
         try Task.checkCancellation()
-        let stagingDirectory = destination.deletingLastPathComponent()
-            .appendingPathComponent(".slightshot-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: stagingDirectory, withIntermediateDirectories: false,
-                                                attributes: [.posixPermissions: 0o700])
-        // AVFoundation may create auxiliary .sb files beside its output. Keep
-        // the entire job in a private directory so cancellation removes those
-        // too, while the final move still stays on the destination filesystem.
-        defer { try? FileManager.default.removeItem(at: stagingDirectory) }
+        let (stagingDirectory, removeStaging) = try makeStagingDirectory(beside: destination)
+        defer { removeStaging() }
         let staged = stagingDirectory.appendingPathComponent("recording.mp4")
 
         let asset = AVURLAsset(url: source)

@@ -32,3 +32,20 @@ public static class RecordingQualityOptions
         return string.Create(CultureInfo.InvariantCulture, $"{size.Width} × {size.Height} · {quality.FramesPerSecond()} fps\n{tradeoff}");
     }
 }
+
+// Source pixels read from the desktop and the even-sized frame they become.
+public readonly record struct RecordingGeometry(int SourceWidth, int SourceHeight, int Width, int Height)
+{
+    public bool IsPixelExact => SourceWidth == Width && SourceHeight == Height;
+
+    public static RecordingGeometry Create(int sourceWidth, int sourceHeight, int requestedWidth, int requestedHeight)
+    {
+        if (sourceWidth <= 0 || sourceHeight <= 0) throw new ArgumentOutOfRangeException(nameof(sourceWidth), "A recording needs a nonempty region.");
+        var size = RecordingQuality.High.Dimensions(requestedWidth, requestedHeight);
+        return new(Crop(sourceWidth, size.Width), Crop(sourceHeight, size.Height), size.Width, size.Height);
+    }
+
+    // Rounding an odd axis down to even drops its last pixel row or column;
+    // resampling the rest by a fraction of a pixel would soften every frame.
+    private static int Crop(int source, int encoded) => encoded == (source & ~1) ? encoded : source;
+}

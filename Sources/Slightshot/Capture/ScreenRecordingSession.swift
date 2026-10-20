@@ -1,9 +1,11 @@
 import AppKit
+import AVFoundation
 import ScreenCaptureKit
 
 /// Owns ScreenCaptureKit and one private temporary directory. Its filter excludes
 /// every Slightshot window, including the live Stop control and timer.
 final class ScreenRecordingSession: NSObject {
+    nonisolated static let directoryPrefix = "Slightshot-Recording-"
     let directory: URL
     let sourceURL: URL
     let size: CGSize
@@ -15,15 +17,20 @@ final class ScreenRecordingSession: NSObject {
     private var result: Result<URL, Error>?
     private var completion: CheckedContinuation<URL, Error>?
     private var isStopping = false
+    private var hasStartedRecording = false
+    private var streamError: Error?
+    private var recovery: Task<Void, Never>?
+    private let lock: FolderLock
 
     init(display: CapturedDisplay, selection: CGRect) throws {
         directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("Slightshot-Recording-\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent(Self.directoryPrefix + UUID().uuidString, isDirectory: true)
         sourceURL = directory.appendingPathComponent("source.mp4")
         size = RecordingQuality.high.dimensions(for: display.pixelRect(for: selection).size)
-        super.init()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false,
                                                 attributes: [.posixPermissions: 0o700])
+        lock = try FolderLock(directory: directory)
+        super.init()
     }
 
     var duration: TimeInterval { recording?.recordedDuration.seconds ?? 0 }
@@ -84,14 +91,46 @@ final class ScreenRecordingSession: NSObject {
     func failed(_ error: Error) { finish(.failure(error)) }
 
     func cleanUp() {
+        recovery?.cancel()
         try? FileManager.default.removeItem(at: directory)
+        lock.release()
         stream = nil
         recording = nil
+    }
+
+    func recordingDidStart() {
+        hasStartedRecording = true
+        onStarted?()
+    }
+
+    func recordingDidFinish() { finish(.success(sourceURL)) }
+
+    func recordingDidFail(_ error: Error) { finish(.failure(streamError ?? error)) }
+
+    /// ScreenCaptureKit can report a stopped stream before its recording output
+    /// finalises the movie, so a started recording waits for that verdict. No
+    /// timer fails it: if the output never reports, a movie that has become
+    /// playable is accepted instead.
+    func streamDidStop(with error: Error, recheckEvery interval: Duration = .seconds(2)) {
+        guard hasStartedRecording else { return finish(.failure(error)) }
+        guard streamError == nil else { return }
+        streamError = error
+        isStopping = true
+        recovery = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: interval)
+                guard let session = self, session.result == nil else { return }
+                if await session.playableDuration() != nil, session.result == nil {
+                    session.finish(.success(session.sourceURL))
+                }
+            }
+        }
     }
 
     private func finish(_ result: Result<URL, Error>) {
         guard self.result == nil else { return }
         self.result = result
+        recovery?.cancel()
         completion?.resume(with: result)
         completion = nil
         onFinished?(result)
@@ -100,21 +139,78 @@ final class ScreenRecordingSession: NSObject {
 
 extension ScreenRecordingSession: SCRecordingOutputDelegate, SCStreamDelegate {
     nonisolated func recordingOutputDidStartRecording(_ recordingOutput: SCRecordingOutput) {
-        Task { @MainActor [weak self] in self?.onStarted?() }
+        Task { @MainActor [weak self] in self?.recordingDidStart() }
     }
 
     nonisolated func recordingOutputDidFinishRecording(_ recordingOutput: SCRecordingOutput) {
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            self.finish(.success(self.sourceURL))
-        }
+        Task { @MainActor [weak self] in self?.recordingDidFinish() }
     }
 
     nonisolated func recordingOutput(_ recordingOutput: SCRecordingOutput, didFailWithError error: Error) {
-        Task { @MainActor [weak self] in self?.finish(.failure(error)) }
+        Task { @MainActor [weak self] in self?.recordingDidFail(error) }
     }
 
     nonisolated func stream(_ stream: SCStream, didStopWithError error: Error) {
-        Task { @MainActor [weak self] in self?.finish(.failure(error)) }
+        Task { @MainActor [weak self] in self?.streamDidStop(with: error) }
     }
+}
+
+extension ScreenRecordingSession {
+    /// Duration of the movie on disk, or nil unless it has a video track whose
+    /// first frame decodes.
+    func playableDuration() async -> TimeInterval? {
+        guard FileManager.default.fileExists(atPath: sourceURL.path) else { return nil }
+        let asset = AVURLAsset(url: sourceURL)
+        guard let tracks = try? await asset.loadTracks(withMediaType: .video), !tracks.isEmpty,
+              let duration = try? await asset.load(.duration),
+              duration.seconds.isFinite, duration.seconds > 0 else { return nil }
+        let generator = AVAssetImageGenerator(asset: asset)
+        generator.requestedTimeToleranceAfter = duration
+        guard (try? await generator.image(at: .zero)) != nil else { return nil }
+        return duration.seconds
+    }
+
+    /// Removes recording folders a crash or forced quit left behind. A folder is
+    /// kept while another process holds its lock, or if it was created after `cutoff`.
+    nonisolated static func removeAbandonedDirectories(prefix: String, in parent: URL, createdBefore cutoff: Date) {
+        let manager = FileManager.default
+        let keys: Set<URLResourceKey> = [.creationDateKey, .isDirectoryKey]
+        guard let children = try? manager.contentsOfDirectory(at: parent, includingPropertiesForKeys: Array(keys))
+        else { return }
+        for child in children {
+            let name = child.lastPathComponent
+            guard name.hasPrefix(prefix), UUID(uuidString: String(name.dropFirst(prefix.count))) != nil,
+                  let values = try? child.resourceValues(forKeys: keys), values.isDirectory == true,
+                  let created = values.creationDate, created < cutoff,
+                  let lock = try? FolderLock(directory: child) else { continue }
+            defer { lock.release() }
+            do {
+                try manager.removeItem(at: child)
+            } catch {
+                Log.capture.error("Abandoned recording not removed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+}
+
+/// An exclusive `flock` on a marker file inside a temporary folder. The kernel
+/// drops it when the owning process exits, so a held lock proves the folder is live.
+nonisolated final class FolderLock: @unchecked Sendable {
+    static let filename = ".slightshot-lock"
+    private var descriptor: Int32
+
+    /// Throws when another process already holds the folder.
+    init(directory: URL) throws {
+        let path = directory.appendingPathComponent(Self.filename).path
+        descriptor = open(path, O_RDWR | O_CREAT | O_EXLOCK | O_NONBLOCK | O_CLOEXEC, 0o600)
+        guard descriptor >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
+    }
+
+    func release() {
+        guard descriptor >= 0 else { return }
+        close(descriptor)
+        descriptor = -1
+    }
+
+    deinit { release() }
 }
