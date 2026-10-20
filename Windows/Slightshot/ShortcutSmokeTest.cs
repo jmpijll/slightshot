@@ -131,6 +131,21 @@ internal static class ShortcutSmokeTest
             await ChordAsync(LeftWin, F13);
             Require(settings.CaptureAreaHotKey == new HotKey(F13, 8) && area.Text == "Win+F13" && !note.IsVisible, "replacing Print Screen hides its guidance");
             checks.Add("Print Screen without a modifier records through native key input and shows the Windows Print Screen setting guidance; other bare keys stay ignored.");
+
+            var blockedSettings = new Settings { PlaySound = false, CaptureAreaHotKey = new(PrintScreen, 0) };
+            var blocked = new SettingsWindow(blockedSettings, false, [new HotKey(PrintScreen, 0)]) { Title = "Slightshot Settings · fixture: Print Screen registration failed" };
+            try
+            {
+                // Open while the main Settings window still holds the foreground.
+                blocked.Show(); blocked.Activate();
+                for (int attempt = 0; attempt < 20 && GetForegroundWindow() != new WindowInteropHelper(blocked).Handle; attempt++) { blocked.Activate(); await Task.Delay(100); }
+                await ShowShortcutsAsync(blocked);
+                var blockedNote = ShortcutNote(blocked);
+                Require(blockedNote.IsVisible && blockedNote.Text.StartsWith("Windows is using Print Screen to open screen capture. Turn off “Use the Print screen key to open screen capture”"), "a failed Print Screen registration is explained in Settings");
+                CaptureWindow(blocked, Path.Combine(directory, "shortcut-print-screen-unavailable-window.png"));
+            }
+            finally { blocked.Close(); }
+            checks.Add("With a fixture registration failure for Print Screen, Settings explains that Windows' Print Screen screen-capture setting must be turned off.");
         }
         finally
         {
@@ -139,19 +154,6 @@ internal static class ShortcutSmokeTest
             foreach (ushort modifier in new[] { Control, Shift, Alt, LeftWin, RightWin }) SendKey(modifier, true);
             window.Close();
         }
-
-        var blockedSettings = new Settings { PlaySound = false, CaptureAreaHotKey = new(PrintScreen, 0) };
-        var blocked = new SettingsWindow(blockedSettings, false, [new HotKey(PrintScreen, 0)]) { Title = "Slightshot Settings · fixture: Print Screen registration failed" };
-        try
-        {
-            blocked.Show(); blocked.Activate();
-            await ShowShortcutsAsync(blocked);
-            var note = ShortcutNote(blocked);
-            Require(note.IsVisible && note.Text.StartsWith("Windows is using Print Screen to open screen capture. Turn off “Use the Print screen key to open screen capture”"), "a failed Print Screen registration is explained in Settings");
-            CaptureWindow(blocked, Path.Combine(directory, "shortcut-print-screen-unavailable-window.png"));
-        }
-        finally { blocked.Close(); }
-        checks.Add("With a fixture registration failure for Print Screen, Settings explains that Windows' Print Screen screen-capture setting must be turned off.");
 
         var restored = JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(settings))!;
         Require(restored.CaptureAreaHotKey == settings.CaptureAreaHotKey && restored.SaveFullScreenHotKey == settings.SaveFullScreenHotKey
