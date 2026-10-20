@@ -24,8 +24,10 @@ public static class LaunchArguments
     public static string Format(LaunchCommand command) => Commands.Single(entry => entry.Command == command).Argument;
 }
 
-/// Receives launch commands from later launches of the same user and session.
-/// Each connection carries one argument line and is answered with '1' or '0'.
+/// Receives launch commands from later launches of the same user. The pipe only
+/// admits the current user; acceptClient decides whether a connected client, for
+/// example one from another logon session, may deliver a command. Each connection
+/// carries one argument line and is answered with '1' or '0'.
 public sealed class InstanceChannel : IDisposable
 {
     private const int MaximumLineBytes = 64;
@@ -33,8 +35,8 @@ public sealed class InstanceChannel : IDisposable
     private readonly CancellationTokenSource stopping = new();
     private readonly Task listening;
 
-    public InstanceChannel(string pipeName, Action<LaunchCommand> received) =>
-        listening = Task.Run(() => ListenAsync(pipeName, received, stopping.Token));
+    public InstanceChannel(string pipeName, Func<NamedPipeServerStream, bool> acceptClient, Action<LaunchCommand> received) =>
+        listening = Task.Run(() => ListenAsync(pipeName, acceptClient, received, stopping.Token));
 
     public static async Task<bool> SendAsync(string pipeName, LaunchCommand command, TimeSpan timeout)
     {
@@ -51,7 +53,7 @@ public sealed class InstanceChannel : IDisposable
         catch (Exception ex) when (ex is IOException or TimeoutException or OperationCanceledException or UnauthorizedAccessException) { return false; }
     }
 
-    private static async Task ListenAsync(string pipeName, Action<LaunchCommand> received, CancellationToken stop)
+    private static async Task ListenAsync(string pipeName, Func<NamedPipeServerStream, bool> acceptClient, Action<LaunchCommand> received, CancellationToken stop)
     {
         NamedPipeServerStream? server = null;
         try
@@ -67,7 +69,7 @@ public sealed class InstanceChannel : IDisposable
                     var connected = server;
                     server = null;
                     try { server = Create(pipeName); }
-                    finally { _ = AnswerAsync(connected, received, stop); }
+                    finally { _ = AnswerAsync(connected, acceptClient, received, stop); }
                 }
                 catch (OperationCanceledException) when (stop.IsCancellationRequested) { return; }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
@@ -84,7 +86,7 @@ public sealed class InstanceChannel : IDisposable
     private static NamedPipeServerStream Create(string pipeName) => new(pipeName, PipeDirection.InOut, NamedPipeServerStream.MaxAllowedServerInstances,
         PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
 
-    private static async Task AnswerAsync(NamedPipeServerStream server, Action<LaunchCommand> received, CancellationToken stop)
+    private static async Task AnswerAsync(NamedPipeServerStream server, Func<NamedPipeServerStream, bool> acceptClient, Action<LaunchCommand> received, CancellationToken stop)
     {
         using (server)
         using (var deadline = CancellationTokenSource.CreateLinkedTokenSource(stop))
@@ -92,7 +94,7 @@ public sealed class InstanceChannel : IDisposable
             deadline.CancelAfter(ClientDeadline);
             try
             {
-                LaunchCommand? command = await ReadCommandAsync(server, deadline.Token);
+                LaunchCommand? command = acceptClient(server) ? await ReadCommandAsync(server, deadline.Token) : null;
                 if (command is { } accepted) received(accepted);
                 await server.WriteAsync(new[] { (byte)(command == null ? '0' : '1') }, deadline.Token);
                 await server.FlushAsync(deadline.Token);

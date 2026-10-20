@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.IO.Pipes;
+using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Windows;
 using System.Windows.Threading;
@@ -119,7 +121,7 @@ public partial class App : System.Windows.Application
         ConfigureDelayedCapture();
         hotKeys = new HotKeyService(id => Dispatcher.InvokeAsync(() => { if (id == 1) BeginCapture(); else FullScreen(id == 2 ? CaptureAction.Save : CaptureAction.Copy); }));
         UpdateSettings();
-        commands = new InstanceChannel(InstancePipeName(), received => Dispatcher.InvokeAsync(() => Run(received)));
+        commands = new InstanceChannel(InstancePipeName(), IsSameSessionClient, received => Dispatcher.InvokeAsync(() => Run(received)));
         if (firstRun && unavailable.Length == 0)
             ShowBalloon(8000, "Slightshot is running", settings.CaptureAreaHotKey.IsEmpty
                 ? "Double-click the Slightshot icon in the notification area to capture an area."
@@ -133,6 +135,17 @@ public partial class App : System.Windows.Application
         using var process = Process.GetCurrentProcess();
         return $"Slightshot-{identity.User?.Value}-{process.SessionId}";
     }
+
+    // The pipe admits only this user; also refuse that user's processes in other logon sessions.
+    internal static bool IsSameSessionClient(NamedPipeServerStream pipe)
+    {
+        using var process = Process.GetCurrentProcess();
+        return GetNamedPipeClientSessionId(pipe.SafePipeHandle, out uint session) && session == (uint)process.SessionId;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetNamedPipeClientSessionId(Microsoft.Win32.SafeHandles.SafePipeHandle pipe, out uint session);
 
     private void Run(LaunchCommand command)
     {

@@ -56,7 +56,8 @@ internal static class LaunchChecks
 
         var received = new List<LaunchCommand>();
         var arrived = new SemaphoreSlim(0);
-        using (new InstanceChannel(name, command => { lock (received) received.Add(command); arrived.Release(); }))
+        int screened = 0;
+        using (new InstanceChannel(name, client => { Interlocked.Increment(ref screened); return client.IsConnected; }, command => { lock (received) received.Add(command); arrived.Release(); }))
         {
             foreach (var command in new[] { LaunchCommand.CaptureArea, LaunchCommand.SaveFullScreen, LaunchCommand.CopyFullScreen })
             {
@@ -80,6 +81,16 @@ internal static class LaunchChecks
             Require(await arrived.WaitAsync(timeout) && received.Count == 4 && received[^1] == LaunchCommand.CopyFullScreen, "only valid commands are delivered");
         }
         Require(!await InstanceChannel.SendAsync(name, LaunchCommand.CaptureArea, TimeSpan.FromMilliseconds(300)), "a disposed channel stops accepting commands");
+        Require(screened >= 5, "every connected client is screened before its command is read");
+
+        string refusing = "ss-" + Guid.NewGuid().ToString("N")[..12];
+        int delivered = 0;
+        using (new InstanceChannel(refusing, _ => false, _ => Interlocked.Increment(ref delivered)))
+        {
+            Require(!await InstanceChannel.SendAsync(refusing, LaunchCommand.CopyFullScreen, timeout), "a refused client, such as one from another session, is answered '0'");
+            await Task.Delay(100);
+            Require(delivered == 0, "a refused client's command is never delivered");
+        }
         return checks;
     }
 }

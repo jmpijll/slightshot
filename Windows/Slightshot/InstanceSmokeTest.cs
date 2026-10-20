@@ -30,7 +30,7 @@ internal static class InstanceSmokeTest
             Require(owns, "no other Slightshot instance owns the session mutex");
             try
             {
-                using var channel = new InstanceChannel(App.InstancePipeName(), command => { lock (received) received.Add(command); });
+                using var channel = new InstanceChannel(App.InstancePipeName(), App.IsSameSessionClient, command => { lock (received) received.Add(command); });
                 (string[] Arguments, LaunchCommand? Expected, int ExitCode)[] cases =
                 [
                     ([], LaunchCommand.CaptureArea, 0), (["--capture-area"], LaunchCommand.CaptureArea, 0),
@@ -59,7 +59,7 @@ internal static class InstanceSmokeTest
             }
             finally { mutex.ReleaseMutex(); }
         }
-        checks.Add("Real second launches forward no arguments and --capture-area as CaptureArea, --capture-full as SaveFullScreen and --copy-full as CopyFullScreen, then exit 0; an unknown argument exits 2 without a command.");
+        checks.Add("With the production same-session client check, real second launches forward no arguments and --capture-area as CaptureArea, --capture-full as SaveFullScreen and --copy-full as CopyFullScreen, then exit 0; an unknown argument exits 2 without a command.");
 
         string logDirectory = Path.Combine(directory, "error-log");
         var reports = new List<string>();
