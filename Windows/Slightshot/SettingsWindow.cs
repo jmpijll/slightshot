@@ -32,13 +32,13 @@ internal sealed class SettingsWindow : Window
     {
         var panel = Column();
         bool atLogin;
-        using (var run = Registry.CurrentUser.OpenSubKey(RunKey)) atLogin = run?.GetValue("Slightshot") is string;
+        using (var run = Registry.CurrentUser.OpenSubKey(RunKey)) atLogin = LaunchAtLogin.Targets(run?.GetValue("Slightshot") as string, Environment.ProcessPath!);
         var login = Check("Launch Slightshot at login", atLogin, enabled =>
         {
             try
             {
                 using var key = Registry.CurrentUser.CreateSubKey(RunKey);
-                if (enabled) key.SetValue("Slightshot", $"\"{Environment.ProcessPath}\""); else key.DeleteValue("Slightshot", false);
+                if (enabled) key.SetValue("Slightshot", LaunchAtLogin.Command(Environment.ProcessPath!)); else key.DeleteValue("Slightshot", false);
             }
             catch (Exception ex) when (ex is UnauthorizedAccessException or IOException or System.Security.SecurityException) { MessageBox.Show(ex.Message, "Slightshot"); }
         });
