@@ -225,10 +225,8 @@ import AVFoundation
         let blurOff = try await frame(output, 3)
         let blurOn = try await frame(output, 4.25)
         return [
-            "markerRegionDifferenceFromSource1_5s": ReviewPixels.difference(exportStart,
-                try await frame(source, keptStart), in: marker),
-            "markerRegionDifferenceFromSource0s": ReviewPixels.difference(exportStart,
-                try await frame(source, 0), in: marker),
+            "firstFrameMarkerDifferenceBySourceSecond": try await candidates(for: exportStart, in: source,
+                                                                             region: marker),
             "arrowRedFractionAtExport0_25s": ReviewPixels.redFraction(early, in: arrow),
             "arrowRedFractionAtExport2s": ReviewPixels.redFraction(during, in: arrow),
             "captionRedFractionAtExport0_25s": ReviewPixels.redFraction(early, in: caption),
@@ -237,6 +235,18 @@ import AVFoundation
             "blurDifferenceFromSourceAtExport4_25s": ReviewPixels.difference(blurOn,
                 try await frame(source, 5.75), in: blur),
         ]
+    }
+
+    /// The export's first frame must match the source at the trim start more
+    /// closely than any nearby source time.
+    private static func candidates(for frame: [UInt8], in source: URL,
+                                   region: CGRect) async throws -> [String: Double] {
+        var differences: [String: Double] = [:]
+        for time in [0, 1, 1.25, keptStart, 1.75, 2] {
+            let pixels = try ReviewPixels.rgba(try await image(in: source, at: time))
+            differences[String(format: "%.2f", time)] = ReviewPixels.difference(frame, pixels, in: region)
+        }
+        return differences
     }
 
     private static func image(in url: URL, at time: TimeInterval) async throws -> CGImage {
@@ -257,8 +267,8 @@ import AVFoundation
             abs(number(value, "durationSeconds") - edit.trim.duration) <= 1 / number(value, "framesPerSecond")
                 && abs((value["frameCount"] as? Int ?? 0) - (value["expectedFrameCount"] as? Int ?? -9)) <= 1
         }
-        let shifted = number(frames, "markerRegionDifferenceFromSource1_5s") * 3
-                < number(frames, "markerRegionDifferenceFromSource0s")
+        let matches = frames["firstFrameMarkerDifferenceBySourceSecond"] as? [String: Double] ?? [:]
+        let shifted = matches.min { $0.value < $1.value }?.key == String(format: "%.2f", keptStart)
             && number(frames, "arrowRedFractionAtExport0_25s") < 0.001
             && number(frames, "arrowRedFractionAtExport2s") > 0.003
             && number(frames, "captionRedFractionAtExport0_25s") < 0.001
