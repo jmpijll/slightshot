@@ -81,8 +81,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private func item(_ title: String, _ combo: KeyCombo?, _ action: Selector) -> NSMenuItem {
         let menuItem = NSMenuItem(title: title, action: action, keyEquivalent: "")
         menuItem.target = self
-        if let combo, !combo.isEmpty {
-            menuItem.keyEquivalent = KeyCombo.keyName(for: combo.keyCode).lowercased()
+        if let combo, !combo.isEmpty, let keyEquivalent = combo.menuKeyEquivalent {
+            menuItem.keyEquivalent = keyEquivalent
             menuItem.keyEquivalentModifierMask = combo.cocoaModifiers
         }
         return menuItem

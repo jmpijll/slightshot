@@ -1,0 +1,132 @@
+{
+  "issue": 43,
+  "platform": "macOS 27.0.1 arm64",
+  "sourceCommit": "7ac08f4",
+  "build": "Scripts/bundle.sh, copied with bundle id com.jmpijll.slightshot.review43, no SUFeedURL or URL types, ad-hoc signed",
+  "interaction": "automated: review_driver.m injected with DYLD_INSERT_LIBRARIES posts mouse and key events into the app's own event queue",
+  "storedFormat": "keyCode:carbonModifiers (25:768 is Cmd-Shift-9, 49:256 is Cmd-Space, 105:0 is F13)",
+  "carbonProbe": {
+    "note": "RegisterEventHotKey from a standalone process on the same Mac",
+    "sameProcessDuplicate": -9878,
+    "otherProcessAlreadyRegistered": 0,
+    "cmdSpaceExclusive": -9878,
+    "cmdTabExclusive": -9878,
+    "cmdSpaceNonExclusive": 0,
+    "bareF13": 0
+  },
+  "steps": [
+    {
+      "recorders": 3,
+      "step": "open Shortcuts tab",
+      "stored": {
+        "captureArea": "25:768",
+        "copyFullScreen": "26:768",
+        "saveFullScreen": "28:768"
+      },
+      "tabSelected": true
+    },
+    {
+      "probeCmdShift9WhileRecording": 0,
+      "step": "Capture area: press Shift-A",
+      "stored": {
+        "captureArea": "25:768",
+        "copyFullScreen": "26:768",
+        "saveFullScreen": "28:768"
+      }
+    },
+    {
+      "step": "Capture area: press bare A",
+      "stored": {
+        "captureArea": "25:768",
+        "copyFullScreen": "26:768",
+        "saveFullScreen": "28:768"
+      }
+    },
+    {
+      "probeCmdShift9AfterRecording": -9878,
+      "step": "Copy full screen: press Cmd-Shift-8",
+      "stored": {
+        "captureArea": "25:768",
+        "copyFullScreen": "26:768",
+        "saveFullScreen": "28:768"
+      }
+    },
+    {
+      "step": "Copy full screen: press Cmd-Space",
+      "stored": {
+        "captureArea": "25:768",
+        "copyFullScreen": "49:256",
+        "saveFullScreen": "28:768"
+      }
+    },
+    {
+      "step": "accept F13, Ctrl-Option-Space, Ctrl-Option-Right",
+      "stored": {
+        "captureArea": "105:0",
+        "copyFullScreen": "124:6144",
+        "saveFullScreen": "49:6144"
+      }
+    },
+    {
+      "items": [
+        {
+          "keyEquivalent": "0xF710",
+          "modifierMask": 0,
+          "title": "Capture Area"
+        },
+        {
+          "keyEquivalent": "",
+          "modifierMask": 1048576,
+          "title": "Capture Area in 5 Seconds"
+        },
+        {
+          "keyEquivalent": "0x0020",
+          "modifierMask": 786432,
+          "title": "Capture Full Screen"
+        },
+        {
+          "keyEquivalent": "0xF703",
+          "modifierMask": 786432,
+          "title": "Copy Full Screen"
+        },
+        {
+          "keyEquivalent": "",
+          "modifierMask": 1048576,
+          "title": "Edit Image from Clipboard"
+        },
+        {
+          "keyEquivalent": "",
+          "modifierMask": 1048576,
+          "title": "Open Screenshots Folder"
+        },
+        {
+          "keyEquivalent": "0x002C",
+          "modifierMask": 1048576,
+          "title": "Settings…"
+        },
+        {
+          "keyEquivalent": "",
+          "modifierMask": 1048576,
+          "title": "Check for Updates…"
+        },
+        {
+          "keyEquivalent": "",
+          "modifierMask": 1048576,
+          "title": "About Slightshot"
+        },
+        {
+          "keyEquivalent": "0x0071",
+          "modifierMask": 1048576,
+          "title": "Quit Slightshot"
+        }
+      ],
+      "step": "status menu items",
+      "stored": {
+        "captureArea": "105:0",
+        "copyFullScreen": "124:6144",
+        "saveFullScreen": "49:6144"
+      }
+    }
+  ],
+  "contentionTest": "ShortcutValidationTests.anotherAppsExclusiveHotKeyDoesNotBlockRegistration: a python3 helper holds Ctrl-Option-Shift-Cmd-F18 exclusively; Slightshot still registers it and keeps it after the helper exits"
+}

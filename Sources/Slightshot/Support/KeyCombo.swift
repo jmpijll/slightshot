@@ -24,17 +24,22 @@ nonisolated struct KeyCombo: Equatable, Hashable, Sendable {
         self.carbonModifiers = carbonModifiers
     }
 
-    init?(event: NSEvent) {
+    init(event: NSEvent) {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         var carbon: UInt32 = 0
         if flags.contains(.command) { carbon |= UInt32(cmdKey) }
         if flags.contains(.shift) { carbon |= UInt32(shiftKey) }
         if flags.contains(.option) { carbon |= UInt32(optionKey) }
         if flags.contains(.control) { carbon |= UInt32(controlKey) }
-        // A bare key with no modifiers would swallow normal typing.
-        guard carbon != 0 else { return nil }
         self.keyCode = UInt32(event.keyCode)
         self.carbonModifiers = carbon
+    }
+
+    /// A global shortcut takes its key from every app, so a key that types
+    /// text needs ⌘ or ⌃. Shift and Option alone still type characters
+    /// (⇧A, ⌥E). Function keys type nothing and may stand alone.
+    var interceptsTyping: Bool {
+        Self.functionKeys[Int(keyCode)] == nil && carbonModifiers & UInt32(cmdKey | controlKey) == 0
     }
 
     var cocoaModifiers: NSEvent.ModifierFlags {
@@ -48,8 +53,11 @@ nonisolated struct KeyCombo: Equatable, Hashable, Sendable {
 
     // MARK: - Display
 
-    var displayString: String {
-        guard !isEmpty else { return "None" }
+    var displayString: String { isEmpty ? "None" : keysString }
+
+    /// The modifiers and key. Unlike `displayString` it shows a bare A, whose
+    /// key code is 0, as "A" rather than as the cleared shortcut.
+    var keysString: String {
         var s = ""
         if carbonModifiers & UInt32(controlKey) != 0 { s += "\u{2303}" }
         if carbonModifiers & UInt32(optionKey) != 0 { s += "\u{2325}" }
@@ -88,9 +96,39 @@ nonisolated struct KeyCombo: Equatable, Hashable, Sendable {
         kVK_UpArrow: "\u{2191}", kVK_DownArrow: "\u{2193}",
         kVK_Home: "\u{2196}", kVK_End: "\u{2198}",
         kVK_PageUp: "\u{21DE}", kVK_PageDown: "\u{21DF}",
-        kVK_F1: "F1", kVK_F2: "F2", kVK_F3: "F3", kVK_F4: "F4", kVK_F5: "F5", kVK_F6: "F6",
-        kVK_F7: "F7", kVK_F8: "F8", kVK_F9: "F9", kVK_F10: "F10", kVK_F11: "F11", kVK_F12: "F12",
-        kVK_F13: "F13", kVK_F14: "F14", kVK_F15: "F15", kVK_F16: "F16",
+    ].merging(functionKeys.mapValues { "F\($0)" }) { special, _ in special }
+
+    /// Virtual key code to function key number.
+    private static let functionKeys: [Int: Int] = [
+        kVK_F1: 1, kVK_F2: 2, kVK_F3: 3, kVK_F4: 4, kVK_F5: 5, kVK_F6: 6, kVK_F7: 7,
+        kVK_F8: 8, kVK_F9: 9, kVK_F10: 10, kVK_F11: 11, kVK_F12: 12, kVK_F13: 13,
+        kVK_F14: 14, kVK_F15: 15, kVK_F16: 16, kVK_F17: 17, kVK_F18: 18, kVK_F19: 19, kVK_F20: 20,
+    ]
+
+    // MARK: - Menu key equivalents
+
+    /// The `NSMenuItem.keyEquivalent` for this key, or nil when it has none.
+    var menuKeyEquivalent: String? {
+        if let number = Self.functionKeys[Int(keyCode)] {
+            return Self.character(NSF1FunctionKey + number - 1)
+        }
+        if let special = Self.specialKeyEquivalents[Int(keyCode)] { return special }
+        let name = Self.keyName(for: keyCode)
+        return name == "?" ? nil : name.lowercased()
+    }
+
+    private static func character(_ scalar: Int) -> String {
+        String(utf16CodeUnits: [UniChar(scalar)], count: 1)
+    }
+
+    private static let specialKeyEquivalents: [Int: String] = [
+        kVK_Return: "\r", kVK_Tab: "\t", kVK_Space: " ",
+        kVK_Delete: character(NSBackspaceCharacter), kVK_ForwardDelete: character(NSDeleteFunctionKey),
+        kVK_Escape: "\u{1B}",
+        kVK_LeftArrow: character(NSLeftArrowFunctionKey), kVK_RightArrow: character(NSRightArrowFunctionKey),
+        kVK_UpArrow: character(NSUpArrowFunctionKey), kVK_DownArrow: character(NSDownArrowFunctionKey),
+        kVK_Home: character(NSHomeFunctionKey), kVK_End: character(NSEndFunctionKey),
+        kVK_PageUp: character(NSPageUpFunctionKey), kVK_PageDown: character(NSPageDownFunctionKey),
     ]
 
     // MARK: - Defaults storage
