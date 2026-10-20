@@ -48,7 +48,7 @@ internal static class LaunchChecks
     {
         int checks = 0;
         void Require(bool condition, string message) { if (!condition) throw new InvalidOperationException(message); checks++; }
-        string name = "slightshot-check-" + Guid.NewGuid().ToString("N");
+        string name = "ss-" + Guid.NewGuid().ToString("N")[..12];
         var timeout = TimeSpan.FromSeconds(5);
         Require(!await InstanceChannel.SendAsync(name, LaunchCommand.CaptureArea, TimeSpan.FromMilliseconds(300)), "forwarding without a running instance fails within its timeout");
 
