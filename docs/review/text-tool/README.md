@@ -43,6 +43,10 @@ Main, then the fix:
 
 ![macOS export with the fix](mac-export-after.png)
 
+Every overlay shortcut, sent while the overlay, the palette slider or a toolbar
+button has focus, in the capture overlay and the clipboard editor, is checked in
+[mac-shortcuts.md](mac-shortcuts.md).
+
 Reproduce after `swift build`:
 
 ```sh
