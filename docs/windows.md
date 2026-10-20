@@ -243,9 +243,11 @@ is omitted. With Windows' Print Screen screen capture turned on, it checks that
 Print Screen is reported unavailable and captures the Settings explanation. It
 then turns that setting off, records Print Screen alone and registers it while
 other bare keys stay rejected. The original setting is restored afterwards.
-Injected Print Screen input has not produced a global hotkey callback on the CI
-desktop, so the report records each injected form; the Print Screen callback
-itself needs a check with a physical key. [Saved shortcut screenshots and native/portable reports](review/windows-key-shortcuts/README.md)
+On the CI desktop, Windows kept opening its own capture for injected Print
+Screen after the registry value was cleared, and no global hotkey callback
+arrived. The report records each injected form and the window that took the
+foreground; the Print Screen callback itself needs a check with a physical key
+after turning the setting off in Windows Settings. [Saved shortcut screenshots and native/portable reports](review/windows-key-shortcuts/README.md)
 identify the fixture inputs, platform and exact source commit.
 
 The instance fixture holds the production session mutex and command pipe, then

@@ -166,6 +166,7 @@ internal static class ShortcutSmokeTest
             CaptureWindow(window, Path.Combine(directory, "shortcut-combinations-window.png"));
 
             await FocusAsync(window, area); await ChordAsync(PrintScreen);
+            await CloseScreenSnippingAsync(); await FocusAsync(window, area);
             Require(settings.CaptureAreaHotKey == new HotKey(PrintScreen, 0) && area.Text == "Print Screen", $"Print Screen alone records through the real field: observed field={area.Text}, model key={settings.CaptureAreaHotKey.Key}, modifiers={settings.CaptureAreaHotKey.Modifiers}");
             var note = ShortcutNote(window);
             Require(!note.IsVisible, "with Windows' Print Screen screen capture off, Settings shows no warning for Print Screen");
@@ -206,8 +207,8 @@ internal static class ShortcutSmokeTest
         {
             HotKey[] failures = service.Register(new Settings { CaptureAreaHotKey = new(PrintScreen, 0), SaveFullScreenHotKey = new(F13, 0), CopyFullScreenHotKey = new(0, 0) });
             Require(failures.SequenceEqual([new HotKey(F13, 0)]), $"RegisterHotKey accepts Print Screen alone and bare F13 stays rejected (PrintScreenKeyForSnippingEnabled={snippingSetting ?? "not set"}): " + string.Join(", ", failures));
-            // Injected Print Screen has not reached WM_HOTKEY on the CI desktop,
-            // so record each form, its edge and whether Windows' capture opened.
+            // The CI shell keeps Print Screen for its capture even after the
+            // setting is cleared, so record each form, its edge and the foreground.
             (string Name, ushort Key, ushort Scan, uint Flags)[] forms =
                 [("virtual key, extended", PrintScreen, 0, 1), ("virtual key", PrintScreen, 0, 0), ("virtual key and scan 0x37, extended", PrintScreen, 0x37, 1), ("scan code 0x37, extended", 0, 0x37, 9)];
             foreach (var form in forms)
@@ -218,7 +219,7 @@ internal static class ShortcutSmokeTest
                 SendRaw(form.Key, form.Scan, form.Flags | 2); await Task.Delay(300);
                 string foreground = DescribeForeground();
                 printScreenInjection.Add(new { form = form.Name, callbacksAfterKeyDown = afterDown, callbacksAfterKeyUp = printScreenCallbacks.Count - before - afterDown, foreground });
-                if (foreground.Contains("Screen Snipping")) { await ChordAsync(0x1b); await Task.Delay(300); }
+                await CloseScreenSnippingAsync();
             }
             File.WriteAllText(Path.Combine(directory, "shortcut-print-screen-injection.json"), JsonSerializer.Serialize(new { sourceCommit, printScreenKeyForSnippingEnabled = snippingSetting?.ToString() ?? "not set", printScreenInjection }, JsonOptions));
             Require(printScreenCallbacks.All(id => id == 1), "only the capture-area hotkey can fire for Print Screen");
@@ -235,6 +236,17 @@ internal static class ShortcutSmokeTest
             fixtureInputs = new[] { "Windows Print Screen screen capture on, then off", "Print Screen", "Left Win+F13", "Right Win+F13 after Ctrl+Shift+A", "Ctrl+Win+F13", "Shift+Alt+Win+F13", "Ctrl+Shift+Alt+Win+F13", "Ctrl+Shift+A", "bare modifiers", "duplicate assignment", "Escape" },
             recorded = new[] { restored.CaptureAreaHotKey, restored.SaveFullScreenHotKey, restored.CopyFullScreenHotKey }, globalCallbacks = callbacks, checks
         }, JsonOptions));
+    }
+
+    // Windows' capture overlay appears shortly after Print Screen and would
+    // take the following input, so close it before continuing.
+    private static async Task CloseScreenSnippingAsync()
+    {
+        for (int attempt = 0; attempt < 15; attempt++)
+        {
+            if (DescribeForeground().Contains("Screen Snipping")) { await ChordAsync(0x1b); await Task.Delay(300); return; }
+            await Task.Delay(100);
+        }
     }
 
     private static async Task ShowShortcutsAsync(Window window)
