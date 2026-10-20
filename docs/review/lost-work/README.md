@@ -1,7 +1,7 @@
 # Unsaved recording protection review
 
 Captured on 20 October 2026 on macOS 27.0.1, Apple silicon, from source commit
-`222433591226bc2b77f95258be72e43f55c68041` built as a Developer ID signed
+`8eba8448f0ff4a289b916b44608cc0f30975b48b` built as a Developer ID signed
 `Slightshot.app` and started with `--lost-work-review`.
 
 The fixture writes a synthetic four-second movie into a real
@@ -25,11 +25,20 @@ Before this change, the stream error would have deleted this recording.
 
 The automated sequence:
 
-1. Cancel. Slightshot keeps running, and the editor and temporary recording remain.
-2. Save…. The existing save panel opens, shown below. The fixture cancels the
-   panel, so the quit is cancelled and the editor returns.
+1. Cancel. Slightshot keeps running, and the editor and temporary recording
+   remain. A second quit request sent while the prompt is open is ignored.
+2. Save…. The quit is cancelled and the existing save panel opens, shown
+   below. A second quit while the panel is open is ignored. The fixture
+   cancels the panel, and the editor returns. After a successful save,
+   Slightshot quits again by itself.
 3. Discard Recording. The temporary recording is deleted and Slightshot quits.
 
 ![Save recording panel opened from the quit prompt](save-panel-from-quit.png)
 
 [validation.json](validation.json) records each step and check.
+
+`--quit-guard-probe` is a headless check of the same guard in a real
+`SlightshotApplication`. It sends repeated `terminate` calls and a reentrant
+delegate request, like a logout quit event, during the prompt and during a
+save. `UnsavedWorkTests` launches it, and its expected event order is checked
+in CI.
