@@ -251,20 +251,15 @@ final class RecordingCoordinator {
         return phase == nil
     }
 
-    /// Ask AppKit to delay termination until capture and export have released
-    /// their files. Cancellation never commits a partially encoded destination.
-    func prepareForTermination() async {
+    /// Removes the recording before an immediate quit. Encoders and capture stop
+    /// with the process; an export never replaces its destination unless it
+    /// completes, and its staging folder is swept at the next launch.
+    func discardForTermination() {
         isTerminating = true
         savePanel?.cancel(nil)
         startTask?.cancel()
         exportTask?.cancel()
         saveTask?.cancel()
-        await startTask?.value
-        if let session {
-            await session.stop()
-            _ = try? await session.waitUntilFinished()
-        }
-        await saveTask?.value
         reset()
     }
 }

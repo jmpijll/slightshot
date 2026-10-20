@@ -118,7 +118,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard inbox.isOwner else { return .terminateNow }
         delayedCapture.cancel()
-        return QuitGuard.live.reply { sender.reply(toApplicationShouldTerminate: $0) }
+        return QuitGuard.shared.reply()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -136,13 +136,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func removeAbandonedRecordings() {
         let launched = NSRunningApplication.current.launchDate ?? Date()
-        let folders = [
-            (ScreenRecordingSession.directoryPrefix, FileManager.default.temporaryDirectory),
-            (RecordingExport.stagingPrefix, Settings.shared.saveDirectory),
-        ]
+        let stagingParents = Set(RecordingExport.stagingParents + [Settings.shared.saveDirectory])
         Task.detached(priority: .utility) {
-            for (prefix, parent) in folders {
-                ScreenRecordingSession.removeAbandonedDirectories(prefix: prefix, in: parent, createdBefore: launched)
+            ScreenRecordingSession.removeAbandonedDirectories(
+                prefix: ScreenRecordingSession.directoryPrefix, in: FileManager.default.temporaryDirectory,
+                createdBefore: launched)
+            for parent in stagingParents {
+                ScreenRecordingSession.removeAbandonedDirectories(
+                    prefix: RecordingExport.stagingPrefix, in: parent, createdBefore: launched)
+                RecordingExport.forgetStagingParent(parent)
             }
         }
     }
@@ -187,6 +189,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
+/// AppKit quits at once when `terminate` arrives while the delegate's prompt is
+/// open, without asking the delegate again, so repeated requests stop here.
+final class SlightshotApplication: NSApplication {
+    override func terminate(_ sender: Any?) {
+        guard !QuitGuard.shared.isPending else { return }
+        super.terminate(sender)
+    }
+}
+
 /// Work that exists only in memory or a temporary folder, so quitting would lose it.
 enum UnsavedWork: Equatable {
     case recording(canSave: Bool)
@@ -195,26 +206,49 @@ enum UnsavedWork: Equatable {
 
 enum QuitChoice { case save, copy, discard, cancel }
 
-/// Decides whether a quit, logout or update relaunch may proceed. Cancelling
-/// returns `.terminateCancel`, which AppKit, logout and Sparkle all honour.
-struct QuitGuard {
-    let unsavedWork: () -> UnsavedWork?
-    let ask: (UnsavedWork) -> QuitChoice
-    let saveRecording: () async -> Bool
-    let copyAnnotations: () -> Bool
-    let discardRecording: () async -> Void
+/// Decides whether a quit, logout or update relaunch may proceed. It never
+/// returns `.terminateLater`: AppKit quits on a second request while a reply is
+/// pending, and a reply that needs the main queue never arrives when `terminate`
+/// was called from a main-queue block. Save cancels the quit and quits again
+/// once the recording is written.
+final class QuitGuard {
+    private let unsavedWork: () -> UnsavedWork?
+    private let ask: (UnsavedWork) -> QuitChoice
+    private let saveRecording: () async -> Bool
+    private let copyAnnotations: () -> Bool
+    private let discardRecording: () -> Void
+    private let quit: () -> Void
+    /// A prompt or a save started from a quit is in progress.
+    private(set) var isPending = false
 
-    static let live = QuitGuard(
+    init(unsavedWork: @escaping () -> UnsavedWork?, ask: @escaping (UnsavedWork) -> QuitChoice,
+         saveRecording: @escaping () async -> Bool, copyAnnotations: @escaping () -> Bool,
+         discardRecording: @escaping () -> Void, quit: @escaping () -> Void = { NSApp.terminate(nil) }) {
+        self.unsavedWork = unsavedWork
+        self.ask = ask
+        self.saveRecording = saveRecording
+        self.copyAnnotations = copyAnnotations
+        self.discardRecording = discardRecording
+        self.quit = quit
+    }
+
+    /// Replaced only by the headless `--quit-guard-probe`.
+    static var shared = QuitGuard(
         unsavedWork: { RecordingCoordinator.shared.unsavedWork ?? OverlayCoordinator.shared.unsavedWork },
         ask: { work in OverlayCoordinator.shared.withOverlayHidden { ask(about: work) } },
         saveRecording: { await RecordingCoordinator.shared.saveBeforeQuitting() },
         copyAnnotations: { OverlayCoordinator.shared.copyAnnotatedCapture() },
-        discardRecording: { await RecordingCoordinator.shared.prepareForTermination() }
+        discardRecording: { RecordingCoordinator.shared.discardForTermination() }
     )
 
-    func reply(_ finish: @escaping (Bool) -> Void) -> NSApplication.TerminateReply {
+    func reply() -> NSApplication.TerminateReply {
+        // A quit Apple event (logout) consults the delegate even while a prompt is open.
+        guard !isPending else { return .terminateCancel }
         guard let work = unsavedWork() else { return .terminateNow }
-        switch (work, ask(work)) {
+        isPending = true
+        let choice = ask(work)
+        isPending = false
+        switch (work, choice) {
         case (_, .cancel):
             return .terminateCancel
         case (.annotations, .copy):
@@ -222,14 +256,16 @@ struct QuitGuard {
         case (.annotations, _):
             return .terminateNow
         case (.recording(canSave: true), .save):
-            Task { finish(await saveRecording()) }
-            return .terminateLater
-        case (.recording, _):
+            isPending = true
             Task {
-                await discardRecording()
-                finish(true)
+                let saved = await saveRecording()
+                isPending = false
+                if saved { quit() }
             }
-            return .terminateLater
+            return .terminateCancel
+        case (.recording, _):
+            discardRecording()
+            return .terminateNow
         }
     }
 

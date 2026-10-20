@@ -124,10 +124,9 @@ final class OverlayCoordinator: OverlayViewDelegate {
 
     // MARK: - Quitting
 
-    /// Annotations exist only in the open editor until they are copied or saved.
-    var unsavedWork: UnsavedWork? {
-        views.contains { !$0.annotations.isEmpty } ? .annotations : nil
-    }
+    /// Annotations, including text still being typed, exist only in the open
+    /// editor until they are copied or saved.
+    var unsavedWork: UnsavedWork? { annotatedView == nil ? nil : .annotations }
 
     /// The capture overlay floats above alerts, so it steps aside while one is open.
     func withOverlayHidden<T>(_ body: () -> T) -> T {
@@ -137,13 +136,19 @@ final class OverlayCoordinator: OverlayViewDelegate {
         return body()
     }
 
-    /// Copies the annotated capture with the toolbar's own Copy action.
+    /// Copies the annotated capture with the toolbar's own Copy action, which
+    /// commits text still being typed first.
     func copyAnnotatedCapture() -> Bool {
         annotatedView?.toolbarDidRequest(.copy)
         return !isActive
     }
 
-    private var annotatedView: OverlayView? { views.first { !$0.annotations.isEmpty } }
+    private var annotatedView: OverlayView? {
+        views.first { view in
+            let draft = view.textEntry?.string.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return !view.annotations.isEmpty || !draft.isEmpty
+        }
+    }
 
     // MARK: - OverlayViewDelegate
 

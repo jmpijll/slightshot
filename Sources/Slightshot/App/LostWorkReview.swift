@@ -6,7 +6,7 @@ import ScreenCaptureKit
 /// for ScreenCaptureKit output; the coordinator, editor and quit prompt are production code.
 enum LostWorkReview {
     static func run() {
-        let app = NSApplication.shared
+        let app = SlightshotApplication.shared
         let index = CommandLine.arguments.firstIndex(of: "--lost-work-review")!
         let directory = CommandLine.arguments[safe: index + 1].map { URL(fileURLWithPath: $0, isDirectory: true) }
             ?? URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
@@ -52,7 +52,7 @@ private final class LostWorkReviewDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        QuitGuard.live.reply { sender.reply(toApplicationShouldTerminate: $0) }
+        QuitGuard.shared.reply()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -105,6 +105,8 @@ private final class LostWorkReviewDelegate: NSObject, NSApplicationDelegate {
         let alert = try await waitFor("the quit prompt") { NSApp.modalWindow }
         try await Task.sleep(for: .milliseconds(600))
         if let name { try await capture(name) }
+        NSApp.terminate(nil)
+        check("A second quit while the prompt is open was ignored", NSApp.modalWindow === alert)
         let target = try require(buttons(in: alert.contentView).first { $0.title == button },
                                  "The quit prompt has no \(button) button.")
         record("Quit requested; prompt \"\(alert.title.isEmpty ? promptText(alert) : alert.title)\"; "
@@ -150,6 +152,9 @@ private final class LostWorkReviewDelegate: NSObject, NSApplicationDelegate {
                             } else {
                                 record("Captured \(name) (ScreenCaptureKit, Slightshot windows only)")
                             }
+                            NSApp.terminate(nil)
+                            check("A second quit while the save panel is open was ignored",
+                                  NSApp.windows.contains { $0 is NSSavePanel && $0.isVisible })
                             record("Automated click: Cancel in the save panel")
                             let panel = NSApp.windows.first { $0 is NSSavePanel && $0.isVisible } as? NSSavePanel
                             panel?.cancel(nil)

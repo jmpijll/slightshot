@@ -57,6 +57,10 @@ if CommandLine.arguments.contains("--delayed-review") {
     exit(EXIT_SUCCESS)
 }
 
+if CommandLine.arguments.contains("--quit-guard-probe") {
+    QuitGuardProbe.run()
+}
+
 if CommandLine.arguments.contains("--lost-work-review") {
     LostWorkReview.run()
     exit(EXIT_SUCCESS)
@@ -75,7 +79,7 @@ do {
     exit(EXIT_FAILURE)
 }
 
-let app = NSApplication.shared
+let app = SlightshotApplication.shared
 let delegate = AppDelegate(launchCommand: LaunchCommand(arguments: CommandLine.arguments), inbox: commandInbox)
 app.delegate = delegate
 app.setActivationPolicy(.accessory)
