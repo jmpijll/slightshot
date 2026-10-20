@@ -370,7 +370,7 @@ final class VideoEditorWindow: NSWindow, NSWindowDelegate {
         canvas.refresh()
     }
 
-    @objc private func saveRecording() { canvas.commitTextEntry(); pause(); onSave?(annotations) }
+    @objc func saveRecording() { canvas.commitTextEntry(); pause(); onSave?(annotations) }
     @objc private func discardRecording() { pause(); onDiscard?() }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool { discardRecording(); return false }
