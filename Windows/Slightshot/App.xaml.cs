@@ -111,7 +111,7 @@ public partial class App : System.Windows.Application
             Shutdown(forwarded ? 0 : 1); return;
         }
         bool firstRun = !Directory.Exists(DataDirectory);
-        settings = Settings.Load();
+        settings = Settings.Load(out string? settingsNotice);
         recording = new RecordingCoordinator(settings);
         trayIcon = CreateTrayIcon();
         tray = new Forms.NotifyIcon { Icon = trayIcon, Text = "Slightshot", Visible = true };
@@ -123,7 +123,8 @@ public partial class App : System.Windows.Application
         hotKeys = new HotKeyService(id => Dispatcher.InvokeAsync(() => { if (id == 1) BeginCapture(); else FullScreen(id == 2 ? CaptureAction.Save : CaptureAction.Copy); }));
         UpdateSettings();
         commands = new InstanceChannel(InstancePipeName(), IsSameSessionClient, received => Dispatcher.InvokeAsync(() => Run(received)));
-        if (firstRun && unavailable.Length == 0)
+        if (settingsNotice != null) ShowBalloon(8000, "Settings reset", settingsNotice, Forms.ToolTipIcon.Warning);
+        else if (firstRun && unavailable.Length == 0)
             ShowBalloon(8000, "Slightshot is running", settings.CaptureAreaHotKey.IsEmpty
                 ? "Double-click the Slightshot icon in the notification area to capture an area."
                 : $"Press {settings.CaptureAreaHotKey} to capture an area, or use the Slightshot icon in the notification area.", Forms.ToolTipIcon.Info);
@@ -223,7 +224,7 @@ public partial class App : System.Windows.Application
         Add(menu, "Open Screenshots Folder", () => { try { Directory.CreateDirectory(settings.SaveDirectory); Open(settings.SaveDirectory); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Error(ex.Message); } });
         menu.Items.Add(new Forms.ToolStripSeparator());
         Add(menu, "Settings…", ShowSettings);
-        Add(menu, "Download updates…", () => Open(AppInfo.ReleaseUrl));
+        Add(menu, "Check for Updates…", () => _ = UpdateCheck.RunAsync(preferences));
         Add(menu, "About Slightshot", () => MessageBox.Show(AppInfo.AboutText, "About Slightshot", MessageBoxButton.OK));
         menu.Items.Add(new Forms.ToolStripSeparator()); Add(menu, "Quit Slightshot", Quit);
         return menu;
