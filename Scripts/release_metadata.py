@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""Use the local bundle's Git build counter and reject non-increasing releases."""
+"""Use the local bundle's Git build counter and reject non-increasing releases.
+
+With --check-downloads, require every appcast enclosure to be publicly downloadable."""
 import argparse
 from pathlib import Path
 import re
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 import xml.etree.ElementTree as ET
 
 SPARKLE = "{http://www.andymatuschak.org/xml-namespaces/sparkle}"
@@ -51,9 +55,30 @@ def release_build(repository, version, appcasts):
     return build
 
 
+def check_downloads(appcast):
+    root = ET.parse(appcast).getroot()
+    channel = root.find("channel")
+    if root.tag != "rss" or channel is None:
+        raise ValueError("Invalid appcast: expected an RSS channel.")
+    for enclosure in channel.findall("item/enclosure"):
+        url, length = enclosure.get("url", ""), enclosure.get("length", "")
+        try:
+            with urllib.request.urlopen(url, timeout=60) as response:
+                size = 0
+                while chunk := response.read(1 << 20):
+                    size += len(chunk)
+        except (urllib.error.URLError, ValueError) as error:
+            raise ValueError(f"{url} is not publicly available: {error}") from error
+        if str(size) != length:
+            raise ValueError(f"{url} has {size} bytes; the appcast expects {length}.")
+        print(f"{url}: {size} bytes")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--version", required=True)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--version")
+    mode.add_argument("--check-downloads", type=Path, metavar="APPCAST")
     parser.add_argument("--repository", type=Path, default=Path.cwd())
     parser.add_argument("--appcast", type=Path, action="append",
                         help="Check each supplied appcast; defaults to public/appcast.xml.")
@@ -62,7 +87,10 @@ def main():
     appcasts = [path if path.is_absolute() else repository / path
                 for path in (args.appcast or [Path("public/appcast.xml")])]
     try:
-        print(release_build(repository, args.version, appcasts))
+        if args.check_downloads:
+            check_downloads(args.check_downloads)
+        else:
+            print(release_build(repository, args.version, appcasts))
     except (ValueError, OSError, ET.ParseError, subprocess.CalledProcessError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 1

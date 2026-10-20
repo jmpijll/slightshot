@@ -1,7 +1,7 @@
 name: Update feed
 
 # The appcast is committed to public/ so it is auditable in git; Pages only
-# serves it. Releases push a regenerated appcast here, which triggers this.
+# serves it. Releases dispatch this after committing a regenerated appcast.
 on:
   push:
     branches: [main]
@@ -25,6 +25,9 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      # Never serve an update whose download is missing, still a draft or truncated.
+      - name: Check every feed download is public
+        run: python3 Scripts/release_metadata.py --check-downloads public/appcast.xml
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
         with:
           path: public

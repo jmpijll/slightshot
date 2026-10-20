@@ -14,8 +14,7 @@ on:
         default: false
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
 
 concurrency:
   group: release
@@ -31,10 +30,14 @@ jobs:
 
   release:
     needs: windows
-    name: Build, notarise and publish
+    name: Build, notarise and sign the feed
     # Same macOS 27/Xcode toolchain as regular CI. Optional dedicated Mac runner.
     runs-on: ${{ fromJSON(vars.MACOS_RELEASE_RUNNER || '"xcode-27"') }}
     timeout-minutes: 90
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      publish: ${{ steps.version.outputs.publish }}
+      feed_base: ${{ steps.appcast.outputs.base }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -243,52 +246,128 @@ jobs:
           SWIFT
           swift "$RUNNER_TEMP/verify_appcast.swift" | tee -a "$GITHUB_STEP_SUMMARY"
 
+      - name: Preserve the signed appcast
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: Slightshot-appcast
+          path: dist/appcast.xml
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Remove signing credentials
+        if: always()
+        run: |
+          rm -f /tmp/certificate.p12 /tmp/sparkle_key
+          security delete-keychain build.keychain 2>/dev/null || true
+
+  # Publishes only the artifacts verified above. Rerunning this failed job reuses
+  # them; each step converges, so a rerun finishes a partial publication.
+  publish:
+    needs: [windows, release]
+    if: needs.release.outputs.publish == 'true'
+    name: Publish release and update feed
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ needs.release.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - name: Download the signed disk image
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: Slightshot-macos-signed-dmg
+          path: release-assets
+
       - name: Download verified Windows installers and portable archives
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: Slightshot-windows-release-assets
-          path: build/windows-release
+          path: release-assets
 
-      # Publication order: draft release, feed commit on main, public release,
-      # Pages. Downloads become public only after main records their feed entry.
-      - name: Stage the GitHub release as a draft
-        if: steps.version.outputs.publish == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.version }}
+      - name: Download the signed appcast
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: Slightshot-appcast
+          path: feed
+
+      # GitHub ignores the release target when the tag already exists.
+      - name: Check the version tag
         run: |
           TAG="v$VERSION"
-          while state="$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null)"; do
-            [[ "$state" == true ]] || {
-              echo "::error::$TAG is already published. Release a new version instead."
+          if git ls-remote --exit-code origin "refs/tags/$TAG" > /dev/null; then
+            git fetch --no-tags --force origin "refs/tags/$TAG:refs/tags/$TAG"
+            tagged="$(git rev-parse "refs/tags/$TAG^{commit}")"
+            [[ "$tagged" == "$GITHUB_SHA" ]] || {
+              echo "::error::$TAG points at $tagged, not the release source $GITHUB_SHA."
               exit 1
             }
-            gh release delete "$TAG" --yes
+          else
+            status=$?
+            [[ "$status" == 2 ]] || exit "$status"
+          fi
+
+      - name: Publish the GitHub release
+        run: |
+          TAG="v$VERSION"
+          assets=(
+            "release-assets/Slightshot-$VERSION.dmg"
+            release-assets/Slightshot-windows-x64.zip
+            release-assets/Slightshot-windows-arm64.zip
+            release-assets/Slightshot-windows-x64-setup.exe
+            release-assets/Slightshot-windows-arm64-setup.exe
+          )
+          if ! draft="$(gh release view "$TAG" --json isDraft --jq .isDraft)"; then
+            gh release create "$TAG" --draft --target "$GITHUB_SHA" \
+              --title "Slightshot $VERSION" --generate-notes "${assets[@]}"
+          elif [[ "$draft" == true ]]; then
+            gh release upload "$TAG" --clobber "${assets[@]}"
+          fi
+          # An earlier attempt's public release is reused only if it has these bytes.
+          uploaded="$(gh release view "$TAG" --json assets --jq '.assets[] | "\(.name) \(.digest)"')"
+          for asset in "${assets[@]}"; do
+            expected="$(basename "$asset") sha256:$(shasum -a 256 "$asset" | cut -d' ' -f1)"
+            grep -qxF "$expected" <<< "$uploaded" || {
+              echo "::error::$TAG does not carry this run's $(basename "$asset")."
+              exit 1
+            }
           done
-          gh release create "$TAG" --draft --target "$GITHUB_SHA" \
-            --title "Slightshot $VERSION" --generate-notes \
-            "build/Slightshot-$VERSION.dmg" \
-            build/windows-release/Slightshot-windows-x64.zip \
-            build/windows-release/Slightshot-windows-arm64.zip \
-            build/windows-release/Slightshot-windows-x64-setup.exe \
-            build/windows-release/Slightshot-windows-arm64-setup.exe
+          gh release edit "$TAG" --draft=false
+
+      - name: Wait for public downloads
+        run: |
+          for attempt in 1 2 3 4 5 6; do
+            python3 Scripts/release_metadata.py --check-downloads feed/appcast.xml && exit 0
+            sleep $((attempt * 10))
+          done
+          echo "::error::The appcast's downloads are not publicly available."
+          exit 1
 
       - name: Commit the appcast onto main
-        if: steps.version.outputs.publish == 'true'
         env:
-          VERSION: ${{ steps.version.outputs.version }}
-          FEED_BASE: ${{ steps.appcast.outputs.base }}
+          FEED_BASE: ${{ needs.release.outputs.feed_base }}
           GIT_AUTHOR_NAME: github-actions[bot]
           GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
           GIT_COMMITTER_NAME: github-actions[bot]
           GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
         run: |
-          blob="$(git hash-object -w dist/appcast.xml)"
+          blob="$(git hash-object -w feed/appcast.xml)"
           export GIT_INDEX_FILE="$RUNNER_TEMP/feed-index"
           for attempt in 1 2 3 4 5; do
             git fetch --no-tags origin main
-            if [[ "$(git rev-parse FETCH_HEAD:public/appcast.xml)" != "$FEED_BASE" ]]; then
-              echo "::error::public/appcast.xml changed on main after this feed was generated. Rerun the release."
+            current="$(git rev-parse FETCH_HEAD:public/appcast.xml)"
+            if [[ "$current" == "$blob" ]]; then
+              echo "main already publishes this appcast."
+              exit 0
+            fi
+            if [[ "$current" != "$FEED_BASE" ]]; then
+              echo "::error::public/appcast.xml changed on main after this feed was generated."
               exit 1
             fi
             git read-tree FETCH_HEAD
@@ -300,22 +379,10 @@ jobs:
           echo "::error::main kept moving; the appcast was not pushed after 5 attempts."
           exit 1
 
-      - name: Publish the GitHub release
-        if: steps.version.outputs.publish == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.version }}
-        run: gh release edit "v$VERSION" --draft=false
-
       # A push made with GITHUB_TOKEN does not trigger the Pages push workflow.
       - name: Deploy the update feed
-        if: steps.version.outputs.publish == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh workflow run pages.yml --ref main
-
-      - name: Remove signing credentials
-        if: always()
         run: |
-          rm -f /tmp/certificate.p12 /tmp/sparkle_key
-          security delete-keychain build.keychain 2>/dev/null || true
+          run_id="$(gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/pages.yml/dispatches" \
+            -f ref=main -F return_run_details=true --jq .workflow_run_id)"
+          echo "Pages deployment: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run_id"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --exit-status --interval 15

@@ -24,9 +24,9 @@ acceptance remains pending. See the [release verification](review/releases/v1.6.
 and [published-file validation](review/releases/v1.6.0-validation.json).
 
 The release workflow publishes after Windows validation, Mac notarisation and
-an independent check of the update feed's signature. It stages the release as a
-draft, commits the signed update feed onto `main`, makes the release public and
-then explicitly deploys Pages. The local
+an independent check of the update feed's signature. A separate publish job
+makes the release public, commits the signed update feed onto `main` and waits
+for Pages to deploy it. The local
 Developer ID certificate, Sparkle keys and `slightshot` notarisation profile are
 configured; the local Keychain profile is not available to GitHub-hosted runners.
 Manual verification runs leave **publish** disabled and preserve a signed,
@@ -150,29 +150,52 @@ The Release workflow checks credentials, signs the app, submits it to Apple,
 and staples its ticket before building the disk image. It then signs, notarises
 and staples the disk image. Publication requires all checks to pass.
 
-The workflow extends the feed fetched from `origin/main`, not the source
+The build job extends the feed fetched from `origin/main`, not the source
 checkout's copy, so an older tag cannot drop published entries. It signs and
-verifies the feed, then publishes in this order:
+verifies the feed and keeps it as the `Slightshot-appcast` artifact beside the
+signed disk image. The build job has read-only repository access and never
+publishes.
 
-1. Upload every download to a draft release. Drafts are not public. A draft left
-   by an earlier failed attempt is replaced; an existing public release stops
-   the run.
-2. Commit the feed onto the current `origin/main` and push it. If `main` moved,
-   the workflow fetches it again and retries up to five times. It stops instead
-   if `public/appcast.xml` changed on `main` after the feed was generated.
-3. Publish the draft, which creates the tag for a manual run.
-4. Start the Pages workflow. A push made with `GITHUB_TOKEN` does not trigger
-   another push workflow. See [GitHub's workflow event rules](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).
+The **Publish release and update feed** job runs only when publishing. It uses
+those artifacts and the Windows downloads, in this order:
 
-This order means a download is never public before `main` records its feed
-entry. If any of the first two steps fails, nothing is public and the release can
-be rerun. If step 3 or 4 fails, the feed is already on `main` and a rerun stops at
-the version check. Finish the release by hand instead:
+1. Stop if the version tag already exists on a commit other than the release
+   source. GitHub would otherwise attach the downloads to that commit.
+2. Upload the downloads to a draft release, or to the draft an earlier attempt
+   left. Check every uploaded file's SHA-256 against the artifact, then make the
+   release public. A release that is already public is reused only if every
+   file matches.
+3. Wait until every download in the new feed is publicly reachable at the length
+   the feed states.
+4. Commit the feed onto the current `origin/main` and push it. If `main` moved,
+   fetch it again and retry up to five times. Skip the commit if `main` already
+   has this exact feed. Stop if `public/appcast.xml` changed on `main` after
+   the feed was generated.
+5. Start the Pages workflow and wait for its deployment. A push made with
+   `GITHUB_TOKEN` does not trigger another push workflow. See [GitHub's workflow event rules](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).
 
-```bash
-gh release edit v1.6.1 --draft=false
-gh workflow run pages.yml --ref main
-```
+The feed is committed only after its downloads are public, so `main` never lists
+an update that Sparkle cannot download. Pages also refuses to deploy a feed
+unless every download it lists answers with HTTP 200 at the expected length.
+This applies to every Pages run, including a manual dispatch or another push
+to `public/`.
+
+### If publication fails
+
+A failed publish job can leave a public release whose feed entry is not yet on
+`main` or not yet deployed. Installed copies keep their current version until
+the feed is deployed. Do not start a new Release run: its version check stops
+once `main` lists the version, and a new build would produce different bytes.
+
+Open the failed run and choose **Re-run failed jobs** within seven days, before
+the artifacts expire. The publish job uses the same disk image, Windows files
+and signed feed again. It reuses the matching public release, skips a feed
+commit that `main` already has and deploys Pages again.
+
+If a step fails again, read its error first. If `public/appcast.xml` changed on
+`main` after generation, decide whether to revert that edit or publish a new
+version. If Pages reports an unavailable download, check that the release is
+public and has every file.
 
 Every action in `.github/workflows` is pinned to a full commit SHA, with its
 version in a trailing comment. Dependabot proposes grouped action updates weekly.
