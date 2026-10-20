@@ -23,8 +23,10 @@ remain manual. ARM64 is cross-built and inspected; native ARM64 desktop
 acceptance remains pending. See the [release verification](review/releases/v1.6.0/README.md)
 and [published-file validation](review/releases/v1.6.0-validation.json).
 
-The release workflow publishes after Windows validation and Mac notarisation,
-then commits the signed update feed and explicitly deploys Pages. The local
+The release workflow publishes after Windows validation, Mac notarisation and
+an independent check of the update feed's signature. It stages the release as a
+draft, commits the signed update feed onto `main`, makes the release public and
+then explicitly deploys Pages. The local
 Developer ID certificate, Sparkle keys and `slightshot` notarisation profile are
 configured; the local Keychain profile is not available to GitHub-hosted runners.
 Manual verification runs leave **publish** disabled and preserve a signed,
@@ -92,7 +94,13 @@ gh workflow run release.yml --ref BRANCH -f version=1.6.1 -F publish=false
 ```
 
 A successful run confirms certificate import, app and DMG notarisation,
-Gatekeeper assessment and Sparkle signing. Download the
+Gatekeeper assessment and Sparkle signing. The Sparkle 2.10.0 tools must match
+a pinned SHA-256 before they receive the private key. After `generate_appcast`,
+a CryptoKit check finds the new feed item by build number, compares its URL and
+length with the disk image and verifies its Ed25519 signature with both the
+`SPARKLE_PUBLIC_KEY` secret and the `SUPublicEDKey` embedded in the built app.
+Any mismatch fails the run before publication. The run summary lists both
+verified keys. Download the
 `Slightshot-macos-signed-dmg` artifact from that run. No version tag, public
 release, appcast commit or Pages deployment is created in this mode.
 Notarisation diagnostics and the signed DMG expire after seven days.
@@ -123,7 +131,7 @@ Apple signing secrets. See [Windows installation and local builds](windows.md#in
 
 ## Publish a version
 
-Commit and push the release changes to `main`, then create a new version tag:
+Commit and push the release changes to `main`, then tag a commit on `main`:
 
 ```bash
 git tag v1.6.1
@@ -134,16 +142,40 @@ Use a new version for every published binary. Do not replace an existing downloa
 because its Sparkle signature and Homebrew checksum would no longer match.
 
 A `v*` tag publishes automatically. A manual run publishes only when **publish**
-is explicitly enabled.
+is explicitly enabled and the run uses `main`. Before building, a publishing run
+fetches `origin/main` and stops unless the source commit is contained in it.
+Verification runs with **publish** disabled may use any branch.
 
 The Release workflow checks credentials, signs the app, submits it to Apple,
 and staples its ticket before building the disk image. It then signs, notarises
 and staples the disk image. Publication requires all checks to pass.
 
-The workflow signs the Sparkle appcast before publication. After publishing the
-downloads, it commits the feed and explicitly starts the Pages workflow. A push
-made with `GITHUB_TOKEN` does not trigger another
-push workflow. See [GitHub's workflow event rules](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).
+The workflow extends the feed fetched from `origin/main`, not the source
+checkout's copy, so an older tag cannot drop published entries. It signs and
+verifies the feed, then publishes in this order:
+
+1. Upload every download to a draft release. Drafts are not public. A draft left
+   by an earlier failed attempt is replaced; an existing public release stops
+   the run.
+2. Commit the feed onto the current `origin/main` and push it. If `main` moved,
+   the workflow fetches it again and retries up to five times. It stops instead
+   if `public/appcast.xml` changed on `main` after the feed was generated.
+3. Publish the draft, which creates the tag for a manual run.
+4. Start the Pages workflow. A push made with `GITHUB_TOKEN` does not trigger
+   another push workflow. See [GitHub's workflow event rules](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).
+
+This order means a download is never public before `main` records its feed
+entry. If any of the first two steps fails, nothing is public and the release can
+be rerun. If step 3 or 4 fails, the feed is already on `main` and a rerun stops at
+the version check. Finish the release by hand instead:
+
+```bash
+gh release edit v1.6.1 --draft=false
+gh workflow run pages.yml --ref main
+```
+
+Every action in `.github/workflows` is pinned to a full commit SHA, with its
+version in a trailing comment. Dependabot proposes grouped action updates weekly.
 
 ### Local release
 
