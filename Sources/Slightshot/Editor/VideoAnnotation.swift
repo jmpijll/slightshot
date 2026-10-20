@@ -50,3 +50,41 @@ struct VideoAnnotation: Identifiable {
         value.isFinite ? max(0, value) : 0
     }
 }
+
+/// The part of a recording that Save keeps, in source seconds with an
+/// inclusive start and an exclusive end. Annotations keep source times, so
+/// changing the trim never edits them.
+nonisolated struct VideoTrim: Equatable, Sendable {
+    static let minimumLength: TimeInterval = 1.0 / 30
+
+    let start: TimeInterval
+    let end: TimeInterval
+    var duration: TimeInterval { end - start }
+
+    init(start: TimeInterval, end: TimeInterval, recording: TimeInterval) {
+        let limit = recording.isFinite ? max(0, recording) : 0
+        let gap = min(Self.minimumLength, limit)
+        let lower = start.isFinite ? min(max(0, start), limit - gap) : 0
+        self.start = lower
+        self.end = end.isFinite ? min(limit, max(lower + gap, end)) : limit
+    }
+
+    static func whole(_ recording: TimeInterval) -> Self { Self(start: 0, end: recording, recording: recording) }
+
+    func isWhole(of recording: TimeInterval) -> Bool { self == .whole(recording) }
+
+    func contains(_ time: TimeInterval) -> Bool { time >= start && time < end }
+
+    func clamp(_ time: TimeInterval) -> TimeInterval { min(max(start, time), end) }
+}
+
+extension VideoAnnotation {
+    /// The interval inside a trim, moved so the trim's start becomes zero.
+    /// Nil when no part of the annotation is kept.
+    func trimmed(to trim: VideoTrim) -> Self? {
+        let lower = max(start, trim.start)
+        let upper = min(end, trim.end)
+        guard upper > lower else { return nil }
+        return Self(annotation: annotation, start: lower - trim.start, end: upper - trim.start)
+    }
+}

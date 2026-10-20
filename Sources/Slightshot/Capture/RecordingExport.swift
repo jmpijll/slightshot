@@ -83,10 +83,12 @@ nonisolated enum RecordingError: LocalizedError {
 nonisolated enum RecordingExport {
     /// Snapshot the editor's AppKit marks before entering the encoder worker.
     /// Only immutable cropped overlays cross the actor boundary.
+    /// A trim keeps only its range, starting at zero; marks outside it are dropped.
     @MainActor static func save(source: URL, to destination: URL, quality: RecordingQuality,
-                                annotations: [VideoAnnotation] = []) async throws {
+                                annotations: [VideoAnnotation] = [], trim: VideoTrim? = nil) async throws {
         try Task.checkCancellation()
         try validateDestination(source: source, destination: destination)
+        let annotations = trim.map { trim in annotations.compactMap { $0.trimmed(to: trim) } } ?? annotations
         var prepared: [VideoFrameRenderer.PreparedAnnotation] = []
         if !annotations.isEmpty {
             let asset = AVURLAsset(url: source)
@@ -99,9 +101,10 @@ nonisolated enum RecordingExport {
             let transform = try await track.load(.preferredTransform)
             let sourceBounds = CGRect(origin: .zero, size: naturalSize).applying(transform).integral
             prepared = try VideoFrameRenderer.prepare(annotations, size: sourceBounds.size,
-                                                       duration: duration.seconds)
+                                                       duration: trim?.duration ?? duration.seconds)
         }
-        try await savePrepared(source: source, to: destination, quality: quality, annotations: prepared)
+        try await savePrepared(source: source, to: destination, quality: quality, trim: trim,
+                               annotations: prepared)
     }
 
     private static func validateDestination(source: URL, destination: URL) throws {
@@ -125,7 +128,7 @@ nonisolated enum RecordingExport {
     /// The output is staged alongside its destination; an existing
     /// file is replaced only after a complete, playable MP4 has been written.
     @concurrent private static func savePrepared(
-        source: URL, to destination: URL, quality: RecordingQuality,
+        source: URL, to destination: URL, quality: RecordingQuality, trim: VideoTrim?,
         annotations: [VideoFrameRenderer.PreparedAnnotation]
     ) async throws {
         try Task.checkCancellation()
@@ -143,18 +146,20 @@ nonisolated enum RecordingExport {
         guard let track = try await asset.loadTracks(withMediaType: .video).first else {
             throw RecordingError.empty
         }
-        let duration = try await asset.load(.duration)
-        guard duration.isNumeric, duration.seconds > 0 else { throw RecordingError.empty }
+        let sourceDuration = try await asset.load(.duration)
+        guard sourceDuration.isNumeric, sourceDuration.seconds > 0 else { throw RecordingError.empty }
         let naturalSize = try await track.load(.naturalSize)
         let preferredTransform = try await track.load(.preferredTransform)
+        let (keptAsset, keptTrack) = try await kept(trim, of: asset, track: track, duration: sourceDuration)
+        let duration = try await keptAsset.load(.duration)
         let frameDuration = quality.frameDuration(forSourceMinimum: try await track.load(.minFrameDuration))
         let sourceBounds = CGRect(origin: .zero, size: naturalSize).applying(preferredTransform).integral
         let sourceSize = sourceBounds.size
         let size = quality.dimensions(for: sourceSize)
         let geometry = FrameGeometry(sourceBounds: sourceBounds,
                                      preferredTransform: preferredTransform, outputSize: size)
-        let reader = try AVAssetReader(asset: asset)
-        let output = compositionOutput(track: track, duration: duration, geometry: geometry,
+        let reader = try AVAssetReader(asset: keptAsset)
+        let output = compositionOutput(track: keptTrack, duration: duration, geometry: geometry,
                                        frameDuration: frameDuration, annotated: !annotations.isEmpty)
         let provider = reader.outputProvider(for: output)
         let writer = try AVAssetWriter(outputURL: staged, fileType: .mp4)
@@ -220,6 +225,24 @@ nonisolated enum RecordingExport {
             if Task.isCancelled { throw CancellationError() }
             throw error
         }
+    }
+
+    /// A trimmed export reads a composition holding only the kept range at time
+    /// zero, so encoding and annotation timing match a whole-recording export.
+    private static func kept(_ trim: VideoTrim?, of asset: AVAsset, track: AVAssetTrack,
+                             duration: CMTime) async throws -> (AVAsset, AVAssetTrack) {
+        guard let trim = trim.map({ VideoTrim(start: $0.start, end: $0.end, recording: duration.seconds) }),
+              !trim.isWhole(of: duration.seconds) else { return (asset, track) }
+        let composition = AVMutableComposition()
+        guard let keptTrack = composition.addMutableTrack(withMediaType: .video,
+                                                          preferredTrackID: kCMPersistentTrackID_Invalid) else {
+            throw RecordingError.failed("The trimmed video could not be prepared.")
+        }
+        let range = CMTimeRange(start: CMTime(seconds: trim.start, preferredTimescale: 600),
+                                end: CMTime(seconds: trim.end, preferredTimescale: 600))
+        try keptTrack.insertTimeRange(range, of: track, at: .zero)
+        keptTrack.preferredTransform = try await track.load(.preferredTransform)
+        return (composition, keptTrack)
     }
 
     /// The native async receiver can miss its readiness notification on macOS
