@@ -13,7 +13,7 @@ time adds an Undo step.
 ## macOS evidence
 
 Captured on 20 October 2026 on macOS 27, Apple silicon, from source commit
-`4f4b213d19bbf87ad98da58a51c09cb1a2404a26`. The app was built with
+`d11d5afb2681b6c6a854e2852de73e73f58945a4`. The app was built with
 `scripts/bundle.sh` and started with
 `--video-editor-review <dir> --video-editor-trim-evidence`. The source movie is
 the synthetic eight-second, 960 × 540, 24 fps review fixture, with a burned-in
@@ -34,7 +34,8 @@ automatically:
 
 ![Native Mac editor with the trim set to 1.50–6.00 seconds](mac/mac-trim-editor.png)
 
-The annotation timeline below the trim dims the removed parts. The selected
+The yellow trim timeline and the annotation timeline both show the 3.50 s
+playhead. The annotation timeline below the trim dims the removed parts. The selected
 blur (5–7.5 s) keeps only 5–6 s.
 
 [Window recording of the interaction](mac/mac-trim-demo.mp4) (ScreenCaptureKit,
@@ -56,10 +57,10 @@ measured with AVFoundation in the running app. `ffprobe` reports the same
 | Balanced | 4.50 s | 108 | 108 (24 fps) |
 | High quality | 4.50 s | 108 | 108 (24 fps source cadence) |
 
-- Playback samples stayed between 1.525 s and 5.992 s.
+- Playback samples stayed between 1.512 s and 5.998 s.
 - The export's first frame matched source 1.50 s with a mean marker-region
   difference of 3.86. Nearby source times (0, 1, 1.25, 1.75 and 2 s) ranged
-  from 7.38 to 9.05.
+  from 7.39 to 9.05.
 - The arrow (2–5 s) is absent at export 0.25 s and present at export 2 s
   (source 3.5 s).
 - The caption (0–1 s, entirely outside the trim) is not rendered.
