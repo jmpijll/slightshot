@@ -240,7 +240,9 @@ duplicates and Escape. It roundtrips the settings JSON, closes Settings and
 verifies production global hotkey callbacks, including no activation when Win
 is omitted. It records Print Screen alone, registers it as a global hotkey,
 keeps other bare keys rejected and captures the Settings explanation for a
-fixture Print Screen registration failure. [Saved shortcut screenshots and native/portable reports](review/windows-key-shortcuts/README.md)
+fixture Print Screen registration failure. Injected Print Screen input does not
+reach global hotkeys on the CI desktop, so the report records each injected form
+and the Print Screen hotkey itself needs a check with a physical key. [Saved shortcut screenshots and native/portable reports](review/windows-key-shortcuts/README.md)
 identify the fixture inputs, platform and exact source commit.
 
 The instance fixture holds the production session mutex and command pipe, then

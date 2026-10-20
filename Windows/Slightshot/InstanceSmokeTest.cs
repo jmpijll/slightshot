@@ -63,6 +63,7 @@ internal static class InstanceSmokeTest
 
         string logDirectory = Path.Combine(directory, "error-log");
         var reports = new List<string>();
+        int reportsFinished = 0;
         app.InstallErrorHandlers(logDirectory, message =>
         {
             reports.Add(message);
@@ -71,13 +72,14 @@ internal static class InstanceSmokeTest
             app.Dispatcher.BeginInvoke(() => throw new InvalidOperationException("second fixture failure while the message is open"));
             app.Dispatcher.BeginInvoke(() => frame.Continue = false);
             Dispatcher.PushFrame(frame);
+            reportsFinished++;
         }, () => true);
         var overlays = new OverlayCoordinator(new Settings { PlaySound = false }, (_, _) => true, () => { }, (_, _) => { });
         typeof(App).GetField("overlays", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(app, overlays);
         var image = BitmapSource.Create(64, 64, 96, 96, PixelFormats.Bgra32, null, new byte[64 * 64 * 4], 64 * 4);
         Require(overlays.PresentClipboardImage(image) && overlays.IsBusy && overlays.Windows.Single().IsVisible, "fixture overlay is open before the failure");
         _ = app.Dispatcher.BeginInvoke(() => throw new InvalidOperationException("fixture failure in the capture overlay"));
-        for (int attempt = 0; attempt < 50 && reports.Count == 0; attempt++) await Task.Delay(100);
+        for (int attempt = 0; attempt < 50 && reportsFinished == 0; attempt++) await Task.Delay(100);
         string logPath = Path.Combine(logDirectory, "errors.log");
         string log = File.Exists(logPath) ? File.ReadAllText(logPath) : "";
         Require(reports.Count == 1 && reports[0].Contains("closed the capture") && reports[0].Contains(logPath), $"one message names the log after a UI-thread failure: [{string.Join(" | ", reports)}]");
