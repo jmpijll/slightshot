@@ -84,22 +84,26 @@ struct ApplicationCommandInboxTests {
         #expect(try replacement.takePending() == [])
     }
 
-    @Test func ownerReceivesColdAndWarmForwardedCommandsOnce() async throws {
+    // Other suites share the main actor and can stall it past the 10 s expiry under load,
+    // so freeze the clock and wait for the delivery itself instead of a time budget.
+    @Test(.timeLimit(.minutes(1)))
+    func ownerReceivesColdAndWarmForwardedCommandsOnce() async throws {
         let directory = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
-        let owner = try ApplicationCommandInbox(directory: directory)
-        let duplicate = try ApplicationCommandInbox(directory: directory)
-        var received: [ApplicationCommand] = []
+        let now = Date(timeIntervalSince1970: 1_000)
+        let owner = try ApplicationCommandInbox(directory: directory, now: { now })
+        let duplicate = try ApplicationCommandInbox(directory: directory, now: { now })
+        let (received, deliver) = AsyncStream.makeStream(of: ApplicationCommand.self)
+        var deliveries = received.makeAsyncIterator()
         try duplicate.send(.capture(.captureArea))
-        try owner.startReceiving { received.append($0) }
-        #expect(received == [.capture(.captureArea)])
+        try owner.startReceiving { deliver.yield($0) }
+        #expect(await deliveries.next() == .capture(.captureArea))
         try duplicate.send(.capture(.copyFullScreen))
-        for _ in 0..<40 where received.count < 2 {
-            try await Task.sleep(for: .milliseconds(50))
-        }
-        #expect(received == [.capture(.captureArea), .capture(.copyFullScreen)])
+        #expect(await deliveries.next() == .capture(.copyFullScreen))
         #expect(try owner.takePending() == [])
         owner.stopReceiving()
+        deliver.finish()
+        #expect(await deliveries.next() == nil)
     }
 
     @Test func duplicateCannotBecomeAnotherCommandReceiver() throws {
