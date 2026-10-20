@@ -47,6 +47,8 @@ administrator rights, adds a Start menu shortcut and offers an optional desktop
 shortcut. Starting at login is an
 opt-in setting in the app. Quit Slightshot from its tray menu before installing,
 upgrading or uninstalling. Upgrades preserve your settings and saved captures.
+Slightshot runs in the notification area. If its icon is hidden in the overflow,
+start Slightshot again from the Start menu to capture an area.
 
 Prefer a portable copy? Download the [x64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-x64.zip)
 or [ARM64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-arm64.zip),
@@ -172,6 +174,8 @@ clears Redo. While typing, the text field keeps its native Undo and Redo shortcu
 
 You can change the three capture shortcuts in Settings. On macOS, a shortcut needs ⌘ or ⌃
 unless it uses a function key, and Settings refuses one that another action already uses.
+On Windows, Print Screen works on its own, as in Lightshot, once Windows' **Use the
+Print screen key to open screen capture** setting is turned off.
 
 | Action | macOS | Windows |
 | --- | --- | --- |

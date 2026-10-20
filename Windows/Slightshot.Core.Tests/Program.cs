@@ -7,6 +7,7 @@ checks += AnnotationHistoryChecks.Run();
 checks += VideoAnnotationChecks.Run();
 checks += ExactSizeBufferPoolChecks.Run();
 checks += Nv12ToBgraChecks.Run();
+checks += LaunchChecks.Run();
 checks += RecordingRobustnessChecks.Run();
 checks += SettingsFileChecks.Run();
 void Equal<T>(T expected, T actual, string message)
