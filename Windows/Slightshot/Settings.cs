@@ -42,7 +42,7 @@ public sealed class Settings
             null => null,
             { BackupPath: null } => $"Slightshot could not use {Path.GetFileName(path)} or keep a copy of it, so the file was left unchanged. Changes made now will not be saved.",
             { ResetFields.Count: 0 } => $"Slightshot could not read its settings and is using the defaults. The old file was kept as {Path.GetFileName(recovery.BackupPath)}.",
-            _ => $"Some settings were invalid and were reset: {string.Join(", ", recovery.ResetFields.Take(3))}{(recovery.ResetFields.Count > 3 ? "…" : "")}. The old file was kept as {Path.GetFileName(recovery.BackupPath)}."
+            _ => $"Some settings were invalid and were reset: {string.Join(", ", recovery.ResetFields.Take(3))}{(recovery.ResetFields.Count > 3 ? $" and {recovery.ResetFields.Count - 3} more" : "")}. The old file was kept as {Path.GetFileName(recovery.BackupPath)}."
         };
         settings.JpegQuality = Clamp(settings.JpegQuality, 0.3, 1, 0.9);
         settings.DimOpacity = Clamp(settings.DimOpacity, 0, 0.85, 0.45);
