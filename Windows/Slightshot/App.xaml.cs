@@ -29,6 +29,7 @@ public partial class App : System.Windows.Application
     private HotKey[] unavailable = [];
     private Action? balloonClicked;
     private bool reportingError;
+    private bool started;
     private bool capturing;
     private bool quitting;
     private DelayedCaptureController? delayedCapture;
@@ -99,7 +100,7 @@ public partial class App : System.Windows.Application
             }
             return;
         }
-        InstallErrorHandlers(Path.Combine(DataDirectory, "Logs"), Error, () => tray != null);
+        InstallErrorHandlers(Path.Combine(DataDirectory, "Logs"), Error, () => started);
         bool known = LaunchArguments.TryParse(e.Args, out var command);
         instance = new Mutex(true, InstanceMutexName, out ownsInstance);
         if (!ownsInstance)
@@ -126,6 +127,7 @@ public partial class App : System.Windows.Application
             ShowBalloon(8000, "Slightshot is running", settings.CaptureAreaHotKey.IsEmpty
                 ? "Double-click the Slightshot icon in the notification area to capture an area."
                 : $"Press {settings.CaptureAreaHotKey} to capture an area, or use the Slightshot icon in the notification area.", Forms.ToolTipIcon.Info);
+        started = true;
         if (command is { } initial) _ = Dispatcher.InvokeAsync(() => Run(initial));
     }
 
@@ -178,10 +180,15 @@ public partial class App : System.Windows.Application
         {
             e.Handled = true;
             string? log = LogError(logDirectory, "UI thread", e.Exception);
-            try { Dismiss(); }
-            catch (Exception ex) { LogError(logDirectory, "Closing the capture after an error", ex); }
-            capturing = false;
+            // Before startup completes the tray, hotkeys and command listener may
+            // be half built, so report and exit rather than resume.
             bool recover = canRecover();
+            if (recover)
+            {
+                try { delayedCapture?.Cancel(); Dismiss(); }
+                catch (Exception ex) { LogError(logDirectory, "Closing the capture after an error", ex); }
+                capturing = false;
+            }
             // A message box pumps the dispatcher, so errors raised while it is
             // open are logged without stacking further messages.
             if (!reportingError)
