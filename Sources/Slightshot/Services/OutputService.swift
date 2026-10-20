@@ -37,7 +37,6 @@ enum OutputService {
             item.setData(tiff, forType: .tiff)
         }
         pasteboard.writeObjects([item])
-        feedback(title: "Copied to clipboard")
     }
 
     static func copyToClipboard(text: String) {
@@ -75,7 +74,9 @@ enum OutputService {
         }
 
         if settings.copyAfterSave { copyToClipboard(image) }
-        feedback(title: "Saved", body: url.lastPathComponent, fileURL: url)
+        if settings.showNotification {
+            SaveNotification.post(savedFile: url, image: image, copied: settings.copyAfterSave)
+        }
         return url
     }
 
@@ -176,20 +177,6 @@ enum OutputService {
         }
     }
 
-    private static func feedback(title: String, body: String? = nil, fileURL: URL? = nil) {
-        guard Settings.shared.showNotification else { return }
-        let content = UNMutableNotificationContent()
-        content.title = title
-        if let body { content.body = body }
-        content.sound = nil
-        if let fileURL,
-           let attachment = try? UNNotificationAttachment(identifier: fileURL.lastPathComponent, url: fileURL) {
-            content.attachments = [attachment]
-        }
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request)
-    }
-
     static func presentError(_ message: String) {
         Log.output.error("\(message, privacy: .public)")
         let alert = NSAlert()
@@ -199,6 +186,91 @@ enum OutputService {
         alert.addButton(withTitle: "OK")
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
+    }
+}
+
+/// The "Show a notification after saving" setting.
+enum SaveNotification {
+    /// macOS moves an attachment file into its own store when the notification is added,
+    /// so the notification carries a thumbnail copy and never the saved file itself.
+    static let attachmentDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("SaveNotificationAttachments", isDirectory: true)
+    static let thumbnailMaxPixels = 640
+
+    /// Notification Center needs an app bundle; an unbundled `swift run` binary has none.
+    private static var center: UNUserNotificationCenter? {
+        Bundle.main.bundleIdentifier == nil ? nil : .current()
+    }
+
+    static var settingsURL: URL {
+        let id = Bundle.main.bundleIdentifier.map { "?id=\($0)" } ?? ""
+        return URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension\(id)")!
+    }
+
+    static func post(savedFile: URL, image: CGImage, copied: Bool) {
+        guard let center else { return }
+        let content = content(savedFile: savedFile, image: image, copied: copied)
+        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+        Task {
+            do {
+                try await center.add(request)
+            } catch {
+                Log.output.error("Save notification failed: \(error.localizedDescription, privacy: .public)")
+            }
+            // Normally already moved into the notification store; this removes a copy it rejected.
+            for attachment in content.attachments { try? FileManager.default.removeItem(at: attachment.url) }
+        }
+    }
+
+    static func content(savedFile: URL, image: CGImage, copied: Bool) -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        content.title = copied ? "Saved and copied to clipboard" : "Saved"
+        content.body = savedFile.lastPathComponent
+        content.sound = nil
+        if let attachment = thumbnailAttachment(of: image) { content.attachments = [attachment] }
+        return content
+    }
+
+    /// Asks only while undecided; afterwards macOS answers with the stored choice.
+    static func requestAuthorization() async -> Bool {
+        guard let center else { return false }
+        do {
+            return try await center.requestAuthorization(options: [.alert])
+        } catch {
+            Log.app.error("Notification authorisation failed: \(error.localizedDescription, privacy: .public)")
+            return false
+        }
+    }
+
+    static func isDenied() async -> Bool {
+        guard let center else { return false }
+        return await center.notificationSettings().authorizationStatus == .denied
+    }
+
+    private static func thumbnailAttachment(of image: CGImage) -> UNNotificationAttachment? {
+        let scale = min(1, CGFloat(thumbnailMaxPixels) / CGFloat(max(image.width, image.height)))
+        let width = max(1, Int((CGFloat(image.width) * scale).rounded()))
+        let height = max(1, Int((CGFloat(image.height) * scale).rounded()))
+        guard let space = CGColorSpace(name: CGColorSpace.sRGB),
+              let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8,
+                                      bytesPerRow: 0, space: space,
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        context.interpolationQuality = .high
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        guard let thumbnail = context.makeImage(),
+              let png = Renderer.encode(thumbnail, as: .png, quality: 1) else { return nil }
+
+        let url = attachmentDirectory.appendingPathComponent(UUID().uuidString + ".png")
+        do {
+            try FileManager.default.createDirectory(at: attachmentDirectory, withIntermediateDirectories: true)
+            try png.write(to: url, options: .atomic)
+            return try UNNotificationAttachment(identifier: url.lastPathComponent, url: url)
+        } catch {
+            try? FileManager.default.removeItem(at: url)
+            Log.output.error("Save notification thumbnail failed: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
     }
 }
 

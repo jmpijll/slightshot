@@ -23,6 +23,7 @@ struct PreferencesView: View {
 private struct GeneralTab: View {
     @Bindable private var settings = Settings.shared
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
+    @State private var notificationsDenied = false
 
     var body: some View {
         Form {
@@ -33,6 +34,21 @@ private struct GeneralTab: View {
 
                 Toggle("Play a shutter sound", isOn: $settings.playSound)
                 Toggle("Show a notification after saving", isOn: $settings.showNotification)
+                    .onChange(of: settings.showNotification) { _, isOn in
+                        Task { notificationsDenied = isOn ? !(await SaveNotification.requestAuthorization()) : false }
+                    }
+                if settings.showNotification && notificationsDenied {
+                    LabeledContent {
+                        Button("Open System Settings…") { NSWorkspace.shared.open(SaveNotification.settingsURL) }
+                    } label: {
+                        Text("Notifications are turned off for Slightshot in System Settings.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .task {
+                if settings.showNotification { notificationsDenied = await SaveNotification.isDenied() }
             }
 
             Section {
