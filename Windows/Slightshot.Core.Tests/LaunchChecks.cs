@@ -16,6 +16,8 @@ internal static class LaunchChecks
         Require(HotKeyRules.IsValid(A, Control | Shift) && HotKeyRules.IsValid(F13, Win) && HotKeyRules.IsValid(F13, Alt | Control | Shift | Win), "modified keys are valid");
         Require(!HotKeyRules.IsValid(A, Control | 0x4000) && !HotKeyRules.IsValid(0x100, Control), "unknown modifier bits and out-of-range keys are rejected");
         Require(HotKeyRules.IsValid(0, 0), "an empty shortcut is valid");
+        Require(HotKeyRules.WindowsUsesPrintScreen(null, 26100) && HotKeyRules.WindowsUsesPrintScreen(1, 19045), "Windows 11's default or an explicit setting gives Print Screen to screen capture");
+        Require(!HotKeyRules.WindowsUsesPrintScreen(0, 26100) && !HotKeyRules.WindowsUsesPrintScreen(null, 19045), "a turned-off setting or Windows 10's default leaves Print Screen free");
 
         Require(LaunchArguments.TryParse([], out var none) && none == null, "no arguments launch without a command");
         Require(LaunchArguments.TryParse(["--capture-area"], out var area) && area == LaunchCommand.CaptureArea, "--capture-area parses");

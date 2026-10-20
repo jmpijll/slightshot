@@ -149,7 +149,7 @@ public partial class App : System.Windows.Application
         var old = tray!.ContextMenuStrip; tray.ContextMenuStrip = menu; old?.Dispose();
         if (unavailable.Length > 0)
             ShowBalloon(6000, "Shortcut unavailable", $"Already in use or invalid: {string.Join(", ", unavailable)}."
-                + (unavailable.Any(key => key.IsPrintScreen) ? " Windows may be using Print Screen to open screen capture." : "")
+                + (unavailable.Any(key => key.IsPrintScreen) && HotKeyService.WindowsUsesPrintScreen() ? " Windows is using Print Screen to open screen capture." : "")
                 + " Click to choose another shortcut in Settings.", Forms.ToolTipIcon.Warning, ShowSettings);
     }
 

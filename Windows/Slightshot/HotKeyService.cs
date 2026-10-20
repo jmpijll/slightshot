@@ -1,5 +1,6 @@
 using System.Windows.Input;
 using System.Windows.Interop;
+using Microsoft.Win32;
 using Slightshot.Core;
 
 namespace Slightshot;
@@ -35,11 +36,14 @@ internal sealed class HotKeyService : IDisposable
     {
         var failures = new List<HotKey>();
         HotKey[] keys = [settings.CaptureAreaHotKey, settings.SaveFullScreenHotKey, settings.CopyFullScreenHotKey];
+        bool windowsUsesPrintScreen = WindowsUsesPrintScreen();
         for (int i = 0; i < 3; i++) NativeMethods.UnregisterHotKey(source.Handle, i + 1);
         for (int i = 0; i < keys.Length; i++)
-            if (!keys[i].IsEmpty && (!keys[i].IsValid || !NativeMethods.RegisterHotKey(source.Handle, i + 1, keys[i].Modifiers | 0x4000, keys[i].Key))) failures.Add(keys[i]);
+            if (!keys[i].IsEmpty && (!keys[i].IsValid || keys[i].IsPrintScreen && windowsUsesPrintScreen || !NativeMethods.RegisterHotKey(source.Handle, i + 1, keys[i].Modifiers | 0x4000, keys[i].Key))) failures.Add(keys[i]);
         return failures.ToArray();
     }
+    internal static bool WindowsUsesPrintScreen() => HotKeyRules.WindowsUsesPrintScreen(
+        Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Keyboard", "PrintScreenKeyForSnippingEnabled", null) as int?, Environment.OSVersion.Version.Build);
     private IntPtr Hook(IntPtr window, int message, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
         if (message == NativeMethods.WmHotKey) { handled = true; onHotKey(wParam.ToInt32()); }

@@ -7,22 +7,64 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using Microsoft.Win32;
 using Forms = System.Windows.Forms;
 
 namespace Slightshot;
 
 // SendInput drives the real Settings fields on the isolated Windows CI desktop.
 // Captures contain only the actual Settings HWND, with fixture input labelled here
-// and in the report. No user settings file is read or written.
+// and in the report. No user settings file is read or written; Windows' Print
+// Screen screen-capture setting is changed during the run and then restored.
 internal static class ShortcutSmokeTest
 {
     private const ushort LeftWin = 0x5b, RightWin = 0x5c, Control = 0xa2, Shift = 0xa0, Alt = 0xa4;
     private const ushort A = 0x41, F13 = 0x7c, PrintScreen = 0x2c;
+    private const string SnippingValue = "PrintScreenKeyForSnippingEnabled";
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     internal static async Task RunAsync(string directory)
     {
         Directory.CreateDirectory(directory);
+        // Windows opens its own screen capture on Print Screen while this setting
+        // is on. Prove detection with it on, then turn it off for key input and
+        // restore the original value.
+        using var keyboard = Registry.CurrentUser.CreateSubKey(@"Control Panel\Keyboard");
+        object? original = keyboard.GetValue(SnippingValue);
+        try
+        {
+            keyboard.SetValue(SnippingValue, 1, RegistryValueKind.DWord); BroadcastSettingChange();
+            await ExplainWindowsOwnedPrintScreenAsync(directory);
+            keyboard.SetValue(SnippingValue, 0, RegistryValueKind.DWord); BroadcastSettingChange();
+            await RunShortcutsAsync(directory);
+        }
+        finally
+        {
+            if (original == null) keyboard.DeleteValue(SnippingValue, false); else keyboard.SetValue(SnippingValue, original, RegistryValueKind.DWord);
+            BroadcastSettingChange();
+        }
+    }
+
+    private static async Task ExplainWindowsOwnedPrintScreenAsync(string directory)
+    {
+        var settings = new Settings { PlaySound = false, CaptureAreaHotKey = new(PrintScreen, 0) };
+        HotKey[] failures;
+        using (var service = new HotKeyService(_ => { })) failures = service.Register(settings);
+        Require(HotKeyService.WindowsUsesPrintScreen() && failures.SequenceEqual([new HotKey(PrintScreen, 0)]), "with Windows' Print Screen screen capture on, registration reports Print Screen unavailable: " + string.Join(", ", failures));
+        var window = new SettingsWindow(settings, false, failures) { Title = "Slightshot Settings · Windows Print Screen capture on" };
+        try
+        {
+            window.Show(); window.Activate();
+            await ShowShortcutsAsync(window);
+            var note = ShortcutNote(window);
+            Require(note.IsVisible && note.Text.StartsWith("Windows is using Print Screen to open screen capture. Turn off “Use the Print screen key to open screen capture”"), "Settings explains why Print Screen is unavailable");
+            CaptureWindow(window, Path.Combine(directory, "shortcut-print-screen-unavailable-window.png"));
+        }
+        finally { window.Close(); }
+    }
+
+    private static async Task RunShortcutsAsync(string directory)
+    {
         string sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT")
             ?? Environment.GetEnvironmentVariable("GITHUB_SHA") ?? "local source commit not supplied";
         var checks = new List<string>();
@@ -126,26 +168,12 @@ internal static class ShortcutSmokeTest
             await FocusAsync(window, area); await ChordAsync(PrintScreen);
             Require(settings.CaptureAreaHotKey == new HotKey(PrintScreen, 0) && area.Text == "Print Screen", $"Print Screen alone records through the real field: observed field={area.Text}, model key={settings.CaptureAreaHotKey.Key}, modifiers={settings.CaptureAreaHotKey.Modifiers}");
             var note = ShortcutNote(window);
-            Require(note.IsVisible && note.Text.Contains("“Use the Print screen key to open screen capture” is turned off"), "Settings names the Windows Print Screen setting when Print Screen is bound");
+            Require(!note.IsVisible, "with Windows' Print Screen screen capture off, Settings shows no warning for Print Screen");
             CaptureWindow(window, Path.Combine(directory, "shortcut-print-screen-window.png"));
             await ChordAsync(LeftWin, F13);
-            Require(settings.CaptureAreaHotKey == new HotKey(F13, 8) && area.Text == "Win+F13" && !note.IsVisible, "replacing Print Screen hides its guidance");
-            checks.Add("Print Screen without a modifier records through native key input and shows the Windows Print Screen setting guidance; other bare keys stay ignored.");
+            Require(settings.CaptureAreaHotKey == new HotKey(F13, 8) && area.Text == "Win+F13", "Win+F13 replaces Print Screen");
+            checks.Add("Print Screen without a modifier records through native key-up input; other bare keys stay ignored.");
 
-            var blockedSettings = new Settings { PlaySound = false, CaptureAreaHotKey = new(PrintScreen, 0) };
-            var blocked = new SettingsWindow(blockedSettings, false, [new HotKey(PrintScreen, 0)]) { Title = "Slightshot Settings · fixture: Print Screen registration failed" };
-            try
-            {
-                // Open while the main Settings window still holds the foreground.
-                blocked.Show(); blocked.Activate();
-                for (int attempt = 0; attempt < 20 && GetForegroundWindow() != new WindowInteropHelper(blocked).Handle; attempt++) { blocked.Activate(); await Task.Delay(100); }
-                await ShowShortcutsAsync(blocked);
-                var blockedNote = ShortcutNote(blocked);
-                Require(blockedNote.IsVisible && blockedNote.Text.StartsWith("Windows is using Print Screen to open screen capture. Turn off “Use the Print screen key to open screen capture”"), "a failed Print Screen registration is explained in Settings");
-                CaptureWindow(blocked, Path.Combine(directory, "shortcut-print-screen-unavailable-window.png"));
-            }
-            finally { blocked.Close(); }
-            checks.Add("With a fixture registration failure for Print Screen, Settings explains that Windows' Print Screen screen-capture setting must be turned off.");
         }
         finally
         {
@@ -171,15 +199,14 @@ internal static class ShortcutSmokeTest
             Require(callbacks.SequenceEqual(new[] { 1, 2, 3 }), "the same keys without Windows cannot trigger the recorded global shortcuts");
         }
         checks.Add("Recorded settings JSON roundtrip preserves Windows modifiers. After Settings closes, production RegisterHotKey registration and native SendInput produce callbacks 1, 2, 3; removing Windows produces none.");
-        object? snippingSetting = Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Keyboard", "PrintScreenKeyForSnippingEnabled", null);
+        object? snippingSetting = Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Keyboard", SnippingValue, null);
         var printScreenCallbacks = new List<int>();
         var printScreenInjection = new List<object>();
         using (var service = new HotKeyService(printScreenCallbacks.Add))
         {
             HotKey[] failures = service.Register(new Settings { CaptureAreaHotKey = new(PrintScreen, 0), SaveFullScreenHotKey = new(F13, 0), CopyFullScreenHotKey = new(0, 0) });
             Require(failures.SequenceEqual([new HotKey(F13, 0)]), $"RegisterHotKey accepts Print Screen alone and bare F13 stays rejected (PrintScreenKeyForSnippingEnabled={snippingSetting ?? "not set"}): " + string.Join(", ", failures));
-            // On the CI desktop no injected form of Print Screen reaches
-            // WM_HOTKEY, so the results are recorded for review, not asserted.
+            // Record which injected form reaches WM_HOTKEY, and on which edge.
             (string Name, ushort Key, ushort Scan, uint Flags)[] forms =
                 [("virtual key, extended", PrintScreen, 0, 1), ("virtual key", PrintScreen, 0, 0), ("virtual key and scan 0x37, extended", PrintScreen, 0x37, 1), ("scan code 0x37, extended", 0, 0x37, 9)];
             foreach (var form in forms)
@@ -191,18 +218,18 @@ internal static class ShortcutSmokeTest
                 printScreenInjection.Add(new { form = form.Name, callbacksAfterKeyDown = afterDown, callbacksAfterKeyUp = printScreenCallbacks.Count - before - afterDown });
             }
             File.WriteAllText(Path.Combine(directory, "shortcut-print-screen-injection.json"), JsonSerializer.Serialize(new { sourceCommit, printScreenKeyForSnippingEnabled = snippingSetting?.ToString() ?? "not set", printScreenInjection }, JsonOptions));
-            Require(printScreenCallbacks.All(id => id == 1), "only the capture-area hotkey can fire for Print Screen");
+            Require(printScreenCallbacks.Count > 0 && printScreenCallbacks.All(id => id == 1), $"Print Screen triggers the capture-area global hotkey: {JsonSerializer.Serialize(printScreenInjection)}");
             int printScreenCount = printScreenCallbacks.Count;
             await ChordAsync(F13);
             Require(printScreenCallbacks.Count == printScreenCount, "bare F13 never triggers a global hotkey");
         }
-        checks.Add("Production RegisterHotKey registers Print Screen without a modifier; bare F13 is rejected and produces no callback. Injected Print Screen callbacks are recorded in shortcut-print-screen-injection.json.");
+        checks.Add("With Windows' Print Screen screen capture on, registration reports Print Screen unavailable and Settings explains the setting. With it off, production RegisterHotKey registers Print Screen without a modifier and native Print Screen input produces callback 1; bare F13 is rejected and produces no callback.");
         File.WriteAllText(Path.Combine(directory, "shortcut-validation.json"), JsonSerializer.Serialize(new
         {
             platform = "Windows / native WPF Settings / Win32 global hotkeys",
             sourceCommit, source = "Automated native Settings fixture with real SendInput and RegisterHotKey; screenshots are cropped composed desktop pixels.",
             printScreenKeyForSnippingEnabled = snippingSetting?.ToString() ?? "not set", printScreenInjection,
-            fixtureInputs = new[] { "Print Screen", "Print Screen registration failure (fixture)", "Left Win+F13", "Right Win+F13 after Ctrl+Shift+A", "Ctrl+Win+F13", "Shift+Alt+Win+F13", "Ctrl+Shift+Alt+Win+F13", "Ctrl+Shift+A", "bare modifiers", "duplicate assignment", "Escape" },
+            fixtureInputs = new[] { "Windows Print Screen screen capture on, then off", "Print Screen", "Left Win+F13", "Right Win+F13 after Ctrl+Shift+A", "Ctrl+Win+F13", "Shift+Alt+Win+F13", "Ctrl+Shift+Alt+Win+F13", "Ctrl+Shift+A", "bare modifiers", "duplicate assignment", "Escape" },
             recorded = new[] { restored.CaptureAreaHotKey, restored.SaveFullScreenHotKey, restored.CopyFullScreenHotKey }, globalCallbacks = callbacks, checks
         }, JsonOptions));
     }
@@ -292,6 +319,8 @@ internal static class ShortcutSmokeTest
         GetWindowThreadProcessId(foreground, out uint process);
         return $"0x{foreground.ToInt64():X} class={className} title=\"{title}\" process={process} (this process {Environment.ProcessId})";
     }
+    private static void BroadcastSettingChange() => SendMessageTimeout(new IntPtr(0xffff), 0x1a, UIntPtr.Zero, @"Control Panel\Keyboard", 2, 1000, out _);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern IntPtr SendMessageTimeout(IntPtr window, uint message, UIntPtr wParam, string lParam, uint flags, uint timeout, out UIntPtr result);
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr window, System.Text.StringBuilder text, int count);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr window, System.Text.StringBuilder text, int count);

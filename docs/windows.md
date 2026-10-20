@@ -100,8 +100,9 @@ press a key with Ctrl, Shift, Alt or Win. Both Windows keys work, and modifiers
 can be combined. Print Screen also works on its own, as in Lightshot's default.
 Windows 11 opens its own screen capture on Print Screen unless **Settings →
 Accessibility → Keyboard → Use the Print screen key to open screen capture** is
-off. Settings links to that page when Print Screen is bound and explains the
-setting if Windows keeps the key. Close Settings to activate the new shortcuts. Escape clears
+off. That setting is on by default in Windows 11, and Windows keeps the key even
+though another app registered it. While it is on, Slightshot reports Print Screen
+as unavailable, and Settings explains the setting and links to it. Close Settings to activate the new shortcuts. Escape clears
 the focused field; pressing a modifier alone keeps the existing assignment.
 Windows-reserved combinations may remain unavailable.
 
@@ -238,11 +239,11 @@ The shortcut fixture sends native keyboard input to the real Settings fields,
 checking both Windows keys, Ctrl/Shift/Alt combinations, bare modifiers,
 duplicates and Escape. It roundtrips the settings JSON, closes Settings and
 verifies production global hotkey callbacks, including no activation when Win
-is omitted. It records Print Screen alone, registers it as a global hotkey,
-keeps other bare keys rejected and captures the Settings explanation for a
-fixture Print Screen registration failure. Injected Print Screen input does not
-reach global hotkeys on the CI desktop, so the report records each injected form
-and the Print Screen hotkey itself needs a check with a physical key. [Saved shortcut screenshots and native/portable reports](review/windows-key-shortcuts/README.md)
+is omitted. With Windows' Print Screen screen capture turned on, it checks that
+Print Screen is reported unavailable and captures the Settings explanation. It
+then turns that setting off, records Print Screen alone, registers it and
+checks the global callback while other bare keys stay rejected. The original
+setting is restored afterwards. [Saved shortcut screenshots and native/portable reports](review/windows-key-shortcuts/README.md)
 identify the fixture inputs, platform and exact source commit.
 
 The instance fixture holds the production session mutex and command pipe, then

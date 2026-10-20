@@ -92,16 +92,14 @@ internal sealed class SettingsWindow : Window
     private void UpdateShortcutNote()
     {
         HotKey[] current = [settings.CaptureAreaHotKey, settings.SaveFullScreenHotKey, settings.CopyFullScreenHotKey];
+        bool windowsPrintScreen = current.Any(key => key.IsPrintScreen) && HotKeyService.WindowsUsesPrintScreen();
         var notes = new List<string>();
-        string[] taken = unavailable.Where(key => !key.IsPrintScreen && current.Contains(key)).Select(key => key.ToString()).ToArray();
-        if (taken.Length > 0) notes.Add($"Already in use by another app: {string.Join(", ", taken)}. Choose another shortcut.");
-        bool printScreen = current.Any(key => key.IsPrintScreen);
-        if (printScreen) notes.Add(unavailable.Any(key => key.IsPrintScreen)
-            ? "Windows is using Print Screen to open screen capture. Turn off “Use the Print screen key to open screen capture” in Windows keyboard settings, then close Settings to try again."
-            : "Print Screen works when “Use the Print screen key to open screen capture” is turned off in Windows keyboard settings.");
+        string[] taken = unavailable.Where(key => current.Contains(key) && !(key.IsPrintScreen && windowsPrintScreen)).Select(key => key.ToString()).ToArray();
+        if (taken.Length > 0) notes.Add($"Already in use by another app: {string.Join(", ", taken)}. Quit that app or choose another shortcut.");
+        if (windowsPrintScreen) notes.Add("Windows is using Print Screen to open screen capture. Turn off “Use the Print screen key to open screen capture” in Windows keyboard settings, then close Settings to try again.");
         shortcutNote.Text = string.Join("\n", notes);
         shortcutNote.Visibility = notes.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        keyboardSettings.Visibility = printScreen ? Visibility.Visible : Visibility.Collapsed;
+        keyboardSettings.Visibility = windowsPrintScreen ? Visibility.Visible : Visibility.Collapsed;
     }
     private UIElement Output()
     {
