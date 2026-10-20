@@ -50,3 +50,64 @@ struct VideoAnnotation: Identifiable {
         value.isFinite ? max(0, value) : 0
     }
 }
+
+/// The part of a recording that Save keeps, in source seconds with an
+/// inclusive start and an exclusive end. Annotations keep source times, so
+/// changing the trim never edits them.
+nonisolated struct VideoTrim: Equatable, Sendable {
+    static let minimumLength: TimeInterval = 1.0 / 30
+
+    let start: TimeInterval
+    let end: TimeInterval
+    var duration: TimeInterval { end - start }
+
+    init(start: TimeInterval, end: TimeInterval, recording: TimeInterval) {
+        let limit = recording.isFinite ? max(0, recording) : 0
+        let gap = min(Self.minimumLength, limit)
+        let lower = start.isFinite ? min(max(0, start), limit - gap) : 0
+        self.start = lower
+        self.end = end.isFinite ? min(limit, max(lower + gap, end)) : limit
+    }
+
+    enum Edge { case start, end }
+
+    static func whole(_ recording: TimeInterval) -> Self { Self(start: 0, end: recording, recording: recording) }
+
+    /// Moves one edge and never the other. The moved edge stops the minimum
+    /// length away from the fixed one, the same rule for typing and dragging.
+    func moving(_ edge: Edge, to time: TimeInterval, recording: TimeInterval) -> Self {
+        let gap = min(Self.minimumLength, recording)
+        let time = time.isFinite ? time : (edge == .start ? start : end)
+        return switch edge {
+        case .start: Self(start: min(time, end - gap), end: end, recording: recording)
+        case .end: Self(start: start, end: max(time, start + gap), recording: recording)
+        }
+    }
+
+    func isWhole(of recording: TimeInterval) -> Bool { self == .whole(recording) }
+
+    func contains(_ time: TimeInterval) -> Bool { time >= start && time < end }
+
+    /// The nearest kept time. The exclusive end itself would show the first removed frame.
+    func clamp(_ time: TimeInterval) -> TimeInterval { min(max(start, time), max(start, end - 1.0 / 600)) }
+}
+
+extension VideoAnnotation {
+    /// The interval inside a trim, moved so the trim's start becomes zero.
+    /// Nil when no part of the annotation is kept.
+    func trimmed(to trim: VideoTrim) -> Self? {
+        let lower = max(start, trim.start)
+        let upper = min(end, trim.end)
+        guard upper > lower else { return nil }
+        return Self(annotation: annotation, start: lower - trim.start, end: upper - trim.start)
+    }
+}
+
+/// Everything Undo restores and Save exports from the recording editor.
+struct VideoEdit {
+    var annotations: [VideoAnnotation] = []
+    var trim: VideoTrim
+
+    /// Every time the editor's timing controls can change.
+    var timing: [TimeInterval] { [trim.start, trim.end] + annotations.flatMap { [$0.start, $0.end] } }
+}

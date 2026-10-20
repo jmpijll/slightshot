@@ -14,13 +14,14 @@ enum VideoEditorReview {
             : URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
                 .appendingPathComponent("build/video-editor-review", isDirectory: true)
         let fourK = arguments.contains("--video-editor-4k-evidence")
+        let trim = arguments.contains("--video-editor-trim-evidence")
         let sourceFlag = arguments.firstIndex(of: "--video-editor-review-source")
         let sourceOverride = sourceFlag.flatMap { index in
             arguments.indices.contains(index + 1) ? URL(fileURLWithPath: arguments[index + 1]) : nil
         }
         let review = VideoEditorReviewDelegate(directory: directory,
-            automatic: arguments.contains("--video-editor-evidence") || fourK, fourK: fourK,
-            sourceOverride: sourceOverride)
+            automatic: arguments.contains("--video-editor-evidence") || fourK || trim, fourK: fourK,
+            trim: trim, sourceOverride: sourceOverride)
         app.delegate = review
         app.setActivationPolicy(.regular)
         withExtendedLifetime(review) { app.run() }
@@ -31,6 +32,7 @@ private final class VideoEditorReviewDelegate: NSObject, NSApplicationDelegate {
     private let directory: URL
     private let automatic: Bool
     private let fourK: Bool
+    private let trim: Bool
     private let sourceOverride: URL?
     private var editor: VideoEditorWindow?
     private var reviewTask: Task<Void, Never>?
@@ -38,10 +40,11 @@ private final class VideoEditorReviewDelegate: NSObject, NSApplicationDelegate {
     private var sourceSize: CGSize { fourK ? VideoEditor4KReview.sourceSize : CGSize(width: 960, height: 540) }
     private var duration: TimeInterval { fourK ? VideoEditor4KReview.duration : 8 }
 
-    init(directory: URL, automatic: Bool, fourK: Bool = false, sourceOverride: URL? = nil) {
+    init(directory: URL, automatic: Bool, fourK: Bool = false, trim: Bool = false, sourceOverride: URL? = nil) {
         self.directory = directory
         self.automatic = automatic
         self.fourK = fourK
+        self.trim = trim
         self.sourceOverride = sourceOverride
     }
 
@@ -63,9 +66,7 @@ private final class VideoEditorReviewDelegate: NSObject, NSApplicationDelegate {
                 window.backgroundColor = .windowBackgroundColor
                 window.contentView?.appearance = window.appearance
                 window.onDiscard = { NSApp.terminate(nil) }
-                window.onSave = { [weak self] annotations in
-                    self?.saveReview(source: source, annotations: annotations)
-                }
+                window.onSave = { [weak self] edit in self?.saveReview(source: source, edit: edit) }
                 editor = window
                 window.center()
                 window.makeKeyAndOrderFront(nil)
@@ -83,12 +84,12 @@ private final class VideoEditorReviewDelegate: NSObject, NSApplicationDelegate {
         RunLoop.main.add(timer, forMode: .common)
     }
 
-    private func saveReview(source: URL, annotations: [VideoAnnotation]) {
+    private func saveReview(source: URL, edit: VideoEdit) {
         Task {
             do {
                 try await RecordingExport.save(source: source,
                     to: directory.appendingPathComponent("edited-video.mp4"),
-                    quality: .high, annotations: annotations)
+                    quality: .high, annotations: edit.annotations, trim: edit.trim)
                 editor?.title = "Slightshot video editor · exported edited-video.mp4"
             } catch { writeFailure(error) }
         }
@@ -97,6 +98,13 @@ private final class VideoEditorReviewDelegate: NSObject, NSApplicationDelegate {
     private func captureEvidence(in window: VideoEditorWindow, source: URL) async throws {
         if fourK {
             try await VideoEditor4KReview.capture(in: window, source: source, directory: directory,
+                sourceCommit: sourceCommit, captureWindow: { [self] window, destination in
+                    try await capture(window: window, to: destination)
+                })
+            return
+        }
+        if trim {
+            try await VideoEditorTrimReview.capture(in: window, source: source, directory: directory,
                 sourceCommit: sourceCommit, captureWindow: { [self] window, destination in
                     try await capture(window: window, to: destination)
                 })
