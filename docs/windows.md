@@ -241,9 +241,11 @@ duplicates and Escape. It roundtrips the settings JSON, closes Settings and
 verifies production global hotkey callbacks, including no activation when Win
 is omitted. With Windows' Print Screen screen capture turned on, it checks that
 Print Screen is reported unavailable and captures the Settings explanation. It
-then turns that setting off, records Print Screen alone, registers it and
-checks the global callback while other bare keys stay rejected. The original
-setting is restored afterwards. [Saved shortcut screenshots and native/portable reports](review/windows-key-shortcuts/README.md)
+then turns that setting off, records Print Screen alone and registers it while
+other bare keys stay rejected. The original setting is restored afterwards.
+Injected Print Screen input has not produced a global hotkey callback on the CI
+desktop, so the report records each injected form; the Print Screen callback
+itself needs a check with a physical key. [Saved shortcut screenshots and native/portable reports](review/windows-key-shortcuts/README.md)
 identify the fixture inputs, platform and exact source commit.
 
 The instance fixture holds the production session mutex and command pipe, then
