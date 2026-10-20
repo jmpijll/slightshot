@@ -49,7 +49,7 @@ internal static class RecordingExport
         properties.Properties[new Guid("3e23d450-2c75-4d25-a00e-b91670d12327")] = (uint)1; // MF_MT_YUV_MATRIX: BT.709
     }
 
-    internal static async Task SaveAsync(string source, string destination, RecordingQuality quality, int width, int height, CancellationToken cancellation, IProgress<double>? progress = null)
+    internal static async Task SaveAsync(string source, string destination, RecordingQuality quality, int width, int height, CancellationToken cancellation, IProgress<double>? progress = null, VideoTrim? trim = null)
     {
         ValidateDestination(source, destination);
         string staging = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(destination))!, ".slightshot-" + Guid.NewGuid().ToString("N") + ".mp4");
@@ -57,6 +57,14 @@ internal static class RecordingExport
         {
             cancellation.ThrowIfCancellationRequested();
             var input = await StorageFile.GetFileFromPathAsync(source).AsTask(cancellation);
+            TimeSpan trimStart = TimeSpan.Zero, trimStop = TimeSpan.Zero;
+            if (trim is { } requested)
+            {
+                var duration = (await input.Properties.GetVideoPropertiesAsync().AsTask(cancellation)).Duration;
+                var kept = requested.Within(duration);
+                if (kept.Length <= TimeSpan.Zero) throw new InvalidOperationException("The trimmed recording has no video frames.");
+                trimStart = kept.Start; trimStop = duration - kept.End;
+            }
             var folder = await StorageFolder.GetFolderFromPathAsync(Path.GetDirectoryName(staging)!).AsTask(cancellation);
             var output = await folder.CreateFileAsync(Path.GetFileName(staging), CreationCollisionOption.FailIfExists).AsTask(cancellation);
             // Explicitly own both streams so cancellation releases every file
@@ -64,7 +72,7 @@ internal static class RecordingExport
             using (var inputStream = await input.OpenReadAsync().AsTask(cancellation))
             using (var outputStream = await output.OpenAsync(FileAccessMode.ReadWrite).AsTask(cancellation))
             {
-                var transcoder = new MediaTranscoder { HardwareAccelerationEnabled = true, AlwaysReencode = true };
+                var transcoder = new MediaTranscoder { HardwareAccelerationEnabled = true, AlwaysReencode = true, TrimStartTime = trimStart, TrimStopTime = trimStop };
                 var prepared = await transcoder.PrepareStreamTranscodeAsync(inputStream, outputStream, Profile(quality, width, height)).AsTask(cancellation);
                 if (!prepared.CanTranscode) throw new InvalidOperationException($"Windows could not export this recording ({prepared.FailureReason}).");
                 await prepared.TranscodeAsync().AsTask(cancellation, progress);

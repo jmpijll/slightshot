@@ -24,11 +24,12 @@ internal sealed class VideoRangeSlider : Grid
     internal event Action? EditBeginning;
     internal event Action<double, double>? RangeChanged;
     internal event Action? EditCompleted;
-    internal VideoRangeSlider(TimeSpan duration, TimeSpan minimum)
+    internal VideoRangeSlider(TimeSpan duration, TimeSpan minimum, string subject)
     {
         this.duration = duration.TotalSeconds; this.minimum = minimum.TotalSeconds; End = this.duration;
         Height = 34; MinWidth = 120; Margin = new Thickness(0, 6, 0, 8);
-        from = Handle("Annotation start handle"); until = Handle("Annotation end handle");
+        from = Handle(subject + " start handle"); until = Handle(subject + " end handle");
+        AutomationProperties.SetName(this, subject + " range");
         canvas.Children.Add(track); canvas.Children.Add(interval); canvas.Children.Add(from); canvas.Children.Add(until); Children.Add(canvas);
         from.DragStarted += (_, _) => EditBeginning?.Invoke(); until.DragStarted += (_, _) => EditBeginning?.Invoke();
         from.DragDelta += (_, e) => Move(true, Begin + e.HorizontalChange / TrackWidth * this.duration);
