@@ -23,7 +23,7 @@ Choose your platform on [Releases](https://github.com/jmpijll/slightshot/release
 | Platform | Download | Updates |
 | --- | --- | --- |
 | macOS 27+, Apple silicon | Signed and Apple-notarised `.dmg` | In-app updates with Sparkle, or Homebrew |
-| Windows, x64 or ARM64 | Unsigned preview; setup `.exe` or portable `.zip` | Download the next version from Releases |
+| Windows, x64 or ARM64 | Unsigned preview; setup `.exe` or portable `.zip` | Check in the app, then download from Releases |
 
 ### macOS
 
@@ -56,7 +56,8 @@ see the [Windows guide](docs/windows.md) for installation, compatibility and
 validation details.
 
 Windows builds remain unsigned previews and Windows may show a security warning.
-**Download updates…** in the app opens Releases. The maintainer verified capture
+**Check for Updates…** in the tray menu or Settings asks GitHub for the latest
+release and offers its page when a newer version exists. The maintainer verified capture
 and recording on an x64 Windows desktop; ARM64 is cross-built and inspected,
 with native desktop acceptance still pending.
 
@@ -199,7 +200,10 @@ Slightshot saves screenshots and recordings to your computer or copies
 screenshots to your clipboard.
 It has no screenshot upload service, account system or application telemetry.
 On macOS, the app uses Sparkle to check for updates. You can also check manually
-in Settings. Windows preview updates are downloaded from Releases.
+in Settings. On Windows, Slightshot never checks in the background. Each click on
+**Check for Updates…** sends one unauthenticated request to
+`https://api.github.com/repos/jmpijll/slightshot/releases/latest`, identified only by
+a `Slightshot/<version>` User-Agent. Updates are downloaded from Releases.
 
 ## macOS scripting
 
