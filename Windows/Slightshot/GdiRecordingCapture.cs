@@ -2,20 +2,21 @@ using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using Slightshot.Core;
 
 namespace Slightshot;
 
-// One top-down BGRA DIB reused for the whole recording. StretchBlt crops/scales
-// the live desktop directly; no full-monitor bitmap or unbounded frame queue.
+// One top-down BGRA DIB reused for the whole recording. BitBlt copies a pixel-exact
+// area and StretchBlt scales any other; no full-monitor bitmap or frame queue.
 internal sealed class GdiRecordingCapture : IDisposable
 {
     private readonly int left, top, sourceWidth, sourceHeight, width, height;
     private readonly bool includeCursor;
     private IntPtr memory, bitmap, previous, pixels;
 
-    internal GdiRecordingCapture(int left, int top, int sourceWidth, int sourceHeight, int width, int height, bool includeCursor)
+    internal GdiRecordingCapture(int left, int top, RecordingGeometry geometry, bool includeCursor)
     {
-        this.left = left; this.top = top; this.sourceWidth = sourceWidth; this.sourceHeight = sourceHeight; this.width = width; this.height = height; this.includeCursor = includeCursor;
+        this.left = left; this.top = top; sourceWidth = geometry.SourceWidth; sourceHeight = geometry.SourceHeight; width = geometry.Width; height = geometry.Height; this.includeCursor = includeCursor;
         IntPtr screen = RecordingNative.GetDC(IntPtr.Zero);
         try
         {
@@ -46,7 +47,10 @@ internal sealed class GdiRecordingCapture : IDisposable
         IntPtr screen = RecordingNative.GetDC(IntPtr.Zero);
         try
         {
-            if (screen == IntPtr.Zero || !RecordingNative.StretchBlt(memory, 0, 0, width, height, screen, left, top, sourceWidth, sourceHeight, 0x40CC0020))
+            bool copied = sourceWidth == width && sourceHeight == height
+                ? RecordingNative.BitBlt(memory, 0, 0, width, height, screen, left, top, 0x40CC0020)
+                : RecordingNative.StretchBlt(memory, 0, 0, width, height, screen, left, top, sourceWidth, sourceHeight, 0x40CC0020);
+            if (screen == IntPtr.Zero || !copied)
                 throw new Win32Exception(Marshal.GetLastWin32Error(), "The selected screen area could not be recorded.");
         }
         finally { if (screen != IntPtr.Zero) RecordingNative.ReleaseDC(IntPtr.Zero, screen); }
@@ -122,6 +126,7 @@ internal static class RecordingNative
     [DllImport("gdi32.dll")] internal static extern IntPtr SelectObject(IntPtr dc, IntPtr value);
     [DllImport("gdi32.dll")] internal static extern int SetStretchBltMode(IntPtr dc, int mode);
     [DllImport("gdi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool GdiFlush();
+    [DllImport("gdi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool BitBlt(IntPtr destination, int x, int y, int width, int height, IntPtr source, int sourceX, int sourceY, uint operation);
     [DllImport("gdi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool StretchBlt(IntPtr destination, int x, int y, int width, int height, IntPtr source, int sourceX, int sourceY, int sourceWidth, int sourceHeight, uint operation);
     [DllImport("gdi32.dll", EntryPoint = "GetObjectW")] internal static extern int GetObject(IntPtr value, int size, out Bitmap bitmap);
     [DllImport("user32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool SetWindowDisplayAffinity(IntPtr window, uint affinity);
@@ -138,6 +143,8 @@ internal static class RecordingNative
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool EnumWindows(WindowCallback callback, IntPtr data);
     [DllImport("user32.dll")] internal static extern uint GetWindowThreadProcessId(IntPtr window, out uint process);
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool IsWindowVisible(IntPtr window);
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool ShutdownBlockReasonCreate(IntPtr window, string reason);
+    [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool ShutdownBlockReasonQuery(IntPtr window, char[]? reason, ref uint length);
     internal delegate bool WindowCallback(IntPtr window, IntPtr data);
     [StructLayout(LayoutKind.Sequential)] internal struct BitmapInfo { internal BitmapInfoHeader Header; internal uint Color; }
     [StructLayout(LayoutKind.Sequential)] internal struct BitmapInfoHeader { internal uint Size; internal int Width, Height; internal ushort Planes, BitCount; internal uint Compression, ImageSize; internal int XPixels, YPixels; internal uint Colors, ImportantColors; }
