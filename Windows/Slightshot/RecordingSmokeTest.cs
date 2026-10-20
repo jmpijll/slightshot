@@ -214,7 +214,7 @@ internal static class RecordingSmokeTest
             using (var capture = new GdiRecordingCapture(left, top, new RecordingGeometry(patternWidth, patternHeight, width, height), false)) capture.Capture(legacy);
             var exactDifference = Difference(exact, truth, width, width, height);
             var legacyDifference = Difference(legacy, truth, width, width, height);
-            Require(exactDifference.Mismatched == 0, "cropped GDI recording frame equals the desktop pixels exactly");
+            Require(exactDifference.Mismatched == 0, "cropped GDI recording frame equals the desktop pixels exactly: " + Describe(exact, truth, width, height, exactDifference.Mismatched));
             Require(legacyDifference.Mismatched > width * height / 10, "the previous 801→800 rescale visibly changes this fixture");
 
             var session = RecordingSession.Create(display, selection, includeCursor: false, nativeResolution: true);
@@ -264,6 +264,13 @@ internal static class RecordingSmokeTest
             error += Math.Abs(Luma(actual, a) - Luma(expected, e));
         }
         return (mismatched, error / ((width - fromX) * height));
+    }
+    private static string Describe(byte[] actual, byte[] expected, int width, int height, int mismatched)
+    {
+        for (int index = 0; index < width * height * 4; index += 4)
+            if (actual[index] != expected[index] || actual[index + 1] != expected[index + 1] || actual[index + 2] != expected[index + 2])
+                return string.Create(CultureInfo.InvariantCulture, $"{mismatched} pixels differ; first at ({index / 4 % width}, {index / 4 / width}) is {actual[index]},{actual[index + 1]},{actual[index + 2]} instead of {expected[index]},{expected[index + 1]},{expected[index + 2]}");
+        return "no difference";
     }
     private static double Luma(byte[] pixels, int index) => 0.0722 * pixels[index] + 0.7152 * pixels[index + 1] + 0.2126 * pixels[index + 2];
     private static void SaveOddAreaComparison(string path, byte[] truth, byte[] decoded, byte[] legacy, int width, double decodedError, double legacyError)
