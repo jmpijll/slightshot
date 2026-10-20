@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import re
 import shutil
+import ssl
 import subprocess
 import sys
 import tempfile
@@ -165,56 +166,131 @@ class ReleaseMetadataTests(unittest.TestCase):
         self.assertIn("expected an RSS channel", result.stderr)
 
 
+TRUSTING_RUNNER = """
+import runpy, ssl, sys, urllib.request
+context = ssl.create_default_context(cafile=sys.argv.pop(1))
+urllib.request.install_opener(urllib.request.build_opener(urllib.request.HTTPSHandler(context=context)))
+sys.argv[0] = sys.argv[1]
+del sys.argv[1]
+runpy.run_path(sys.argv[0], run_name="__main__")
+"""
+
+
 class DownloadCheckTests(unittest.TestCase):
-    """The Pages gate and the publish job refuse a feed whose downloads are not public."""
+    """The Pages gate and the publish job refuse a feed whose downloads are not public HTTPS files."""
 
     @classmethod
     def setUpClass(cls):
+        workspace = tempfile.TemporaryDirectory()
+        cls.addClassCleanup(workspace.cleanup)
+        cls.certificate = Path(workspace.name) / "cert.pem"
+        key = Path(workspace.name) / "key.pem"
+        subprocess.run(["openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1",
+                        "-subj", "/CN=127.0.0.1", "-addext", "subjectAltName=IP:127.0.0.1",
+                        "-keyout", str(key), "-out", str(cls.certificate)], check=True, capture_output=True)
         payload = b"signed disk image" * 1000
+        cls.size = len(payload)
+        cls.requests = {}
+        servers = {}
 
         class Handler(http.server.BaseHTTPRequestHandler):
             def do_GET(self):
-                if self.path == "/download/ok.dmg":
-                    self.send_response(200)
-                    self.send_header("Content-Length", str(len(payload)))
+                name = self.path.rsplit("/", 1)[-1]
+                count = cls.requests[name] = cls.requests.get(name, 0) + 1
+                if name == "dropped-once.dmg" and count == 1:
+                    self.close_connection = True
+                    return
+                if name in ("busy-once.dmg", "limited-once.dmg") and count == 1 or name == "down.dmg":
+                    self.send_response(429 if name.startswith("limited") else 503)
+                    self.send_header("Retry-After", "0")
+                    self.send_header("Content-Length", "0")
                     self.end_headers()
-                    self.wfile.write(payload)
-                elif self.path == "/download/redirected.dmg":
+                elif name == "redirected.dmg":
                     self.send_response(302)
                     self.send_header("Location", "/download/ok.dmg")
                     self.end_headers()
+                elif name == "downgraded.dmg":
+                    self.send_response(302)
+                    self.send_header("Location", f"{servers['http']}ok.dmg")
+                    self.end_headers()
+                elif name == "forbidden.dmg":
+                    self.send_error(403)
+                elif name in ("ok.dmg", "dropped-once.dmg", "busy-once.dmg", "limited-once.dmg", "partial.dmg"):
+                    self.send_response(206 if name == "partial.dmg" else 200)
+                    self.send_header("Content-Length", str(len(payload)))
+                    self.end_headers()
+                    self.wfile.write(payload)
                 else:
                     self.send_error(404)
 
             def log_message(self, *args):
                 pass
 
-        cls.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-        threading.Thread(target=cls.server.serve_forever, daemon=True).start()
-        cls.addClassCleanup(cls.server.server_close)
-        cls.addClassCleanup(cls.server.shutdown)
-        cls.base = f"http://127.0.0.1:{cls.server.server_port}/download/"
-        cls.size = len(payload)
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(cls.certificate, key)
+        for scheme in ("https", "http"):
+            server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+            if scheme == "https":
+                server.socket = context.wrap_socket(server.socket, server_side=True)
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            cls.addClassCleanup(server.server_close)
+            cls.addClassCleanup(server.shutdown)
+            servers[scheme] = f"{scheme}://127.0.0.1:{server.server_port}/download/"
+        cls.base, cls.plain = servers["https"], servers["http"]
+
+    def setUp(self):
+        self.requests.clear()
 
     def check(self, *enclosures):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
         appcast = Path(directory.name) / "appcast.xml"
         appcast.write_text("<rss><channel>" + "".join(
-            f'<item><enclosure url="{self.base}{name}" length="{length}"/></item>'
-            for name, length in enclosures) + "</channel></rss>")
-        return subprocess.run([sys.executable, str(SCRIPT), "--check-downloads", str(appcast)],
-                              text=True, capture_output=True)
+            f'<item><enclosure url="{url if ":" in url else self.base + url}" length="{length}"/></item>'
+            for url, length in enclosures) + "</channel></rss>")
+        return subprocess.run([sys.executable, "-c", TRUSTING_RUNNER, str(self.certificate), str(SCRIPT),
+                               "--check-downloads", str(appcast)], text=True, capture_output=True)
 
-    def test_public_downloads_with_matching_lengths_pass(self):
+    def test_public_https_downloads_with_matching_lengths_pass(self):
         result = self.check(("ok.dmg", self.size), ("redirected.dmg", self.size))
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.count(f"{self.size} bytes"), 2)
 
-    def test_unavailable_download_blocks_the_feed(self):
-        result = self.check(("ok.dmg", self.size), ("draft.dmg", self.size))
+    def test_unavailable_download_blocks_the_feed_without_retrying(self):
+        for name, code in (("draft.dmg", 404), ("forbidden.dmg", 403)):
+            with self.subTest(name=name):
+                result = self.check(("ok.dmg", self.size), (name, self.size))
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(f"{name} is not publicly available: HTTP Error {code}", result.stderr)
+                self.assertEqual(self.requests[name], 1)
+
+    def test_only_a_final_https_200_counts_as_public(self):
+        for name in ("partial.dmg", "downgraded.dmg"):
+            with self.subTest(name=name):
+                result = self.check((name, self.size))
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("expected 200 over HTTPS", result.stderr)
+
+    def test_non_https_enclosures_are_rejected_before_any_request(self):
+        for url in (self.plain + "ok.dmg", "file:///etc/hosts", "data:,signed", "https:///missing-host"):
+            with self.subTest(url=url):
+                result = self.check((url, self.size))
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("is not an https:// download URL", result.stderr)
+        self.assertEqual(self.requests, {})
+
+    def test_transient_failures_are_retried(self):
+        result = self.check(("busy-once.dmg", self.size), ("limited-once.dmg", self.size),
+                            ("dropped-once.dmg", self.size))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.requests, {"busy-once.dmg": 2, "limited-once.dmg": 2, "dropped-once.dmg": 2})
+        self.assertIn("busy-once.dmg: attempt 1 failed; retrying in 0s", result.stderr)
+
+    def test_persistent_server_errors_stop_after_five_attempts(self):
+        result = self.check(("down.dmg", self.size))
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("draft.dmg is not publicly available: HTTP Error 404", result.stderr)
+        self.assertIn("down.dmg is not publicly available: HTTP Error 503", result.stderr)
+        self.assertEqual(self.requests["down.dmg"], 5)
 
     def test_length_mismatch_blocks_the_feed(self):
         result = self.check(("ok.dmg", self.size + 1))

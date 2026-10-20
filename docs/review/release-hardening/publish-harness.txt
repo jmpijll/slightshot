@@ -37,3 +37,36 @@ https://github.com/jmpijll/slightshot/releases/download/v1.6.0/Slightshot-1.6.0.
 https://github.com/jmpijll/slightshot/releases/download/v1.5.1/Slightshot-1.5.1.dmg: 2306638 bytes
 https://github.com/jmpijll/slightshot/releases/download/v1.5.0/Slightshot-1.5.0.dmg: 2306605 bytes
 exit=0
+
+# Review round 2: download gate requires HTTPS and a final 200, and retries transient failures (2026-10-20T13:33Z)
+# Real local HTTPS server with a throwaway self-signed certificate, plus a plain HTTP server for the downgrade and http: cases.
+
+test_length_mismatch_blocks_the_feed ... ok
+test_non_https_enclosures_are_rejected_before_any_request ... ok
+test_only_a_final_https_200_counts_as_public ... ok
+test_pages_checks_downloads_before_uploading_the_feed ... ok
+test_persistent_server_errors_stop_after_five_attempts ... ok
+test_public_https_downloads_with_matching_lengths_pass ... ok
+test_transient_failures_are_retried ... ok
+test_unavailable_download_blocks_the_feed_without_retrying ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests
+
+OK
+
+## Mutation check: each change to Scripts/release_metadata.py makes the named test fail
+enclosure https:// check removed        -> test_non_https_enclosures_are_rejected_before_any_request (http:, file:, data:, https:///)
+final 200-over-HTTPS check removed      -> test_only_a_final_https_200_counts_as_public (206, redirect to http)
+HTTP errors never retried               -> test_transient_failures_are_retried, test_persistent_server_errors_stop_after_five_attempts
+4xx retried                             -> test_unavailable_download_blocks_the_feed_without_retrying (404, 403)
+Retry-After ignored                     -> test_transient_failures_are_retried
+network errors not retried              -> test_transient_failures_are_retried
+more than five attempts                 -> test_persistent_server_errors_stop_after_five_attempts
+
+## Live feed through the Pages gate
+$ python3 Scripts/release_metadata.py --check-downloads public/appcast.xml
+https://github.com/jmpijll/slightshot/releases/download/v1.6.0/Slightshot-1.6.0.dmg: 2364817 bytes
+https://github.com/jmpijll/slightshot/releases/download/v1.5.1/Slightshot-1.5.1.dmg: 2306638 bytes
+https://github.com/jmpijll/slightshot/releases/download/v1.5.0/Slightshot-1.5.0.dmg: 2306605 bytes
+exit=0
