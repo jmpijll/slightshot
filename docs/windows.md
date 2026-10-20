@@ -29,8 +29,16 @@ ARM64 desktop acceptance.
 Windows preview binaries, including setup, are unsigned. An installer does not
 remove Windows security warnings. Updates are downloaded manually from
 [Releases](https://github.com/jmpijll/slightshot/releases).
-**Download updates…** in the tray menu or General settings opens the latest
-release. About and Settings show the version embedded in the running executable.
+**Check for Updates…** in the tray menu or General settings sends one request to
+GitHub's latest-release API, waits at most 10 seconds, and compares its
+`MAJOR.MINOR.PATCH` tag with the running version. It reports that Slightshot is
+up to date, or names the newer version and offers to open its release page.
+Prerelease tags are never offered. A network failure, timeout or unexpected
+response says so and offers the Releases page instead. The request has no
+authentication and carries only a `Slightshot/<version>` User-Agent; there is
+no background polling. About and Settings show the version embedded in the
+running executable.
+See the [update check dialogs and native validation](review/windows-update-check/README.md).
 
 See the [1.5.1 published-file validation and native editor evidence](review/releases/v1.5.1/README.md).
 
@@ -268,7 +276,7 @@ and the Windows executable icon is converted from the existing Mac app artwork.
 Windows uses Segoe UI and the same original toolbar glyphs as Mac. The shared
 source is `Resources/UI/icons.json`; Apple's system fonts remain platform-specific. Frosted material and text shadow are
 approximations of AppKit rather than identical OS rendering. Windows update
-delivery is manual. Setup packages provide installation and upgrades; code signing
+checks run on request and delivery is manual. Setup packages provide installation and upgrades; code signing
 and an automatic updater are not yet provided. GDI screen capture targets the ordinary desktop; protected video
 and HDR-specific colour management are outside this first version.
 

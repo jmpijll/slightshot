@@ -1,0 +1,42 @@
+{
+  "platform": "Windows WPF / native About and update MessageBoxes",
+  "source": "Automated native CI fixture. General settings, About and update-check window captures are cropped desktop pixels; update checks use stubbed GitHub responses (no network); overlay/export inputs and renderer boards are synthetic. No manual interaction recording.",
+  "appTextFixture": {
+    "defaultAction": "StayOpen",
+    "aboutText": "Slightshot 1.6.0 for Windows\n\nAn open-source screenshot and screen recording app for Windows.\n\ngithub.com/jmpijll/slightshot"
+  },
+  "checks": [
+    "20 shared native WPF vectors render unclipped at 1\u00D7/2\u00D7; Record size/label/action retained. Production toolbar renderer produces normal, hover-style, selected and disabled fixtures. Source SHA-256: 6d2e85ff60e5481b8d8419533f2b3d6e2cb4297a623625a5adbf6dcfcc52ef94.",
+    "1\u00D7 fractional origin/size: tiny blur/pixelate leave every outside BGRA pixel unchanged; every live/export pixel matches",
+    "1.25\u00D7 fractional origin/size: tiny blur/pixelate leave every outside BGRA pixel unchanged; every live/export pixel matches",
+    "1.5\u00D7 fractional origin/size: tiny blur/pixelate leave every outside BGRA pixel unchanged; every live/export pixel matches",
+    "2\u00D7 fractional origin/size: tiny blur/pixelate leave every outside BGRA pixel unchanged; every live/export pixel matches",
+    "1\u00D7 effects: source pixels transformed, ordered annotations, clipped/empty regions, live/committed/export parity, undo and logical export passed",
+    "1.25\u00D7 effects: source pixels transformed, ordered annotations, clipped/empty regions, live/committed/export parity, undo and logical export passed",
+    "1.5\u00D7 effects: source pixels transformed, ordered annotations, clipped/empty regions, live/committed/export parity, undo and logical export passed",
+    "2\u00D7 effects: source pixels transformed, ordered annotations, clipped/empty regions, live/committed/export parity, undo and logical export passed",
+    "Screenshot workflow: Save As cancellation, real failed write, retained two-display editor, text/Blur/Pixelate/Undo, nested input rejection, successful retry, and Escape passed",
+    "Settings route: blocked during modal output; idle editor dismissed and Output folder chooser accessible after a real save-directory failure",
+    "1\u00D7 numbered steps: current colour, fixed readable sizing, multi-digit labels, clipped/live/committed/export pixels, raster ordering and undo passed",
+    "1.25\u00D7 numbered steps: current colour, fixed readable sizing, multi-digit labels, clipped/live/committed/export pixels, raster ordering and undo passed",
+    "1.5\u00D7 numbered steps: current colour, fixed readable sizing, multi-digit labels, clipped/live/committed/export pixels, raster ordering and undo passed",
+    "2\u00D7 numbered steps: current colour, fixed readable sizing, multi-digit labels, clipped/live/committed/export pixels, raster ordering and undo passed",
+    "1\u00D7 redo: native toolbar, Ctrl\u002BZ/Y/Shift\u002BZ handler, original text/vector/effect/step objects and pixels, repeated cycles, native draft text editing, new-edit and selection invalidation passed",
+    "1.25\u00D7 redo: native toolbar, Ctrl\u002BZ/Y/Shift\u002BZ handler, original text/vector/effect/step objects and pixels, repeated cycles, native draft text editing, new-edit and selection invalidation passed",
+    "1.5\u00D7 redo: native toolbar, Ctrl\u002BZ/Y/Shift\u002BZ handler, original text/vector/effect/step objects and pixels, repeated cycles, native draft text editing, new-edit and selection invalidation passed",
+    "2\u00D7 redo: native toolbar, Ctrl\u002BZ/Y/Shift\u002BZ handler, original text/vector/effect/step objects and pixels, repeated cycles, native draft text editing, new-edit and selection invalidation passed",
+    "scroll-capture: up/down, new text, fixed tools, outside selection, draft text, original widths, redo, palette synchronization and pointer-centered halo passed",
+    "scroll-clipboard: up/down, new text, fixed tools, outside selection, draft text, original widths, redo, palette synchronization and pointer-centered halo passed",
+    "scroll-video: production wheel handler, zoom-correct annotation size, text sizing and native indicator passed",
+    "1\u00D7: native and logical export dimensions, red annotation pixels, PNG/JPEG/TIFF decode passed",
+    "1.25\u00D7: native and logical export dimensions, red annotation pixels, PNG/JPEG/TIFF decode passed",
+    "1.5\u00D7: native and logical export dimensions, red annotation pixels, PNG/JPEG/TIFF decode passed",
+    "2\u00D7: native and logical export dimensions, red annotation pixels, PNG/JPEG/TIFF decode passed",
+    "Actual General settings HWNDs shown in light/dark themes with DefaultAction.StayOpen; action label, double-click instruction and Keep editing verified; cropped desktop screenshots saved and windows closed.",
+    "Production About tray action opened a real native MessageBox; exact AppInfo.AboutText checked in its Static control; cropped desktop screenshot saved; actual OK button clicked automatically and dialog closure verified.",
+    "Fixture GitHub release v1.6.0: production tray Check for Updates\u2026 showed \u0022Slightshot 1.6.0 is up to date.\u0022 in a native MessageBox; OK clicked automatically.",
+    "Fixture GitHub release v1.7.0: production Settings Check for Updates\u2026 showed Checking\u2026 while the stubbed request was held, ignored a tray click meanwhile, then showed \u0022Slightshot 1.7.0 is available.\u0022; Yes clicked automatically and the release\u0027s html_url was passed to the opener.",
+    "Fixture network failure: production tray Check for Updates\u2026 showed the could-not-be-reached message with a Releases fallback; No clicked automatically.",
+    "Stub handler received exactly 3 GET requests to https://api.github.com/repos/jmpijll/slightshot/releases/latest, each with User-Agent Slightshot/1.6.0, no Authorization header and no body."
+  ]
+}
