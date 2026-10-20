@@ -1,7 +1,8 @@
 #!/bin/zsh
-# usage: docs/review/inbox-forward/forward-probe.sh <rounds> <commands-per-round> <yes-processes>
+# usage: docs/review/inbox-forward/forward-probe.sh <rounds> <commands-per-round> <yes-processes> [owner stall seconds]
 set -u
-rounds=$1; count=$2; load=$3
+rounds=$1; count=$2; load=$3; stall=${4:-}
+started=$(date '+%Y-%m-%d %H:%M:%S')
 root=${0:A:h:h:h:h}
 work=$(mktemp -d)
 probe=$work/forward-probe
@@ -19,11 +20,16 @@ trap 'kill $pids 2>/dev/null; rm -rf $work' EXIT
 ok=0
 for round in $(seq 1 $rounds); do
     inbox=$work/inbox-$round
-    $probe owner $inbox $count > $work/owner-$round.log 2>&1 &
+    $probe owner $inbox $count $stall > $work/owner-$round.log 2>&1 &
     owner=$!
     until grep -q READY $work/owner-$round.log 2>/dev/null || ! kill -0 $owner 2>/dev/null; do sleep 0.05; done
     $probe sender $inbox $count > $work/sender-$round.log 2>&1
     wait $owner && ok=$((ok + 1))
     echo "round=$round $(grep -v READY $work/owner-$round.log) $(cat $work/sender-$round.log)"
 done
-echo "TOTAL ok=$ok rounds=$rounds commands=$count load=$load"
+echo "TOTAL ok=$ok rounds=$rounds commands=$count load=$load stall=${stall:-0}"
+if [[ -n $stall ]]; then
+    /usr/bin/log show --style compact --start "$started" \
+        --predicate 'subsystem == "com.jmpijll.slightshot" AND eventMessage BEGINSWITH "Dropped forwarded"' |
+        grep "Dropped forwarded"
+fi

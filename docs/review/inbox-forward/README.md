@@ -15,6 +15,18 @@ stall the warm forward still arrives on the first poll.
 
 ![Before and after failure counts](results.png)
 
+## Expired forwards are logged
+
+The same drop happens in the app when the owner's main thread is busy for more
+than 10 seconds, for example with synchronous encoding or file writes. The expiry
+stays: starting a capture long after the user asked for it is the surprise it
+prevents. The drop is no longer silent, though. The owner logs each request it
+drops when draining, and a forwarder logs the stale requests it prunes when it
+sends. The log lines go to the unified log as errors in the
+`com.jmpijll.slightshot` subsystem, `app` category.
+
+![Owner stalls of 9 and 11 seconds in real processes](expired-drop-logged.png)
+
 ## Reproduce
 
 Build the tests with the toolchain in `CONTRIBUTING.md`, then:
@@ -34,3 +46,5 @@ with 20 `yes` processes loading the CPU.
 `ApplicationCommandInbox.swift`. One process owns the inbox and receives on its
 main queue, as the app does. The other forwards 200 numbered commands per round.
 The owner fails a round if a command is lost, repeated or reordered.
+A fourth argument blocks the owner's main thread for that many seconds
+while the sender forwards: `forward-probe.sh 1 1 0 11` shows the drop and its log line.

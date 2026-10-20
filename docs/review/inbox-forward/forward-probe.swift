@@ -1,7 +1,8 @@
 // Two-process delivery probe for ApplicationCommandInbox, built from the shipped sources by
 // forward-probe.sh. The owner process receives on its main queue exactly like the app; the
 // sender process forwards a numbered pattern. The owner reports lost, reordered or repeated
-// commands.
+// commands. An optional stall blocks the owner's main thread while the sender forwards, as
+// synchronous encoding or file writes in the app would; the owner then reports what arrived.
 import Foundation
 
 let arguments = CommandLine.arguments
@@ -26,6 +27,13 @@ case "owner":
     }
     print("READY")
     fflush(stdout)
+    if let stall = arguments.dropFirst(4).first.flatMap(Double.init) {
+        usleep(useconds_t(stall * 1_000_000))
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            print("OWNER STALLED \(stall) s delivered=\(received.count)/\(total)")
+            exit(received.count == total ? 0 : 3)
+        }
+    }
     DispatchQueue.main.asyncAfter(deadline: .now() + 120) {
         print("OWNER LOST delivered=\(received.count)/\(total)")
         exit(2)
@@ -47,5 +55,5 @@ case "sender":
     }
     print("SENDER sent=\(total) inboxFullRetries=\(full)")
 default:
-    fatalError("usage: forward-probe owner|sender <directory> <count>")
+    fatalError("usage: forward-probe owner|sender <directory> <count> [owner stall seconds]")
 }
