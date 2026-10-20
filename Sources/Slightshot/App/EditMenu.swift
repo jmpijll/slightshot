@@ -8,8 +8,8 @@ enum EditMenu {
     static func makeMainMenu() -> NSMenu {
         let edit = NSMenu(title: "Edit")
         edit.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
-        edit.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "z")
-            .keyEquivalentModifierMask = [.command, .shift]
+        // Shift is written as the uppercase letter; "z" plus a Shift mask never matches ⇧⌘Z.
+        edit.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "Z")
         edit.addItem(.separator())
         edit.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
         edit.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")

@@ -72,8 +72,8 @@ struct TextAnnotationLayoutTests {
         let edit = try #require(EditMenu.makeMainMenu().items.last?.submenu)
         let items = edit.items.filter { !$0.isSeparatorItem }
         #expect(items.map(\.title) == ["Undo", "Redo", "Cut", "Copy", "Paste", "Select All"])
-        #expect(items.map(\.keyEquivalent) == ["z", "z", "x", "c", "v", "a"])
-        #expect(items[1].keyEquivalentModifierMask == [.command, .shift])
+        #expect(items.map(\.keyEquivalent) == ["z", "Z", "x", "c", "v", "a"])
+        #expect(items.allSatisfy { $0.keyEquivalentModifierMask == .command })
 
         let editor = try OverlayEditor()
         defer { editor.window.close() }
