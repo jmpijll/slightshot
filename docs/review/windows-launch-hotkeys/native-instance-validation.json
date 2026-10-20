@@ -1,0 +1,62 @@
+{
+  "platform": "Windows / native WPF app and real second-launch processes",
+  "sourceCommit": "3c29469027ce08b5e791a1daae28a4093ec9dc96",
+  "source": "Automated fixture: this process owns the production mutex and pipe; the real executable is started as later launches. Exceptions are fixture throws.",
+  "launches": [
+    {
+      "arguments": "(no arguments)",
+      "exitCode": 0,
+      "milliseconds": 227,
+      "delivered": [
+        "CaptureArea"
+      ]
+    },
+    {
+      "arguments": "--capture-area",
+      "exitCode": 0,
+      "milliseconds": 225,
+      "delivered": [
+        "CaptureArea"
+      ]
+    },
+    {
+      "arguments": "--capture-full",
+      "exitCode": 0,
+      "milliseconds": 215,
+      "delivered": [
+        "SaveFullScreen"
+      ]
+    },
+    {
+      "arguments": "--copy-full",
+      "exitCode": 0,
+      "milliseconds": 224,
+      "delivered": [
+        "CopyFullScreen"
+      ]
+    },
+    {
+      "arguments": "--unknown",
+      "exitCode": 2,
+      "milliseconds": 195,
+      "delivered": []
+    }
+  ],
+  "messages": [
+    "Slightshot ran into a problem and closed the capture. It is still running in the notification area.\n\nDetails were saved to D:\\a\\slightshot\\slightshot\\Windows\\artifacts\\instance\\error-log\\errors.log."
+  ],
+  "errorLog": [
+    "2026-10-20T11:09:36.9822829\u002B00:00 UI thread",
+    "System.InvalidOperationException: fixture failure in the capture overlay",
+    "2026-10-20T11:09:37.0388927\u002B00:00 UI thread",
+    "System.InvalidOperationException: second fixture failure while the message is open",
+    "2026-10-20T11:09:37.1861200\u002B00:00 Unobserved task exception",
+    "System.AggregateException: A Task\u0027s exception(s) were not observed either by Waiting on the Task or accessing its Exception property. As a result, the unobserved exception was rethrown by the finalizer thread. (unobserved fixture failure)",
+    " ---\u003E System.InvalidOperationException: unobserved fixture failure"
+  ],
+  "checks": [
+    "Real second launches forward no arguments and --capture-area as CaptureArea, --capture-full as SaveFullScreen and --copy-full as CopyFullScreen, then exit 0; an unknown argument exits 2 without a command.",
+    "A UI-thread exception with a real overlay open is logged, closes the overlay and shows one message; a second exception raised while that message pumps is logged without another message; the dispatcher keeps running.",
+    "An unobserved task exception is logged without a message."
+  ]
+}
