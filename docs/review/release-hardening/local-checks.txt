@@ -1,0 +1,68 @@
+# Local validation for #38 at source 13534da, 2026-10-20T10:38Z
+
+## Sparkle 2.10.0 tarball digest
+pinned:      c2bf58aa8387266ac179357b1415d6f2635f044da8be41042af32425dae6da0c
+downloaded:  c2bf58aa8387266ac179357b1415d6f2635f044da8be41042af32425dae6da0c
+github api:  sha256:c2bf58aa8387266ac179357b1415d6f2635f044da8be41042af32425dae6da0c
+
+## Source gate (Resolve version run block, local clone of origin/main)
+manual publish on main: exit=0 version=1.7.0 build=209 publish=true 
+manual publish on a branch: exit=1 ::error::Manual publication must run on main, not refs/heads/feature.
+tag on a commit outside main: exit=1 ::error::Release source d98f735842a871b754bfc2cce9656af695533472 is not contained in origin/main.
+verification run on an unmerged branch: exit=0 version=1.7.0 build=210 publish=false 
+
+## Feed commit (Commit the appcast onto main run block, bare remote; source checkout is an older tag)
+### scenario: plain
+   1cfc807..7fec969  7fec969c8766c6572ca0b6d5388dba3c64f0262e -> main
+script exit=0
+7fec969 Publish appcast for v9.9.9
+1cfc807 later main commit
+af132d4 init
+main appcast: <rss>v1+new</rss>
+main README: a b 
+### scenario: race
+ ! [rejected]        b5e7ca6fa6c7cd3b17c499ff4483537150e35fdc -> main (fetch first)
+error: failed to push some refs to '<tmp>
+(sleep 10 skipped)
+   8e58b21..7abb816  7abb816b864a299f9337edd0282c5c7bda39d0ca -> main
+script exit=0
+7abb816 Publish appcast for v9.9.9
+8e58b21 racing commit
+a893ec3 later main commit
+d701895 init
+main appcast: <rss>v1+new</rss>
+main README: a b c 
+### scenario: feedchange
+ ! [rejected]        e19f898cd7c1f4dd5ef243f89182c5ec4a72e175 -> main (fetch first)
+error: failed to push some refs to '<tmp>
+(sleep 10 skipped)
+::error::public/appcast.xml changed on main after this feed was generated. Rerun the release.
+script exit=1
+2a0c4c7 edit feed
+442004f later main commit
+cda84cd init
+main appcast: <rss>human edit</rss>
+main README: a b 
+
+## Signature check (Swift block extracted from the workflow; byte-identical to /tmp copy used) on real generate_appcast output, fixture DMG and test keys
+### matching keys
+Appcast signature for Slightshot-1.7.0.dmg verifies with SPARKLE_PUBLIC_KEY.
+Appcast signature for Slightshot-1.7.0.dmg verifies with SUPublicEDKey.
+exit=0
+### secret key differs
+::error::Appcast signature does not verify with SPARKLE_PUBLIC_KEY.
+exit=1
+### embedded SUPublicEDKey differs
+Appcast signature for Slightshot-1.7.0.dmg verifies with SPARKLE_PUBLIC_KEY.
+::error::Appcast signature does not verify with SUPublicEDKey.
+exit=1
+### disk image modified after signing
+::error::Appcast signature does not verify with SPARKLE_PUBLIC_KEY.
+exit=1
+### no item for the build
+::error::Expected exactly one appcast item for build 301.
+exit=1
+### public v1.6.0 DMG and deployed feed; both keys read from the 1.6.0 app (the secret is not readable locally)
+Appcast signature for Slightshot-1.6.0.dmg verifies with SPARKLE_PUBLIC_KEY.
+Appcast signature for Slightshot-1.6.0.dmg verifies with SUPublicEDKey.
+exit=0

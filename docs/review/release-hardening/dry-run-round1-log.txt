@@ -1,0 +1,60 @@
+# Release run 39413633120, source 5e37b73, version=1.7.0 publish=false
+# https://github.com/jmpijll/slightshot/actions/runs/39413633120
+# Excerpt of job 'Build, notarise and sign the feed'; ANSI codes stripped.
+
+2026-10-20T11:25:58.3910850Z build/Slightshot.app: accepted
+2026-10-20T11:25:58.3912210Z source=Notarized Developer ID
+2026-10-20T11:26:28.7732980Z build/Slightshot-1.7.0.dmg: accepted
+2026-10-20T11:26:28.7734260Z source=Notarized Developer ID
+2026-10-20T11:26:32.8712730Z /tmp/sparkle.tar.xz: OK
+2026-10-20T11:26:35.0599050Z Wrote 1 new update, updated 0 existing updates, and removed 1 old update in appcast.xml
+2026-10-20T11:26:35.0698100Z         <title>Slightshot</title>
+2026-10-20T11:26:35.0699790Z             <title>1.7.0</title>
+2026-10-20T11:26:35.0700720Z             <sparkle:version>212</sparkle:version>
+2026-10-20T11:26:35.0702820Z             <enclosure url="https://github.com/jmpijll/slightshot/releases/download/v1.7.0/Slightshot-1.7.0.dmg" length="2364661" type="application/octet-stream" sparkle:edSignature="Z+9t/7ONdfNJJFDnDk5TBRM1u0wjK7XfIwsyi1xSlBw5sUK7x6mSuA5iJM5sarZMEBXxp8Zg0gz8UircVFXBBg=="/>
+2026-10-20T11:26:35.0716590Z             <title>1.6.0</title>
+2026-10-20T11:26:35.0718170Z             <sparkle:version>207</sparkle:version>
+2026-10-20T11:26:35.0720340Z             <enclosure url="https://github.com/jmpijll/slightshot/releases/download/v1.6.0/Slightshot-1.6.0.dmg" length="2364817" type="application/octet-stream" sparkle:edSignature="/vTeFof/wPakHqBYpDmTMk3tpPD02Z0Y6SYkjSGGwr8FM7ighBxPa8m+59vEffetqwTdFF7+pQO9es0xfvEZAw=="/>
+2026-10-20T11:26:35.0722300Z             <title>1.5.1</title>
+2026-10-20T11:26:35.0722960Z             <sparkle:version>195</sparkle:version>
+2026-10-20T11:26:35.0725080Z             <enclosure url="https://github.com/jmpijll/slightshot/releases/download/v1.5.1/Slightshot-1.5.1.dmg" length="2306638" type="application/octet-stream" sparkle:edSignature="t+UDvvH+cTZI0HE1M/xZEgyys1ASgRG1x5UU4BybUQSYLug6h/lAemMYX62F1t5zJJDjtyUFZtG3xliqJsamDg=="/>
+2026-10-20T11:26:38.4578650Z Appcast signature for Slightshot-1.7.0.dmg verifies with SPARKLE_PUBLIC_KEY.
+2026-10-20T11:26:38.4580100Z Appcast signature for Slightshot-1.7.0.dmg verifies with SUPublicEDKey.
+
+# Jobs
+success	Windows preview and native checks / build-and-render
+success	Build, notarise and sign the feed
+skipped	Publish release and update feed
+
+# Build job steps
+success	Set up job
+success	Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+success	Resolve version
+success	Check release credentials
+success	Import Developer ID certificate
+success	Build and sign the app
+success	Notarise and staple the app
+success	Build the disk image
+success	Notarise and staple
+success	Preserve signed and notarised disk image
+success	Preserve notarisation diagnostics
+success	Generate the Sparkle appcast
+success	Verify the appcast signature
+success	Preserve the signed appcast
+success	Remove signing credentials
+success	Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+success	Complete job
+
+# Artifacts
+Slightshot-appcast	819 bytes
+Slightshot-macos-signed-dmg	2329976 bytes
+Slightshot-windows-release-assets	250649231 bytes
+
+# Pages gate on this run's appcast artifact (local, macOS)
+$ python3 Scripts/release_metadata.py --check-downloads appcast.xml
+error: https://github.com/jmpijll/slightshot/releases/download/v1.7.0/Slightshot-1.7.0.dmg is not publicly available: HTTP Error 404: Not Found
+exit=1
+
+# Dispatch API used by the publish job's Pages step (same call shape, dispatching this dry run)
+$ gh api -X POST repos/jmpijll/slightshot/actions/workflows/release.yml/dispatches -f ref=fix/38-release-hardening -f inputs[version]=1.7.0 -f inputs[publish]=false -F return_run_details=true
+{"workflow_run_id":39413633120,"run_url":"https://api.github.com/repos/jmpijll/slightshot/actions/runs/39413633120","html_url":"https://github.com/jmpijll/slightshot/actions/runs/39413633120"}

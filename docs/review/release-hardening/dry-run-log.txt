@@ -1,0 +1,45 @@
+# Release run 39409286689, source 13534da, version=1.7.0 publish=false
+# https://github.com/jmpijll/slightshot/actions/runs/39409286689
+# Excerpt of job 'Build, notarise and publish'; ANSI codes stripped.
+
+2026-10-20T10:48:10.9259940Z build/Slightshot.app: accepted
+2026-10-20T10:48:10.9260780Z source=Notarized Developer ID
+2026-10-20T10:48:40.3058570Z build/Slightshot-1.7.0.dmg: accepted
+2026-10-20T10:48:40.3059540Z source=Notarized Developer ID
+2026-10-20T10:48:42.6865410Z /tmp/sparkle.tar.xz: OK
+2026-10-20T10:48:44.6767530Z Wrote 1 new update, updated 0 existing updates, and removed 1 old update in appcast.xml
+2026-10-20T10:48:44.6832560Z         <title>Slightshot</title>
+2026-10-20T10:48:44.6834660Z             <title>1.7.0</title>
+2026-10-20T10:48:44.6836270Z             <sparkle:version>210</sparkle:version>
+2026-10-20T10:48:44.6839210Z             <enclosure url="https://github.com/jmpijll/slightshot/releases/download/v1.7.0/Slightshot-1.7.0.dmg" length="2364608" type="application/octet-stream" sparkle:edSignature="lkbboPuAF8DjxYMDQjL/+mf/mpbnPC3fzdCCVcviWGKSGtSVtPKYmC2yo9IfihedyVHuzOTQAoErQ25irfrKDg=="/>
+2026-10-20T10:48:44.6841700Z             <title>1.6.0</title>
+2026-10-20T10:48:44.6842610Z             <sparkle:version>207</sparkle:version>
+2026-10-20T10:48:44.6844930Z             <enclosure url="https://github.com/jmpijll/slightshot/releases/download/v1.6.0/Slightshot-1.6.0.dmg" length="2364817" type="application/octet-stream" sparkle:edSignature="/vTeFof/wPakHqBYpDmTMk3tpPD02Z0Y6SYkjSGGwr8FM7ighBxPa8m+59vEffetqwTdFF7+pQO9es0xfvEZAw=="/>
+2026-10-20T10:48:44.6846680Z             <title>1.5.1</title>
+2026-10-20T10:48:44.6848960Z             <sparkle:version>195</sparkle:version>
+2026-10-20T10:48:44.6851360Z             <enclosure url="https://github.com/jmpijll/slightshot/releases/download/v1.5.1/Slightshot-1.5.1.dmg" length="2306638" type="application/octet-stream" sparkle:edSignature="t+UDvvH+cTZI0HE1M/xZEgyys1ASgRG1x5UU4BybUQSYLug6h/lAemMYX62F1t5zJJDjtyUFZtG3xliqJsamDg=="/>
+2026-10-20T10:48:47.4251340Z Appcast signature for Slightshot-1.7.0.dmg verifies with SPARKLE_PUBLIC_KEY.
+2026-10-20T10:48:47.4252900Z Appcast signature for Slightshot-1.7.0.dmg verifies with SUPublicEDKey.
+
+# Step results
+success	Set up job
+success	Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+success	Resolve version
+success	Check release credentials
+success	Import Developer ID certificate
+success	Build and sign the app
+success	Notarise and staple the app
+success	Build the disk image
+success	Notarise and staple
+success	Preserve signed and notarised disk image
+success	Preserve notarisation diagnostics
+success	Generate the Sparkle appcast
+success	Verify the appcast signature
+success	Download verified Windows installers and portable archives
+skipped	Stage the GitHub release as a draft
+skipped	Commit the appcast onto main
+skipped	Publish the GitHub release
+skipped	Deploy the update feed
+success	Remove signing credentials
+success	Post Run actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+success	Complete job
