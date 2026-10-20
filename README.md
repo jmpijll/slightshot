@@ -23,7 +23,7 @@ Choose your platform on [Releases](https://github.com/jmpijll/slightshot/release
 | Platform | Download | Updates |
 | --- | --- | --- |
 | macOS 27+, Apple silicon | Signed and Apple-notarised `.dmg` | In-app updates with Sparkle, or Homebrew |
-| Windows, x64 or ARM64 | Unsigned preview; setup `.exe` or portable `.zip` | Download the next version from Releases |
+| Windows, x64 or ARM64 | Unsigned preview; setup `.exe` or portable `.zip` | Check in the app, then download from Releases |
 
 ### macOS
 
@@ -47,6 +47,8 @@ administrator rights, adds a Start menu shortcut and offers an optional desktop
 shortcut. Starting at login is an
 opt-in setting in the app. Quit Slightshot from its tray menu before installing,
 upgrading or uninstalling. Upgrades preserve your settings and saved captures.
+Slightshot runs in the notification area. If its icon is hidden in the overflow,
+start Slightshot again from the Start menu to capture an area.
 
 Prefer a portable copy? Download the [x64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-x64.zip)
 or [ARM64 ZIP](https://github.com/jmpijll/slightshot/releases/latest/download/Slightshot-windows-arm64.zip),
@@ -56,7 +58,8 @@ see the [Windows guide](docs/windows.md) for installation, compatibility and
 validation details.
 
 Windows builds remain unsigned previews and Windows may show a security warning.
-**Download updates…** in the app opens Releases. The maintainer verified capture
+**Check for Updates…** in the tray menu or Settings asks GitHub for the latest
+release and offers its page when a newer version exists. The maintainer verified capture
 and recording on an x64 Windows desktop; ARM64 is cross-built and inspected,
 with native desktop acceptance still pending.
 
@@ -136,8 +139,11 @@ video editor adds its annotations to the saved MP4 during their chosen periods.
 
 Cancel the save panel or export to return to the video editor with your
 recording and annotations intact. A failed export also lets you return to the
-editor or retry. **Discard…** asks before removing the recording. Temporary
-source files are removed after saving, discarding, or quitting.
+editor or retry. **Discard…** asks before removing the recording. On macOS,
+quitting, logging out or updating with an unsaved recording or annotated capture
+asks you to save or copy it, discard it, or cancel; if the system stops a recording
+early, what was recorded opens in the editor. Temporary source files are removed
+after saving or discarding, and leftovers from a crash are removed at next launch.
 
 See the [timed video editor review](docs/review/timed-video-annotations/README.md)
 for native Mac and Windows before/during/after screenshots and edited MP4s.
@@ -166,7 +172,10 @@ Undo and Redo in the toolbar also work with text, blur, pixelation and numbered 
 Redo restores the original mark; adding a new annotation or starting a new selection
 clears Redo. While typing, the text field keeps its native Undo and Redo shortcuts.
 
-You can change the three capture shortcuts in Settings.
+You can change the three capture shortcuts in Settings. On macOS, a shortcut needs ⌘ or ⌃
+unless it uses a function key, and Settings refuses one that another action already uses.
+On Windows, Print Screen works on its own, as in Lightshot, once Windows' **Use the
+Print screen key to open screen capture** setting is turned off.
 
 | Action | macOS | Windows |
 | --- | --- | --- |
@@ -196,7 +205,10 @@ Slightshot saves screenshots and recordings to your computer or copies
 screenshots to your clipboard.
 It has no screenshot upload service, account system or application telemetry.
 On macOS, the app uses Sparkle to check for updates. You can also check manually
-in Settings. Windows preview updates are downloaded from Releases.
+in Settings. On Windows, Slightshot never checks in the background. Each click on
+**Check for Updates…** sends one unauthenticated request to
+`https://api.github.com/repos/jmpijll/slightshot/releases/latest`, identified only by
+a `Slightshot/<version>` User-Agent. Updates are downloaded from Releases.
 
 ## macOS scripting
 

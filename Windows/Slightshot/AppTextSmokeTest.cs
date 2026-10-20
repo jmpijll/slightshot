@@ -54,7 +54,7 @@ internal static class AppTextSmokeTest
             {
                 while (dialog == IntPtr.Zero && timeout.Elapsed < TimeSpan.FromSeconds(10))
                 {
-                    dialog = FindAboutDialog(processId);
+                    dialog = FindDialog(processId, "About Slightshot");
                     if (dialog == IntPtr.Zero) await Task.Delay(50);
                 }
                 Require(dialog != IntPtr.Zero, "production About menu opens a native MessageBox within ten seconds");
@@ -90,7 +90,7 @@ internal static class AppTextSmokeTest
         checks.Add("Production About tray action opened a real native MessageBox; exact AppInfo.AboutText checked in its Static control; cropped desktop screenshot saved; actual OK button clicked automatically and dialog closure verified.");
     }
 
-    private static void CaptureWindow(IntPtr handle, string path)
+    internal static void CaptureWindow(IntPtr handle, string path)
     {
         Require(IsWindowVisible(handle) && GetForegroundWindow() == handle, "captured native app window is visible in the foreground");
         Require(RecordingNative.GetWindowRect(handle, out var rect), "captured native app window has bounds");
@@ -104,21 +104,21 @@ internal static class AppTextSmokeTest
         bitmap.Save(path, System.Drawing.Imaging.ImageFormat.Png);
     }
 
-    private static IntPtr FindAboutDialog(uint processId)
+    internal static IntPtr FindDialog(uint processId, string title)
     {
         IntPtr result = IntPtr.Zero;
         EnumWindows((handle, _) =>
         {
             GetWindowThreadProcessId(handle, out uint owner);
-            if (owner == processId && IsWindowVisible(handle) && ClassName(handle) == "#32770" && WindowText(handle) == "About Slightshot")
+            if (owner == processId && IsWindowVisible(handle) && ClassName(handle) == "#32770" && WindowText(handle) == title)
             { result = handle; return false; }
             return true;
         }, IntPtr.Zero);
         return result;
     }
-    private static string WindowText(IntPtr handle) { var text = new StringBuilder(8192); GetWindowText(handle, text, text.Capacity); return text.ToString(); }
-    private static string ClassName(IntPtr handle) { var text = new StringBuilder(128); GetClassName(handle, text, text.Capacity); return text.ToString(); }
-    private static IEnumerable<DependencyObject> Descendants(DependencyObject parent)
+    internal static string WindowText(IntPtr handle) { var text = new StringBuilder(8192); GetWindowText(handle, text, text.Capacity); return text.ToString(); }
+    internal static string ClassName(IntPtr handle) { var text = new StringBuilder(128); GetClassName(handle, text, text.Capacity); return text.ToString(); }
+    internal static IEnumerable<DependencyObject> Descendants(DependencyObject parent)
     {
         for (int index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
         {
@@ -127,14 +127,14 @@ internal static class AppTextSmokeTest
         }
     }
     private static void Require(bool condition, string check) { if (!condition) throw new InvalidOperationException($"App text smoke test failed: {check}"); }
-    private delegate bool WindowCallback(IntPtr handle, IntPtr data);
+    internal delegate bool WindowCallback(IntPtr handle, IntPtr data);
     [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool EnumWindows(WindowCallback callback, IntPtr data);
-    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool EnumChildWindows(IntPtr parent, WindowCallback callback, IntPtr data);
+    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool EnumChildWindows(IntPtr parent, WindowCallback callback, IntPtr data);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr handle, StringBuilder text, int capacity);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr handle, StringBuilder text, int capacity);
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr handle, out uint processId);
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
-    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool IsWindow(IntPtr handle);
-    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool IsWindowVisible(IntPtr handle);
-    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] private static extern bool PostMessage(IntPtr handle, uint message, IntPtr wParam, IntPtr lParam);
+    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool IsWindow(IntPtr handle);
+    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool IsWindowVisible(IntPtr handle);
+    [DllImport("user32.dll")] [return: MarshalAs(UnmanagedType.Bool)] internal static extern bool PostMessage(IntPtr handle, uint message, IntPtr wParam, IntPtr lParam);
 }

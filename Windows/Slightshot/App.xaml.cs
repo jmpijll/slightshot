@@ -1,6 +1,9 @@
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.IO.Pipes;
+using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Windows;
 using System.Windows.Threading;
 using Slightshot.Core;
@@ -10,6 +13,8 @@ namespace Slightshot;
 
 public partial class App : System.Windows.Application
 {
+    internal const string InstanceMutexName = "Local\\Slightshot";
+    private static readonly string DataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Slightshot");
     private Settings settings = new();
     private Forms.NotifyIcon? tray;
     private Icon? trayIcon;
@@ -20,6 +25,11 @@ public partial class App : System.Windows.Application
     private OverlayCoordinator? overlays;
     private Mutex? instance;
     private bool ownsInstance;
+    private InstanceChannel? commands;
+    private HotKey[] unavailable = [];
+    private Action? balloonClicked;
+    private bool reportingError;
+    private bool started;
     private bool capturing;
     private bool quitting;
     private DelayedCaptureController? delayedCapture;
@@ -33,6 +43,13 @@ public partial class App : System.Windows.Application
             string directory = Path.GetFullPath(e.Args.Length > 1 ? e.Args[1] : "artifacts");
             try { await ShortcutSmokeTest.RunAsync(directory); Shutdown(0); }
             catch (Exception ex) { Directory.CreateDirectory(directory); File.WriteAllText(Path.Combine(directory, "shortcut-failure.txt"), ex.ToString()); Shutdown(1); }
+            return;
+        }
+        if (e.Args.Length >= 1 && e.Args[0] == "--instance-smoke-test")
+        {
+            string directory = Path.GetFullPath(e.Args.Length > 1 ? e.Args[1] : "artifacts");
+            try { await InstanceSmokeTest.RunAsync(this, directory); Shutdown(0); }
+            catch (Exception ex) { Directory.CreateDirectory(directory); File.WriteAllText(Path.Combine(directory, "instance-failure.txt"), ex.ToString()); Shutdown(1); }
             return;
         }
         if (e.Args.Length >= 1 && e.Args[0] == "--clipboard-smoke-test")
@@ -83,28 +100,118 @@ public partial class App : System.Windows.Application
             }
             return;
         }
-        instance = new Mutex(true, "Local\\Slightshot", out ownsInstance);
-        if (!ownsInstance) { Shutdown(); return; }
-        settings = Settings.Load();
+        InstallErrorHandlers(Path.Combine(DataDirectory, "Logs"), Error, () => started);
+        bool known = LaunchArguments.TryParse(e.Args, out var command);
+        instance = new Mutex(true, InstanceMutexName, out ownsInstance);
+        if (!ownsInstance)
+        {
+            if (!known) { Shutdown(2); return; }
+            bool forwarded = await InstanceChannel.SendAsync(InstancePipeName(), command ?? LaunchCommand.CaptureArea, TimeSpan.FromSeconds(5));
+            if (!forwarded) Error("Slightshot is already running but did not respond. Use its icon in the notification area, or quit it and start Slightshot again.");
+            Shutdown(forwarded ? 0 : 1); return;
+        }
+        bool firstRun = !Directory.Exists(DataDirectory);
+        settings = Settings.Load(out string? settingsNotice);
         recording = new RecordingCoordinator(settings);
+        SessionEnding += (_, args) => args.Cancel = recording.KeepForSessionEnd();
         trayIcon = CreateTrayIcon();
         tray = new Forms.NotifyIcon { Icon = trayIcon, Text = "Slightshot", Visible = true };
         tray.DoubleClick += (_, _) => Dispatcher.InvokeAsync(BeginCapture);
-        output = new OutputService(settings, (title, body) => tray.ShowBalloonTip(3000, title, body, Forms.ToolTipIcon.None));
+        tray.BalloonTipClicked += (_, _) => { var clicked = balloonClicked; balloonClicked = null; if (clicked != null) Dispatcher.InvokeAsync(clicked); };
+        output = new OutputService(settings, (title, body) => ShowBalloon(3000, title, body, Forms.ToolTipIcon.None));
         overlays = new OverlayCoordinator(settings, output.Perform, SaveCaptureSettings, StartRecording);
         ConfigureDelayedCapture();
         hotKeys = new HotKeyService(id => Dispatcher.InvokeAsync(() => { if (id == 1) BeginCapture(); else FullScreen(id == 2 ? CaptureAction.Save : CaptureAction.Copy); }));
         UpdateSettings();
+        commands = new InstanceChannel(InstancePipeName(), IsSameSessionClient, received => Dispatcher.InvokeAsync(() => Run(received)));
+        if (settingsNotice != null) ShowBalloon(8000, "Settings reset", settingsNotice, Forms.ToolTipIcon.Warning);
+        else if (firstRun && unavailable.Length == 0)
+            ShowBalloon(8000, "Slightshot is running", settings.CaptureAreaHotKey.IsEmpty
+                ? "Double-click the Slightshot icon in the notification area to capture an area."
+                : $"Press {settings.CaptureAreaHotKey} to capture an area, or use the Slightshot icon in the notification area.", Forms.ToolTipIcon.Info);
+        started = true;
+        recording.Recover();
+        if (command is { } initial) _ = Dispatcher.InvokeAsync(() => Run(initial));
+    }
+
+    internal static string InstancePipeName()
+    {
+        using var identity = WindowsIdentity.GetCurrent();
+        using var process = Process.GetCurrentProcess();
+        return $"Slightshot-{identity.User?.Value}-{process.SessionId}";
+    }
+
+    // The pipe admits only this user; also refuse that user's processes in other logon sessions.
+    internal static bool IsSameSessionClient(NamedPipeServerStream pipe)
+    {
+        using var process = Process.GetCurrentProcess();
+        return GetNamedPipeClientSessionId(pipe.SafePipeHandle, out uint session) && session == (uint)process.SessionId;
+    }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetNamedPipeClientSessionId(Microsoft.Win32.SafeHandles.SafePipeHandle pipe, out uint session);
+
+    private void Run(LaunchCommand command)
+    {
+        if (command == LaunchCommand.CaptureArea) BeginCapture();
+        else FullScreen(command == LaunchCommand.SaveFullScreen ? CaptureAction.Save : CaptureAction.Copy);
     }
 
     private void UpdateSettings()
     {
         try { settings.Save(); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Error($"Could not save settings.\n\n{ex.Message}"); }
-        string[] failures = hotKeys!.Register(settings);
+        unavailable = hotKeys!.Register(settings);
         var menu = CreateCaptureMenu();
         var old = tray!.ContextMenuStrip; tray.ContextMenuStrip = menu; old?.Dispose();
-        if (failures.Length > 0) tray.ShowBalloonTip(6000, "Shortcut unavailable", $"Already in use or invalid: {string.Join(", ", failures)}. Capture from the tray or choose another shortcut in Settings.", Forms.ToolTipIcon.Warning);
+        if (unavailable.Length > 0)
+            ShowBalloon(6000, "Shortcut unavailable", $"Already in use or invalid: {string.Join(", ", unavailable)}."
+                + (unavailable.Any(key => key.IsPrintScreen) && HotKeyService.WindowsUsesPrintScreen() ? " Windows is using Print Screen to open screen capture." : "")
+                + " Click to choose another shortcut in Settings.", Forms.ToolTipIcon.Warning, ShowSettings);
+    }
+
+    private void ShowBalloon(int timeout, string title, string body, Forms.ToolTipIcon icon, Action? clicked = null)
+    {
+        balloonClicked = clicked;
+        tray!.ShowBalloonTip(timeout, title, body, icon);
+    }
+
+    internal void InstallErrorHandlers(string logDirectory, Action<string> report, Func<bool> canRecover)
+    {
+        DispatcherUnhandledException += (_, e) =>
+        {
+            e.Handled = true;
+            string? log = LogError(logDirectory, "UI thread", e.Exception);
+            // Before startup completes the tray, hotkeys and command listener may
+            // be half built, so report and exit rather than resume.
+            bool recover = canRecover();
+            if (recover)
+            {
+                try { delayedCapture?.Cancel(); Dismiss(); }
+                catch (Exception ex) { LogError(logDirectory, "Closing the capture after an error", ex); }
+                capturing = false;
+            }
+            // A message box pumps the dispatcher, so errors raised while it is
+            // open are logged without stacking further messages.
+            if (!reportingError)
+            {
+                reportingError = true;
+                string details = log == null ? "" : $"\n\nDetails were saved to {log}.";
+                try { report((recover ? "Slightshot ran into a problem and closed the capture. It is still running in the notification area." : "Slightshot ran into a problem and could not start.") + details); }
+                finally { reportingError = false; }
+            }
+            if (!recover) Shutdown(1);
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, e) => LogError(logDirectory, "Unhandled exception",
+            e.ExceptionObject as Exception ?? new InvalidOperationException(e.ExceptionObject?.ToString()));
+        TaskScheduler.UnobservedTaskException += (_, e) => { LogError(logDirectory, "Unobserved task exception", e.Exception); e.SetObserved(); };
+    }
+
+    private static string? LogError(string directory, string source, Exception error)
+    {
+        try { return ErrorLog.Append(directory, source, error, DateTimeOffset.Now); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return null; }
     }
 
     internal Forms.ContextMenuStrip CreateCaptureMenu()
@@ -119,7 +226,7 @@ public partial class App : System.Windows.Application
         Add(menu, "Open Screenshots Folder", () => { try { Directory.CreateDirectory(settings.SaveDirectory); Open(settings.SaveDirectory); } catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { Error(ex.Message); } });
         menu.Items.Add(new Forms.ToolStripSeparator());
         Add(menu, "Settings…", ShowSettings);
-        Add(menu, "Download updates…", () => Open(AppInfo.ReleaseUrl));
+        Add(menu, "Check for Updates…", () => _ = UpdateCheck.RunAsync(preferences));
         Add(menu, "About Slightshot", () => MessageBox.Show(AppInfo.AboutText, "About Slightshot", MessageBoxButton.OK));
         menu.Items.Add(new Forms.ToolStripSeparator()); Add(menu, "Quit Slightshot", Quit);
         return menu;
@@ -187,7 +294,7 @@ public partial class App : System.Windows.Application
         if (overlays?.IsBusy == true) Dismiss();
         if (preferences == null)
         {
-            preferences = new SettingsWindow(settings);
+            preferences = new SettingsWindow(settings, null, unavailable);
             preferences.Closed += (_, _) => { preferences = null; UpdateSettings(); };
         }
         preferences.Show(); preferences.Activate();
@@ -218,7 +325,7 @@ public partial class App : System.Windows.Application
     protected override void OnExit(ExitEventArgs e)
     {
         delayedCapture?.Cancel();
-        hotKeys?.Dispose(); tray?.Dispose(); trayIcon?.Dispose();
+        commands?.Dispose(); hotKeys?.Dispose(); tray?.Dispose(); trayIcon?.Dispose();
         if (ownsInstance) instance?.ReleaseMutex(); instance?.Dispose(); base.OnExit(e);
     }
 

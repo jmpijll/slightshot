@@ -1,0 +1,82 @@
+{
+  "platform": "Windows / native WPF Settings / Win32 global hotkeys",
+  "sourceCommit": "3c29469027ce08b5e791a1daae28a4093ec9dc96",
+  "source": "Automated native Settings fixture with real SendInput and RegisterHotKey; screenshots are cropped composed desktop pixels.",
+  "printScreenKeyForSnippingEnabled": "0",
+  "printScreenInjection": [
+    {
+      "form": "virtual key, extended",
+      "callbacksAfterKeyDown": 0,
+      "callbacksAfterKeyUp": 0,
+      "foreground": "0x60152 class=Windows.UI.Core.CoreWindow title=\u0022Screen Snipping\u0022 process=1324 (this process 8456)"
+    },
+    {
+      "form": "virtual key",
+      "callbacksAfterKeyDown": 0,
+      "callbacksAfterKeyUp": 0,
+      "foreground": "0x60158 class=Windows.UI.Core.CoreWindow title=\u0022Screen Snipping\u0022 process=3616 (this process 8456)"
+    },
+    {
+      "form": "virtual key and scan 0x37, extended",
+      "callbacksAfterKeyDown": 0,
+      "callbacksAfterKeyUp": 0,
+      "foreground": "0x70158 class=Windows.UI.Core.CoreWindow title=\u0022Screen Snipping\u0022 process=7244 (this process 8456)"
+    },
+    {
+      "form": "scan code 0x37, extended",
+      "callbacksAfterKeyDown": 0,
+      "callbacksAfterKeyUp": 0,
+      "foreground": "0x90152 class=Windows.UI.Core.CoreWindow title=\u0022Screen Snipping\u0022 process=6720 (this process 8456)"
+    }
+  ],
+  "fixtureInputs": [
+    "Windows Print Screen screen capture on, then off",
+    "Print Screen",
+    "Left Win\u002BF13",
+    "Right Win\u002BF13 after Ctrl\u002BShift\u002BA",
+    "Ctrl\u002BWin\u002BF13",
+    "Shift\u002BAlt\u002BWin\u002BF13",
+    "Ctrl\u002BShift\u002BAlt\u002BWin\u002BF13",
+    "Ctrl\u002BShift\u002BA",
+    "bare modifiers",
+    "duplicate assignment",
+    "Escape"
+  ],
+  "recorded": [
+    {
+      "Key": 124,
+      "Modifiers": 8,
+      "IsEmpty": false,
+      "IsValid": true,
+      "IsPrintScreen": false
+    },
+    {
+      "Key": 124,
+      "Modifiers": 10,
+      "IsEmpty": false,
+      "IsValid": true,
+      "IsPrintScreen": false
+    },
+    {
+      "Key": 124,
+      "Modifiers": 13,
+      "IsEmpty": false,
+      "IsValid": true,
+      "IsPrintScreen": false
+    }
+  ],
+  "globalCallbacks": [
+    1,
+    2,
+    3
+  ],
+  "checks": [
+    "Left and right Windows \u002B F13 both record through real native key input; right Windows replaces a distinct Ctrl\u002BShift\u002BA value.",
+    "Windows with Control, Shift, Alt and all modifiers retains the full modifier mask; an existing Ctrl\u002BShift shortcut still records correctly.",
+    "Bare Control, Shift, Alt and both Windows keys leave the field unchanged while held; a key without modifiers is ignored.",
+    "Duplicate assignment remains rejected; Escape clears only the focused shortcut; a subsequent valid chord clears feedback.",
+    "Print Screen without a modifier records through native key-up input; other bare keys stay ignored.",
+    "Recorded settings JSON roundtrip preserves Windows modifiers. After Settings closes, production RegisterHotKey registration and native SendInput produce callbacks 1, 2, 3; removing Windows produces none.",
+    "With Windows\u0027 Print Screen screen capture on, registration reports Print Screen unavailable and Settings explains the setting. With it off, production RegisterHotKey registers Print Screen without a modifier; bare F13 is rejected and produces no callback. Injected Print Screen results are in shortcut-print-screen-injection.json."
+  ]
+}

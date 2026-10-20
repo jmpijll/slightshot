@@ -17,7 +17,7 @@ this check exits without creating windows, requesting permissions or owning a
 capture session. Developer ID release builds retain Hardened Runtime and secure
 timestamps. See the [before/after loader check](review/mac-review-launch/README.md).
 
-The Mac job uses the existing `xcode-27` runner because the app requires macOS 27. Native Windows rendering and recording tests stay on `windows-latest`. Linux can run the release-gate tests, Windows core geometry/raster checks and a Windows cross-build; it cannot build/notarise a native Mac DMG or execute WPF.
+The Mac job uses the existing `xcode-27` runner because the app requires macOS 27. Native Windows rendering and recording tests stay on `windows-latest`. Linux can run actionlint on the workflows, ShellCheck on `Scripts/*.sh`, the release-gate tests, Windows core geometry/raster checks and a Windows cross-build; it cannot build/notarise a native Mac DMG or execute WPF.
 
 ## Windows installer checks
 
@@ -39,8 +39,8 @@ light/dark wizard images, the native lifecycle report and package checksums.
 
 Release callers use the `release_assets` input and consume
 `Slightshot-windows-release-assets`, containing both ZIPs and both setup packages.
-Version 1.3.0 predates this packaging change and has portable Windows downloads
-only; installers are attached starting with the next release.
+Releases from 1.4.0 onward attach both setup packages and both portable ZIPs;
+1.3.0 and earlier have portable Windows downloads only.
 
 ## Unraid
 
@@ -68,31 +68,7 @@ All eight repository secrets are configured. The [signed verification run](https
 
 See [the validation record](review/releases/signing-validation.json) for the tested source commit, artifact hash and local checks, and [RELEASING.md](RELEASING.md) for verification and publishing instructions.
 
-The [1.1.0 publication run](https://github.com/jmpijll/slightshot/actions/runs/37671914101)
-also passed the reusable native Windows checks and attached portable x64/ARM64
-ZIPs alongside the Mac DMG. The [downloaded release validation](review/releases/v1.1.0-validation.json)
-confirms the actual public DMG's signatures, stapled tickets, Gatekeeper acceptance
-and Sparkle signature against the live feed, plus both Windows ZIPs' integrity,
-version, architecture and bundled runtime. Windows remains an unsigned preview;
-the maintainer reported successful real Windows desktop capture/recording
-acceptance on 8 October 2026 (see [Windows validation](windows.md#validation-and-evidence)). The public update feed
-was deployed through [Pages](https://github.com/jmpijll/slightshot/actions/runs/37672469651).
-
-The [1.2.0 publication run](https://github.com/jmpijll/slightshot/actions/runs/37702953604)
-passed native Windows raster/recording tests, both portable architecture/version
-checks, screenshot/recording tests of the extracted x64 single-file app, and Mac
-app/DMG signing and notarisation. The [public-download validation](review/releases/v1.2.0-validation.json)
-confirms each Windows ZIP contains only `Slightshot.exe`, with matching release
-digests and actual PE version/architecture metadata. It also records Mac
-Gatekeeper acceptance, both stapled tickets, the live Sparkle signature and
-Homebrew's fetch/checksum check. ARM64 Windows execution was not tested.
-The new feed was deployed through [Pages](https://github.com/jmpijll/slightshot/actions/runs/37703387744).
-
-The [1.3.0 publication run](https://github.com/jmpijll/slightshot/actions/runs/37743497133)
-passed native screenshot retry, numbered steps and raster parity at four display
-scales, recording buffer reuse/lifecycle tests, both portable architecture/version
-checks, and the extracted x64 app's screenshot/recording checks. Mac app/DMG
-signing, notarisation and stapling passed. The [public-download validation](review/releases/v1.3.0-validation.json)
-records both Windows digests and exact source-version metadata, Mac Gatekeeper
-acceptance, tickets and the live Sparkle signature. The feed's build 8 preserves
-the build 7 entry and was deployed through [Pages](https://github.com/jmpijll/slightshot/actions/runs/37744016338).
+Each published release has a validation record of its downloaded public files
+under [review/releases](review/releases/). From 1.4.1 onward, a release folder
+such as [v1.6.0](review/releases/v1.6.0/README.md) also links the publication
+and Pages runs and the native evidence for that release.

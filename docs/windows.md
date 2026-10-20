@@ -29,8 +29,16 @@ ARM64 desktop acceptance.
 Windows preview binaries, including setup, are unsigned. An installer does not
 remove Windows security warnings. Updates are downloaded manually from
 [Releases](https://github.com/jmpijll/slightshot/releases).
-**Download updates…** in the tray menu or General settings opens the latest
-release. About and Settings show the version embedded in the running executable.
+**Check for Updates…** in the tray menu or General settings sends one request to
+GitHub's latest-release API, waits at most 10 seconds, and compares its
+`MAJOR.MINOR.PATCH` tag with the running version. It reports that Slightshot is
+up to date, or names the newer version and offers to open its release page.
+Prerelease tags are never offered. A network failure, timeout or unexpected
+response says so and offers the Releases page instead. The request has no
+authentication and carries only a `Slightshot/<version>` User-Agent; there is
+no background polling. About and Settings show the version embedded in the
+running executable.
+See the [update check dialogs and native validation](review/windows-update-check/README.md).
 
 See the [1.5.1 published-file validation and native editor evidence](review/releases/v1.5.1/README.md).
 
@@ -48,6 +56,13 @@ existing installation to upgrade. Reinstalling the same version is allowed;
 downgrades are rejected. Settings live separately in
 `%LOCALAPPDATA%\Slightshot\settings.json` and are preserved, as are saved
 screenshots and recordings.
+
+If that file cannot be read, Slightshot copies it to
+`settings.corrupt-<date>-<time>.json` in the same folder, starts with the
+defaults and shows a notification once. Individual invalid values, such as an
+empty shortcut, an unknown image format or a line width outside 1–12, are reset
+or brought into range while the other settings are kept. The original file is
+copied the same way, and the notification names the changed settings.
 
 Remove the installed app through **Windows Settings › Apps › Installed apps**.
 Uninstall removes the installed program, its shortcuts and a launch-at-login
@@ -81,10 +96,28 @@ Slightshot appears in the notification area. Double-click its icon or press
 **Ctrl+Shift+9** to select an area. **Ctrl+Shift+8** saves the display under the
 pointer; **Ctrl+Shift+7** copies it. These shortcuts can be changed in Settings.
 If another app owns a shortcut, the tray reports it and remains available.
+On first launch, a notification names the capture shortcut.
+
+Starting Slightshot again while it runs, for example from the Start menu when
+its icon is hidden in the notification-area overflow, starts an area capture in
+the running app. `Slightshot.exe --capture-area`, `--capture-full` and
+`--copy-full` select an area, save the display under the pointer or copy it.
+A second launch forwards the command to the running app and exits; a first
+launch runs it after starting. Other arguments are ignored on a first launch;
+a second launch with them exits without a command.
+
+If Slightshot hits an unexpected error, it closes the open capture, shows one
+message and keeps running in the notification area with its shortcuts.
+Errors are logged to `%LOCALAPPDATA%\Slightshot\Logs\errors.log`.
 
 To change a global shortcut, click its field in **Settings → Shortcuts** and
 press a key with Ctrl, Shift, Alt or Win. Both Windows keys work, and modifiers
-can be combined. Close Settings to activate the new shortcuts. Escape clears
+can be combined. Print Screen also works on its own, as in Lightshot's default.
+Windows 11 opens its own screen capture on Print Screen unless **Settings →
+Accessibility → Keyboard → Use the Print screen key to open screen capture** is
+off. That setting is on by default in Windows 11, and Windows keeps the key even
+though another app registered it. While it is on, Slightshot reports Print Screen
+as unavailable, and Settings explains the setting and links to it. Close Settings to activate the new shortcuts. Escape clears
 the focused field; pressing a modifier alone keeps the existing assignment.
 Windows-reserved combinations may remain unavailable.
 
@@ -105,7 +138,9 @@ one file at its root. CI uses the same profile for review artifacts and releases
 The portable `Slightshot.exe` runs from any folder without administrator rights.
 On first launch, .NET extracts bundled native libraries into its cache
 under `%TEMP%/.net`; later launches reuse that cache. Launch at login is available
-in Settings. See [Microsoft's single-file deployment documentation](https://learn.microsoft.com/en-us/dotnet/core/deploying/single-file/overview).
+in Settings. It starts the copy you enabled it from, and the switch shows as on
+only in that copy. If you move a portable copy, or run a different one, the
+switch shows as off; turn it on again to start that copy at login instead. See [Microsoft's single-file deployment documentation](https://learn.microsoft.com/en-us/dotnet/core/deploying/single-file/overview).
 
 ### Build an installer
 
@@ -203,6 +238,7 @@ dotnet build Windows/Slightshot -c Release
 Start-Process Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe -ArgumentList '--smoke-test', 'Windows/artifacts/parity' -Wait
 Start-Process Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe -ArgumentList '--recording-smoke-test', 'Windows/artifacts/recording' -Wait
 Start-Process Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe -ArgumentList '--shortcut-smoke-test', 'Windows/artifacts/shortcuts' -Wait
+Start-Process Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe -ArgumentList '--instance-smoke-test', 'Windows/artifacts/instance' -Wait
 ```
 
 The Windows workflow builds with warnings treated as errors, checks selection and
@@ -220,8 +256,23 @@ The shortcut fixture sends native keyboard input to the real Settings fields,
 checking both Windows keys, Ctrl/Shift/Alt combinations, bare modifiers,
 duplicates and Escape. It roundtrips the settings JSON, closes Settings and
 verifies production global hotkey callbacks, including no activation when Win
-is omitted. [Saved shortcut screenshots and native/portable reports](review/windows-key-shortcuts/README.md)
+is omitted. With Windows' Print Screen screen capture turned on, it checks that
+Print Screen is reported unavailable and captures the Settings explanation. It
+then turns that setting off, records Print Screen alone and registers it while
+other bare keys stay rejected. The original setting is restored afterwards.
+On the CI desktop, Windows kept opening its own capture for injected Print
+Screen after the registry value was cleared, and no global hotkey callback
+arrived. The report records each injected form and the window that took the
+foreground; the Print Screen callback itself needs a check with a physical key
+after turning the setting off in Windows Settings. [Saved shortcut screenshots and native/portable reports](review/windows-key-shortcuts/README.md)
 identify the fixture inputs, platform and exact source commit.
+
+The instance fixture holds the production session mutex and command pipe, then
+starts the real executable with no arguments, each command argument and an
+unknown argument, checking exit codes and the forwarded commands. It then raises
+fixture exceptions with a real overlay open and checks that the overlay closes,
+one message is reported, nested and unobserved task failures are logged and the
+dispatcher keeps running. [Print Screen and second-launch evidence](review/windows-launch-hotkeys/README.md).
 
 The screenshot smoke test also drives the retained-session coordinator, real
 WPF text/export/Undo paths and image output service through Save As cancellation,
@@ -268,7 +319,7 @@ and the Windows executable icon is converted from the existing Mac app artwork.
 Windows uses Segoe UI and the same original toolbar glyphs as Mac. The shared
 source is `Resources/UI/icons.json`; Apple's system fonts remain platform-specific. Frosted material and text shadow are
 approximations of AppKit rather than identical OS rendering. Windows update
-delivery is manual. Setup packages provide installation and upgrades; code signing
+checks run on request and delivery is manual. Setup packages provide installation and upgrades; code signing
 and an automatic updater are not yet provided. GDI screen capture targets the ordinary desktop; protected video
 and HDR-specific colour management are outside this first version.
 
@@ -293,11 +344,31 @@ external executable is required. All Slightshot windows are excluded through
 Windows display affinity, including recording controls. The selected region is
 cropped in physical monitor pixels; capture stays paced with a bounded pool of up to four BGRA
 buffers, returned only after the native encoder has processed each sample. Disconnected displays report an error.
+H.264 needs even dimensions, so an odd-sized area drops its last pixel column or
+row and is copied pixel for pixel; the recording boundary shows that cropped
+area. Only areas wider than 4096 pixels, or
+point-resolution recordings on HiDPI displays, are resampled.
 
 Saving writes beside the destination, then replaces it after a complete MP4 is
 finalized. Cancel or export failure keeps the source available for retry;
 capture shortcuts are blocked while recording or saving. Quit cancels the
 encoder, waits for its resources, and removes the temporary source directory.
+
+Each source directory in `%TEMP%` holds an exclusive owner lock while
+Slightshot uses it. At startup, Slightshot deletes `Slightshot-Recording-*`
+directories whose lock is no longer held, so a crash or power loss does not
+leave recordings behind.
+
+Signing out, restarting or shutting down while a recording or the video editor
+is open cancels the session end. Windows lists Slightshot with "An unsaved
+recording is open in Slightshot." so you can return and save. Windows can still
+end the session when you choose to sign out anyway, or for a forced update
+restart, and may close Slightshot right after it answers. So before answering,
+Slightshot stops a running recording, waits up to three seconds for its MP4 to
+be finalized, and marks the source to be kept. At the next launch it checks that
+the kept recording still decodes and offers to reopen it in the editor;
+declining deletes it, and an unplayable source is deleted without asking. The Mac app asks Save,
+Discard or Cancel instead, but Windows does not allow dialogs during sign-out.
 The maintainer's 8 October 2026 desktop acceptance covers the overall recording
 workflow. Exclusion under real Windows composition, mixed-DPI region placement
 and cursor capture were not separately documented in that run.

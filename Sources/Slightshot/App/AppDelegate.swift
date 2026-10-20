@@ -42,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         Log.app.info("Slightshot \(AppInfo.versionString, privacy: .public) launched")
+        removeAbandonedRecordings()
 
         statusItem = StatusItemController(
             onCaptureArea: { [weak self] in self?.route(.capture(.captureArea)) },
@@ -117,12 +118,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard inbox.isOwner else { return .terminateNow }
         delayedCapture.cancel()
-        guard RecordingCoordinator.shared.isBusy else { return .terminateNow }
-        Task {
-            await RecordingCoordinator.shared.prepareForTermination()
-            sender.reply(toApplicationShouldTerminate: true)
-        }
-        return .terminateLater
+        return QuitGuard.shared.reply()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -138,19 +134,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return false
     }
 
+    private func removeAbandonedRecordings() {
+        let launched = NSRunningApplication.current.launchDate ?? Date()
+        let stagingParents = Set(RecordingExport.stagingParents + [Settings.shared.saveDirectory])
+        Task.detached(priority: .utility) {
+            ScreenRecordingSession.removeAbandonedDirectories(
+                prefix: ScreenRecordingSession.directoryPrefix, in: FileManager.default.temporaryDirectory,
+                createdBefore: launched)
+            for parent in stagingParents {
+                ScreenRecordingSession.removeAbandonedDirectories(
+                    prefix: RecordingExport.stagingPrefix, in: parent, createdBefore: launched)
+                RecordingExport.forgetStagingParent(parent)
+            }
+        }
+    }
+
     // MARK: - Hotkeys
 
     private func registerHotKeys() {
         let settings = Settings.shared
-        let failures = HotKeyCenter.shared.reload([
-            (settings.captureAreaHotKey, { [weak self] in self?.route(.capture(.captureArea)) }),
-            (settings.saveFullScreenHotKey, { [weak self] in self?.route(.capture(.saveFullScreen)) }),
-            (settings.copyFullScreenHotKey, { [weak self] in self?.route(.capture(.copyFullScreen)) }),
+        HotKeyCenter.shared.reload([
+            .captureArea: (settings.captureAreaHotKey, { [weak self] in self?.route(.capture(.captureArea)) }),
+            .saveFullScreen: (settings.saveFullScreenHotKey, { [weak self] in self?.route(.capture(.saveFullScreen)) }),
+            .copyFullScreen: (settings.copyFullScreenHotKey, { [weak self] in self?.route(.capture(.copyFullScreen)) }),
         ])
-
-        guard !failures.isEmpty else { return }
-        let list = failures.map(\.displayString).joined(separator: ", ")
-        Log.hotkeys.warning("Unavailable shortcuts: \(list, privacy: .public)")
     }
 
     // MARK: - First run
@@ -175,6 +182,117 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Log.app.debug("Notification authorisation granted: \(granted)")
             }
         }
+    }
+}
+
+/// AppKit quits at once when `terminate` arrives while the delegate's prompt is
+/// open, without asking the delegate again, so repeated requests stop here.
+final class SlightshotApplication: NSApplication {
+    override func terminate(_ sender: Any?) {
+        guard !QuitGuard.shared.isPending else { return }
+        super.terminate(sender)
+    }
+}
+
+/// Work that exists only in memory or a temporary folder, so quitting would lose it.
+enum UnsavedWork: Equatable {
+    case recording(canSave: Bool)
+    case annotations
+}
+
+enum QuitChoice { case save, copy, discard, cancel }
+
+/// Decides whether a quit, logout or update relaunch may proceed. It never
+/// returns `.terminateLater`: AppKit quits on a second request while a reply is
+/// pending, and a reply that needs the main queue never arrives when `terminate`
+/// was called from a main-queue block. Save cancels the quit and quits again
+/// once the recording is written.
+final class QuitGuard {
+    private let unsavedWork: () -> UnsavedWork?
+    private let ask: (UnsavedWork) -> QuitChoice
+    private let saveRecording: () async -> Bool
+    private let copyAnnotations: () -> Bool
+    private let discardRecording: () -> Void
+    private let quit: () -> Void
+    /// A prompt or a save started from a quit is in progress.
+    private(set) var isPending = false
+
+    init(unsavedWork: @escaping () -> UnsavedWork?, ask: @escaping (UnsavedWork) -> QuitChoice,
+         saveRecording: @escaping () async -> Bool, copyAnnotations: @escaping () -> Bool,
+         discardRecording: @escaping () -> Void, quit: @escaping () -> Void = { NSApp.terminate(nil) }) {
+        self.unsavedWork = unsavedWork
+        self.ask = ask
+        self.saveRecording = saveRecording
+        self.copyAnnotations = copyAnnotations
+        self.discardRecording = discardRecording
+        self.quit = quit
+    }
+
+    /// Replaced only by the headless `--quit-guard-probe`.
+    static var shared = QuitGuard(
+        unsavedWork: { RecordingCoordinator.shared.unsavedWork ?? OverlayCoordinator.shared.unsavedWork },
+        ask: { work in OverlayCoordinator.shared.withOverlayHidden { ask(about: work) } },
+        saveRecording: { await RecordingCoordinator.shared.saveBeforeQuitting() },
+        copyAnnotations: { OverlayCoordinator.shared.copyAnnotatedCapture() },
+        discardRecording: { RecordingCoordinator.shared.discardForTermination() }
+    )
+
+    func reply() -> NSApplication.TerminateReply {
+        // A quit Apple event (logout) consults the delegate even while a prompt is open.
+        guard !isPending else { return .terminateCancel }
+        guard let work = unsavedWork() else { return .terminateNow }
+        isPending = true
+        let choice = ask(work)
+        isPending = false
+        switch (work, choice) {
+        case (_, .cancel):
+            return .terminateCancel
+        case (.annotations, .copy):
+            return copyAnnotations() ? .terminateNow : .terminateCancel
+        case (.annotations, _):
+            return .terminateNow
+        case (.recording(canSave: true), .save):
+            isPending = true
+            Task {
+                let saved = await saveRecording()
+                isPending = false
+                if saved { quit() }
+            }
+            return .terminateCancel
+        case (.recording, _):
+            discardRecording()
+            return .terminateNow
+        }
+    }
+
+    static func ask(about work: UnsavedWork) -> QuitChoice {
+        let alert = NSAlert()
+        let choices: [QuitChoice]
+        switch work {
+        case .recording(canSave: true):
+            alert.messageText = "Save the recording before quitting?"
+            alert.informativeText = "If you don't save it, the recording and its annotations are deleted."
+            alert.addButton(withTitle: "Save…")
+            alert.addButton(withTitle: "Cancel")
+            alert.addButton(withTitle: "Discard Recording").hasDestructiveAction = true
+            choices = [.save, .cancel, .discard]
+        case .recording(canSave: false):
+            alert.messageText = "Quit and discard the current recording?"
+            alert.informativeText = "Slightshot is still recording or saving. Quitting now deletes the recording."
+            alert.addButton(withTitle: "Cancel")
+            alert.addButton(withTitle: "Discard Recording").hasDestructiveAction = true
+            choices = [.cancel, .discard]
+        case .annotations:
+            alert.messageText = "Copy your annotated capture before quitting?"
+            alert.informativeText = "Your annotations haven't been copied or saved. If you discard them, they are lost."
+            alert.addButton(withTitle: "Copy")
+            alert.addButton(withTitle: "Cancel")
+            alert.addButton(withTitle: "Discard Annotations").hasDestructiveAction = true
+            choices = [.copy, .cancel, .discard]
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        let index = alert.runModal().rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
+        return choices.indices.contains(index) ? choices[index] : .cancel
     }
 }
 

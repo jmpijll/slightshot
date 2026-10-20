@@ -1,0 +1,78 @@
+{
+  "failures" : [
+
+  ],
+  "fixture" : "--lost-work-review: synthetic movie in a real ScreenRecordingSession folder; ScreenCaptureKit callbacks simulated; coordinator, editor, quit prompt and save panel are production code",
+  "macOS" : "Version 27.0.1 (Build 26A434)",
+  "passed" : true,
+  "sourceCommit" : "4ba9230e19a363c47392bba7f0c1deb6a1f8e87f",
+  "steps" : [
+    {
+      "step" : "Wrote a synthetic 4-second 960x540 movie as the recording"
+    },
+    {
+      "step" : "Simulated SCStream didStopWithError (userStopped) after recording started"
+    },
+    {
+      "step" : "Simulated SCRecordingOutput didFinishRecording after the stream error"
+    },
+    {
+      "check" : "Editor opened with the recording after the stream error",
+      "passed" : true
+    },
+    {
+      "step" : "Captured editor-after-stream-error.png (ScreenCaptureKit, Slightshot windows only)"
+    },
+    {
+      "step" : "Captured quit-prompt.png (ScreenCaptureKit, Slightshot windows only)"
+    },
+    {
+      "check" : "A second quit while the prompt is open was ignored",
+      "passed" : true
+    },
+    {
+      "step" : "Quit requested; prompt \"Save the recording before quitting?\"; automated click: Cancel"
+    },
+    {
+      "check" : "Cancel kept Slightshot running with the editor open",
+      "passed" : true
+    },
+    {
+      "check" : "Cancel kept the temporary recording",
+      "passed" : true
+    },
+    {
+      "check" : "A second quit while the prompt is open was ignored",
+      "passed" : true
+    },
+    {
+      "step" : "Quit requested; prompt \"Save the recording before quitting?\"; automated click: Save…"
+    },
+    {
+      "step" : "Captured save-panel-from-quit.png (ScreenCaptureKit, Slightshot windows only)"
+    },
+    {
+      "check" : "A second quit while the save panel is open was ignored",
+      "passed" : true
+    },
+    {
+      "step" : "Automated click: Cancel in the save panel"
+    },
+    {
+      "check" : "Cancelling the save cancelled the quit and returned to the editor",
+      "passed" : true
+    },
+    {
+      "check" : "A second quit while the prompt is open was ignored",
+      "passed" : true
+    },
+    {
+      "step" : "Quit requested; prompt \"Save the recording before quitting?\"; automated click: Discard Recording"
+    },
+    {
+      "check" : "Discard deleted the temporary recording before quitting",
+      "passed" : true
+    }
+  ],
+  "terminatedThroughQuitGuard" : true
+}

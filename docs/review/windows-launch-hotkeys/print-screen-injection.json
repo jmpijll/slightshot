@@ -1,0 +1,30 @@
+{
+  "sourceCommit": "3c29469027ce08b5e791a1daae28a4093ec9dc96",
+  "printScreenKeyForSnippingEnabled": "0",
+  "printScreenInjection": [
+    {
+      "form": "virtual key, extended",
+      "callbacksAfterKeyDown": 0,
+      "callbacksAfterKeyUp": 0,
+      "foreground": "0x60152 class=Windows.UI.Core.CoreWindow title=\u0022Screen Snipping\u0022 process=1324 (this process 8456)"
+    },
+    {
+      "form": "virtual key",
+      "callbacksAfterKeyDown": 0,
+      "callbacksAfterKeyUp": 0,
+      "foreground": "0x60158 class=Windows.UI.Core.CoreWindow title=\u0022Screen Snipping\u0022 process=3616 (this process 8456)"
+    },
+    {
+      "form": "virtual key and scan 0x37, extended",
+      "callbacksAfterKeyDown": 0,
+      "callbacksAfterKeyUp": 0,
+      "foreground": "0x70158 class=Windows.UI.Core.CoreWindow title=\u0022Screen Snipping\u0022 process=7244 (this process 8456)"
+    },
+    {
+      "form": "scan code 0x37, extended",
+      "callbacksAfterKeyDown": 0,
+      "callbacksAfterKeyUp": 0,
+      "foreground": "0x90152 class=Windows.UI.Core.CoreWindow title=\u0022Screen Snipping\u0022 process=6720 (this process 8456)"
+    }
+  ]
+}
