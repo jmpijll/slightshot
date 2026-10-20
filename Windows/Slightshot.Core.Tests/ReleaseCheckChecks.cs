@@ -16,7 +16,8 @@ internal static class ReleaseCheckChecks
         Require(Parse("2.0.0") > Parse("1.99.99") && Parse("1.6.1") > Parse("1.6.0"), "major and patch versions compare numerically");
         Require(Parse("v1.6.0") == Parse("1.6.0+abc123"), "leading v and build metadata are ignored");
         Require(ReleaseVersion.TryParse("1.7.0-beta.1", out var beta, out bool isBeta) && beta == new ReleaseVersion(1, 7, 0) && isBeta, "prerelease suffix is reported");
-        foreach (string malformed in new[] { "", "1.6", "1.6.0.1", "latest", "v", "1.x.0", "-1.6.0", " 1.6.0", "1.6.0-", "99999999999.0.0" })
+        Require(ReleaseVersion.TryParse("1.7.0-x-y.0+build.01", out _, out bool isPrerelease) && isPrerelease && ReleaseVersion.TryParse("0.0.0+20261020.sha-1", out _, out bool isStable) && !isStable, "valid prerelease and build identifiers are accepted");
+        foreach (string malformed in new[] { "", "1.6", "1.6.0.1", "latest", "v", "1.x.0", "-1.6.0", " 1.6.0", "1.6.0-", "99999999999.0.0", "v1.7.0+", "v01.7.0", "1.07.0", "v1.7.0+bad value", "1.7.0-01", "1.7.0-rc..1", "1.7.0+a..b", "V1.7.0", "1.7.0\n", "１.7.0" })
             Require(!ReleaseVersion.TryParse(malformed, out _, out _), $"malformed version '{malformed}' is rejected");
 
         static string Release(string tag, string url, bool prerelease = false) =>
@@ -35,7 +36,10 @@ internal static class ReleaseCheckChecks
             Release("latest", Page + "latest"), Release("v2.0.0", "https://example.com/jmpijll/slightshot/releases/tag/v2.0.0"),
             Release("v2.0.0", "http://github.com/jmpijll/slightshot/releases/tag/v2.0.0"), Release("v2.0.0", "https://github.com/someone/else/releases/tag/v2.0.0"),
             Release("v2.0.0", "https://github.com:8443/jmpijll/slightshot/releases/tag/v2.0.0"), Release("v2.0.0", "file:///C:/Windows/System32/calc.exe"),
-            """{"tag_name":"v2.0.0"}"""
+            """{"tag_name":"v2.0.0"}""",
+            """{"tag_name":"v2.0.0\uD800","html_url":"https://github.com/jmpijll/slightshot/releases/tag/v2.0.0"}""",
+            """{"tag_name":"v2.0.0","html_url":"https://github.com/jmpijll/slightshot/releases/tag/v2.0.0\uDC00"}""",
+            Release("v1.10.0+", Page + "v1.10.0"), Release("v01.10.0", Page + "v01.10.0")
         })
             Require(ReleaseCheck.Evaluate(current, malformed) is UpdateCheckResult.Failed, $"malformed response is reported: {malformed}");
 
@@ -49,6 +53,8 @@ internal static class ReleaseCheckChecks
         Require(request.Headers.Select(header => header.Key).Order().SequenceEqual(["Accept", "User-Agent"]), "request sends only Accept and User-Agent headers");
         Require(request.Headers.Authorization == null && request.Content == null, "request carries no authentication or body");
 
+        handler.Respond = _ => Task.FromResult(Json(HttpStatusCode.OK, """{"tag_name":"v1.10.0\uD800","html_url":"https://github.com/jmpijll/slightshot/releases/tag/v1.10.0"}"""));
+        Require(await ReleaseCheck.CheckAsync(client, "1.9.0", ReleaseCheck.Timeout) is UpdateCheckResult.Failed { Reason: var unpaired } && unpaired.StartsWith("GitHub returned an unexpected response.", StringComparison.Ordinal), "unpaired surrogate escape in a response is reported, not thrown");
         handler.Respond = _ => Task.FromResult(Json(HttpStatusCode.ServiceUnavailable, "{}"));
         Require(await ReleaseCheck.CheckAsync(client, "1.9.0", ReleaseCheck.Timeout) is UpdateCheckResult.Failed { Reason: "GitHub returned HTTP 503. Try again later." }, "HTTP error is reported");
         handler.Respond = _ => throw new HttpRequestException("offline");
@@ -56,7 +62,7 @@ internal static class ReleaseCheckChecks
         handler.Respond = async token => { await Task.Delay(System.Threading.Timeout.Infinite, token); throw new InvalidOperationException("unreachable"); };
         Require(await ReleaseCheck.CheckAsync(client, "1.9.0", TimeSpan.FromMilliseconds(50)) is UpdateCheckResult.Failed { Reason: var slow } && slow.StartsWith("GitHub did not respond within", StringComparison.Ordinal), "timeout is reported");
         Require(await ReleaseCheck.CheckAsync(client, "Unknown", ReleaseCheck.Timeout) is UpdateCheckResult.Failed, "unknown running version is reported");
-        Require(handler.Requests.Count == 4, "each check sends exactly one request and an unknown version sends none");
+        Require(handler.Requests.Count == 5, "each check sends exactly one request and an unknown version sends none");
         using var cancelled = new CancellationTokenSource(); cancelled.Cancel();
         bool propagated = false;
         try { await ReleaseCheck.CheckAsync(client, "1.9.0", ReleaseCheck.Timeout, cancelled.Token); }

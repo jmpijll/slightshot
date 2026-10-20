@@ -1,28 +1,31 @@
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Slightshot.Core;
 
 public readonly record struct ReleaseVersion(int Major, int Minor, int Patch) : IComparable<ReleaseVersion>
 {
-    // Accepts "1.2.3" or "v1.2.3" with optional "-prerelease" and "+build"
-    // suffixes. Build metadata is dropped; a prerelease suffix is reported.
+    // SemVer 2.0.0 with an optional leading "v". Build metadata is dropped;
+    // a prerelease suffix is reported.
+    private static readonly Regex Grammar = new(
+        @"\Av?(?<major>0|[1-9][0-9]*)\.(?<minor>0|[1-9][0-9]*)\.(?<patch>0|[1-9][0-9]*)"
+        + @"(?:-(?<pre>(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?"
+        + @"(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?\z",
+        RegexOptions.CultureInvariant);
+
     public static bool TryParse(string? text, out ReleaseVersion version, out bool prerelease)
     {
         version = default; prerelease = false;
-        if (string.IsNullOrEmpty(text)) return false;
-        string core = text.StartsWith('v') ? text[1..] : text;
-        int build = core.IndexOf('+');
-        if (build >= 0) core = core[..build];
-        int suffix = core.IndexOf('-');
-        if (suffix >= 0) { prerelease = suffix < core.Length - 1; if (!prerelease) return false; core = core[..suffix]; }
-        string[] parts = core.Split('.');
-        if (parts.Length != 3) return false;
-        var numbers = new int[3];
-        for (int i = 0; i < 3; i++)
-            if (!int.TryParse(parts[i], NumberStyles.None, CultureInfo.InvariantCulture, out numbers[i])) return false;
-        version = new(numbers[0], numbers[1], numbers[2]);
+        var match = Grammar.Match(text ?? "");
+        if (!match.Success
+            || !int.TryParse(match.Groups["major"].ValueSpan, NumberStyles.None, CultureInfo.InvariantCulture, out int major)
+            || !int.TryParse(match.Groups["minor"].ValueSpan, NumberStyles.None, CultureInfo.InvariantCulture, out int minor)
+            || !int.TryParse(match.Groups["patch"].ValueSpan, NumberStyles.None, CultureInfo.InvariantCulture, out int patch))
+            return false;
+        version = new(major, minor, patch);
+        prerelease = match.Groups["pre"].Success;
         return true;
     }
 
@@ -95,6 +98,7 @@ public static class ReleaseCheck
                 ? new UpdateCheckResult.Available(latest.ToString(), current.ToString(), page)
                 : new UpdateCheckResult.UpToDate(current.ToString());
         }
-        catch (JsonException) { return new UpdateCheckResult.Failed(UnexpectedResponse); }
+        // GetString throws InvalidOperationException for unpaired UTF-16 surrogate escapes.
+        catch (Exception exception) when (exception is JsonException or InvalidOperationException) { return new UpdateCheckResult.Failed(UnexpectedResponse); }
     }
 }
