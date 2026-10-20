@@ -2,12 +2,15 @@ import AppKit
 import SwiftUI
 
 /// Click, then press a combination. Escape clears it, Return leaves it unchanged.
+/// Global shortcuts are suspended while it listens.
 final class ShortcutRecorderView: NSView {
     var combo: KeyCombo { didSet { needsDisplay = true } }
-    var onChange: ((KeyCombo) -> Void)?
+    /// Returns false to refuse a combination and keep listening.
+    var onRecord: ((KeyCombo) -> Bool)?
 
     private var recording = false { didSet { needsDisplay = true } }
     private var monitor: Any?
+    private var resignObserver: NSObjectProtocol?
 
     init(combo: KeyCombo) {
         self.combo = combo
@@ -28,8 +31,15 @@ final class ShortcutRecorderView: NSView {
     }
 
     private func startRecording() {
-        recording = true
+        // Becoming first responder stops any other recorder, which resumes hotkeys.
         window?.makeFirstResponder(self)
+        recording = true
+        HotKeyCenter.shared.setSuspended(true)
+        resignObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didResignKeyNotification, object: window, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.stopRecording() }
+        }
         // A local monitor beats `keyDown`, which never sees ⌘-combinations that
         // the main menu would otherwise swallow.
         monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
@@ -44,25 +54,28 @@ final class ShortcutRecorderView: NSView {
                 self.stopRecording()
                 return nil
             }
-            if let recorded = KeyCombo(event: event) {
-                self.apply(recorded)
-            } else {
-                NSSound.beep()                 // modifier-less keys are rejected
-            }
+            self.apply(KeyCombo(event: event))
             return nil
         }
     }
 
     private func apply(_ newCombo: KeyCombo) {
+        guard onRecord?(newCombo) ?? true else {
+            NSSound.beep()
+            return
+        }
         combo = newCombo
-        onChange?(newCombo)
         stopRecording()
     }
 
     private func stopRecording() {
+        guard recording else { return }
         recording = false
         if let monitor { NSEvent.removeMonitor(monitor) }
         monitor = nil
+        if let resignObserver { NotificationCenter.default.removeObserver(resignObserver) }
+        resignObserver = nil
+        HotKeyCenter.shared.setSuspended(false)
     }
 
     override func resignFirstResponder() -> Bool {
@@ -71,7 +84,7 @@ final class ShortcutRecorderView: NSView {
     }
 
     isolated deinit {
-        if let monitor { NSEvent.removeMonitor(monitor) }
+        stopRecording()
     }
 
     override func draw(_ dirtyRect: NSRect) {
@@ -99,15 +112,15 @@ final class ShortcutRecorderView: NSView {
 }
 
 struct ShortcutRecorder: NSViewRepresentable {
-    @Binding var combo: KeyCombo
+    let combo: KeyCombo
+    let onRecord: (KeyCombo) -> Bool
 
     func makeNSView(context: Context) -> ShortcutRecorderView {
-        let view = ShortcutRecorderView(combo: combo)
-        view.onChange = { combo = $0 }
-        return view
+        ShortcutRecorderView(combo: combo)
     }
 
     func updateNSView(_ view: ShortcutRecorderView, context: Context) {
+        view.onRecord = onRecord
         if view.combo != combo { view.combo = combo }
     }
 }

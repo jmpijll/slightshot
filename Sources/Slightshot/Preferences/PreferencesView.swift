@@ -84,18 +84,21 @@ private struct GeneralTab: View {
 
 private struct ShortcutsTab: View {
     @Bindable private var settings = Settings.shared
+    private let hotKeys = HotKeyCenter.shared
+    @State private var rejections: [HotKeyAction: String] = [:]
 
     var body: some View {
         Form {
             Section {
-                LabeledContent("Capture area") {
-                    ShortcutRecorder(combo: $settings.captureAreaHotKey)
-                }
-                LabeledContent("Capture full screen") {
-                    ShortcutRecorder(combo: $settings.saveFullScreenHotKey)
-                }
-                LabeledContent("Copy full screen") {
-                    ShortcutRecorder(combo: $settings.copyFullScreenHotKey)
+                ForEach(HotKeyAction.allCases, id: \.self) { action in
+                    LabeledContent(action.title) {
+                        ShortcutRecorder(combo: settings[keyPath: action.setting]) { record($0, for: action) }
+                    }
+                    if let warning = warning(for: action) {
+                        Label(warning, systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
                 }
             } header: {
                 Text("Global shortcuts")
@@ -118,6 +121,26 @@ private struct ShortcutsTab: View {
         .formStyle(.grouped)
     }
 
+    private func record(_ combo: KeyCombo, for action: HotKeyAction) -> Bool {
+        let assigned = Dictionary(uniqueKeysWithValues: HotKeyAction.allCases.map {
+            ($0, settings[keyPath: $0.setting])
+        })
+        if let rejection = hotKeys.rejection(for: combo, action: action, assigned: assigned) {
+            rejections[action] = "\(action.title): \(rejection.message(for: combo))"
+            return false
+        }
+        rejections[action] = nil
+        settings[keyPath: action.setting] = combo
+        return true
+    }
+
+    private func warning(for action: HotKeyAction) -> String? {
+        if let rejection = rejections[action] { return rejection }
+        guard hotKeys.unavailable.contains(action) else { return nil }
+        let combo = settings[keyPath: action.setting]
+        return "\(action.title): \(ShortcutRejection.unavailable.message(for: combo)) Choose another shortcut."
+    }
+
     private static let overlayShortcuts: [(String, String)] = [
         ("⌘A", "Select the whole screen"),
         ("⌘C", "Copy to clipboard"),
@@ -132,6 +155,16 @@ private struct ShortcutsTab: View {
         ("⌘drag", "Select and copy in one motion"),
         ("↑↓←→", "Nudge the selection by one pixel"),
     ]
+}
+
+private extension HotKeyAction {
+    var setting: ReferenceWritableKeyPath<Settings, KeyCombo> {
+        switch self {
+        case .captureArea: \.captureAreaHotKey
+        case .saveFullScreen: \.saveFullScreenHotKey
+        case .copyFullScreen: \.copyFullScreenHotKey
+        }
+    }
 }
 
 // MARK: - Output

@@ -142,15 +142,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func registerHotKeys() {
         let settings = Settings.shared
-        let failures = HotKeyCenter.shared.reload([
-            (settings.captureAreaHotKey, { [weak self] in self?.route(.capture(.captureArea)) }),
-            (settings.saveFullScreenHotKey, { [weak self] in self?.route(.capture(.saveFullScreen)) }),
-            (settings.copyFullScreenHotKey, { [weak self] in self?.route(.capture(.copyFullScreen)) }),
+        HotKeyCenter.shared.reload([
+            .captureArea: (settings.captureAreaHotKey, { [weak self] in self?.route(.capture(.captureArea)) }),
+            .saveFullScreen: (settings.saveFullScreenHotKey, { [weak self] in self?.route(.capture(.saveFullScreen)) }),
+            .copyFullScreen: (settings.copyFullScreenHotKey, { [weak self] in self?.route(.capture(.copyFullScreen)) }),
         ])
-
-        guard !failures.isEmpty else { return }
-        let list = failures.map(\.displayString).joined(separator: ", ")
-        Log.hotkeys.warning("Unavailable shortcuts: \(list, privacy: .public)")
     }
 
     // MARK: - First run
