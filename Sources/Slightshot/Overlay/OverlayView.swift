@@ -418,23 +418,23 @@ final class OverlayView: NSView {
 
     // MARK: - Keyboard
 
-    /// The Edit menu would otherwise take ⌘A, ⌘C, ⌘X and ⌘Z before `keyDown`.
+    /// Every view in the window sees key equivalents before the Edit menu, so the
+    /// overlay keeps ⌘A, ⌘C, ⌘X and ⌘Z unless a text view, not a control, has focus.
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        if window?.firstResponder === self, performCommandShortcut(event) { return true }
+        if !(window?.firstResponder is NSText), performCommandShortcut(event) { return true }
         return super.performKeyEquivalent(with: event)
     }
 
     private func performCommandShortcut(_ event: NSEvent) -> Bool {
         guard event.type == .keyDown, event.modifierFlags.contains(.command),
               let characters = event.charactersIgnoringModifiers?.lowercased() else { return false }
-        let shift = event.modifierFlags.contains(.shift)
-        switch characters {
-        case "a": selectAll()
-        case "c": perform(.copy)
-        case "s": perform(shift ? .saveAs : .save)
-        case "p": perform(.print)
-        case "z": if shift { redo() } else { undo() }
-        case "x": cancel()
+        switch (characters, event.modifierFlags.contains(.shift)) {
+        case ("a", _): selectAll()
+        case ("c", _): perform(.copy)
+        case ("s", let shift): perform(shift ? .saveAs : .save)
+        case ("p", _): perform(.print)
+        case ("z", let shift): if shift { redo() } else { undo() }
+        case ("x", _): cancel()
         default: return false
         }
         return true
