@@ -98,6 +98,14 @@ public sealed class VideoAnnotationHistory
         PreviewTrim(start, end); CommitTimingEdit();
     }
 
+    // A typed end follows the drag rule: it stops one minimum length short of
+    // the other end, which never moves.
+    public void SetTrimStart(TimeSpan start)
+        => SetTrim(TimeSpan.FromTicks(Math.Clamp(start.Ticks, 0, Trim.End.Ticks - MinimumDuration.Ticks)), Trim.End);
+
+    public void SetTrimEnd(TimeSpan end)
+        => SetTrim(Trim.Start, TimeSpan.FromTicks(Math.Clamp(end.Ticks, Trim.Start.Ticks + MinimumDuration.Ticks, Duration.Ticks)));
+
     public void PreviewTiming(TimeSpan begin, TimeSpan end)
     {
         int index = items.FindIndex(item => item.Id == SelectedId);

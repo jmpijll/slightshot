@@ -218,6 +218,8 @@ internal sealed class VideoEditorWindow : Window
                 var image = await source.GetFrameAsync(frame, lifetime.Token, previewWidth);
                 if (closing) return;
                 if (request != seekVersion) continue;
+                // Undo/Redo can narrow the trim while this frame decodes.
+                if (History.Trim.Clamp(target) != target) { Position = History.Trim.Clamp(target); seekVersion++; UpdatePlayhead(); continue; }
                 surface.Position = target; surface.SetFrame(image); return;
             }
             catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { return; }
@@ -243,13 +245,13 @@ internal sealed class VideoEditorWindow : Window
         if (updating || field.Text == Seconds(startChanged ? trim.Start : trim.End)) return;
         if (!double.TryParse(field.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out double seconds) || !double.IsFinite(seconds)) { UpdateControls(); return; }
         var time = TimeSpan.FromSeconds(Math.Clamp(seconds, 0, source.Duration.TotalSeconds));
-        Pause(); History.SetTrim(startChanged ? time : trim.Start, startChanged ? trim.End : time);
+        Pause(); if (startChanged) History.SetTrimStart(time); else History.SetTrimEnd(time);
         UpdateControls(); _ = SeekAsync(startChanged ? History.Trim.Start : History.Trim.End);
     }
     private void DeleteSelected() { CommitText(); History.DeleteSelected(); UpdateControls(); surface.Refresh(); }
     private void ChangeTiming(bool startChanged)
     {
-        if (updating || History.Selected is not { } item) return;
+        if (updating || History.Selected is not { } item || (startChanged ? begin : end).Text == Seconds(startChanged ? item.Begin : item.End)) return;
         Pause(); double minimum = History.MinimumDuration.TotalSeconds;
         if (!double.TryParse((startChanged ? begin : end).Text, NumberStyles.Float, CultureInfo.CurrentCulture, out double seconds) || !double.IsFinite(seconds)) { UpdateControls(); return; }
         var start = startChanged ? TimeSpan.FromSeconds(Math.Clamp(seconds, 0, item.End.TotalSeconds - minimum)) : item.Begin;
@@ -317,6 +319,8 @@ internal sealed class VideoEditorWindow : Window
     private async Task SaveAsync()
     {
         if (saving || closing) return;
+        // Save can run without the edited time field losing focus first.
+        ChangeTrim(true); ChangeTrim(false); ChangeTiming(true); ChangeTiming(false);
         Pause(); CommitText(); surface.CancelGesture(); History.CommitTimingEdit(); saving = true; IsEnabled = false;
         bool completed = false;
         try { await PrepareExportAsync(); completed = await save(new VideoEdit(History.ExportSnapshot(), History.Trim)); }

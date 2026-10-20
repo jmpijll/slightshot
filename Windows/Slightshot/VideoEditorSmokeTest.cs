@@ -66,8 +66,8 @@ internal static class VideoEditorSmokeTest
         Require(count < 256, "bounded source frame counter fits its eight high-contrast binary cells");
         File.Copy(session.SourcePath, Path.Combine(directory, "video-editor-source.mp4"), true);
         var source = await VideoFrameSource.OpenAsync(session.SourcePath);
-        int saveAttempts = 0;
-        var editor = new VideoEditorWindow(source, new Settings { AnnotationColor = "#FF3B30", LineWidth = 5, FontSize = 24 }, _ => { saveAttempts++; return Task.FromResult(false); }, true);
+        int saveAttempts = 0; VideoEdit? savedEdit = null;
+        var editor = new VideoEditorWindow(source, new Settings { AnnotationColor = "#FF3B30", LineWidth = 5, FontSize = 24 }, edit => { saveAttempts++; savedEdit = edit; return Task.FromResult(false); }, true);
         Task? closingPreview = null;
         try
         {
@@ -434,7 +434,7 @@ internal static class VideoEditorSmokeTest
                 SaveSourceColors(directory, sourceColors);
             }
             Require(File.Exists(session.SourcePath), "successful export leaves source available until editor closes");
-            await TrimAsync(editor, source, session.SourcePath, directory, width, height, checks);
+            await TrimAsync(editor, source, session.SourcePath, directory, width, height, checks, () => savedEdit);
             closingPreview = editor.SeekAsync(TimeSpan.FromSeconds(.85));
         }
         finally
@@ -453,13 +453,14 @@ internal static class VideoEditorSmokeTest
             checks, sourceColorEvidence = sourceColors
         }, new JsonSerializerOptions { WriteIndented = true }));
     }
-    private static async Task TrimAsync(VideoEditorWindow editor, VideoFrameSource source, string sourcePath, string directory, int width, int height, List<string> checks)
+    private static async Task TrimAsync(VideoEditorWindow editor, VideoFrameSource source, string sourcePath, string directory, int width, int height, List<string> checks, Func<VideoEdit?> savedEdit)
     {
         TimeSpan Seconds(double value) => TimeSpan.FromSeconds(value);
         string Field(TimeSpan time) => time.TotalSeconds.ToString("0.00", CultureInfo.CurrentCulture);
-        void EnterTime(TextBox field, double seconds)
+        void EnterTime(TextBox field, double seconds) => EnterText(field, seconds.ToString(CultureInfo.CurrentCulture));
+        void EnterText(TextBox field, string text)
         {
-            field.Text = seconds.ToString(CultureInfo.CurrentCulture);
+            field.Text = text;
             field.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(field)!, 0, Key.Enter) { RoutedEvent = Keyboard.PreviewKeyDownEvent });
         }
         var content = (DependencyObject)editor.Content;
@@ -486,6 +487,25 @@ internal static class VideoEditorSmokeTest
         Require(editor.History.Trim == whole, "Keep whole recording resets the trim");
         ClickTooltip(editor, "Undo  Ctrl+Z");
         Require(editor.History.Trim == trim, "real Undo restores the trim after Keep whole recording");
+        await DragAsync(trimRange, trimRange.HandleCenter(true), trimRange.HandleCenter(true));
+        Require(editor.History.Trim == trim && editor.History.CanRedo, "a native click on a trim handle that does not move it keeps Redo");
+        ClickTooltip(editor, "Redo  Ctrl+Y / Ctrl+Shift+Z");
+        Require(editor.History.Trim == whole, "Redo still reapplies Keep whole recording after the handle click");
+        var pending = editor.SeekAsync(Seconds(4));
+        ClickTooltip(editor, "Undo  Ctrl+Z");
+        await pending; await Task.Delay(300);
+        Require(editor.History.Trim == trim && editor.Position == trim.End && editor.Surface.Position == trim.End, "Undo during an in-flight seek keeps the playhead and shown frame inside the restored trim");
+
+        EnterTime(trimStart, 9);
+        Require(editor.History.Trim == new VideoTrim(trim.End - editor.History.MinimumDuration, trim.End), "a typed start past the end stops one minimum length before it and keeps the end");
+        ClickTooltip(editor, "Undo  Ctrl+Z");
+        EnterTime(trimEnd, 0);
+        Require(editor.History.Trim == new VideoTrim(trim.Start, trim.Start + editor.History.MinimumDuration), "a typed end before the start stops one minimum length after it and keeps the start");
+        ClickTooltip(editor, "Undo  Ctrl+Z");
+        bool couldRedo = editor.History.CanRedo;
+        EnterText(trimStart, "not a time");
+        Require(editor.History.Trim == trim && trimStart.Text == Field(trim.Start) && editor.History.CanRedo == couldRedo, "invalid trim text reverts to the committed value without an undo step");
+        checks.Add("A native click on a trim handle keeps Redo. Undo during an in-flight seek keeps the playhead and shown frame inside the restored trim. Typed trim times stop one minimum length short of the other end without moving it, and invalid text reverts without an undo step.");
         checks.Add("Trim defaults to the whole recording. Two native trim handles, exact start/end fields, Keep whole recording and real Undo/Redo change the kept range; it ends at 1.5–3.5 seconds.");
 
         await editor.SeekAsync(Seconds(0.2));
@@ -498,6 +518,15 @@ internal static class VideoEditorSmokeTest
         await editor.SeekAsync(trim.End - Seconds(0.3)); editor.Play(); await Task.Delay(900);
         Require(editor.Position == trim.End, "playback stops at the trim end");
         checks.Add("Seeking, the native playhead and Play/Pause stay within the trim: playback restarts at the trim start and stops at the trim end.");
+
+        trimEnd.Text = 3.4.ToString(CultureInfo.CurrentCulture);
+        var before = savedEdit();
+        ClickContent(editor, "Save MP4…");
+        for (int wait = 0; wait < 100 && ReferenceEquals(savedEdit(), before); wait++) await Task.Delay(50);
+        Require(savedEdit()?.Trim == new VideoTrim(trim.Start, Seconds(3.4)) && editor.History.Trim == savedEdit()!.Trim, "Save commits a trim time typed without Enter or focus loss");
+        ClickTooltip(editor, "Undo  Ctrl+Z");
+        Require(editor.History.Trim == trim, "Undo reverses the trim time committed by Save");
+        checks.Add("Save commits a trim end typed without Enter or focus loss, so the save callback receives 1.5–3.4 seconds; Undo restores 1.5–3.5.");
 
         await editor.SeekAsync(Seconds(2)); await Task.Delay(180); editor.UpdateLayout(); NativeMethods.DwmFlush();
         CaptureWindow(editor, Path.Combine(directory, "video-editor-trim.png"));

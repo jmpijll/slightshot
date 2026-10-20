@@ -49,6 +49,31 @@ internal static class VideoTrimChecks
         Require(history.Trim != new VideoTrim(Seconds(1), exact), "setting an unchanged trim adds no undo step");
         history.Redo();
 
+        var typed = new VideoAnnotationHistory(duration);
+        typed.SetTrim(Seconds(1), Seconds(3));
+        typed.SetTrimStart(Seconds(4));
+        Require(typed.Trim == new VideoTrim(Seconds(3) - typed.MinimumDuration, Seconds(3)), "a typed start past the end stops one minimum length before it and leaves the end alone");
+        typed.SetTrimEnd(Seconds(0.5));
+        Require(typed.Trim == new VideoTrim(Seconds(3) - typed.MinimumDuration, Seconds(3)), "a typed end before the start leaves the start alone");
+        typed.Undo();
+        typed.SetTrimEnd(Seconds(0.5));
+        Require(typed.Trim == new VideoTrim(Seconds(1), Seconds(1) + typed.MinimumDuration), "a typed end before the start stops one minimum length after it");
+        typed.SetTrimStart(Seconds(-3)); typed.SetTrimEnd(Seconds(60));
+        Require(typed.Trim == VideoTrim.Whole(duration), "typed ends clamp to the recording");
+        typed.SetTrimStart(exact);
+        Require(typed.Trim == new VideoTrim(exact, duration), "a typed start keeps exact ticks and the end");
+
+        var redoable = new VideoAnnotationHistory(duration);
+        redoable.SetTrim(Seconds(1), Seconds(4)); redoable.Undo();
+        redoable.BeginTrimEdit(); redoable.CommitTimingEdit();
+        Require(redoable.CanRedo && !redoable.CanUndo, "clicking a trim handle without moving it keeps Redo");
+        redoable.BeginTrimEdit(); redoable.PreviewTrim(Seconds(2), Seconds(3)); redoable.PreviewTrim(TimeSpan.Zero, duration); redoable.CommitTimingEdit();
+        Require(redoable.CanRedo && !redoable.CanUndo, "a trim drag that returns to where it started keeps Redo");
+        redoable.SetTrimStart(TimeSpan.Zero); redoable.SetTrimEnd(duration); redoable.SetTrim(TimeSpan.Zero, duration);
+        Require(redoable.CanRedo && !redoable.CanUndo, "typing or resetting an unchanged trim keeps Redo");
+        redoable.Redo();
+        Require(redoable.Trim == new VideoTrim(Seconds(1), Seconds(4)), "Redo still restores the trim after no-op edits");
+
         history.Select(blur.Id); history.DeleteSelected(); history.Undo();
         Require(history.Trim == new VideoTrim(Seconds(1), exact), "annotation undo leaves the trim alone");
 
