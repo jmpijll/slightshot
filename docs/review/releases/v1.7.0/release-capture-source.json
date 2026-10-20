@@ -6,5 +6,21 @@
   "release_tag": "v1.7.0",
   "release_image": "release-status.png",
   "capture_method": "Unauthenticated public GitHub page rendered in the browser; screenshot contains no signed-in account or fixture data.",
-  "release_image_sha256": "45874acb778b24b6daf19cfa21f756ab325186805ed596c53588d17c4bd9f15c"
+  "release_image_sha256": "45874acb778b24b6daf19cfa21f756ab325186805ed596c53588d17c4bd9f15c",
+  "documentation_source_commit": "ca0a635da583e195efe1146b2ed251508bdf9d47",
+  "documentation_url": "https://github.com/jmpijll/slightshot/blob/ca0a635da583e195efe1146b2ed251508bdf9d47/docs/review/releases/v1.7.0/README.md",
+  "documentation_captures": [
+    {
+      "image": "readme-rendered.png",
+      "sha256": "e4222d63c54ca202ef85b516d5bc679d59fbf2e8152881772635606cbbfacd1d",
+      "captured_at_utc": "2026-10-20T16:28:04.151271+00:00",
+      "method": "GitHub rendered Markdown preview, unauthenticated browser. File tree collapsed and page scrolled; document content was not modified."
+    },
+    {
+      "image": "readme-checks-rendered.png",
+      "sha256": "f3a44f8ec0506040821ff5c93685d548bc74b9d65802c8e648ecb71b02e2d92a",
+      "captured_at_utc": "2026-10-20T16:28:28.266461+00:00",
+      "method": "GitHub rendered Markdown preview, unauthenticated browser. File tree collapsed and page scrolled; document content was not modified."
+    }
+  ]
 }
