@@ -41,6 +41,12 @@ internal static class LaunchChecks
             File.WriteAllText(path, new string('x', ErrorLog.MaximumBytes + 1));
             ErrorLog.Append(directory, "UI thread", new InvalidOperationException("after rotation"), time);
             Require(new FileInfo(path).Length < ErrorLog.MaximumBytes && File.ReadAllText(path).Contains("after rotation") && new FileInfo(path + ".old").Length > ErrorLog.MaximumBytes, "a full log is rotated before appending");
+            File.Delete(path + ".old");
+            ErrorLog.Append(directory, "UI thread", new InvalidOperationException(new string('é', 3_000_000)), time);
+            Require(new FileInfo(path).Length <= ErrorLog.MaximumBytes && File.ReadAllText(path).Contains("[truncated]") && !File.Exists(path + ".old"), "an oversized entry is truncated so the log stays under its limit");
+            File.WriteAllText(path, new string('x', ErrorLog.MaximumBytes - 20));
+            ErrorLog.Append(directory, "UI thread", new InvalidOperationException("does not fit"), time);
+            Require(new FileInfo(path).Length <= ErrorLog.MaximumBytes && File.ReadAllText(path).Contains("does not fit") && new FileInfo(path + ".old").Length == ErrorLog.MaximumBytes - 20, "an entry that would cross the limit rotates the log first");
         }
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
         return checks;
