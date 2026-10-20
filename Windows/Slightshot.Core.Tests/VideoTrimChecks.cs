@@ -77,6 +77,14 @@ internal static class VideoTrimChecks
         offGrid.SetTrimEnd(exact.TotalSeconds);
         Require(!offGrid.CanUndo && offGrid.CanRedo && offGrid.Trim.End == exact, "an unchanged exact source end keeps Redo without rounding");
 
+        var frameDuration = TimeSpan.FromTicks(TimeSpan.TicksPerSecond * 61 / 30);
+        var frameTrim = new VideoAnnotationHistory(frameDuration);
+        frameTrim.SetTrimStart(0.5); frameTrim.Undo();
+        frameTrim.BeginTrimEdit(); frameTrim.PreviewTrim(frameTrim.Trim.Start, frameTrim.Trim.End); frameTrim.CommitTimingEdit();
+        Require(frameTrim.Trim == VideoTrim.Whole(frameDuration) && frameTrim.CanRedo && !frameTrim.CanUndo, "an unchanged handle callback on a 61-frame source keeps exact duration and Redo");
+        frameTrim.Redo();
+        Require(frameTrim.Trim == new VideoTrim(Seconds(0.5), frameDuration), "Redo after the stationary handle callback restores only the start on a 61-frame source");
+
         var redoable = new VideoAnnotationHistory(duration);
         redoable.SetTrim(Seconds(1), Seconds(4)); redoable.Undo();
         redoable.BeginTrimEdit(); redoable.CommitTimingEdit();

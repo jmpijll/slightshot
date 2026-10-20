@@ -471,6 +471,18 @@ internal static class VideoEditorSmokeTest
         var whole = VideoTrim.Whole(source.Duration);
         Require(editor.History.Trim == whole && trimStart.Text == Field(TimeSpan.Zero) && trimEnd.Text == Field(source.Duration), "trim defaults to the whole recording");
 
+        var offGridEnd = TimeSpan.FromTicks(TimeSpan.TicksPerSecond * 61 / 30);
+        editor.History.SetTrim(TimeSpan.Zero, offGridEnd); editor.Undo(); editor.Redo();
+        EnterTime(trimStart, 0.5); ClickTooltip(editor, "Undo  Ctrl+Z");
+        await DragAsync(trimRange, trimRange.HandleCenter(true), trimRange.HandleCenter(true));
+        Require(editor.History.Trim == new VideoTrim(TimeSpan.Zero, offGridEnd) && editor.History.CanRedo,
+            "a stationary native start-handle click preserves the exact 61-frame end and Redo");
+        ClickTooltip(editor, "Redo  Ctrl+Y / Ctrl+Shift+Z");
+        Require(editor.History.Trim == new VideoTrim(Seconds(0.5), offGridEnd), "Redo after the stationary handle click restores the start without rounding the 61-frame end");
+        ClickContent(editor, "Keep whole recording");
+        Require(editor.History.Trim == whole, "off-grid handle fixture restores the whole recording");
+        checks.Add("With an exact end at 61 frames / 30 fps, setting the native start field to 0.5 seconds, Undo, and a stationary native start-handle click preserve the exact off-grid end and Redo. Redo restores only the start.");
+
         await DragAsync(trimRange, trimRange.HandleCenter(true), trimRange.PositionAt(1));
         await DragAsync(trimRange, trimRange.HandleCenter(false), trimRange.PositionAt(3.2));
         var dragged = editor.History.Trim;
@@ -552,7 +564,17 @@ internal static class VideoEditorSmokeTest
         checks.Add("Trim defaults to the whole recording. Two native trim handles, exact start/end fields, Keep whole recording and real Undo/Redo change the kept range; it ends at 1.5–3.5 seconds.");
 
         await editor.SeekAsync(Seconds(0.2));
-        Require(editor.Position == trim.Start, "seeking before the trim stops at the trim start");
+        Require(editor.Position == trim.Start && playhead.Value == editor.Position.TotalSeconds, "seeking before the trim stops at the trim start and updates the shared playhead");
+        foreach (var seek in new[] { Seconds(2), Seconds(2.75), Seconds(1.75) })
+        {
+            await editor.SeekAsync(seek);
+            Require(editor.Position == seek && playhead.Value == seek.TotalSeconds, "the shared native trim and annotation playhead follows each forward or backward seek");
+        }
+        await editor.SeekAsync(trim.Start); editor.Play();
+        for (int wait = 0; wait < 100 && editor.Position == trim.Start; wait++) await Task.Delay(20);
+        Require(editor.Position > trim.Start && editor.Position < trim.End && playhead.Value == editor.Position.TotalSeconds,
+            "the shared native trim and annotation playhead advances during playback");
+        editor.Pause();
         playhead.Value = 4.2; await editor.SeekAsync(Seconds(4.2));
         Require(editor.Position == trim.End && Math.Abs(playhead.Value - trim.End.TotalSeconds) <= 1.0 / 30, "the native playhead cannot scrub past the trim end");
         editor.Play();
@@ -560,7 +582,7 @@ internal static class VideoEditorSmokeTest
         editor.Pause();
         await editor.SeekAsync(trim.End - Seconds(0.3)); editor.Play(); await Task.Delay(900);
         Require(editor.Position == trim.End, "playback stops at the trim end");
-        checks.Add("Seeking, the native playhead and Play/Pause stay within the trim: playback restarts at the trim start and stops at the trim end.");
+        checks.Add("The single shared native playhead aligned below the trim range follows distinct forward/backward seeks and advances during playback. Seeking and Play/Pause stay within the trim; playback restarts at the trim start and stops at the trim end.");
 
         Require(trimEnd.Focus(), "trim end has focus before the Save button check");
         trimEnd.Text = 3.4.ToString(CultureInfo.CurrentCulture);

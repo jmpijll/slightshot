@@ -137,6 +137,7 @@ internal sealed class VideoEditorWindow : Window
         trimRange.RangeChanged += async (start, finish) =>
         {
             var previous = History.Trim;
+            if (start == previous.Start.TotalSeconds && finish == previous.End.TotalSeconds) return;
             // Keep the untouched end's exact ticks instead of its double-seconds roundtrip.
             History.PreviewTrim(start == previous.Start.TotalSeconds ? previous.Start : TimeSpan.FromTicks((long)Math.Round(start * TimeSpan.TicksPerSecond)), finish == previous.End.TotalSeconds ? previous.End : TimeSpan.FromTicks((long)Math.Round(finish * TimeSpan.TicksPerSecond)));
             UpdateControls(false);
