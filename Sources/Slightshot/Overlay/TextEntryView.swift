@@ -9,9 +9,7 @@ final class TextEntryView: NSTextView {
     private let minimumWidth: CGFloat = 64
 
     init(origin: CGPoint, color: NSColor, fontSize: CGFloat, maxWidth: CGFloat) {
-        let container = NSTextContainer(size: NSSize(width: max(maxWidth, minimumWidth),
-                                                     height: .greatestFiniteMagnitude))
-        container.widthTracksTextView = false
+        let container = Annotation.textContainer(wrapWidth: max(maxWidth, minimumWidth))
         let storage = NSTextStorage()
         let layout = NSLayoutManager()
         storage.addLayoutManager(layout)
@@ -36,6 +34,13 @@ final class TextEntryView: NSTextView {
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+    var wrapWidth: CGFloat { textContainer?.size.width ?? minimumWidth }
+
+    /// The first glyph's top-left corner in the superview.
+    var glyphOrigin: CGPoint {
+        CGPoint(x: frame.minX + textContainerOrigin.x, y: frame.minY + textContainerOrigin.y)
+    }
 
     override func keyDown(with event: NSEvent) {
         let isCommand = event.modifierFlags.contains(.command)

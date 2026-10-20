@@ -9,7 +9,9 @@ struct Annotation: Identifiable {
         case line(from: CGPoint, to: CGPoint)
         case arrow(from: CGPoint, to: CGPoint)
         case rectangle(CGRect)
-        case text(String, origin: CGPoint)
+        /// `origin` is the first glyph's top-left corner. Lines wrap at `wrapWidth`
+        /// in typed units, the same container width the text box had.
+        case text(String, origin: CGPoint, wrapWidth: CGFloat? = nil)
         case blur(CGRect)
         case pixelate(CGRect)
         case step(number: Int, center: CGPoint)
@@ -25,6 +27,10 @@ struct Annotation: Identifiable {
     /// displayed canvas. Keep the creation scale with the mark across resizing.
     var rasterScale: CGFloat = 1
     var stepScale: CGFloat = 1
+    /// Line breaks do not scale in proportion to the font size, so text keeps
+    /// the font size and wrap width it was typed at; this maps that layout into
+    /// canvas units, such as video source pixels.
+    var textScale: CGFloat = 1
 
     var effectiveRasterScale: CGFloat {
         rasterScale.isFinite && rasterScale > 0 ? rasterScale : 1
@@ -32,6 +38,10 @@ struct Annotation: Identifiable {
 
     private var effectiveStepScale: CGFloat {
         stepScale.isFinite && stepScale > 0 ? stepScale : 1
+    }
+
+    private var effectiveTextScale: CGFloat {
+        textScale.isFinite && textScale > 0 ? textScale : 1
     }
 
     static func nextStepNumber(in annotations: [Annotation]) -> Int {
@@ -100,10 +110,14 @@ struct Annotation: Identifiable {
             path.lineJoinStyle = .miter
             path.stroke()
 
-        case .text(let string, let origin):
+        case .text(let string, let origin, let wrapWidth):
             guard !string.isEmpty else { return }
-            Self.attributedString(string, color: stroke, size: fontSize)
-                .draw(at: origin)
+            let transform = NSAffineTransform()
+            transform.translateX(by: origin.x, yBy: origin.y)
+            transform.scale(by: effectiveTextScale)
+            transform.concat()
+            TextLayout(Self.attributedString(string, color: stroke, size: fontSize), wrapWidth: wrapWidth)
+                .draw(at: .zero)
         case .step(let number, let center):
             drawStep(number: number, center: center, fill: stroke)
         case .blur, .pixelate:
@@ -191,6 +205,15 @@ struct Annotation: Identifiable {
         ])
     }
 
+    /// TextEntryView and committed text share this container setup, so a note
+    /// wraps and sits exactly where it was typed.
+    static func textContainer(wrapWidth: CGFloat?) -> NSTextContainer {
+        let container = NSTextContainer(size: NSSize(width: wrapWidth ?? .greatestFiniteMagnitude,
+                                                     height: .greatestFiniteMagnitude))
+        container.lineFragmentPadding = 0
+        return container
+    }
+
     /// Bounding box including stroke weight, used for dirty-rect invalidation.
     var dirtyBounds: CGRect {
         let pad = max(lineWidth * 5, 12)
@@ -203,12 +226,35 @@ struct Annotation: Identifiable {
             return CGRect(corner: a, corner: b).insetBy(dx: -pad, dy: -pad)
         case .rectangle(let r), .blur(let r), .pixelate(let r):
             return r.insetBy(dx: -pad, dy: -pad)
-        case .text(let s, let origin):
-            let size = Self.attributedString(s, color: .white, size: fontSize).size()
-            return CGRect(origin: origin, size: size).insetBy(dx: -pad, dy: -pad)
+        case .text(let s, let origin, let wrapWidth):
+            let size = TextLayout(Self.attributedString(s, color: .white, size: fontSize), wrapWidth: wrapWidth).size
+            return CGRect(x: origin.x, y: origin.y, width: size.width * effectiveTextScale,
+                          height: size.height * effectiveTextScale).insetBy(dx: -pad, dy: -pad)
         case .step(let number, let center):
             return Self.stepBounds(number: number, center: center, scale: effectiveStepScale)
                 .insetBy(dx: -2 * effectiveStepScale, dy: -2 * effectiveStepScale)
         }
+    }
+}
+
+/// The TextKit 1 stack TextEntryView uses, so committed text breaks lines the same way.
+private struct TextLayout {
+    private let storage: NSTextStorage
+    private let manager = NSLayoutManager()
+    private let container: NSTextContainer
+
+    init(_ string: NSAttributedString, wrapWidth: CGFloat?) {
+        storage = NSTextStorage(attributedString: string)
+        container = Annotation.textContainer(wrapWidth: wrapWidth)
+        storage.addLayoutManager(manager)
+        manager.addTextContainer(container)
+        manager.ensureLayout(for: container)
+    }
+
+    var size: CGSize { manager.usedRect(for: container).size }
+
+    /// Expects a flipped context, as the canvas, the renderer and the text box use.
+    func draw(at origin: CGPoint) {
+        manager.drawGlyphs(forGlyphRange: manager.glyphRange(for: container), at: origin)
     }
 }

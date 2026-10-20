@@ -27,7 +27,7 @@ final class VideoCanvasView: NSView {
     private var live: Annotation?
     private var textEntry: TextEntryView?
     private var textOrigin: CGPoint = .zero
-    private var textFontSize: CGFloat = 24
+    private var textScale: CGFloat = 1
 
     init(sourceSize: CGSize) {
         self.sourceSize = sourceSize
@@ -227,9 +227,8 @@ final class VideoCanvasView: NSView {
         let origin = CGPoint(x: imageRect.minX + point.x * scale, y: imageRect.minY + point.y * scale)
         let entry = TextEntryView(origin: origin, color: color, fontSize: fontSize,
                                   maxWidth: imageRect.maxX - origin.x)
-        textOrigin = CGPoint(x: point.x + entry.textContainerInset.width / scale,
-                             y: point.y + entry.textContainerInset.height / scale)
-        textFontSize = fontSize / scale
+        textOrigin = point
+        textScale = 1 / scale
         entry.onCommit = { [weak self] _ in self?.commitTextEntry() }
         entry.onCancel = { [weak self] in
             self?.textEntry?.removeFromSuperview()
@@ -243,13 +242,16 @@ final class VideoCanvasView: NSView {
 
     func commitTextEntry() {
         guard let entry = textEntry else { return }
-        let text = entry.string.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = entry.string
         let textColor = entry.textColor ?? color
+        let origin = CGPoint(x: textOrigin.x + entry.textContainerOrigin.x * textScale,
+                             y: textOrigin.y + entry.textContainerOrigin.y * textScale)
         entry.removeFromSuperview()
         textEntry = nil
-        if !text.isEmpty {
-            onCommit?(Annotation(shape: .text(text, origin: textOrigin), color: textColor, lineWidth: lineWidth,
-                                 fontSize: textFontSize))
+        if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            onCommit?(Annotation(shape: .text(text, origin: origin, wrapWidth: entry.wrapWidth), color: textColor,
+                                 lineWidth: lineWidth, fontSize: entry.font?.pointSize ?? fontSize,
+                                 textScale: textScale))
         }
         window?.makeFirstResponder(self)
     }
