@@ -169,9 +169,10 @@ Undo and Redo in the toolbar also work with text, blur, pixelation and numbered 
 Redo restores the original mark; adding a new annotation or starting a new selection
 clears Redo. While typing, the text field keeps its native Undo and Redo shortcuts.
 
-You can change the three capture shortcuts in Settings. On Windows, Print Screen
-works on its own, as in Lightshot, once Windows' **Use the Print screen key to
-open screen capture** setting is turned off.
+You can change the three capture shortcuts in Settings. On macOS, a shortcut needs ⌘ or ⌃
+unless it uses a function key, and Settings refuses one that another action already uses.
+On Windows, Print Screen works on its own, as in Lightshot, once Windows' **Use the
+Print screen key to open screen capture** setting is turned off.
 
 | Action | macOS | Windows |
 | --- | --- | --- |
