@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
@@ -80,7 +81,7 @@ internal static class VideoEditorSmokeTest
                 Require(Buttons(editor).Any(button => Equals(button.ToolTip, tool == Tool.Step ? "Numbered steps" : tool.ToString())), "screenshot tool available: " + tool);
             var from = Descendants((DependencyObject)editor.Content).OfType<TextBox>().Single(field => AutomationProperties.GetName(field) == "Annotation start time in seconds");
             var until = Descendants((DependencyObject)editor.Content).OfType<TextBox>().Single(field => AutomationProperties.GetName(field) == "Annotation end time in seconds");
-            var range = Descendants((DependencyObject)editor.Content).OfType<VideoRangeSlider>().Single();
+            var range = Descendants((DependencyObject)editor.Content).OfType<VideoRangeSlider>().Single(slider => AutomationProperties.GetName(slider) == "Annotation range");
             void EnterTime(TextBox field, string value)
             {
                 field.Text = value; field.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(field)!, 0, Key.Enter) { RoutedEvent = Keyboard.PreviewKeyDownEvent });
@@ -433,6 +434,7 @@ internal static class VideoEditorSmokeTest
                 SaveSourceColors(directory, sourceColors);
             }
             Require(File.Exists(session.SourcePath), "successful export leaves source available until editor closes");
+            await TrimAsync(editor, source, session.SourcePath, directory, width, height, checks);
             closingPreview = editor.SeekAsync(TimeSpan.FromSeconds(.85));
         }
         finally
@@ -450,6 +452,137 @@ internal static class VideoEditorSmokeTest
             source = "Moving synthetic BGRA recording. Real native editor HWND captured from composed desktop pixels. Arrow uses native automated pointer input; other annotations use labelled fixture inputs. Native sliders and buttons are operated automatically. MP4 is encoded and decoded through the production export path.",
             checks, sourceColorEvidence = sourceColors
         }, new JsonSerializerOptions { WriteIndented = true }));
+    }
+    private static async Task TrimAsync(VideoEditorWindow editor, VideoFrameSource source, string sourcePath, string directory, int width, int height, List<string> checks)
+    {
+        TimeSpan Seconds(double value) => TimeSpan.FromSeconds(value);
+        string Field(TimeSpan time) => time.TotalSeconds.ToString("0.00", CultureInfo.CurrentCulture);
+        void EnterTime(TextBox field, double seconds)
+        {
+            field.Text = seconds.ToString(CultureInfo.CurrentCulture);
+            field.RaiseEvent(new KeyEventArgs(Keyboard.PrimaryDevice, PresentationSource.FromVisual(field)!, 0, Key.Enter) { RoutedEvent = Keyboard.PreviewKeyDownEvent });
+        }
+        var content = (DependencyObject)editor.Content;
+        var trimRange = Descendants(content).OfType<VideoRangeSlider>().Single(slider => AutomationProperties.GetName(slider) == "Trim range");
+        var trimStart = Descendants(content).OfType<TextBox>().Single(field => AutomationProperties.GetName(field) == "Trim start time in seconds");
+        var trimEnd = Descendants(content).OfType<TextBox>().Single(field => AutomationProperties.GetName(field) == "Trim end time in seconds");
+        var playhead = Sliders(editor).Single(slider => AutomationProperties.GetName(slider) == "Recording playhead");
+        var whole = VideoTrim.Whole(source.Duration);
+        Require(editor.History.Trim == whole && trimStart.Text == Field(TimeSpan.Zero) && trimEnd.Text == Field(source.Duration), "trim defaults to the whole recording");
+
+        await DragAsync(trimRange, trimRange.HandleCenter(true), trimRange.PositionAt(1));
+        await DragAsync(trimRange, trimRange.HandleCenter(false), trimRange.PositionAt(3.2));
+        var dragged = editor.History.Trim;
+        Require(Math.Abs(dragged.Start.TotalSeconds - 1) < 0.08 && Math.Abs(dragged.End.TotalSeconds - 3.2) < 0.08, "two native trim handles set the kept range");
+        Require(editor.Position == dragged.End, "dragging the end handle previews the trim end");
+        ClickTooltip(editor, "Undo  Ctrl+Z");
+        Require(editor.History.Trim.Start == dragged.Start && editor.History.Trim.End == source.Duration, "real Undo reverses the end-handle drag");
+        ClickTooltip(editor, "Redo  Ctrl+Y / Ctrl+Shift+Z");
+        Require(editor.History.Trim == dragged, "real Redo restores the trim");
+        EnterTime(trimStart, 1.5); EnterTime(trimEnd, 3.5);
+        var trim = editor.History.Trim;
+        Require(trim == new VideoTrim(Seconds(1.5), Seconds(3.5)) && trimStart.Text == Field(trim.Start) && trimEnd.Text == Field(trim.End), "exact trim fields set the kept range");
+        ClickContent(editor, "Reset trim");
+        Require(editor.History.Trim == whole, "Reset trim keeps the whole recording");
+        ClickTooltip(editor, "Undo  Ctrl+Z");
+        Require(editor.History.Trim == trim, "real Undo restores the trim after Reset trim");
+        checks.Add("Trim defaults to the whole recording. Two native trim handles, exact start/end fields, Reset trim and real Undo/Redo change the kept range; it ends at 1.5–3.5 seconds.");
+
+        await editor.SeekAsync(Seconds(0.2));
+        Require(editor.Position == trim.Start, "seeking before the trim stops at the trim start");
+        playhead.Value = 4.2; await editor.SeekAsync(Seconds(4.2));
+        Require(editor.Position == trim.End && Math.Abs(playhead.Value - trim.End.TotalSeconds) <= 1.0 / 30, "the native playhead cannot scrub past the trim end");
+        editor.Play();
+        Require(editor.Position == trim.Start, "Play at the trim end restarts from the trim start");
+        editor.Pause();
+        await editor.SeekAsync(trim.End - Seconds(0.3)); editor.Play(); await Task.Delay(900);
+        Require(editor.Position == trim.End, "playback stops at the trim end");
+        checks.Add("Seeking, the native playhead and Play/Pause stay within the trim: playback restarts at the trim start and stops at the trim end.");
+
+        await editor.SeekAsync(Seconds(2)); await Task.Delay(180); editor.UpdateLayout(); NativeMethods.DwmFlush();
+        CaptureWindow(editor, Path.Combine(directory, "video-editor-trim.png"));
+        var edit = new VideoEdit(editor.History.ExportSnapshot(), editor.History.Trim);
+        Require(edit.Annotations.Count > 0 && edit.Annotations.All(mark => mark.Begin == Seconds(1) && mark.End == Seconds(3)), "trim keeps annotation source times at 1–3 seconds");
+
+        async Task<(int Counter, BitmapSource Frame)> SourceAt(TimeSpan position)
+        {
+            using var sequential = await VideoSequentialDecoder.OpenAsync(sourcePath, width, height);
+            var pixels = new byte[width * height * 4];
+            await sequential.GetFrameAsync(position, pixels, CancellationToken.None);
+            var frame = BitmapSource.Create(width, height, 96, 96, PixelFormats.Pbgra32, null, pixels, width * 4); frame.Freeze();
+            return (FrameCounter(pixels, width), frame);
+        }
+        var evidence = new List<object>();
+        void SaveEvidence() => File.WriteAllText(Path.Combine(directory, "video-editor-trim-validation.json"), JsonSerializer.Serialize(new
+        {
+            platform = "Windows native WPF / Media Foundation",
+            sourceCommit = Environment.GetEnvironmentVariable("SLIGHTSHOT_SOURCE_COMMIT") ?? "unknown",
+            sourceDurationSeconds = source.Duration.TotalSeconds,
+            annotationSourceSeconds = new[] { 1.0, 3.0 },
+            method = "Trim handles are dragged with native pointer input; exact fields and buttons are operated automatically. Each MP4 is exported through the production plain (MediaTranscoder) or annotated (frame) path and decoded again. Frame counters are eight binary cells drawn into each synthetic source frame.",
+            exports = evidence
+        }, new JsonSerializerOptions { WriteIndented = true }));
+        async Task ExportAsync(string path, RecordingQuality quality, VideoTrim kept, IReadOnlyList<TimedAnnotation> marks, double during, double after)
+        {
+            string name = $"video-editor-trim-{path}-{quality.ToString().ToLowerInvariant()}";
+            string output = Path.Combine(directory, name + ".mp4");
+            await editor.PrepareExportAsync();
+            await VideoAnnotationExport.SaveAsync(sourcePath, output, quality, width, height, marks, CancellationToken.None, trim: kept);
+            using var decoded = await VideoFrameSource.OpenAsync(output);
+            var cadence = await VideoSequentialDecoder.InspectAsync(output, width, height);
+            int rate = quality.FramesPerSecond(); long interval = TimeSpan.TicksPerSecond / rate;
+            long expectedFrames = (kept.Length.Ticks * rate + TimeSpan.TicksPerSecond - 1) / TimeSpan.TicksPerSecond;
+            // Check output samples on this quality's own frame grid against the
+            // source frame the export loop reads for that sample.
+            var samples = new[] { kept.Start, Seconds(during), Seconds(after) }
+                .Select(time => TimeSpan.FromTicks((long)Math.Round((time - kept.Start).TotalSeconds * rate) * TimeSpan.TicksPerSecond / rate)).ToArray();
+            var counters = new List<int>(); var expectedCounters = new List<int>(); var blur = new List<double>();
+            foreach (var (sample, index) in samples.Select((sample, index) => (sample, index)))
+            {
+                var frame = await decoded.GetFrameAsync(sample); var expected = await SourceAt(kept.Start + sample);
+                var pixels = new byte[width * height * 4]; frame.CopyPixels(pixels, width * 4, 0);
+                counters.Add(FrameCounter(pixels, width)); expectedCounters.Add(expected.Counter);
+                blur.Add(Delta(expected.Frame, frame, new Int32Rect(40, 195, 85, 95)));
+                if (index > 0) Save(frame, Path.Combine(directory, $"{name}-{(index == 1 ? "during" : "after")}.png"));
+            }
+            double blurDuring = blur[1], blurAfter = blur[2];
+            bool framePath = kept.Clip(marks).Length > 0;
+            double endSeconds = TimeSpan.FromTicks(cadence.LastPresentationTicks + cadence.LastDurationTicks).TotalSeconds;
+            evidence.Add(new
+            {
+                path, quality, trimStartSeconds = kept.Start.TotalSeconds, trimEndSeconds = kept.End.TotalSeconds, keptSeconds = kept.Length.TotalSeconds,
+                decodedDurationSeconds = decoded.Duration.TotalSeconds, lastFrameEndSeconds = endSeconds, expectedFrames, actualFrames = cadence.Frames,
+                exportPath = framePath ? "annotated frame export" : "plain MediaTranscoder export",
+                outputSecondsChecked = samples.Select(sample => sample.TotalSeconds),
+                expectedSourceCounters = expectedCounters, actualOutputCounters = counters,
+                blurMeanDeltaDuringAnnotation = blurDuring, blurMeanDeltaAfterAnnotation = blurAfter
+            });
+            SaveEvidence();
+            string label = $"{path} {quality.Title()}";
+            Require(decoded.Width == width && decoded.Height == height, "trimmed export keeps dimensions " + label);
+            Require(Math.Abs(decoded.Duration.TotalSeconds - kept.Length.TotalSeconds) < 0.1, $"trimmed export lasts {kept.Length.TotalSeconds:0.00}s, not {decoded.Duration.TotalSeconds:0.00}s, {label}");
+            Require(Math.Abs(cadence.FirstPresentationTicks) <= 1, "trimmed export starts at time zero " + label);
+            if (framePath)
+            {
+                Require(cadence.Frames == expectedFrames && Math.Abs(endSeconds - kept.Length.TotalSeconds) <= (double)(interval + 10000) / TimeSpan.TicksPerSecond, "annotated trimmed export has every planned frame " + label);
+                Require(counters.SequenceEqual(expectedCounters), "annotated trimmed export starts at the trim start frame and keeps source timing " + label);
+                Require(blurDuring > 35 && blurAfter < 25, "annotations are clipped to the trim and shifted with it " + label);
+            }
+            else
+            {
+                // The transcoder chooses its own first sample, so allow two
+                // capture frames instead of the frame path's exact identity.
+                Require(counters.Zip(expectedCounters, (actual, expected) => Math.Abs(actual - expected)).All(error => error <= 2), "plain trimmed export starts near the trim start frame " + label);
+                Require(blurDuring < 25 && blurAfter < 25, "plain trimmed export has no annotations " + label);
+            }
+        }
+        foreach (var quality in Enum.GetValues<RecordingQuality>())
+        {
+            await ExportAsync("annotated", quality, trim, edit.Annotations, 2.0, 3.1);
+            await ExportAsync("plain", quality, trim, [], 2.0, 3.1);
+        }
+        await ExportAsync("outside", RecordingQuality.High, new VideoTrim(Seconds(3.1), Seconds(4)), edit.Annotations, 3.1, 3.6);
+        checks.Add("Every quality exports the 1.5–3.5 second trim through both the annotated frame path and the plain MediaTranscoder path. Decoded MP4s last the kept 2 seconds and start at the trim start frame. Annotations at 1–3 seconds appear only in the first 1.5 output seconds. A trim after every annotation falls back to the plain path without effects.");
     }
     private sealed record SourceColorEvidence(double Seconds, string Patch, string Comparison,
         double[] ReferenceMeanRGB, double[] ActualMeanRGB, double[] MeanAbsoluteRGBChannelDelta);

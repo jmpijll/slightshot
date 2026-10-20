@@ -110,7 +110,7 @@ jobs:
           $app = Resolve-Path Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe
           $output = Join-Path $PWD Windows/artifacts/video-editor
           $process = Start-Process $app -ArgumentList '--video-editor-smoke-test', $output -PassThru
-          if (!$process.WaitForExit(240000)) { $process.Kill(); throw 'Native video editor smoke test timed out' }
+          if (!$process.WaitForExit(300000)) { $process.Kill(); throw 'Native video editor smoke test timed out' }
           if ($process.ExitCode -ne 0) { Get-Content "$output/video-editor-failure.txt" -ErrorAction SilentlyContinue; throw "Native video editor smoke test failed: $($process.ExitCode)" }
           Get-Content "$output/video-editor-validation.json"
       - name: Benchmark real 4K preview, timed effects, export and cancellation
