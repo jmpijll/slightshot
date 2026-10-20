@@ -122,6 +122,29 @@ final class OverlayCoordinator: OverlayViewDelegate {
         }
     }
 
+    // MARK: - Quitting
+
+    /// Annotations exist only in the open editor until they are copied or saved.
+    var unsavedWork: UnsavedWork? {
+        views.contains { !$0.annotations.isEmpty } ? .annotations : nil
+    }
+
+    /// The capture overlay floats above alerts, so it steps aside while one is open.
+    func withOverlayHidden<T>(_ body: () -> T) -> T {
+        guard isActive else { return body() }
+        currentPresentation.hide()
+        defer { if isActive { currentPresentation.show(views, focused: annotatedView) } }
+        return body()
+    }
+
+    /// Copies the annotated capture with the toolbar's own Copy action.
+    func copyAnnotatedCapture() -> Bool {
+        annotatedView?.toolbarDidRequest(.copy)
+        return !isActive
+    }
+
+    private var annotatedView: OverlayView? { views.first { !$0.annotations.isEmpty } }
+
     // MARK: - OverlayViewDelegate
 
     func overlayDidCancel(_ view: OverlayView) {

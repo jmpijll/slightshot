@@ -57,6 +57,11 @@ if CommandLine.arguments.contains("--delayed-review") {
     exit(EXIT_SUCCESS)
 }
 
+if CommandLine.arguments.contains("--lost-work-review") {
+    LostWorkReview.run()
+    exit(EXIT_SUCCESS)
+}
+
 if CommandLine.arguments.contains("--clipboard-review") {
     ClipboardReview.run()
     exit(EXIT_SUCCESS)

@@ -22,6 +22,12 @@ final class RecordingCoordinator {
     private init() {}
     var isBusy: Bool { phase != nil }
 
+    /// Recordings live only in a temporary folder until the user saves them.
+    var unsavedWork: UnsavedWork? {
+        guard let phase else { return nil }
+        return .recording(canSave: phase == .editing)
+    }
+
     func begin(display: CapturedDisplay, selection: CGRect) {
         guard !isBusy, !isTerminating else { return }
         let selection = selection.intersection(CGRect(origin: .zero, size: display.frame.size))
@@ -37,10 +43,7 @@ final class RecordingCoordinator {
                 self.recordingPanel?.started { [weak session] in session?.duration ?? 0 }
                 Log.debug("Live recording started", Log.capture)
             }
-            session.onFinished = { [weak self, weak session] result in
-                guard let self, let session, self.session === session, !self.isTerminating else { return }
-                self.finished(result, session: session)
-            }
+            observeFinish(of: session)
             let panel = RecordingPanel(screen: display.screen, selection: selection) { [weak self] in self?.stop() }
             recordingPanel = panel
             let outline = RecordingOutlinePanel(screen: display.screen, selection: selection)
@@ -63,6 +66,22 @@ final class RecordingCoordinator {
         }
     }
 
+    private func observeFinish(of session: ScreenRecordingSession) {
+        session.onFinished = { [weak self, weak session] result in
+            guard let self, let session, self.session === session, !self.isTerminating else { return }
+            self.finished(result, session: session)
+        }
+    }
+
+    /// Review fixtures stand in for ScreenCaptureKit by calling the session's
+    /// callbacks; stopping, validation and the editor are the production path.
+    func reviewAdopt(_ session: ScreenRecordingSession) {
+        guard !isBusy else { return }
+        self.session = session
+        phase = .recording
+        observeFinish(of: session)
+    }
+
     private func stop() {
         guard phase == .recording, let session else { return }
         phase = .stopping
@@ -78,15 +97,18 @@ final class RecordingCoordinator {
             await self.startTask?.value
             await session.stop()
             guard !self.isTerminating else { return }
+            // A stream can stop with an error after writing a complete movie, for
+            // example when sharing ends from the menu bar. Keep anything playable.
+            if let duration = await session.playableDuration() {
+                if case .failure(let error) = result {
+                    Log.capture.notice("Recording kept after error: \(error.localizedDescription, privacy: .public)")
+                }
+                self.presentEditor(source: session.sourceURL, size: session.size, duration: duration)
+                return
+            }
             switch result {
-            case .success(let source):
-                do {
-                    let asset = AVURLAsset(url: source)
-                    let duration = try await asset.load(.duration)
-                    guard duration.seconds.isFinite, duration.seconds > 0 else { throw RecordingError.empty }
-                    self.presentEditor(source: source, size: session.size, duration: duration.seconds)
-                    return
-                } catch { OutputService.presentError(error.localizedDescription) }
+            case .success:
+                OutputService.presentError(RecordingError.empty.localizedDescription)
             case .failure(let error):
                 if error is CancellationError { break }
                 if case CaptureError.permissionDenied = error {
@@ -218,6 +240,15 @@ final class RecordingCoordinator {
         startTask = nil
         saveTask = nil
         phase = nil
+    }
+
+    /// Runs the editor's own save flow. False when the user cancels it or the
+    /// export fails, leaving the editor open.
+    func saveBeforeQuitting() async -> Bool {
+        guard phase == .editing, let editor else { return false }
+        editor.saveRecording()
+        await saveTask?.value
+        return phase == nil
     }
 
     /// Ask AppKit to delay termination until capture and export have released

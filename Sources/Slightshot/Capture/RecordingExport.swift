@@ -81,6 +81,8 @@ nonisolated enum RecordingError: LocalizedError {
 }
 
 nonisolated enum RecordingExport {
+    static let stagingPrefix = ".slightshot-"
+
     /// Snapshot the editor's AppKit marks before entering the encoder worker.
     /// Only immutable cropped overlays cross the actor boundary.
     @MainActor static func save(source: URL, to destination: URL, quality: RecordingQuality,
@@ -130,7 +132,7 @@ nonisolated enum RecordingExport {
     ) async throws {
         try Task.checkCancellation()
         let stagingDirectory = destination.deletingLastPathComponent()
-            .appendingPathComponent(".slightshot-\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent(stagingPrefix + UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: stagingDirectory, withIntermediateDirectories: false,
                                                 attributes: [.posixPermissions: 0o700])
         // AVFoundation may create auxiliary .sb files beside its output. Keep

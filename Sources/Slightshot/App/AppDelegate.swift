@@ -42,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
         Log.app.info("Slightshot \(AppInfo.versionString, privacy: .public) launched")
+        removeAbandonedRecordings()
 
         statusItem = StatusItemController(
             onCaptureArea: { [weak self] in self?.route(.capture(.captureArea)) },
@@ -117,12 +118,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard inbox.isOwner else { return .terminateNow }
         delayedCapture.cancel()
-        guard RecordingCoordinator.shared.isBusy else { return .terminateNow }
-        Task {
-            await RecordingCoordinator.shared.prepareForTermination()
-            sender.reply(toApplicationShouldTerminate: true)
-        }
-        return .terminateLater
+        return QuitGuard.live.reply { sender.reply(toApplicationShouldTerminate: $0) }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -136,6 +132,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
         route(.reopen)
         return false
+    }
+
+    private func removeAbandonedRecordings() {
+        let launched = NSRunningApplication.current.launchDate ?? Date()
+        let folders = [
+            (ScreenRecordingSession.directoryPrefix, FileManager.default.temporaryDirectory),
+            (RecordingExport.stagingPrefix, Settings.shared.saveDirectory),
+        ]
+        Task.detached(priority: .utility) {
+            for (prefix, parent) in folders {
+                ScreenRecordingSession.removeAbandonedDirectories(prefix: prefix, in: parent, createdBefore: launched)
+            }
+        }
     }
 
     // MARK: - Hotkeys
@@ -175,6 +184,83 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 Log.app.debug("Notification authorisation granted: \(granted)")
             }
         }
+    }
+}
+
+/// Work that exists only in memory or a temporary folder, so quitting would lose it.
+enum UnsavedWork: Equatable {
+    case recording(canSave: Bool)
+    case annotations
+}
+
+enum QuitChoice { case save, copy, discard, cancel }
+
+/// Decides whether a quit, logout or update relaunch may proceed. Cancelling
+/// returns `.terminateCancel`, which AppKit, logout and Sparkle all honour.
+struct QuitGuard {
+    let unsavedWork: () -> UnsavedWork?
+    let ask: (UnsavedWork) -> QuitChoice
+    let saveRecording: () async -> Bool
+    let copyAnnotations: () -> Bool
+    let discardRecording: () async -> Void
+
+    static let live = QuitGuard(
+        unsavedWork: { RecordingCoordinator.shared.unsavedWork ?? OverlayCoordinator.shared.unsavedWork },
+        ask: { work in OverlayCoordinator.shared.withOverlayHidden { ask(about: work) } },
+        saveRecording: { await RecordingCoordinator.shared.saveBeforeQuitting() },
+        copyAnnotations: { OverlayCoordinator.shared.copyAnnotatedCapture() },
+        discardRecording: { await RecordingCoordinator.shared.prepareForTermination() }
+    )
+
+    func reply(_ finish: @escaping (Bool) -> Void) -> NSApplication.TerminateReply {
+        guard let work = unsavedWork() else { return .terminateNow }
+        switch (work, ask(work)) {
+        case (_, .cancel):
+            return .terminateCancel
+        case (.annotations, .copy):
+            return copyAnnotations() ? .terminateNow : .terminateCancel
+        case (.annotations, _):
+            return .terminateNow
+        case (.recording(canSave: true), .save):
+            Task { finish(await saveRecording()) }
+            return .terminateLater
+        case (.recording, _):
+            Task {
+                await discardRecording()
+                finish(true)
+            }
+            return .terminateLater
+        }
+    }
+
+    static func ask(about work: UnsavedWork) -> QuitChoice {
+        let alert = NSAlert()
+        let choices: [QuitChoice]
+        switch work {
+        case .recording(canSave: true):
+            alert.messageText = "Save the recording before quitting?"
+            alert.informativeText = "If you don't save it, the recording and its annotations are deleted."
+            alert.addButton(withTitle: "Save…")
+            alert.addButton(withTitle: "Cancel")
+            alert.addButton(withTitle: "Discard Recording").hasDestructiveAction = true
+            choices = [.save, .cancel, .discard]
+        case .recording(canSave: false):
+            alert.messageText = "Quit and discard the current recording?"
+            alert.informativeText = "Slightshot is still recording or saving. Quitting now deletes the recording."
+            alert.addButton(withTitle: "Cancel")
+            alert.addButton(withTitle: "Discard Recording").hasDestructiveAction = true
+            choices = [.cancel, .discard]
+        case .annotations:
+            alert.messageText = "Copy your annotated capture before quitting?"
+            alert.informativeText = "Your annotations haven't been copied or saved. If you discard them, they are lost."
+            alert.addButton(withTitle: "Copy")
+            alert.addButton(withTitle: "Cancel")
+            alert.addButton(withTitle: "Discard Annotations").hasDestructiveAction = true
+            choices = [.copy, .cancel, .discard]
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        let index = alert.runModal().rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
+        return choices.indices.contains(index) ? choices[index] : .cancel
     }
 }
 

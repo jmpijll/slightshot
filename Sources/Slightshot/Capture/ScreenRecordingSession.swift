@@ -1,9 +1,11 @@
 import AppKit
+import AVFoundation
 import ScreenCaptureKit
 
 /// Owns ScreenCaptureKit and one private temporary directory. Its filter excludes
 /// every Slightshot window, including the live Stop control and timer.
 final class ScreenRecordingSession: NSObject {
+    static let directoryPrefix = "Slightshot-Recording-"
     let directory: URL
     let sourceURL: URL
     let size: CGSize
@@ -15,10 +17,12 @@ final class ScreenRecordingSession: NSObject {
     private var result: Result<URL, Error>?
     private var completion: CheckedContinuation<URL, Error>?
     private var isStopping = false
+    private var hasStartedRecording = false
+    private var streamError: Error?
 
     init(display: CapturedDisplay, selection: CGRect) throws {
         directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("Slightshot-Recording-\(UUID().uuidString)", isDirectory: true)
+            .appendingPathComponent(Self.directoryPrefix + UUID().uuidString, isDirectory: true)
         sourceURL = directory.appendingPathComponent("source.mp4")
         size = RecordingQuality.high.dimensions(for: display.pixelRect(for: selection).size)
         super.init()
@@ -89,6 +93,28 @@ final class ScreenRecordingSession: NSObject {
         recording = nil
     }
 
+    func recordingDidStart() {
+        hasStartedRecording = true
+        onStarted?()
+    }
+
+    func recordingDidFinish() { finish(.success(sourceURL)) }
+
+    func recordingDidFail(_ error: Error) { finish(.failure(streamError ?? error)) }
+
+    /// ScreenCaptureKit can report a stopped stream before its recording output
+    /// finalises the movie, so a started recording waits for that verdict.
+    func streamDidStop(with error: Error) {
+        guard hasStartedRecording else { return finish(.failure(error)) }
+        guard streamError == nil else { return }
+        streamError = error
+        isStopping = true
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(5))
+            self?.finish(.failure(error))
+        }
+    }
+
     private func finish(_ result: Result<URL, Error>) {
         guard self.result == nil else { return }
         self.result = result
@@ -100,21 +126,48 @@ final class ScreenRecordingSession: NSObject {
 
 extension ScreenRecordingSession: SCRecordingOutputDelegate, SCStreamDelegate {
     nonisolated func recordingOutputDidStartRecording(_ recordingOutput: SCRecordingOutput) {
-        Task { @MainActor [weak self] in self?.onStarted?() }
+        Task { @MainActor [weak self] in self?.recordingDidStart() }
     }
 
     nonisolated func recordingOutputDidFinishRecording(_ recordingOutput: SCRecordingOutput) {
-        Task { @MainActor [weak self] in
-            guard let self else { return }
-            self.finish(.success(self.sourceURL))
-        }
+        Task { @MainActor [weak self] in self?.recordingDidFinish() }
     }
 
     nonisolated func recordingOutput(_ recordingOutput: SCRecordingOutput, didFailWithError error: Error) {
-        Task { @MainActor [weak self] in self?.finish(.failure(error)) }
+        Task { @MainActor [weak self] in self?.recordingDidFail(error) }
     }
 
     nonisolated func stream(_ stream: SCStream, didStopWithError error: Error) {
-        Task { @MainActor [weak self] in self?.finish(.failure(error)) }
+        Task { @MainActor [weak self] in self?.streamDidStop(with: error) }
+    }
+}
+
+extension ScreenRecordingSession {
+    /// Duration of the movie on disk, or nil when it cannot be played.
+    func playableDuration() async -> TimeInterval? {
+        guard FileManager.default.fileExists(atPath: sourceURL.path),
+              let duration = try? await AVURLAsset(url: sourceURL).load(.duration),
+              duration.seconds.isFinite, duration.seconds > 0 else { return nil }
+        return duration.seconds
+    }
+
+    /// Removes recording folders a crash or forced quit left behind. Folders
+    /// created after `cutoff` belong to the running process and are kept.
+    nonisolated static func removeAbandonedDirectories(prefix: String, in parent: URL, createdBefore cutoff: Date) {
+        let manager = FileManager.default
+        let keys: Set<URLResourceKey> = [.creationDateKey, .isDirectoryKey]
+        guard let children = try? manager.contentsOfDirectory(at: parent, includingPropertiesForKeys: Array(keys))
+        else { return }
+        for child in children {
+            let name = child.lastPathComponent
+            guard name.hasPrefix(prefix), UUID(uuidString: String(name.dropFirst(prefix.count))) != nil,
+                  let values = try? child.resourceValues(forKeys: keys), values.isDirectory == true,
+                  let created = values.creationDate, created < cutoff else { continue }
+            do {
+                try manager.removeItem(at: child)
+            } catch {
+                Log.capture.error("Abandoned recording not removed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
     }
 }
