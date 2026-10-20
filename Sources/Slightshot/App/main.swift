@@ -71,6 +71,7 @@ do {
 }
 
 let app = NSApplication.shared
+app.mainMenu = EditMenu.makeMainMenu()
 let delegate = AppDelegate(launchCommand: LaunchCommand(arguments: CommandLine.arguments), inbox: commandInbox)
 app.delegate = delegate
 app.setActivationPolicy(.accessory)

@@ -356,8 +356,7 @@ final class OverlayView: NSView {
 
     private func finishTextEntry(with text: String) {
         guard let entry = textEntry else { return }
-        let origin = CGPoint(x: entry.frame.minX + entry.textContainerInset.width,
-                             y: entry.frame.minY + entry.textContainerInset.height)
+        let shape = Annotation.Shape.text(text, origin: entry.glyphOrigin, wrapWidth: entry.wrapWidth)
         entry.removeFromSuperview()
         textEntry = nil
         updateRedoAvailability()
@@ -365,7 +364,7 @@ final class OverlayView: NSView {
 
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        commitAnnotation(Annotation(shape: .text(text, origin: origin), color: color,
+        commitAnnotation(Annotation(shape: shape, color: color,
                                       lineWidth: lineWidth, alpha: 1, fontSize: fontSize))
     }
 
@@ -419,27 +418,33 @@ final class OverlayView: NSView {
 
     // MARK: - Keyboard
 
-    override func keyDown(with event: NSEvent) {
-        let command = event.modifierFlags.contains(.command)
+    /// The Edit menu would otherwise take ⌘A, ⌘C, ⌘X and ⌘Z before `keyDown`.
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        if window?.firstResponder === self, performCommandShortcut(event) { return true }
+        return super.performKeyEquivalent(with: event)
+    }
+
+    private func performCommandShortcut(_ event: NSEvent) -> Bool {
+        guard event.type == .keyDown, event.modifierFlags.contains(.command),
+              let characters = event.charactersIgnoringModifiers?.lowercased() else { return false }
         let shift = event.modifierFlags.contains(.shift)
-
-        if event.keyCode == 53 {  // Escape
-            cancel()
-            return
+        switch characters {
+        case "a": selectAll()
+        case "c": perform(.copy)
+        case "s": perform(shift ? .saveAs : .save)
+        case "p": perform(.print)
+        case "z": if shift { redo() } else { undo() }
+        case "x": cancel()
+        default: return false
         }
+        return true
+    }
 
-        if command, let characters = event.charactersIgnoringModifiers?.lowercased() {
-            switch characters {
-            case "a": selectAll(); return
-            case "c": perform(.copy); return
-            case "s": perform(shift ? .saveAs : .save); return
-            case "p": perform(.print); return
-            case "z": applyHistoryShortcut(redo: shift); return
-            case "x": cancel(); return
-            default: break
-            }
-        }
+    override func keyDown(with event: NSEvent) {
+        if event.keyCode == 53 { cancel(); return }  // Escape
+        if performCommandShortcut(event) { return }
 
+        let shift = event.modifierFlags.contains(.shift)
         switch event.keyCode {
         case 36, 76:  // Return / Enter
             performDefaultAction()
@@ -447,13 +452,8 @@ final class OverlayView: NSView {
         case 124: nudge(dx: shift ? 10 : 1, dy: 0)
         case 126: nudge(dx: 0, dy: shift ? -10 : -1)
         case 125: nudge(dx: 0, dy: shift ? 10 : 1)
-        default:
-            break
+        default: break
         }
-    }
-
-    private func applyHistoryShortcut(redo shouldRedo: Bool) {
-        if shouldRedo { redo() } else { undo() }
     }
 
     /// AppKit can deliver Escape as a cancel *command* rather than a raw key,
