@@ -81,10 +81,27 @@ Slightshot appears in the notification area. Double-click its icon or press
 **Ctrl+Shift+9** to select an area. **Ctrl+Shift+8** saves the display under the
 pointer; **Ctrl+Shift+7** copies it. These shortcuts can be changed in Settings.
 If another app owns a shortcut, the tray reports it and remains available.
+On first launch, a notification names the capture shortcut.
+
+Starting Slightshot again while it runs, for example from the Start menu when
+its icon is hidden in the notification-area overflow, starts an area capture in
+the running app. `Slightshot.exe --capture-area`, `--capture-full` and
+`--copy-full` select an area, save the display under the pointer or copy it.
+A second launch forwards the command to the running app and exits; a first
+launch runs it after starting. Other arguments are ignored on a first launch;
+a second launch with them exits without a command.
+
+If Slightshot hits an unexpected error, it closes the open capture, shows one
+message and keeps running in the notification area with its shortcuts.
+Errors are logged to `%LOCALAPPDATA%\Slightshot\Logs\errors.log`.
 
 To change a global shortcut, click its field in **Settings → Shortcuts** and
 press a key with Ctrl, Shift, Alt or Win. Both Windows keys work, and modifiers
-can be combined. Close Settings to activate the new shortcuts. Escape clears
+can be combined. Print Screen also works on its own, as in Lightshot's default.
+Windows 11 opens its own screen capture on Print Screen unless **Settings →
+Accessibility → Keyboard → Use the Print screen key to open screen capture** is
+off. Settings links to that page when Print Screen is bound and explains the
+setting if Windows keeps the key. Close Settings to activate the new shortcuts. Escape clears
 the focused field; pressing a modifier alone keeps the existing assignment.
 Windows-reserved combinations may remain unavailable.
 
@@ -203,6 +220,7 @@ dotnet build Windows/Slightshot -c Release
 Start-Process Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe -ArgumentList '--smoke-test', 'Windows/artifacts/parity' -Wait
 Start-Process Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe -ArgumentList '--recording-smoke-test', 'Windows/artifacts/recording' -Wait
 Start-Process Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe -ArgumentList '--shortcut-smoke-test', 'Windows/artifacts/shortcuts' -Wait
+Start-Process Windows/Slightshot/bin/Release/net10.0-windows10.0.19041.0/Slightshot.exe -ArgumentList '--instance-smoke-test', 'Windows/artifacts/instance' -Wait
 ```
 
 The Windows workflow builds with warnings treated as errors, checks selection and
@@ -220,8 +238,17 @@ The shortcut fixture sends native keyboard input to the real Settings fields,
 checking both Windows keys, Ctrl/Shift/Alt combinations, bare modifiers,
 duplicates and Escape. It roundtrips the settings JSON, closes Settings and
 verifies production global hotkey callbacks, including no activation when Win
-is omitted. [Saved shortcut screenshots and native/portable reports](review/windows-key-shortcuts/README.md)
+is omitted. It records Print Screen alone, registers it as a global hotkey,
+keeps other bare keys rejected and captures the Settings explanation for a
+fixture Print Screen registration failure. [Saved shortcut screenshots and native/portable reports](review/windows-key-shortcuts/README.md)
 identify the fixture inputs, platform and exact source commit.
+
+The instance fixture holds the production session mutex and command pipe, then
+starts the real executable with no arguments, each command argument and an
+unknown argument, checking exit codes and the forwarded commands. It then raises
+fixture exceptions with a real overlay open and checks that the overlay closes,
+one message is reported, nested and unobserved task failures are logged and the
+dispatcher keeps running. [Print Screen and second-launch evidence](review/windows-launch-hotkeys/README.md).
 
 The screenshot smoke test also drives the retained-session coordinator, real
 WPF text/export/Undo paths and image output service through Save As cancellation,

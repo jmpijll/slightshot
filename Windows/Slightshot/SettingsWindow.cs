@@ -16,9 +16,13 @@ internal sealed class SettingsWindow : Window
     private readonly Settings settings;
     private readonly Brush secondary;
     private readonly Brush surface;
-    public SettingsWindow(Settings settings, bool? forceDark = null)
+    private readonly HotKey[] unavailable;
+    private readonly TextBlock shortcutNote = new() { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 8, 0, 0) };
+    private readonly Button keyboardSettings = new() { Content = "Open Windows keyboard settings", HorizontalAlignment = HorizontalAlignment.Left, Padding = new Thickness(8, 4, 8, 4), Margin = new Thickness(0, 8, 0, 0) };
+    public SettingsWindow(Settings settings, bool? forceDark = null, HotKey[]? unavailable = null)
     {
         this.settings = settings;
+        this.unavailable = unavailable ?? [];
         Title = "Slightshot Settings"; Width = 560; Height = 620; ResizeMode = ResizeMode.NoResize;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         Appearance.ApplyWindowTheme(this, forceDark);
@@ -52,7 +56,10 @@ internal sealed class SettingsWindow : Window
     private UIElement Shortcuts()
     {
         var panel = Column();
-        panel.Children.Add(Group("Global shortcuts", Row("Capture area", Shortcut(() => settings.CaptureAreaHotKey, v => settings.CaptureAreaHotKey = v)), Row("Capture full screen", Shortcut(() => settings.SaveFullScreenHotKey, v => settings.SaveFullScreenHotKey = v)), Row("Copy full screen", Shortcut(() => settings.CopyFullScreenHotKey, v => settings.CopyFullScreenHotKey = v)), Help("Click a field, then press the combination. Escape clears it.\nChanges take effect when Settings closes.")));
+        panel.Children.Add(Group("Global shortcuts", Row("Capture area", Shortcut(() => settings.CaptureAreaHotKey, v => settings.CaptureAreaHotKey = v)), Row("Capture full screen", Shortcut(() => settings.SaveFullScreenHotKey, v => settings.SaveFullScreenHotKey = v)), Row("Copy full screen", Shortcut(() => settings.CopyFullScreenHotKey, v => settings.CopyFullScreenHotKey = v)), Help("Click a field, then press the combination. Print Screen works on its own; other keys need Ctrl, Shift, Alt or Win. Escape clears it.\nChanges take effect when Settings closes."), shortcutNote, keyboardSettings));
+        AutomationProperties.SetName(shortcutNote, "Shortcut availability");
+        keyboardSettings.Click += (_, _) => App.Open("ms-settings:easeofaccess-keyboard");
+        UpdateShortcutNote();
         (string Shortcut, string Description)[] shortcuts = [("Ctrl+A", "Select the whole screen"), ("Ctrl+C", "Copy to clipboard"), ("Ctrl+S", "Save to file"), ("Ctrl+Shift+S", "Save as…"), ("Ctrl+P", "Print"), ("Ctrl+Z", "Undo the last annotation"), ("Ctrl+Y / Ctrl+Shift+Z", "Redo the last annotation"), ("Enter", "Confirm"), ("Esc", "Cancel"), ("Shift+drag", "Constrain to a square or 45°"), ("Ctrl+drag", "Select and copy in one motion"), ("↑↓←→", "Nudge the selection by one point"), ("Ctrl+Enter", "Finish typing an annotation")];
         panel.Children.Add(Group("While capturing", shortcuts.Select(s => Row(s.Description, new TextBlock { Text = s.Shortcut, FontFamily = new FontFamily("Consolas"), Foreground = secondary })).ToArray()));
         return panel;
@@ -61,7 +68,7 @@ internal sealed class SettingsWindow : Window
     {
         var field = new TextBox { Text = get().ToString(), IsReadOnly = true, Width = 160, Padding = new Thickness(6), HorizontalContentAlignment = HorizontalAlignment.Center };
         field.PreviewMouseLeftButtonDown += (_, e) => { field.Focus(); field.SelectAll(); e.Handled = true; };
-        field.PreviewKeyDown += (_, e) =>
+        void Record(KeyEventArgs e)
         {
             var key = e.Key == Key.System ? e.SystemKey : e.Key;
             // WPF's Keyboard.Modifiers omits the Windows keys.
@@ -75,8 +82,26 @@ internal sealed class SettingsWindow : Window
                 field.ToolTip = "This shortcut is already assigned to another capture action."; return;
             }
             set(hotKey); field.Text = hotKey.ToString(); field.ToolTip = null;
-        };
+            UpdateShortcutNote();
+        }
+        field.PreviewKeyDown += (_, e) => Record(e);
+        // Windows usually delivers only the key-up for Print Screen.
+        field.PreviewKeyUp += (_, e) => { if ((e.Key == Key.System ? e.SystemKey : e.Key) == Key.Snapshot) Record(e); };
         return field;
+    }
+    private void UpdateShortcutNote()
+    {
+        HotKey[] current = [settings.CaptureAreaHotKey, settings.SaveFullScreenHotKey, settings.CopyFullScreenHotKey];
+        var notes = new List<string>();
+        string[] taken = unavailable.Where(key => !key.IsPrintScreen && current.Contains(key)).Select(key => key.ToString()).ToArray();
+        if (taken.Length > 0) notes.Add($"Already in use by another app: {string.Join(", ", taken)}. Choose another shortcut.");
+        bool printScreen = current.Any(key => key.IsPrintScreen);
+        if (printScreen) notes.Add(unavailable.Any(key => key.IsPrintScreen)
+            ? "Windows is using Print Screen to open screen capture. Turn off “Use the Print screen key to open screen capture” in Windows keyboard settings, then close Settings to try again."
+            : "Print Screen works when “Use the Print screen key to open screen capture” is turned off in Windows keyboard settings.");
+        shortcutNote.Text = string.Join("\n", notes);
+        shortcutNote.Visibility = notes.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        keyboardSettings.Visibility = printScreen ? Visibility.Visible : Visibility.Collapsed;
     }
     private UIElement Output()
     {

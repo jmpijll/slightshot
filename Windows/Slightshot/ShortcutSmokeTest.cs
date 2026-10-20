@@ -17,7 +17,7 @@ namespace Slightshot;
 internal static class ShortcutSmokeTest
 {
     private const ushort LeftWin = 0x5b, RightWin = 0x5c, Control = 0xa2, Shift = 0xa0, Alt = 0xa4;
-    private const ushort A = 0x41, F13 = 0x7c;
+    private const ushort A = 0x41, F13 = 0x7c, PrintScreen = 0x2c;
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
     internal static async Task RunAsync(string directory)
@@ -32,10 +32,7 @@ internal static class ShortcutSmokeTest
         try
         {
             window.Show(); window.Activate();
-            var tabs = Descendants((DependencyObject)window.Content).OfType<TabControl>().Single();
-            tabs.SelectedItem = tabs.Items.Cast<TabItem>().Single(tab => Equals(tab.Header, "Shortcuts"));
-            window.UpdateLayout();
-            await Task.Delay(250);
+            await ShowShortcutsAsync(window);
             var fields = Descendants((DependencyObject)window.Content).OfType<TextBox>()
                 .ToDictionary(field => AutomationProperties.GetName(field));
             TextBox area = fields["Capture area"], save = fields["Capture full screen"], copy = fields["Copy full screen"];
@@ -125,6 +122,15 @@ internal static class ShortcutSmokeTest
             Require(settings.CopyFullScreenHotKey == new HotKey(F13, 13) && copy.ToolTip == null, "valid chord clears duplicate feedback");
             checks.Add("Duplicate assignment remains rejected; Escape clears only the focused shortcut; a subsequent valid chord clears feedback.");
             CaptureWindow(window, Path.Combine(directory, "shortcut-combinations-window.png"));
+
+            await FocusAsync(window, area); await ChordAsync(PrintScreen);
+            Require(settings.CaptureAreaHotKey == new HotKey(PrintScreen, 0) && area.Text == "Print Screen", $"Print Screen alone records through the real field: observed field={area.Text}, model key={settings.CaptureAreaHotKey.Key}, modifiers={settings.CaptureAreaHotKey.Modifiers}");
+            var note = ShortcutNote(window);
+            Require(note.IsVisible && note.Text.Contains("“Use the Print screen key to open screen capture” is turned off"), "Settings names the Windows Print Screen setting when Print Screen is bound");
+            CaptureWindow(window, Path.Combine(directory, "shortcut-print-screen-window.png"));
+            await ChordAsync(LeftWin, F13);
+            Require(settings.CaptureAreaHotKey == new HotKey(F13, 8) && area.Text == "Win+F13" && !note.IsVisible, "replacing Print Screen hides its guidance");
+            checks.Add("Print Screen without a modifier records through native key input and shows the Windows Print Screen setting guidance; other bare keys stay ignored.");
         }
         finally
         {
@@ -134,13 +140,26 @@ internal static class ShortcutSmokeTest
             window.Close();
         }
 
+        var blockedSettings = new Settings { PlaySound = false, CaptureAreaHotKey = new(PrintScreen, 0) };
+        var blocked = new SettingsWindow(blockedSettings, false, [new HotKey(PrintScreen, 0)]) { Title = "Slightshot Settings · fixture: Print Screen registration failed" };
+        try
+        {
+            blocked.Show(); blocked.Activate();
+            await ShowShortcutsAsync(blocked);
+            var note = ShortcutNote(blocked);
+            Require(note.IsVisible && note.Text.StartsWith("Windows is using Print Screen to open screen capture. Turn off “Use the Print screen key to open screen capture”"), "a failed Print Screen registration is explained in Settings");
+            CaptureWindow(blocked, Path.Combine(directory, "shortcut-print-screen-unavailable-window.png"));
+        }
+        finally { blocked.Close(); }
+        checks.Add("With a fixture registration failure for Print Screen, Settings explains that Windows' Print Screen screen-capture setting must be turned off.");
+
         var restored = JsonSerializer.Deserialize<Settings>(JsonSerializer.Serialize(settings))!;
         Require(restored.CaptureAreaHotKey == settings.CaptureAreaHotKey && restored.SaveFullScreenHotKey == settings.SaveFullScreenHotKey
             && restored.CopyFullScreenHotKey == settings.CopyFullScreenHotKey, "recorded Windows modifiers survive settings JSON roundtrip");
         var callbacks = new List<int>();
         using (var service = new HotKeyService(callbacks.Add))
         {
-            string[] failures = service.Register(restored);
+            HotKey[] failures = service.Register(restored);
             Require(failures.Length == 0, "production RegisterHotKey accepts the recorded combinations: " + string.Join(", ", failures));
             await ChordAsync(LeftWin, F13);
             await ChordAsync(Control, RightWin, F13);
@@ -150,14 +169,38 @@ internal static class ShortcutSmokeTest
             Require(callbacks.SequenceEqual(new[] { 1, 2, 3 }), "the same keys without Windows cannot trigger the recorded global shortcuts");
         }
         checks.Add("Recorded settings JSON roundtrip preserves Windows modifiers. After Settings closes, production RegisterHotKey registration and native SendInput produce callbacks 1, 2, 3; removing Windows produces none.");
+        object? snippingSetting = Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Keyboard", "PrintScreenKeyForSnippingEnabled", null);
+        var printScreenCallbacks = new List<int>();
+        using (var service = new HotKeyService(printScreenCallbacks.Add))
+        {
+            HotKey[] failures = service.Register(new Settings { CaptureAreaHotKey = new(PrintScreen, 0), SaveFullScreenHotKey = new(F13, 0), CopyFullScreenHotKey = new(0, 0) });
+            Require(failures.SequenceEqual([new HotKey(F13, 0)]), $"RegisterHotKey accepts Print Screen alone and bare F13 stays rejected (PrintScreenKeyForSnippingEnabled={snippingSetting ?? "not set"}): " + string.Join(", ", failures));
+            await ChordAsync(PrintScreen);
+            Require(printScreenCallbacks.SequenceEqual([1]), "Print Screen triggers the capture-area global hotkey");
+            await ChordAsync(F13);
+            Require(printScreenCallbacks.SequenceEqual([1]), "bare F13 never triggers a global hotkey");
+        }
+        checks.Add("Production RegisterHotKey registers Print Screen without a modifier and native Print Screen input produces callback 1; bare F13 is rejected and produces nothing.");
         File.WriteAllText(Path.Combine(directory, "shortcut-validation.json"), JsonSerializer.Serialize(new
         {
             platform = "Windows / native WPF Settings / Win32 global hotkeys",
             sourceCommit, source = "Automated native Settings fixture with real SendInput and RegisterHotKey; screenshots are cropped composed desktop pixels.",
-            fixtureInputs = new[] { "Left Win+F13", "Right Win+F13 after Ctrl+Shift+A", "Ctrl+Win+F13", "Shift+Alt+Win+F13", "Ctrl+Shift+Alt+Win+F13", "Ctrl+Shift+A", "bare modifiers", "duplicate assignment", "Escape" },
+            printScreenKeyForSnippingEnabled = snippingSetting?.ToString() ?? "not set",
+            fixtureInputs = new[] { "Print Screen", "Print Screen registration failure (fixture)", "Left Win+F13", "Right Win+F13 after Ctrl+Shift+A", "Ctrl+Win+F13", "Shift+Alt+Win+F13", "Ctrl+Shift+Alt+Win+F13", "Ctrl+Shift+A", "bare modifiers", "duplicate assignment", "Escape" },
             recorded = new[] { restored.CaptureAreaHotKey, restored.SaveFullScreenHotKey, restored.CopyFullScreenHotKey }, globalCallbacks = callbacks, checks
         }, JsonOptions));
     }
+
+    private static async Task ShowShortcutsAsync(Window window)
+    {
+        var tabs = Descendants((DependencyObject)window.Content).OfType<TabControl>().Single();
+        tabs.SelectedItem = tabs.Items.Cast<TabItem>().Single(tab => Equals(tab.Header, "Shortcuts"));
+        window.UpdateLayout();
+        await Task.Delay(250);
+    }
+
+    private static TextBlock ShortcutNote(Window window) =>
+        Descendants((DependencyObject)window.Content).OfType<TextBlock>().Single(block => AutomationProperties.GetName(block) == "Shortcut availability");
 
     private static async Task FocusAsync(Window window, TextBox field)
     {
@@ -180,9 +223,9 @@ internal static class ShortcutSmokeTest
 
     private static void SendKey(ushort key, bool release)
     {
-        // The Windows keys are extended virtual keys; key-up reverses each
+        // The Windows and Print Screen keys are extended virtual keys; key-up reverses each
         // corresponding down event rather than bypassing WPF's keyboard state.
-        uint flags = (release ? 2u : 0) | (key is LeftWin or RightWin ? 1u : 0);
+        uint flags = (release ? 2u : 0) | (key is LeftWin or RightWin or PrintScreen ? 1u : 0);
         Input[] inputs = [new() { Type = 1, Data = new InputUnion { Keyboard = new KeyboardInput { Key = key, Flags = flags } } }];
         Require(SendInput(1, inputs, Marshal.SizeOf<Input>()) == 1, $"SendInput accepts key 0x{key:X2}, release={release}, Win32 error {Marshal.GetLastWin32Error()}");
     }
