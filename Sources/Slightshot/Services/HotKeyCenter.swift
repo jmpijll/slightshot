@@ -1,36 +1,106 @@
 import AppKit
 import Carbon.HIToolbox
+import Observation
 import OSLog
+
+/// The capture actions a user can bind to a global shortcut.
+nonisolated enum HotKeyAction: CaseIterable, Sendable {
+    case captureArea, saveFullScreen, copyFullScreen
+
+    var title: String {
+        switch self {
+        case .captureArea: "Capture area"
+        case .saveFullScreen: "Capture full screen"
+        case .copyFullScreen: "Copy full screen"
+        }
+    }
+}
+
+/// Why a recorded combination cannot become a global shortcut.
+nonisolated enum ShortcutRejection: Equatable, Sendable {
+    case interceptsTyping
+    case duplicate(HotKeyAction)
+    case unavailable
+
+    /// Checks a recorded combination for `action` against the other actions'
+    /// shortcuts. Clearing a shortcut is not a recording and is never checked.
+    /// Registration is checked separately, by `HotKeyCenter.rejection`.
+    static func check(_ combo: KeyCombo, for action: HotKeyAction,
+                      assigned: [HotKeyAction: KeyCombo]) -> ShortcutRejection? {
+        if combo.interceptsTyping { return .interceptsTyping }
+        let owner = HotKeyAction.allCases.first { $0 != action && assigned[$0] == combo }
+        return owner.map(ShortcutRejection.duplicate)
+    }
+
+    func message(for combo: KeyCombo) -> String {
+        switch self {
+        case .interceptsTyping: "\(combo.keysString) would block typing. Include ⌘ or ⌃."
+        case .duplicate(let owner): "\(combo.keysString) is already used by \(owner.title)."
+        case .unavailable: "\(combo.keysString) could not be registered."
+        }
+    }
+}
 
 /// Registers system-wide hotkeys through Carbon's `RegisterEventHotKey`.
 ///
 /// This is the only global-shortcut API that does **not** require Accessibility
 /// access, which matters a lot for a screenshot tool: the app should work the
 /// moment it launches, with only the Screen Recording prompt to clear.
+@Observable
 final class HotKeyCenter {
     static let shared = HotKeyCenter()
 
-    private var actions: [UInt32: () -> Void] = [:]
-    private var refs: [UInt32: EventHotKeyRef] = [:]
-    private var nextID: UInt32 = 1
-    private var eventHandler: EventHandlerRef?
+    /// Actions whose shortcut could not be registered by the last reload.
+    private(set) var unavailable: Set<HotKeyAction> = []
+
+    @ObservationIgnored private var bindings: [HotKeyAction: (KeyCombo, () -> Void)] = [:]
+    @ObservationIgnored private var isSuspended = false
+    @ObservationIgnored private var actions: [UInt32: () -> Void] = [:]
+    @ObservationIgnored private var refs: [UInt32: EventHotKeyRef] = [:]
+    @ObservationIgnored private var nextID: UInt32 = 1
+    @ObservationIgnored private var eventHandler: EventHandlerRef?
 
     private init() {}
 
-    /// Replaces every registration with `combos`, skipping empty or duplicate keys.
-    /// Returns the combos that could not be claimed (already taken by another app).
-    @discardableResult
-    func reload(_ combos: [(KeyCombo, () -> Void)]) -> [KeyCombo] {
+    /// Replaces every registration with `bindings`, skipping empty combos.
+    func reload(_ bindings: [HotKeyAction: (KeyCombo, () -> Void)]) {
+        self.bindings = bindings
+        registerBindings()
+    }
+
+    /// Releases the shortcuts while the Settings recorder listens, so pressing
+    /// one is recorded instead of starting a capture.
+    func setSuspended(_ suspended: Bool) {
+        guard suspended != isSuspended else { return }
+        isSuspended = suspended
+        registerBindings()
+    }
+
+    /// Why `combo` cannot become the shortcut for `action`, or nil if it can.
+    func rejection(for combo: KeyCombo, action: HotKeyAction,
+                   assigned: [HotKeyAction: KeyCombo]) -> ShortcutRejection? {
+        if let rejection = ShortcutRejection.check(combo, for: action, assigned: assigned) { return rejection }
+        guard combo != assigned[action] else { return nil }
+        var ref: EventHotKeyRef?
+        let status = RegisterEventHotKey(combo.keyCode, combo.carbonModifiers,
+                                         EventHotKeyID(signature: Self.signature, id: 0),
+                                         GetApplicationEventTarget(), 0, &ref)
+        guard status == noErr, let ref else { return .unavailable }
+        UnregisterEventHotKey(ref)
+        return nil
+    }
+
+    private func registerBindings() {
         unregisterAll()
+        guard !isSuspended else { return }
         installHandlerIfNeeded()
 
-        var failures: [KeyCombo] = []
-        var seen = Set<KeyCombo>()
-        for (combo, action) in combos {
-            guard !combo.isEmpty, seen.insert(combo).inserted else { continue }
-            if !register(combo, action: action) { failures.append(combo) }
+        var failures: Set<HotKeyAction> = []
+        for action in HotKeyAction.allCases {
+            guard let (combo, handler) = bindings[action], !combo.isEmpty else { continue }
+            if !register(combo, action: handler) { failures.insert(action) }
         }
-        return failures
+        if unavailable != failures { unavailable = failures }
     }
 
     private func register(_ combo: KeyCombo, action: @escaping () -> Void) -> Bool {

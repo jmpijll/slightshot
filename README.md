@@ -137,8 +137,11 @@ video editor adds its annotations to the saved MP4 during their chosen periods.
 
 Cancel the save panel or export to return to the video editor with your
 recording and annotations intact. A failed export also lets you return to the
-editor or retry. **Discard…** asks before removing the recording. Temporary
-source files are removed after saving, discarding, or quitting.
+editor or retry. **Discard…** asks before removing the recording. On macOS,
+quitting, logging out or updating with an unsaved recording or annotated capture
+asks you to save or copy it, discard it, or cancel; if the system stops a recording
+early, what was recorded opens in the editor. Temporary source files are removed
+after saving or discarding, and leftovers from a crash are removed at next launch.
 
 See the [timed video editor review](docs/review/timed-video-annotations/README.md)
 for native Mac and Windows before/during/after screenshots and edited MP4s.
@@ -167,7 +170,8 @@ Undo and Redo in the toolbar also work with text, blur, pixelation and numbered 
 Redo restores the original mark; adding a new annotation or starting a new selection
 clears Redo. While typing, the text field keeps its native Undo and Redo shortcuts.
 
-You can change the three capture shortcuts in Settings.
+You can change the three capture shortcuts in Settings. On macOS, a shortcut needs ⌘ or ⌃
+unless it uses a function key, and Settings refuses one that another action already uses.
 
 | Action | macOS | Windows |
 | --- | --- | --- |

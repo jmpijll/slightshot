@@ -87,6 +87,7 @@ public partial class App : System.Windows.Application
         if (!ownsInstance) { Shutdown(); return; }
         settings = Settings.Load(out string? settingsNotice);
         recording = new RecordingCoordinator(settings);
+        SessionEnding += (_, args) => args.Cancel = recording.KeepForSessionEnd();
         trayIcon = CreateTrayIcon();
         tray = new Forms.NotifyIcon { Icon = trayIcon, Text = "Slightshot", Visible = true };
         tray.DoubleClick += (_, _) => Dispatcher.InvokeAsync(BeginCapture);
@@ -96,6 +97,7 @@ public partial class App : System.Windows.Application
         hotKeys = new HotKeyService(id => Dispatcher.InvokeAsync(() => { if (id == 1) BeginCapture(); else FullScreen(id == 2 ? CaptureAction.Save : CaptureAction.Copy); }));
         UpdateSettings();
         if (settingsNotice != null) tray.ShowBalloonTip(8000, "Settings reset", settingsNotice, Forms.ToolTipIcon.Warning);
+        recording.Recover();
     }
 
     private void UpdateSettings()
