@@ -1,0 +1,14 @@
+diff --git a/Tests/SlightshotTests/ApplicationCommandInboxTests.swift b/Tests/SlightshotTests/ApplicationCommandInboxTests.swift
+index cfdb51b..3182697 100644
+--- a/Tests/SlightshotTests/ApplicationCommandInboxTests.swift
++++ b/Tests/SlightshotTests/ApplicationCommandInboxTests.swift
+@@ -94,6 +94,9 @@ struct ApplicationCommandInboxTests {
+         try owner.startReceiving { received.append($0) }
+         #expect(received == [.capture(.captureArea)])
+         try duplicate.send(.capture(.copyFullScreen))
++        if let stall = ProcessInfo.processInfo.environment["INBOX58_STALL_SECONDS"].flatMap(Double.init) {
++            usleep(useconds_t(stall * 1_000_000))
++        }
+         for _ in 0..<40 where received.count < 2 {
+             try await Task.sleep(for: .milliseconds(50))
+         }

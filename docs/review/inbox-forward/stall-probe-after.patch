@@ -1,0 +1,12 @@
+--- a/Tests/SlightshotTests/ApplicationCommandInboxTests.swift	2026-10-20 13:34:03
++++ b/Tests/SlightshotTests/ApplicationCommandInboxTests.swift	2026-10-20 13:41:03
+@@ -99,6 +99,9 @@
+         try owner.startReceiving { deliver.yield($0) }
+         #expect(await deliveries.next() == .capture(.captureArea))
+         try duplicate.send(.capture(.copyFullScreen))
++        if let stall = ProcessInfo.processInfo.environment["INBOX58_STALL_SECONDS"].flatMap(Double.init) {
++            usleep(useconds_t(stall * 1_000_000))
++        }
+         #expect(await deliveries.next() == .capture(.copyFullScreen))
+         #expect(try owner.takePending() == [])
+         owner.stopReceiving()
