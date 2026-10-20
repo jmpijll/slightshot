@@ -26,6 +26,24 @@ jobs:
           DOTNET_INSTALL_DIR: ${{ runner.temp }}/dotnet
         with:
           dotnet-version: '10.0.x'
+      - name: Lint workflows and shell scripts
+        run: |
+          tools="$RUNNER_TEMP/lint-tools"
+          mkdir -p "$tools"
+          cd "$tools"
+          curl -sSfLO https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          curl -sSfLO https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.gz
+          sha256sum -c - <<'EOF'
+          8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  actionlint_1.7.12_linux_amd64.tar.gz
+          b7af85e41cc99489dcc21d66c6d5f3685138f06d34651e6d34b42ec6d54fe6f6  shellcheck-v0.11.0.linux.x86_64.tar.gz
+          EOF
+          tar -xzf actionlint_1.7.12_linux_amd64.tar.gz actionlint
+          tar -xzf shellcheck-v0.11.0.linux.x86_64.tar.gz --strip-components=1 shellcheck-v0.11.0/shellcheck
+          cd "$GITHUB_WORKSPACE"
+          PATH="$tools:$PATH"
+          shellcheck --version
+          shellcheck Scripts/*.sh
+          actionlint -shellcheck "$tools/shellcheck"
       - name: Test notarisation release gates
         run: python3 -m unittest discover -s Tests -v
       - name: Test selection, layout and output geometry
