@@ -1,5 +1,4 @@
 import AppKit
-import UserNotifications
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: StatusItemController?
@@ -174,14 +173,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func requestNotificationAuthorizationIfNeeded() {
-        guard Settings.shared.showNotification, Bundle.main.bundleIdentifier != nil else { return }
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert]) { granted, error in
-            if let error {
-                Log.app.error("Notification authorisation failed: \(error.localizedDescription, privacy: .public)")
-            } else {
-                Log.app.debug("Notification authorisation granted: \(granted)")
-            }
-        }
+        guard Settings.shared.showNotification else { return }
+        Task { _ = await SaveNotification.requestAuthorization() }
     }
 }
 

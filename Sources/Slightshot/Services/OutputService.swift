@@ -24,9 +24,8 @@ enum OutputService {
 
     // MARK: - Clipboard
 
-    static func copyToClipboard(_ image: CGImage) {
+    static func copyToClipboard(_ image: CGImage, to pasteboard: NSPasteboard = .general) {
         let rep = NSBitmapImageRep(cgImage: image)
-        let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
 
         let item = NSPasteboardItem()
@@ -37,7 +36,6 @@ enum OutputService {
             item.setData(tiff, forType: .tiff)
         }
         pasteboard.writeObjects([item])
-        feedback(title: "Copied to clipboard")
     }
 
     static func copyToClipboard(text: String) {
@@ -51,12 +49,6 @@ enum OutputService {
     @discardableResult
     static func save(_ image: CGImage) -> URL? {
         let settings = Settings.shared
-        let format = settings.imageFormat
-        guard let data = Renderer.encode(image, as: format, quality: settings.jpegQuality) else {
-            presentError("Slightshot could not encode the image.")
-            return nil
-        }
-
         let directory = settings.saveDirectory
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -66,22 +58,18 @@ enum OutputService {
         }
 
         let url = uniqueURL(in: directory, base: filename(size: CGSize(width: image.width, height: image.height)),
-                            ext: format.fileExtension)
-        do {
-            try data.write(to: url, options: .atomic)
-        } catch {
-            presentError("Could not save to \(url.path): \(error.localizedDescription)")
-            return nil
-        }
-
-        if settings.copyAfterSave { copyToClipboard(image) }
-        feedback(title: "Saved", body: url.lastPathComponent, fileURL: url)
-        return url
+                            ext: settings.imageFormat.fileExtension)
+        return write(image, to: url)
     }
 
     /// Shows a standard save panel, starting in the configured folder.
     @discardableResult
-    static func saveAs(_ image: CGImage) -> URL? {
+    static func saveAs(_ image: CGImage, chooseURL: @MainActor (CGImage) -> URL? = runSavePanel) -> URL? {
+        guard let url = chooseURL(image) else { return nil }
+        return write(image, to: url)
+    }
+
+    private static func runSavePanel(for image: CGImage) -> URL? {
         let settings = Settings.shared
         let format = settings.imageFormat
 
@@ -94,17 +82,27 @@ enum OutputService {
         panel.level = .popUpMenu   // above the capture overlay
 
         NSApp.activate(ignoringOtherApps: true)
-        guard panel.runModal() == .OK, let url = panel.url,
-              let data = Renderer.encode(image, as: format, quality: settings.jpegQuality)
-        else { return nil }
+        return panel.runModal() == .OK ? panel.url : nil
+    }
 
+    /// Save and Save As both end here, so each successful save copies and notifies once.
+    static func write(_ image: CGImage, to url: URL, pasteboard: NSPasteboard = .general) -> URL? {
+        let settings = Settings.shared
+        guard let data = Renderer.encode(image, as: settings.imageFormat, quality: settings.jpegQuality) else {
+            presentError("Slightshot could not encode the image.")
+            return nil
+        }
         do {
             try data.write(to: url, options: .atomic)
         } catch {
             presentError("Could not save to \(url.path): \(error.localizedDescription)")
             return nil
         }
-        if settings.copyAfterSave { copyToClipboard(image) }
+
+        if settings.copyAfterSave { copyToClipboard(image, to: pasteboard) }
+        if settings.showNotification {
+            SaveNotification.post(savedFile: url, image: image, copied: settings.copyAfterSave)
+        }
         return url
     }
 
@@ -176,20 +174,6 @@ enum OutputService {
         }
     }
 
-    private static func feedback(title: String, body: String? = nil, fileURL: URL? = nil) {
-        guard Settings.shared.showNotification else { return }
-        let content = UNMutableNotificationContent()
-        content.title = title
-        if let body { content.body = body }
-        content.sound = nil
-        if let fileURL,
-           let attachment = try? UNNotificationAttachment(identifier: fileURL.lastPathComponent, url: fileURL) {
-            content.attachments = [attachment]
-        }
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request)
-    }
-
     static func presentError(_ message: String) {
         Log.output.error("\(message, privacy: .public)")
         let alert = NSAlert()
@@ -199,6 +183,96 @@ enum OutputService {
         alert.addButton(withTitle: "OK")
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()
+    }
+}
+
+/// The "Show a notification after saving" setting.
+enum SaveNotification {
+    /// macOS moves an attachment file into its own store when the notification is added,
+    /// so the notification carries a thumbnail copy and never the saved file itself.
+    static let attachmentDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("SaveNotificationAttachments", isDirectory: true)
+    static let thumbnailMaxPixels = 640
+
+    /// Notification Center needs an app bundle; an unbundled `swift run` binary has none.
+    private static var center: UNUserNotificationCenter? {
+        Bundle.main.bundleIdentifier == nil ? nil : .current()
+    }
+
+    static var settingsURL: URL {
+        let id = Bundle.main.bundleIdentifier.map { "?id=\($0)" } ?? ""
+        return URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension\(id)")!
+    }
+
+    /// Tests replace this to count requests instead of showing them.
+    static var deliver: @MainActor (UNNotificationRequest) -> Void = add
+
+    static func post(savedFile: URL, image: CGImage, copied: Bool) {
+        let content = content(savedFile: savedFile, image: image, copied: copied)
+        deliver(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
+    }
+
+    private static func add(_ request: UNNotificationRequest) {
+        Task {
+            do {
+                try await center?.add(request)
+            } catch {
+                Log.output.error("Save notification failed: \(error.localizedDescription, privacy: .public)")
+            }
+            // Normally already moved into the notification store; this removes a copy it rejected.
+            for attachment in request.content.attachments { try? FileManager.default.removeItem(at: attachment.url) }
+        }
+    }
+
+    static func content(savedFile: URL, image: CGImage, copied: Bool) -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        content.title = copied ? "Saved and copied to clipboard" : "Saved"
+        content.body = savedFile.lastPathComponent
+        content.sound = nil
+        if let attachment = thumbnailAttachment(of: image) { content.attachments = [attachment] }
+        return content
+    }
+
+    /// Asks only while undecided; afterwards macOS answers with the stored choice.
+    static func requestAuthorization() async -> Bool {
+        guard let center else { return false }
+        do {
+            return try await center.requestAuthorization(options: [.alert])
+        } catch {
+            Log.app.error("Notification authorisation failed: \(error.localizedDescription, privacy: .public)")
+            return false
+        }
+    }
+
+    static func isDenied() async -> Bool {
+        guard let center else { return false }
+        return await center.notificationSettings().authorizationStatus == .denied
+    }
+
+    private static func thumbnailAttachment(of image: CGImage) -> UNNotificationAttachment? {
+        let scale = min(1, CGFloat(thumbnailMaxPixels) / CGFloat(max(image.width, image.height)))
+        let width = max(1, Int((CGFloat(image.width) * scale).rounded()))
+        let height = max(1, Int((CGFloat(image.height) * scale).rounded()))
+        guard let space = CGColorSpace(name: CGColorSpace.sRGB),
+              let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8,
+                                      bytesPerRow: 0, space: space,
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        context.interpolationQuality = .high
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        guard let thumbnail = context.makeImage(),
+              let png = Renderer.encode(thumbnail, as: .png, quality: 1) else { return nil }
+
+        let url = attachmentDirectory.appendingPathComponent(UUID().uuidString + ".png")
+        do {
+            try FileManager.default.createDirectory(at: attachmentDirectory, withIntermediateDirectories: true)
+            try png.write(to: url, options: .atomic)
+            return try UNNotificationAttachment(identifier: url.lastPathComponent, url: url)
+        } catch {
+            try? FileManager.default.removeItem(at: url)
+            Log.output.error("Save notification thumbnail failed: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
     }
 }
 

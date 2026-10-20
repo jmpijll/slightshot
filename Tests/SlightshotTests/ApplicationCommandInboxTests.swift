@@ -49,13 +49,31 @@ struct ApplicationCommandInboxTests {
         let directory = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         var now = Date(timeIntervalSince1970: 1_000)
-        let owner = try ApplicationCommandInbox(directory: directory, now: { now })
+        var drops: [Drop] = []
+        let owner = try ApplicationCommandInbox(directory: directory, now: { now },
+                                                reportExpired: { drops.append(Drop($0, $1)) })
         let duplicate = try ApplicationCommandInbox(directory: directory, now: { now })
         try duplicate.send(.capture(.captureArea))
         #expect(try owner.takePending() == [.capture(.captureArea)])
         try duplicate.send(.capture(.captureArea))
         now = Date(timeIntervalSince1970: 1_011)
         #expect(try owner.takePending() == [])
+        #expect(drops == [Drop(.capture(.captureArea), 11)])
+    }
+
+    @Test func forwarderReportsStaleRequestsItDiscards() throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        var now = Date(timeIntervalSince1970: 1_000)
+        var drops: [Drop] = []
+        let owner = try ApplicationCommandInbox(directory: directory, now: { now })
+        let duplicate = try ApplicationCommandInbox(directory: directory, now: { now },
+                                                    reportExpired: { drops.append(Drop($0, $1)) })
+        try duplicate.send(.capture(.saveFullScreen))
+        now = Date(timeIntervalSince1970: 1_012)
+        try duplicate.send(.reopen)
+        #expect(drops == [Drop(.capture(.saveFullScreen), 12)])
+        #expect(try owner.takePending() == [.reopen])
     }
 
     @Test func inboxRejectsExcessRequestsInsteadOfGrowingWithoutBound() throws {
@@ -84,22 +102,75 @@ struct ApplicationCommandInboxTests {
         #expect(try replacement.takePending() == [])
     }
 
-    @Test func ownerReceivesColdAndWarmForwardedCommandsOnce() async throws {
+    // Other suites share the main actor and can stall it past the 10 s expiry under load,
+    // so freeze the clock and wait for the delivery itself instead of a time budget.
+    @Test(.timeLimit(.minutes(1)))
+    func ownerReceivesColdAndWarmForwardedCommandsOnce() async throws {
         let directory = temporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
-        let owner = try ApplicationCommandInbox(directory: directory)
-        let duplicate = try ApplicationCommandInbox(directory: directory)
-        var received: [ApplicationCommand] = []
+        let now = Date(timeIntervalSince1970: 1_000)
+        let owner = try ApplicationCommandInbox(directory: directory, now: { now })
+        let duplicate = try ApplicationCommandInbox(directory: directory, now: { now })
+        let (received, deliver) = AsyncStream.makeStream(of: ApplicationCommand.self)
+        var deliveries = received.makeAsyncIterator()
         try duplicate.send(.capture(.captureArea))
-        try owner.startReceiving { received.append($0) }
-        #expect(received == [.capture(.captureArea)])
+        try owner.startReceiving { deliver.yield($0) }
+        #expect(await deliveries.next() == .capture(.captureArea))
         try duplicate.send(.capture(.copyFullScreen))
-        for _ in 0..<40 where received.count < 2 {
-            try await Task.sleep(for: .milliseconds(50))
-        }
-        #expect(received == [.capture(.captureArea), .capture(.copyFullScreen)])
+        #expect(await deliveries.next() == .capture(.copyFullScreen))
         #expect(try owner.takePending() == [])
         owner.stopReceiving()
+        deliver.finish()
+        #expect(await deliveries.next() == nil)
+    }
+
+    // The clock advances between the forward and the owner's drain, as when the owner's
+    // main thread is busy encoding or writing a capture.
+    @Test(.timeLimit(.minutes(1)))
+    func ownerStallWithinExpiryStillDeliversOnce() async throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        var now = Date(timeIntervalSince1970: 1_000)
+        var drops: [Drop] = []
+        let owner = try ApplicationCommandInbox(directory: directory, now: { now },
+                                                reportExpired: { drops.append(Drop($0, $1)) })
+        let duplicate = try ApplicationCommandInbox(directory: directory, now: { now })
+        let (received, deliver) = AsyncStream.makeStream(of: ApplicationCommand.self)
+        var deliveries = received.makeAsyncIterator()
+        try owner.startReceiving { deliver.yield($0) }
+        try duplicate.send(.capture(.captureArea))
+        now = Date(timeIntervalSince1970: 1_010)
+        #expect(await deliveries.next() == .capture(.captureArea))
+        #expect(try owner.takePending() == [])
+        owner.stopReceiving()
+        deliver.finish()
+        #expect(await deliveries.next() == nil)
+        #expect(drops.isEmpty)
+    }
+
+    @Test(.timeLimit(.minutes(1)))
+    func ownerStallBeyondExpiryDropsAndReportsTheCommand() async throws {
+        let directory = temporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        var now = Date(timeIntervalSince1970: 1_000)
+        let (dropped, reportDrop) = AsyncStream.makeStream(of: Drop.self)
+        var drops = dropped.makeAsyncIterator()
+        let owner = try ApplicationCommandInbox(directory: directory, now: { now },
+                                                reportExpired: { reportDrop.yield(Drop($0, $1)) })
+        let duplicate = try ApplicationCommandInbox(directory: directory, now: { now })
+        let (received, deliver) = AsyncStream.makeStream(of: ApplicationCommand.self)
+        var deliveries = received.makeAsyncIterator()
+        try owner.startReceiving { deliver.yield($0) }
+        try duplicate.send(.capture(.captureArea))
+        now = Date(timeIntervalSince1970: 1_011)
+        #expect(await drops.next() == Drop(.capture(.captureArea), 11))
+        try duplicate.send(.reopen)
+        #expect(await deliveries.next() == .reopen)
+        owner.stopReceiving()
+        deliver.finish()
+        reportDrop.finish()
+        #expect(await deliveries.next() == nil)
+        #expect(await drops.next() == nil)
     }
 
     @Test func duplicateCannotBecomeAnotherCommandReceiver() throws {
@@ -114,6 +185,16 @@ struct ApplicationCommandInboxTests {
         try duplicate.send(.reopen)
         #expect(received.isEmpty)
         #expect(try owner.takePending() == [.reopen])
+    }
+
+    private struct Drop: Equatable, Sendable {
+        let command: ApplicationCommand
+        let age: TimeInterval
+
+        init(_ command: ApplicationCommand, _ age: TimeInterval) {
+            self.command = command
+            self.age = age
+        }
     }
 
     private func temporaryDirectory() -> URL {
