@@ -14,8 +14,7 @@ on:
         default: false
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
 
 concurrency:
   group: release
@@ -31,12 +30,16 @@ jobs:
 
   release:
     needs: windows
-    name: Build, notarise and publish
+    name: Build, notarise and sign the feed
     # Same macOS 27/Xcode toolchain as regular CI. Optional dedicated Mac runner.
     runs-on: ${{ fromJSON(vars.MACOS_RELEASE_RUNNER || '"xcode-27"') }}
     timeout-minutes: 90
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      publish: ${{ steps.version.outputs.publish }}
+      feed_base: ${{ steps.appcast.outputs.base }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
 
@@ -56,6 +59,17 @@ jobs:
           # A queued tag or manual branch may contain an outdated feed. Fetch
           # the canonical publication record without changing the source HEAD.
           git fetch --no-tags origin main
+          if [[ "$PUBLISH" == true ]]; then
+            # Publication commits the feed onto main, so only main's history may ship.
+            if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$GITHUB_REF" != refs/heads/main ]]; then
+              echo "::error::Manual publication must run on main, not $GITHUB_REF."
+              exit 1
+            fi
+            git merge-base --is-ancestor HEAD FETCH_HEAD || {
+              echo "::error::Release source $(git rev-parse HEAD) is not contained in origin/main."
+              exit 1
+            }
+          fi
           git show FETCH_HEAD:public/appcast.xml > "$RUNNER_TEMP/published-appcast.xml"
           BUILD="$(python3 Scripts/release_metadata.py --version "$VERSION" \
             --appcast public/appcast.xml --appcast "$RUNNER_TEMP/published-appcast.xml")"
@@ -137,7 +151,7 @@ jobs:
         run: ./Scripts/notarize.sh "build/Slightshot-${{ steps.version.outputs.version }}.dmg"
 
       - name: Preserve signed and notarised disk image
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: Slightshot-macos-signed-dmg
           path: build/Slightshot-${{ steps.version.outputs.version }}.dmg
@@ -146,7 +160,7 @@ jobs:
 
       - name: Preserve notarisation diagnostics
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: notarisation-diagnostics
           path: build/*.notary-*.json
@@ -154,19 +168,26 @@ jobs:
           retention-days: 7
 
       - name: Generate the Sparkle appcast
+        id: appcast
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           SPARKLE_VERSION=2.10.0
+          # GitHub's published digest for the official Sparkle-2.10.0.tar.xz asset.
+          SPARKLE_SHA256=c2bf58aa8387266ac179357b1415d6f2635f044da8be41042af32425dae6da0c
           curl -fsSL -o /tmp/sparkle.tar.xz \
             "https://github.com/sparkle-project/Sparkle/releases/download/${SPARKLE_VERSION}/Sparkle-${SPARKLE_VERSION}.tar.xz"
+          echo "$SPARKLE_SHA256  /tmp/sparkle.tar.xz" | shasum -a 256 -c -
           mkdir -p /tmp/sparkle && tar -xf /tmp/sparkle.tar.xz -C /tmp/sparkle
 
           mkdir -p dist
           cp "build/Slightshot-${VERSION}.dmg" dist/
-          # Keep previously published entries so older versions can still update.
-          cp public/appcast.xml dist/appcast.xml 2>/dev/null || true
+          # Extend the canonical feed on main so an older checkout cannot drop
+          # published entries. Its blob ID detects a feed change before the push.
+          git fetch --no-tags origin main
+          git show FETCH_HEAD:public/appcast.xml > dist/appcast.xml
+          echo "base=$(git rev-parse FETCH_HEAD:public/appcast.xml)" >> "$GITHUB_OUTPUT"
 
           umask 077
           trap 'rm -f /tmp/sparkle_key' EXIT
@@ -178,46 +199,194 @@ jobs:
           rm -f /tmp/sparkle_key
           cat dist/appcast.xml
 
-      - name: Download verified Windows installers and portable archives
-        uses: actions/download-artifact@v4
-        with:
-          name: Slightshot-windows-release-assets
-          path: build/windows-release
-
-      - name: Publish the GitHub release
-        if: steps.version.outputs.publish == 'true'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: Slightshot ${{ steps.version.outputs.version }}
-          generate_release_notes: true
-          fail_on_unmatched_files: true
-          files: |
-            build/Slightshot-${{ steps.version.outputs.version }}.dmg
-            build/windows-release/Slightshot-windows-*.zip
-            build/windows-release/Slightshot-windows-*-setup.exe
-
-      - name: Commit the regenerated appcast
-        if: steps.version.outputs.publish == 'true'
-        run: |
-          mkdir -p public
-          cp dist/appcast.xml public/appcast.xml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/appcast.xml
-          git diff --staged --quiet && echo "appcast unchanged" && exit 0
-          git commit -m "Publish appcast for v${{ steps.version.outputs.version }}"
-          git push origin HEAD:main
-
-      # A push made with GITHUB_TOKEN does not trigger the Pages push workflow.
-      - name: Deploy the update feed
-        if: steps.version.outputs.publish == 'true'
+      - name: Verify the appcast signature
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh workflow run pages.yml --ref main
+          VERSION: ${{ steps.version.outputs.version }}
+          BUILD: ${{ steps.version.outputs.build }}
+          SPARKLE_PUBLIC_KEY: ${{ secrets.SPARKLE_PUBLIC_KEY }}
+          APPCAST: dist/appcast.xml
+          DMG: build/Slightshot-${{ steps.version.outputs.version }}.dmg
+          APP_INFO_PLIST: build/Slightshot.app/Contents/Info.plist
+          DOWNLOAD_URL: https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/Slightshot-${{ steps.version.outputs.version }}.dmg
+        run: |
+          set -o pipefail
+          cat > "$RUNNER_TEMP/verify_appcast.swift" <<'SWIFT'
+          import CryptoKit
+          import Foundation
+
+          func fail(_ message: String) -> Never {
+              print("::error::\(message)")
+              exit(1)
+          }
+
+          let env = ProcessInfo.processInfo.environment
+          let dmg = URL(fileURLWithPath: env["DMG"]!)
+          let feed = try XMLDocument(contentsOf: URL(fileURLWithPath: env["APPCAST"]!))
+          let items = try feed.nodes(forXPath: "/rss/channel/item[*[local-name()='version']='\(env["BUILD"]!)']")
+          guard items.count == 1, let enclosure = try items[0].nodes(forXPath: "enclosure").first as? XMLElement
+          else { fail("Expected exactly one appcast item for build \(env["BUILD"]!).") }
+          let attribute = { (name: String) in enclosure.attribute(forName: name)?.stringValue ?? "" }
+          let shortVersion = try items[0].nodes(forXPath: "*[local-name()='shortVersionString']").first?.stringValue
+          guard shortVersion == env["VERSION"] else { fail("Appcast version \(shortVersion ?? "missing") is not \(env["VERSION"]!).") }
+          guard attribute("url") == env["DOWNLOAD_URL"] else { fail("Enclosure URL \(attribute("url")) is not \(env["DOWNLOAD_URL"]!).") }
+          let archive = try Data(contentsOf: dmg)
+          guard attribute("length") == String(archive.count) else { fail("Enclosure length does not match the disk image.") }
+          guard let signature = Data(base64Encoded: attribute("sparkle:edSignature")) else { fail("Enclosure has no EdDSA signature.") }
+
+          let info = try PropertyListSerialization.propertyList(
+              from: Data(contentsOf: URL(fileURLWithPath: env["APP_INFO_PLIST"]!)), format: nil) as? [String: Any]
+          let keys = [("SPARKLE_PUBLIC_KEY", env["SPARKLE_PUBLIC_KEY"]), ("SUPublicEDKey", info?["SUPublicEDKey"] as? String)]
+          for (name, value) in keys {
+              guard let raw = value.flatMap({ Data(base64Encoded: $0) }),
+                    let key = try? Curve25519.Signing.PublicKey(rawRepresentation: raw)
+              else { fail("\(name) is not a valid Ed25519 public key.") }
+              guard key.isValidSignature(signature, for: archive) else { fail("Appcast signature does not verify with \(name).") }
+              print("Appcast signature for \(dmg.lastPathComponent) verifies with \(name).")
+          }
+          SWIFT
+          swift "$RUNNER_TEMP/verify_appcast.swift" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve the signed appcast
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: Slightshot-appcast
+          path: dist/appcast.xml
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Remove signing credentials
         if: always()
         run: |
           rm -f /tmp/certificate.p12 /tmp/sparkle_key
           security delete-keychain build.keychain 2>/dev/null || true
+
+  # Publishes only the artifacts verified above. Rerunning this failed job reuses
+  # them; each step converges, so a rerun finishes a partial publication.
+  publish:
+    needs: [windows, release]
+    if: needs.release.outputs.publish == 'true'
+    name: Publish release and update feed
+    runs-on: ubuntu-latest
+    # Covers uploads plus the bounded download wait and Pages deployment below.
+    timeout-minutes: 60
+    permissions:
+      contents: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERSION: ${{ needs.release.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+
+      - name: Download the signed disk image
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: Slightshot-macos-signed-dmg
+          path: release-assets
+
+      - name: Download verified Windows installers and portable archives
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: Slightshot-windows-release-assets
+          path: release-assets
+
+      - name: Download the signed appcast
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: Slightshot-appcast
+          path: feed
+
+      # GitHub ignores the release target when the tag already exists.
+      - name: Check the version tag
+        run: |
+          TAG="v$VERSION"
+          if git ls-remote --exit-code origin "refs/tags/$TAG" > /dev/null; then
+            git fetch --no-tags --force origin "refs/tags/$TAG:refs/tags/$TAG"
+            tagged="$(git rev-parse "refs/tags/$TAG^{commit}")"
+            [[ "$tagged" == "$GITHUB_SHA" ]] || {
+              echo "::error::$TAG points at $tagged, not the release source $GITHUB_SHA."
+              exit 1
+            }
+          else
+            status=$?
+            [[ "$status" == 2 ]] || exit "$status"
+          fi
+
+      - name: Publish the GitHub release
+        run: |
+          TAG="v$VERSION"
+          assets=(
+            "release-assets/Slightshot-$VERSION.dmg"
+            release-assets/Slightshot-windows-x64.zip
+            release-assets/Slightshot-windows-arm64.zip
+            release-assets/Slightshot-windows-x64-setup.exe
+            release-assets/Slightshot-windows-arm64-setup.exe
+          )
+          if ! draft="$(gh release view "$TAG" --json isDraft --jq .isDraft)"; then
+            gh release create "$TAG" --draft --target "$GITHUB_SHA" \
+              --title "Slightshot $VERSION" --generate-notes "${assets[@]}"
+          elif [[ "$draft" == true ]]; then
+            gh release upload "$TAG" --clobber "${assets[@]}"
+          fi
+          # An earlier attempt's public release is reused only if it has these bytes.
+          uploaded="$(gh release view "$TAG" --json assets --jq '.assets[] | "\(.name) \(.digest)"')"
+          for asset in "${assets[@]}"; do
+            expected="$(basename "$asset") sha256:$(shasum -a 256 "$asset" | cut -d' ' -f1)"
+            grep -qxF "$expected" <<< "$uploaded" || {
+              echo "::error::$TAG does not carry this run's $(basename "$asset")."
+              exit 1
+            }
+          done
+          gh release edit "$TAG" --draft=false
+
+      # Three gate runs of at most four minutes each, plus one minute of waits.
+      - name: Wait for public downloads
+        timeout-minutes: 15
+        run: |
+          for attempt in 1 2 3; do
+            python3 Scripts/release_metadata.py --check-downloads feed/appcast.xml && exit 0
+            sleep $((attempt * 10))
+          done
+          echo "::error::The appcast's downloads are not publicly available."
+          exit 1
+
+      - name: Commit the appcast onto main
+        env:
+          FEED_BASE: ${{ needs.release.outputs.feed_base }}
+          GIT_AUTHOR_NAME: github-actions[bot]
+          GIT_AUTHOR_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+          GIT_COMMITTER_NAME: github-actions[bot]
+          GIT_COMMITTER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: |
+          blob="$(git hash-object -w feed/appcast.xml)"
+          export GIT_INDEX_FILE="$RUNNER_TEMP/feed-index"
+          for attempt in 1 2 3 4 5; do
+            git fetch --no-tags origin main
+            current="$(git rev-parse FETCH_HEAD:public/appcast.xml)"
+            if [[ "$current" == "$blob" ]]; then
+              echo "main already publishes this appcast."
+              exit 0
+            fi
+            if [[ "$current" != "$FEED_BASE" ]]; then
+              echo "::error::public/appcast.xml changed on main after this feed was generated."
+              exit 1
+            fi
+            git read-tree FETCH_HEAD
+            git update-index --cacheinfo "100644,$blob,public/appcast.xml"
+            commit="$(git commit-tree "$(git write-tree)" -p FETCH_HEAD -m "Publish appcast for v$VERSION")"
+            git push origin "$commit:refs/heads/main" && exit 0
+            sleep $((attempt * 10))
+          done
+          echo "::error::main kept moving; the appcast was not pushed after 5 attempts."
+          exit 1
+
+      # A push made with GITHUB_TOKEN does not trigger the Pages push workflow.
+      - name: Deploy the update feed
+        timeout-minutes: 20
+        run: |
+          run_id="$(gh api -X POST "repos/$GITHUB_REPOSITORY/actions/workflows/pages.yml/dispatches" \
+            -f ref=main -F return_run_details=true --jq .workflow_run_id)"
+          echo "Pages deployment: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$run_id"
+          gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --exit-status --interval 15
