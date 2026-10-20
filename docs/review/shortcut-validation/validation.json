@@ -1,10 +1,10 @@
 {
   "issue": 43,
   "platform": "macOS 27.0.1 arm64",
-  "sourceCommit": "00ac96f",
+  "sourceCommit": "7ac08f4",
   "build": "Scripts/bundle.sh, copied with bundle id com.jmpijll.slightshot.review43, no SUFeedURL or URL types, ad-hoc signed",
   "interaction": "automated: review_driver.m injected with DYLD_INSERT_LIBRARIES posts mouse and key events into the app's own event queue",
-  "storedFormat": "keyCode:carbonModifiers (25:768 is Cmd-Shift-9, 105:0 is F13)",
+  "storedFormat": "keyCode:carbonModifiers (25:768 is Cmd-Shift-9, 49:256 is Cmd-Space, 105:0 is F13)",
   "carbonProbe": {
     "note": "RegisterEventHotKey from a standalone process on the same Mac",
     "sameProcessDuplicate": -9878,
@@ -35,6 +35,14 @@
       }
     },
     {
+      "step": "Capture area: press bare A",
+      "stored": {
+        "captureArea": "25:768",
+        "copyFullScreen": "26:768",
+        "saveFullScreen": "28:768"
+      }
+    },
+    {
       "probeCmdShift9AfterRecording": -9878,
       "step": "Copy full screen: press Cmd-Shift-8",
       "stored": {
@@ -47,7 +55,7 @@
       "step": "Copy full screen: press Cmd-Space",
       "stored": {
         "captureArea": "25:768",
-        "copyFullScreen": "26:768",
+        "copyFullScreen": "49:256",
         "saveFullScreen": "28:768"
       }
     },
@@ -119,5 +127,6 @@
         "saveFullScreen": "49:6144"
       }
     }
-  ]
+  ],
+  "contentionTest": "ShortcutValidationTests.anotherAppsExclusiveHotKeyDoesNotBlockRegistration: a python3 helper holds Ctrl-Option-Shift-Cmd-F18 exclusively; Slightshot still registers it and keeps it after the helper exits"
 }

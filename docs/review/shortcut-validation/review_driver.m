@@ -173,6 +173,10 @@ static void run(void) {
                 after(0.8, ^{
                     record(@"Capture area: press Shift-A", @{@"probeCmdShift9WhileRecording": @(whileRecording)});
                     requestShot(@"mac-shift-only-rejected", window.windowNumber, ^{
+                        pressKey(kVK_ANSI_A, 0, @"a");
+                        after(0.8, ^{
+                        record(@"Capture area: press bare A", @{});
+                        requestShot(@"mac-bare-key-rejected", window.windowNumber, ^{
                         pressKey(kVK_Return, 0, @"\r");
                         after(0.5, ^{
                             OSStatus afterRecording = probeCaptureAreaHotKey();
@@ -187,14 +191,13 @@ static void run(void) {
                                         pressKey(kVK_Space, NSEventModifierFlagCommand, @" ");
                                         after(0.8, ^{
                                             record(@"Copy full screen: press Cmd-Space", @{});
-                                            requestShot(@"mac-reserved-rejected", window.windowNumber, ^{
-                                                pressKey(kVK_Return, 0, @"\r");
-                                                after(0.5, ^{ acceptShortcuts(); });
-                                            });
+                                            acceptShortcuts();
                                         });
                                     });
                                 });
                             });
+                        });
+                        });
                         });
                     });
                 });
