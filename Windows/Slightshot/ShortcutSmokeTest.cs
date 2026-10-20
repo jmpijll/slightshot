@@ -255,7 +255,7 @@ internal static class ShortcutSmokeTest
     private static void CaptureWindow(Window window, string path)
     {
         IntPtr handle = new WindowInteropHelper(window).Handle;
-        Require(window.IsVisible && GetForegroundWindow() == handle, "captured native Settings window is visible in the foreground");
+        Require(window.IsVisible && GetForegroundWindow() == handle, $"captured native Settings window \"{window.Title}\" is visible in the foreground; foreground is {DescribeForeground()}");
         Require(RecordingNative.GetWindowRect(handle, out var rect), "native Settings window has capture bounds");
         var bounds = new System.Drawing.Rectangle(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
         Require(bounds.Width > 0 && bounds.Height > 0 && Forms.Screen.FromHandle(handle).Bounds.Contains(bounds), "native Settings capture fits on its monitor");
@@ -284,7 +284,18 @@ internal static class ShortcutSmokeTest
     [StructLayout(LayoutKind.Sequential)] private struct KeyboardInput { public ushort Key, Scan; public uint Flags, Time; public UIntPtr ExtraInfo; }
     [StructLayout(LayoutKind.Sequential)] private struct MouseInput { public int X, Y; public uint Data, Flags, Time; public UIntPtr ExtraInfo; }
     [DllImport("user32.dll", SetLastError = true)] private static extern uint SendInput(uint count, Input[] inputs, int size);
+    private static string DescribeForeground()
+    {
+        IntPtr foreground = GetForegroundWindow();
+        var title = new System.Text.StringBuilder(256); var className = new System.Text.StringBuilder(256);
+        GetWindowText(foreground, title, title.Capacity); GetClassName(foreground, className, className.Capacity);
+        GetWindowThreadProcessId(foreground, out uint process);
+        return $"0x{foreground.ToInt64():X} class={className} title=\"{title}\" process={process} (this process {Environment.ProcessId})";
+    }
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetWindowText(IntPtr window, System.Text.StringBuilder text, int count);
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)] private static extern int GetClassName(IntPtr window, System.Text.StringBuilder text, int count);
+    [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(IntPtr window, out uint process);
     [DllImport("user32.dll")] private static extern short GetKeyState(int key);
     [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int key);
 }
