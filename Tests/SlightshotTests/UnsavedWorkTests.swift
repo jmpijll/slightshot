@@ -240,6 +240,34 @@ struct RecordingSessionCompletionTests {
         #expect(!FileManager.default.fileExists(atPath: staging.path))
     }
 
+    @Test func concurrentStagingUpdatesKeepEveryUnfinishedParent() {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let first = (0..<128).map { root.appendingPathComponent("first-\($0)") }
+        let second = (0..<128).map { root.appendingPathComponent("second-\($0)") }
+        defer {
+            for parent in first + second { RecordingExport.forgetStagingParent(parent) }
+        }
+        func remembered() -> Set<String> {
+            Set(RecordingExport.stagingParents.filter { $0.deletingLastPathComponent().path == root.path }.map(\.path))
+        }
+
+        DispatchQueue.concurrentPerform(iterations: first.count) { index in
+            RecordingExport.rememberStagingParent(first[index])
+        }
+        #expect(remembered() == Set(first.map(\.path)))
+
+        DispatchQueue.concurrentPerform(iterations: first.count) { index in
+            RecordingExport.forgetStagingParent(first[index])
+            RecordingExport.rememberStagingParent(second[index])
+        }
+        #expect(remembered() == Set(second.map(\.path)))
+
+        DispatchQueue.concurrentPerform(iterations: second.count) { index in
+            RecordingExport.forgetStagingParent(second[index])
+        }
+        #expect(remembered().isEmpty)
+    }
+
     @Test func anExportRemembersItsStagingFolderUntilItFinishes() async throws {
         let parent = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: false)

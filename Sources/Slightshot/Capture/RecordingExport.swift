@@ -95,7 +95,7 @@ nonisolated enum RecordingExport {
         UserDefaults.standard.set(paths.filter { $0 != parent.path }, forKey: stagingParentsKey)
     }
 
-    private static func rememberStagingParent(_ parent: URL) {
+    static func rememberStagingParent(_ parent: URL) {
         let paths = UserDefaults.standard.stringArray(forKey: stagingParentsKey) ?? []
         guard !paths.contains(parent.path) else { return }
         UserDefaults.standard.set(paths + [parent.path], forKey: stagingParentsKey)
