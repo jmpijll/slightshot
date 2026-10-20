@@ -10,7 +10,7 @@ internal static class VideoTrimChecks
             if (!condition) throw new InvalidOperationException("Video trim: " + message);
             checks++;
         }
-        TimeSpan Seconds(double value) => TimeSpan.FromSeconds(value);
+        TimeSpan Seconds(double value) => TimeSpan.FromTicks((long)Math.Round(value * TimeSpan.TicksPerSecond));
         var duration = Seconds(5);
         var history = new VideoAnnotationHistory(duration);
         Require(history.Trim == VideoTrim.Whole(duration) && !history.CanUndo, "a new recording keeps its whole length without an undo step");
@@ -51,17 +51,31 @@ internal static class VideoTrimChecks
 
         var typed = new VideoAnnotationHistory(duration);
         typed.SetTrim(Seconds(1), Seconds(3));
-        typed.SetTrimStart(Seconds(4));
+        typed.SetTrimStart(4);
         Require(typed.Trim == new VideoTrim(Seconds(3) - typed.MinimumDuration, Seconds(3)), "a typed start past the end stops one minimum length before it and leaves the end alone");
-        typed.SetTrimEnd(Seconds(0.5));
+        typed.SetTrimEnd(0.5);
         Require(typed.Trim == new VideoTrim(Seconds(3) - typed.MinimumDuration, Seconds(3)), "a typed end before the start leaves the start alone");
         typed.Undo();
-        typed.SetTrimEnd(Seconds(0.5));
+        typed.SetTrimEnd(0.5);
         Require(typed.Trim == new VideoTrim(Seconds(1), Seconds(1) + typed.MinimumDuration), "a typed end before the start stops one minimum length after it");
-        typed.SetTrimStart(Seconds(-3)); typed.SetTrimEnd(Seconds(60));
+        typed.SetTrimStart(-3); typed.SetTrimEnd(60);
         Require(typed.Trim == VideoTrim.Whole(duration), "typed ends clamp to the recording");
-        typed.SetTrimStart(exact);
-        Require(typed.Trim == new VideoTrim(exact, duration), "a typed start keeps exact ticks and the end");
+        typed.SetTrimStart(exact.TotalSeconds);
+        Require(typed.Trim == new VideoTrim(Seconds(3.12), duration), "a typed start rounds to hundredths and keeps the end");
+        typed.SetTrimStart(1.005); typed.SetTrimEnd(3.125);
+        Require(typed.Trim == new VideoTrim(Seconds(1.01), Seconds(3.13)), "typed half hundredths round away from zero");
+        typed.SetTrimStart(3.104);
+        Require(typed.Trim == new VideoTrim(Seconds(3.13) - typed.MinimumDuration, Seconds(3.13)), "typed rounding happens before the minimum-length clamp and preserves its off-grid boundary");
+        typed.SetTrimStart(typed.Trim.Start.TotalSeconds);
+        Require(typed.Trim.Start == Seconds(3.13) - typed.MinimumDuration, "committing an unchanged off-grid minimum boundary preserves its exact value");
+        typed.SetTrimEnd(double.MaxValue); typed.SetTrimStart(double.MinValue);
+        Require(typed.Trim == VideoTrim.Whole(duration), "extreme finite typed values clamp without overflowing rounded ticks");
+        var offGrid = new VideoAnnotationHistory(exact);
+        offGrid.SetTrimEnd(2); offGrid.SetTrimEnd(9);
+        Require(offGrid.Trim.End == exact, "typed ends beyond the recording preserve its exact off-grid duration");
+        offGrid.Undo(); offGrid.Undo();
+        offGrid.SetTrimEnd(exact.TotalSeconds);
+        Require(!offGrid.CanUndo && offGrid.CanRedo && offGrid.Trim.End == exact, "an unchanged exact source end keeps Redo without rounding");
 
         var redoable = new VideoAnnotationHistory(duration);
         redoable.SetTrim(Seconds(1), Seconds(4)); redoable.Undo();
@@ -69,8 +83,10 @@ internal static class VideoTrimChecks
         Require(redoable.CanRedo && !redoable.CanUndo, "clicking a trim handle without moving it keeps Redo");
         redoable.BeginTrimEdit(); redoable.PreviewTrim(Seconds(2), Seconds(3)); redoable.PreviewTrim(TimeSpan.Zero, duration); redoable.CommitTimingEdit();
         Require(redoable.CanRedo && !redoable.CanUndo, "a trim drag that returns to where it started keeps Redo");
-        redoable.SetTrimStart(TimeSpan.Zero); redoable.SetTrimEnd(duration); redoable.SetTrim(TimeSpan.Zero, duration);
+        redoable.SetTrimStart(0); redoable.SetTrimEnd(duration.TotalSeconds); redoable.SetTrim(TimeSpan.Zero, duration);
         Require(redoable.CanRedo && !redoable.CanUndo, "typing or resetting an unchanged trim keeps Redo");
+        redoable.SetTrimStart(0.004); redoable.SetTrimEnd(5.004);
+        Require(redoable.CanRedo && !redoable.CanUndo, "typed values that round to the unchanged trim keep Redo");
         redoable.Redo();
         Require(redoable.Trim == new VideoTrim(Seconds(1), Seconds(4)), "Redo still restores the trim after no-op edits");
 

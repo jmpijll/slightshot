@@ -100,11 +100,24 @@ public sealed class VideoAnnotationHistory
 
     // A typed end follows the drag rule: it stops one minimum length short of
     // the other end, which never moves.
-    public void SetTrimStart(TimeSpan start)
-        => SetTrim(TimeSpan.FromTicks(Math.Clamp(start.Ticks, 0, Trim.End.Ticks - MinimumDuration.Ticks)), Trim.End);
+    public void SetTrimStart(double seconds)
+    {
+        if (seconds == Trim.Start.TotalSeconds) return;
+        SetTrim(TimeSpan.FromTicks((long)Math.Clamp(RoundedTrimTicks(seconds), 0, Trim.End.Ticks - MinimumDuration.Ticks)), Trim.End);
+    }
 
-    public void SetTrimEnd(TimeSpan end)
-        => SetTrim(Trim.Start, TimeSpan.FromTicks(Math.Clamp(end.Ticks, Trim.Start.Ticks + MinimumDuration.Ticks, Duration.Ticks)));
+    public void SetTrimEnd(double seconds)
+    {
+        if (seconds == Trim.End.TotalSeconds) return;
+        SetTrim(Trim.Start, TimeSpan.FromTicks((long)Math.Clamp(RoundedTrimTicks(seconds), Trim.Start.Ticks + MinimumDuration.Ticks, Duration.Ticks)));
+    }
+
+    private decimal RoundedTrimTicks(double seconds)
+    {
+        if (!double.IsFinite(seconds)) throw new ArgumentOutOfRangeException(nameof(seconds));
+        decimal bounded = (decimal)Math.Clamp(seconds, -1, Duration.TotalSeconds + 1);
+        return Math.Round(bounded, 2, MidpointRounding.AwayFromZero) * TimeSpan.TicksPerSecond;
+    }
 
     public void PreviewTiming(TimeSpan begin, TimeSpan end)
     {

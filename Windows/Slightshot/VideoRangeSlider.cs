@@ -20,16 +20,16 @@ internal sealed class VideoRangeSlider : Grid
     private readonly Rectangle cutBefore = new() { Height = 34, Fill = AnnotationRenderer.Brush("#000000", 0.4), IsHitTestVisible = false };
     private readonly Rectangle cutAfter = new() { Height = 34, Fill = AnnotationRenderer.Brush("#000000", 0.4), IsHitTestVisible = false };
     private readonly Thumb from, until;
-    private readonly double duration, minimum;
+    private readonly double duration, minimum, step;
     private double keptStart, keptEnd;
     internal double Begin { get; private set; }
     internal double End { get; private set; }
     internal event Action? EditBeginning;
     internal event Action<double, double>? RangeChanged;
     internal event Action? EditCompleted;
-    internal VideoRangeSlider(TimeSpan duration, TimeSpan minimum, string subject, string accent = "#FF3B30")
+    internal VideoRangeSlider(TimeSpan duration, TimeSpan minimum, string subject, string accent = "#FF3B30", double step = 1.0 / 30)
     {
-        this.duration = duration.TotalSeconds; this.minimum = minimum.TotalSeconds; End = keptEnd = this.duration;
+        this.duration = duration.TotalSeconds; this.minimum = minimum.TotalSeconds; this.step = step; End = keptEnd = this.duration;
         Height = 34; MinWidth = 120; Margin = new Thickness(0, 6, 0, 8);
         interval.Fill = AnnotationRenderer.Brush(accent);
         from = Handle(subject + " start handle", accent); until = Handle(subject + " end handle", accent);
@@ -57,7 +57,8 @@ internal sealed class VideoRangeSlider : Grid
     private double TrackWidth => Math.Max(1, ActualWidth - Inset * 2);
     private void Move(bool start, double seconds)
     {
-        double snapped = Math.Round(seconds * 30) / 30;
+        if (seconds == (start ? Begin : End)) return;
+        double snapped = step == 1.0 / 30 ? Math.Round(seconds * 30) / 30 : (double)(Math.Round((decimal)seconds / (decimal)step, MidpointRounding.AwayFromZero) * (decimal)step);
         if (start) Begin = Math.Clamp(snapped, 0, End - minimum);
         else End = Math.Clamp(snapped, Begin + minimum, duration);
         Layout(); RangeChanged?.Invoke(Begin, End);
@@ -76,7 +77,7 @@ internal sealed class VideoRangeSlider : Grid
     }
     private void HandleKey(bool start, KeyEventArgs e)
     {
-        double amount = (Keyboard.Modifiers & ModifierKeys.Shift) != 0 ? 10.0 / 30 : 1.0 / 30;
+        double amount = (Keyboard.Modifiers & ModifierKeys.Shift) != 0 ? step * 10 : step;
         double current = start ? Begin : End;
         double? next = e.Key switch { Key.Left or Key.Down => current - amount, Key.Right or Key.Up => current + amount, Key.Home => 0, Key.End => duration, _ => null };
         if (next == null) return;

@@ -46,6 +46,7 @@ internal sealed class VideoEditorWindow : Window
     private readonly TaskCompletionSource completion = new(TaskCreationOptions.RunContinuationsAsynchronously);
     internal VideoAnnotationHistory History { get; }
     internal TimeSpan Position { get; private set; }
+    internal TimeSpan? PreviewSourcePosition { get; private set; }
     internal Task Completion => completion.Task;
     internal VideoAnnotationSurface Surface => surface;
 
@@ -131,13 +132,13 @@ internal sealed class VideoEditorWindow : Window
         footer.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         footer.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         footer.Children.Add(new TextBlock { Text = "Trim", FontWeight = FontWeights.SemiBold, VerticalAlignment = VerticalAlignment.Center });
-        trimRange = new VideoRangeSlider(source.Duration, History.MinimumDuration, "Trim", "#FFCC00") { Margin = new Thickness(14, 0, 0, 6) };
+        trimRange = new VideoRangeSlider(source.Duration, History.MinimumDuration, "Trim", "#FFCC00", step: 0.01) { Margin = new Thickness(14, 0, 0, 6) };
         trimRange.EditBeginning += () => { Pause(); History.BeginTrimEdit(); };
         trimRange.RangeChanged += async (start, finish) =>
         {
             var previous = History.Trim;
             // Keep the untouched end's exact ticks instead of its double-seconds roundtrip.
-            History.PreviewTrim(start == previous.Start.TotalSeconds ? previous.Start : TimeSpan.FromSeconds(start), finish == previous.End.TotalSeconds ? previous.End : TimeSpan.FromSeconds(finish));
+            History.PreviewTrim(start == previous.Start.TotalSeconds ? previous.Start : TimeSpan.FromTicks((long)Math.Round(start * TimeSpan.TicksPerSecond)), finish == previous.End.TotalSeconds ? previous.End : TimeSpan.FromTicks((long)Math.Round(finish * TimeSpan.TicksPerSecond)));
             UpdateControls(false);
             await SeekAsync(History.Trim.Start != previous.Start ? History.Trim.Start : History.Trim.End);
         };
@@ -146,8 +147,8 @@ internal sealed class VideoEditorWindow : Window
         trimStart = TimeField("Trim start time in seconds"); trimEnd = TimeField("Trim end time in seconds");
         trimStart.Width = trimEnd.Width = 60;
         trimStart.LostKeyboardFocus += (_, _) => ChangeTrim(true); trimEnd.LostKeyboardFocus += (_, _) => ChangeTrim(false);
-        trimStart.PreviewKeyDown += (_, e) => { if (e.Key == Key.Enter) { ChangeTrim(true); e.Handled = true; } };
-        trimEnd.PreviewKeyDown += (_, e) => { if (e.Key == Key.Enter) { ChangeTrim(false); e.Handled = true; } };
+        trimStart.PreviewKeyDown += (_, e) => { if (e.Key is Key.Enter or Key.Tab) { ChangeTrim(true); e.Handled = e.Key == Key.Enter; } };
+        trimEnd.PreviewKeyDown += (_, e) => { if (e.Key is Key.Enter or Key.Tab) { ChangeTrim(false); e.Handled = e.Key == Key.Enter; } };
         resetTrim = new Button { Content = "Keep whole recording", Padding = new Thickness(10, 4, 10, 4), Margin = new Thickness(12, 0, 0, 0) };
         resetTrim.Click += (_, _) => { Pause(); History.SetTrim(TimeSpan.Zero, source.Duration); UpdateControls(); };
         var trimFields = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 0, 6) };
@@ -219,8 +220,8 @@ internal sealed class VideoEditorWindow : Window
                 if (closing) return;
                 if (request != seekVersion) continue;
                 // Undo/Redo can narrow the trim while this frame decodes.
-                if (History.Trim.Clamp(target) != target) { Position = History.Trim.Clamp(target); seekVersion++; UpdatePlayhead(); continue; }
-                surface.Position = target; surface.SetFrame(image); return;
+                if (History.Trim.Clamp(target) != target || frame >= History.Trim.End) { Position = History.Trim.Clamp(target); seekVersion++; UpdatePlayhead(); continue; }
+                surface.Position = target; surface.SetFrame(image); PreviewSourcePosition = frame; return;
             }
             catch (OperationCanceledException) when (lifetime.IsCancellationRequested) { return; }
             catch (Exception error)
@@ -236,16 +237,14 @@ internal sealed class VideoEditorWindow : Window
     }
     internal void SelectAnnotation(Guid? id) { CommitText(); History.Select(id); SelectTool(null); UpdateControls(); surface.Refresh(); }
     internal void SetSelectedTiming(TimeSpan start, TimeSpan finish) { History.SetTiming(start, finish); UpdateControls(); surface.Refresh(); }
-    internal void Undo() { CommitText(); History.Undo(); UpdateControls(); surface.Refresh(); KeepPlayheadInTrim(); }
-    internal void Redo() { CommitText(); History.Redo(); UpdateControls(); surface.Refresh(); KeepPlayheadInTrim(); }
-    private void KeepPlayheadInTrim() { if (History.Trim.Clamp(Position) != Position) { Pause(); _ = SeekAsync(Position); } }
+    internal void Undo() { CommitText(); var trim = History.Trim; History.Undo(); UpdateControls(); surface.Refresh(); if (History.Trim != trim) { Pause(); _ = SeekAsync(Position); } }
+    internal void Redo() { CommitText(); var trim = History.Trim; History.Redo(); UpdateControls(); surface.Refresh(); if (History.Trim != trim) { Pause(); _ = SeekAsync(Position); } }
     private void ChangeTrim(bool startChanged)
     {
         var field = startChanged ? trimStart : trimEnd; var trim = History.Trim;
         if (updating || field.Text == Seconds(startChanged ? trim.Start : trim.End)) return;
-        if (!double.TryParse(field.Text, NumberStyles.Float, CultureInfo.CurrentCulture, out double seconds) || !double.IsFinite(seconds)) { UpdateControls(); return; }
-        var time = TimeSpan.FromSeconds(Math.Clamp(seconds, 0, source.Duration.TotalSeconds));
-        Pause(); if (startChanged) History.SetTrimStart(time); else History.SetTrimEnd(time);
+        if (!TrySeconds(field.Text, out double seconds)) { UpdateControls(); return; }
+        Pause(); if (startChanged) History.SetTrimStart(seconds); else History.SetTrimEnd(seconds);
         UpdateControls(); _ = SeekAsync(startChanged ? History.Trim.Start : History.Trim.End);
     }
     private void DeleteSelected() { CommitText(); History.DeleteSelected(); UpdateControls(); surface.Refresh(); }
@@ -253,7 +252,7 @@ internal sealed class VideoEditorWindow : Window
     {
         if (updating || History.Selected is not { } item || (startChanged ? begin : end).Text == Seconds(startChanged ? item.Begin : item.End)) return;
         Pause(); double minimum = History.MinimumDuration.TotalSeconds;
-        if (!double.TryParse((startChanged ? begin : end).Text, NumberStyles.Float, CultureInfo.CurrentCulture, out double seconds) || !double.IsFinite(seconds)) { UpdateControls(); return; }
+        if (!TrySeconds((startChanged ? begin : end).Text, out double seconds)) { UpdateControls(); return; }
         var start = startChanged ? TimeSpan.FromSeconds(Math.Clamp(seconds, 0, item.End.TotalSeconds - minimum)) : item.Begin;
         var finish = startChanged ? item.End : TimeSpan.FromSeconds(Math.Clamp(seconds, item.Begin.TotalSeconds + minimum, source.Duration.TotalSeconds));
         History.SetTiming(start, finish); UpdateControls(); surface.Refresh();
@@ -383,9 +382,10 @@ internal sealed class VideoEditorWindow : Window
     }
     private void HandleKey(object sender, KeyEventArgs e)
     {
-        if (saving || textEntry != null || e.OriginalSource is TextBox) return;
+        if (saving) return;
         var modifiers = Keyboard.Modifiers;
         if ((modifiers & ModifierKeys.Control) != 0 && e.Key == Key.S) { _ = SaveAsync(); e.Handled = true; }
+        else if (textEntry != null || e.OriginalSource is TextBox) return;
         else if ((modifiers & ModifierKeys.Control) != 0 && e.Key == Key.Z) { if ((modifiers & ModifierKeys.Shift) != 0) Redo(); else Undo(); e.Handled = true; }
         else if ((modifiers & ModifierKeys.Control) != 0 && e.Key == Key.Y) { Redo(); e.Handled = true; }
         else if (e.Key == Key.Delete || e.Key == Key.Back) { DeleteSelected(); e.Handled = true; }
@@ -395,6 +395,8 @@ internal sealed class VideoEditorWindow : Window
     internal void CloseFixture() { closeAfterSave = true; Close(); }
     internal void CloseForShutdown() { closeAfterSave = true; if (saving) closeWhenSaveFinishes = true; else Close(); }
     private static string Seconds(TimeSpan time) => time.TotalSeconds.ToString("0.00", CultureInfo.CurrentCulture);
+    private static bool TrySeconds(string text, out double seconds)
+        => (double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out seconds) || double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out seconds)) && double.IsFinite(seconds);
     private static string Time(TimeSpan time) => $"{(int)time.TotalMinutes:00}:{time.Seconds:00}.{time.Milliseconds / 100}";
     private static ProductIcon IconForTool(Tool tool) => tool switch
     {
