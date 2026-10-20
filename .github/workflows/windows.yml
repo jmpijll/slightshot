@@ -69,6 +69,7 @@ jobs:
           if ($process.ExitCode -ne 0) { Get-Content "$output/shortcut-failure.txt" -ErrorAction SilentlyContinue; throw "Windows shortcut smoke test failed: $($process.ExitCode)" }
           Get-Content "$output/shortcut-validation.json"
       - name: Test second-launch forwarding and unhandled error recovery
+        if: ${{ !cancelled() && steps.native_app.outcome == 'success' }}
         shell: pwsh
         run: |
           $env:SLIGHTSHOT_SOURCE_COMMIT = git rev-parse HEAD

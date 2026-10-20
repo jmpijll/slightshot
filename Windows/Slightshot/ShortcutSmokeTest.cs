@@ -171,14 +171,28 @@ internal static class ShortcutSmokeTest
         checks.Add("Recorded settings JSON roundtrip preserves Windows modifiers. After Settings closes, production RegisterHotKey registration and native SendInput produce callbacks 1, 2, 3; removing Windows produces none.");
         object? snippingSetting = Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Control Panel\Keyboard", "PrintScreenKeyForSnippingEnabled", null);
         var printScreenCallbacks = new List<int>();
+        var printScreenInjection = new List<object>();
         using (var service = new HotKeyService(printScreenCallbacks.Add))
         {
             HotKey[] failures = service.Register(new Settings { CaptureAreaHotKey = new(PrintScreen, 0), SaveFullScreenHotKey = new(F13, 0), CopyFullScreenHotKey = new(0, 0) });
             Require(failures.SequenceEqual([new HotKey(F13, 0)]), $"RegisterHotKey accepts Print Screen alone and bare F13 stays rejected (PrintScreenKeyForSnippingEnabled={snippingSetting ?? "not set"}): " + string.Join(", ", failures));
-            await ChordAsync(PrintScreen);
-            Require(printScreenCallbacks.SequenceEqual([1]), "Print Screen triggers the capture-area global hotkey");
+            // Record which injected form of Print Screen reaches global hotkeys,
+            // and whether it fires on key-down or key-up.
+            (string Name, ushort Key, ushort Scan, uint Flags)[] forms =
+                [("virtual key, extended", PrintScreen, 0, 1), ("virtual key", PrintScreen, 0, 0), ("virtual key and scan 0x37, extended", PrintScreen, 0x37, 1), ("scan code 0x37, extended", 0, 0x37, 9)];
+            foreach (var form in forms)
+            {
+                int before = printScreenCallbacks.Count;
+                SendRaw(form.Key, form.Scan, form.Flags); await Task.Delay(200);
+                int afterDown = printScreenCallbacks.Count - before;
+                SendRaw(form.Key, form.Scan, form.Flags | 2); await Task.Delay(300);
+                printScreenInjection.Add(new { form = form.Name, callbacksAfterKeyDown = afterDown, callbacksAfterKeyUp = printScreenCallbacks.Count - before - afterDown });
+            }
+            File.WriteAllText(Path.Combine(directory, "shortcut-print-screen-injection.json"), JsonSerializer.Serialize(new { sourceCommit, printScreenKeyForSnippingEnabled = snippingSetting?.ToString() ?? "not set", printScreenInjection }, JsonOptions));
+            Require(printScreenCallbacks.Count > 0 && printScreenCallbacks.All(id => id == 1), $"Print Screen triggers the capture-area global hotkey: {JsonSerializer.Serialize(printScreenInjection)}");
+            int printScreenCount = printScreenCallbacks.Count;
             await ChordAsync(F13);
-            Require(printScreenCallbacks.SequenceEqual([1]), "bare F13 never triggers a global hotkey");
+            Require(printScreenCallbacks.Count == printScreenCount, "bare F13 never triggers a global hotkey");
         }
         checks.Add("Production RegisterHotKey registers Print Screen without a modifier and native Print Screen input produces callback 1; bare F13 is rejected and produces nothing.");
         File.WriteAllText(Path.Combine(directory, "shortcut-validation.json"), JsonSerializer.Serialize(new
@@ -219,6 +233,12 @@ internal static class ShortcutSmokeTest
             foreach (ushort key in keys.Reverse()) SendKey(key, true);
         }
         await Task.Delay(120);
+    }
+
+    private static void SendRaw(ushort key, ushort scan, uint flags)
+    {
+        Input[] inputs = [new() { Type = 1, Data = new InputUnion { Keyboard = new KeyboardInput { Key = key, Scan = scan, Flags = flags } } }];
+        Require(SendInput(1, inputs, Marshal.SizeOf<Input>()) == 1, $"SendInput accepts key 0x{key:X2}, scan 0x{scan:X2}, flags {flags}, Win32 error {Marshal.GetLastWin32Error()}");
     }
 
     private static void SendKey(ushort key, bool release)
