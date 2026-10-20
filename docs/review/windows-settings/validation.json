@@ -1,0 +1,10 @@
+{
+  "platform": "Windows (GitHub Actions windows-latest), native WPF",
+  "sourceCommit": "a9cae5dd879609fe79aa1217ea5326372f74aedb",
+  "workflowRun": 39410170302,
+  "source": "Automated native fixture: SettingsRecoverySmokeTest writes the fixture settings files and Run values; no manual interaction.",
+  "checks": [
+    "Settings recovery: truncated JSON backed up before defaults are saved, one notice; null/invalid hotkeys and undefined enums fall back, ranges clamp, HotKeyService registers the result",
+    "Launch at login: another copy's Run entry shows off; enabling rewrites it to this executable and shows on"
+  ]
+}
