@@ -149,11 +149,11 @@ final class VideoCanvasView: NSView {
     override func mouseUp(with event: NSEvent) {
         guard anchor != nil else { return }
         if let live {
-            // A click places a numbered step; other shapes need a visible extent.
+            // A click places a numbered step or a pen dot; other shapes need a visible extent.
             let hasExtent = points.dropFirst().contains {
                 hypot($0.x - points[0].x, $0.y - points[0].y) >= 1
             }
-            if tool == .step || hasExtent { onCommit?(live) }
+            if [.step, .pen, .marker].contains(tool) || hasExtent { onCommit?(live) }
         }
         live = nil
         anchor = nil
@@ -208,7 +208,10 @@ final class VideoCanvasView: NSView {
         case .pen, .marker: shape = .stroke(points: points)
         case .line: shape = .line(from: start, to: end)
         case .arrow: shape = .arrow(from: start, to: end)
-        case .rectangle: shape = .rectangle(CGRect(corner: start, corner: point))
+        case .rectangle:
+            shape = .rectangle(constrained
+                ? CGRect(square: start, toward: point, within: CGRect(origin: .zero, size: sourceSize))
+                : CGRect(corner: start, corner: point))
         case .blur: shape = .blur(CGRect(corner: start, corner: point))
         case .pixelate: shape = .pixelate(CGRect(corner: start, corner: point))
         case .step:

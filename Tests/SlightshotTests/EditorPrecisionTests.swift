@@ -54,6 +54,14 @@ struct EditorPrecisionTests {
         #expect(end.y == 60)
     }
 
+    @Test func shiftSquaresStayInsideTheSelection() {
+        let bounds = CGRect(x: 0, y: 0, width: 100, height: 50)
+        #expect(CGRect(square: CGPoint(x: 10, y: 10), toward: CGPoint(x: 90, y: 20), within: bounds)
+                == CGRect(x: 10, y: 10, width: 40, height: 40))
+        #expect(CGRect(square: CGPoint(x: 50, y: 40), toward: CGPoint(x: 45, y: 0), within: bounds)
+                == CGRect(x: 10, y: 0, width: 40, height: 40))
+    }
+
     @Test func aPenTapLeavesADot() throws {
         let harness = try OverlayHarness()
         defer { harness.close() }
@@ -99,6 +107,12 @@ struct EditorPrecisionTests {
         }
     }
 
+    @Test func pixelAlignmentRoundsEachEdgeToTheDeviceGrid() {
+        let rect = CGRect(x: 10.5, y: 3.2, width: 20.3, height: 7.6)
+        #expect(rect.pixelAligned(scale: 2) == CGRect(x: 10.5, y: 3, width: 20.5, height: 8))
+        #expect(rect.pixelAligned == CGRect(x: 11, y: 3, width: 20, height: 8))
+    }
+
     @Test func aHalfPointSelectionOnRetinaExportsTheOutlinedPixels() throws {
         let source = try image(width: 240, height: 200)
         let harness = try OverlayHarness(image: source, scale: 2)
@@ -122,21 +136,21 @@ struct EditorPrecisionTests {
         let zoom = CGFloat(rep.pixelsWide) / loupe.bounds.width
         let centre = MagnifierView.zoomSide / 2
         let colour = try #require(rep.colorAt(x: Int(centre * zoom), y: Int(centre * zoom))?.usingColorSpace(.sRGB))
-        let expected = CGFloat(pixel * 12) / 255
+        let expected = CGFloat(40 + pixel * 10) / 255
         #expect(abs(colour.redComponent - expected) < 0.02)
         #expect(abs(colour.greenComponent - expected) < 0.02)
     }
 }
 
-/// Pixel (x, y) is (12x, 12y, 200), so every pixel of a small fixture is distinct.
+/// Pixel (x, y) is (40 + 10x, 40 + 10y, 200), clear of the dark tones colour matching crushes.
 @MainActor
 private func image(width: Int, height: Int) throws -> CGImage {
     var data = [UInt8](repeating: 255, count: width * height * 4)
     for y in 0..<height {
         for x in 0..<width {
             let offset = (y * width + x) * 4
-            data[offset] = UInt8((x * 12) % 256)
-            data[offset + 1] = UInt8((y * 12) % 256)
+            data[offset] = UInt8((40 + x * 10) % 256)
+            data[offset + 1] = UInt8((40 + y * 10) % 256)
             data[offset + 2] = 200
         }
     }
@@ -187,9 +201,14 @@ private final class OverlayHarness {
         view.delegate = delegate
     }
 
-    func close() { window.close() }
+    /// The toolbar restores the last tool across overlays, so leave none behind for other tests.
+    func close() {
+        view.toolbars.select(nil)
+        window.close()
+    }
 
     func choose(_ label: String) throws {
+        guard view.toolbars.activeTool?.title != label else { return }
         let button = try #require(descendants(of: view).compactMap { $0 as? ToolbarButton }
             .first { $0.accessibilityLabel() == label })
         button.performClick(nil)
