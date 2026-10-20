@@ -200,46 +200,70 @@ private func solidImage(size: CGSize) throws -> CGImage {
     return rep
 }
 
-private func rgb(_ rep: NSBitmapImageRep, _ x: Int, _ y: Int) -> (CGFloat, CGFloat, CGFloat) {
-    let color = rep.colorAt(x: x, y: y)?.usingColorSpace(.sRGB) ?? .black
-    return (color.redComponent, color.greenComponent, color.blueComponent)
-}
+/// Bright green glyph cores, top-left origin; the dark text shadow and the background
+/// never qualify. Built from one sRGB buffer, because per-pixel `colorAt` held the main
+/// actor for seconds and starved other suites' main-queue work.
+private struct InkMask {
+    let width: Int, height: Int
+    private let ink: [Bool]
 
-/// Bright green glyph cores; the dark text shadow and the background never qualify.
-private func isInk(_ rep: NSBitmapImageRep, _ x: Int, _ y: Int) -> Bool {
-    let (red, green, blue) = rgb(rep, x, y)
-    return green > 0.6 && red < 0.35 && blue < 0.45
-}
-
-/// Bounds of the glyph cores, in top-left pixel coordinates.
-private func inkBounds(_ rep: NSBitmapImageRep) -> CGRect? {
-    var box: CGRect?
-    for y in 0..<rep.pixelsHigh {
-        for x in 0..<rep.pixelsWide where isInk(rep, x, y) {
-            let pixel = CGRect(x: x, y: y, width: 1, height: 1)
-            box = box.map { $0.union(pixel) } ?? pixel
+    init(_ rep: NSBitmapImageRep) {
+        let width = rep.pixelsWide, height = rep.pixelsHigh
+        self.width = width
+        self.height = height
+        var bytes = [UInt8](repeating: 0, count: width * height * 4)
+        let space = CGColorSpace(name: CGColorSpace.sRGB)!
+        bytes.withUnsafeMutableBytes { buffer in
+            let context = CGContext(data: buffer.baseAddress, width: width, height: height, bitsPerComponent: 8,
+                                    bytesPerRow: width * 4, space: space,
+                                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            if let image = rep.cgImage {
+                context?.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+            }
+        }
+        ink = (0..<width * height).map { index in
+            let red = bytes[index * 4], green = bytes[index * 4 + 1], blue = bytes[index * 4 + 2]
+            return green > 153 && red < 89 && blue < 115
         }
     }
-    return box
+
+    subscript(x: Int, y: Int) -> Bool {
+        x >= 0 && y >= 0 && x < width && y < height && ink[y * width + x]
+    }
+
+    /// Bounds of the glyph cores, in top-left pixel coordinates.
+    var bounds: CGRect? {
+        var box: CGRect?
+        for y in 0..<height {
+            for x in 0..<width where self[x, y] {
+                let pixel = CGRect(x: x, y: y, width: 1, height: 1)
+                box = box.map { $0.union(pixel) } ?? pixel
+            }
+        }
+        return box
+    }
 }
+
+private func inkBounds(_ rep: NSBitmapImageRep) -> CGRect? { InkMask(rep).bounds }
 
 /// Counts glyph pixels in either image with no glyph pixel within one pixel in the
 /// other, which tolerates antialiasing but not a shifted or rewrapped line.
 /// Export pixels are shifted by the selection origin.
-private func inkMismatches(_ view: NSBitmapImageRep, _ export: NSBitmapImageRep, in rect: CGRect,
+private func inkMismatches(_ viewRep: NSBitmapImageRep, _ exportRep: NSBitmapImageRep, in rect: CGRect,
                            offset: CGPoint) -> Int {
+    let view = InkMask(viewRep), export = InkMask(exportRep)
     let dx = Int(offset.x), dy = Int(offset.y)
     let area = rect.integral.intersection(CGRect(x: offset.x + 1, y: offset.y + 1,
-                                                 width: CGFloat(export.pixelsWide - 2),
-                                                 height: CGFloat(export.pixelsHigh - 2)))
-    func near(_ rep: NSBitmapImageRep, _ x: Int, _ y: Int) -> Bool {
-        (-1...1).contains { oy in (-1...1).contains { ox in isInk(rep, x + ox, y + oy) } }
+                                                 width: CGFloat(export.width - 2),
+                                                 height: CGFloat(export.height - 2)))
+    func near(_ mask: InkMask, _ x: Int, _ y: Int) -> Bool {
+        (-1...1).contains { oy in (-1...1).contains { ox in mask[x + ox, y + oy] } }
     }
     var mismatches = 0
     for y in Int(area.minY)..<Int(area.maxY) {
         for x in Int(area.minX)..<Int(area.maxX) {
-            if isInk(view, x, y), !near(export, x - dx, y - dy) { mismatches += 1 }
-            if isInk(export, x - dx, y - dy), !near(view, x, y) { mismatches += 1 }
+            if view[x, y], !near(export, x - dx, y - dy) { mismatches += 1 }
+            if export[x - dx, y - dy], !near(view, x, y) { mismatches += 1 }
         }
     }
     return mismatches
