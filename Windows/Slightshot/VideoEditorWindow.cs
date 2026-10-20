@@ -209,15 +209,15 @@ internal sealed class VideoEditorWindow : Window
     {
         while (!closing)
         {
-            long request = seekVersion; var target = Position;
+            long request = seekVersion; var target = Position; var trim = History.Trim;
             try
             {
                 // Decode only the preview pixels that can be displayed. Marks
                 // keep source coordinates, and export always uses source size.
                 int previewWidth = Math.Min(1280, Math.Max(1, (int)Math.Ceiling(source.Width * surface.ViewScale * VisualTreeHelper.GetDpi(surface).DpiScaleX)));
                 // Trim end is exclusive, so the end position shows the last kept frame.
-                var frame = target == History.Trim.End ? target - TimeSpan.FromTicks(1) : target;
-                var image = await source.GetFrameAsync(frame, lifetime.Token, previewWidth);
+                var frame = target == trim.End ? target - TimeSpan.FromTicks(1) : target;
+                var image = await source.GetFrameAsync(frame, lifetime.Token, previewWidth, trim.End);
                 if (closing) return;
                 if (request != seekVersion) continue;
                 // Undo/Redo can narrow the trim while this frame decodes.

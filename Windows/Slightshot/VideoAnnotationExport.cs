@@ -37,6 +37,7 @@ internal static class VideoAnnotationExport
                 return;
             }
             TimeSpan length = kept.Length;
+            TimeSpan? exclusiveEnd = kept == VideoTrim.Whole(duration) ? null : kept.End;
             metrics?.RecordMemory("metadataReady");
             // Declared before worker leases, so disposal returns these mutable
             // pixels only after encoder, renderer and decoder have drained.
@@ -48,7 +49,7 @@ internal static class VideoAnnotationExport
             // Source warmup finishes before encoder creation, so instrumentation
             // attributes their native memory separately and reuses the first frame.
             long measured = Stopwatch.GetTimestamp();
-            await sequential.GetFrameAsync(TimeSpan.Zero, pixels, cancellation);
+            await sequential.GetFrameAsync(TimeSpan.Zero, pixels, cancellation, exclusiveEnd);
             metrics?.AddDecode(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
             metrics?.RecordMemory("decoderWarmupComplete");
             int rate = quality.FramesPerSecond();
@@ -63,7 +64,7 @@ internal static class VideoAnnotationExport
                     var position = TimeSpan.FromTicks(nextFrame * TimeSpan.TicksPerSecond / rate);
                     if (position >= length) break;
                     measured = Stopwatch.GetTimestamp();
-                    await sequential.GetFrameAsync(kept.Start + position, pixels, cancellation);
+                    await sequential.GetFrameAsync(kept.Start + position, pixels, cancellation, exclusiveEnd);
                     metrics?.AddDecode(Stopwatch.GetElapsedTime(measured).TotalMilliseconds);
                     if (nextFrame == 0) metrics?.RecordMemory("firstFrameDecoded");
                     measured = Stopwatch.GetTimestamp();

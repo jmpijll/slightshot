@@ -35,7 +35,7 @@ internal sealed class VideoFrameSource : IDisposable
             throw new InvalidOperationException("This recording has no playable video frames.");
         return new(file.Path, checked((int)properties.Width), checked((int)properties.Height), properties.Duration);
     }
-    internal async Task<BitmapSource> GetFrameAsync(TimeSpan position, CancellationToken cancellation = default, int maximumWidth = 0)
+    internal async Task<BitmapSource> GetFrameAsync(TimeSpan position, CancellationToken cancellation = default, int maximumWidth = 0, TimeSpan? exclusiveEnd = null)
     {
         await decoder.WaitAsync(cancellation).ConfigureAwait(false);
         try
@@ -47,7 +47,7 @@ internal sealed class VideoFrameSource : IDisposable
                 frames ??= await VideoSequentialDecoder.OpenAsync(path, Width, Height, canSeek: true).ConfigureAwait(false);
                 pixelLease ??= VideoPixelBuffers.Shared.Rent(checked(Width * Height * 4));
                 var safe = TimeSpan.FromTicks(Math.Clamp(position.Ticks, 0, Math.Max(0, Duration.Ticks - 1)));
-                await frames.GetFrameAsync(safe, pixelLease.Pixels, cancellation).ConfigureAwait(false);
+                await frames.GetFrameAsync(safe, pixelLease.Pixels, cancellation, exclusiveEnd).ConfigureAwait(false);
                 cancellation.ThrowIfCancellationRequested();
                 int width = maximumWidth > 0 ? Math.Min(Width, maximumWidth) : Width;
                 int height = Math.Max(1, (int)Math.Round((double)width * Height / Width));
