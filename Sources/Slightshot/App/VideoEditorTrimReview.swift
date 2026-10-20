@@ -97,18 +97,19 @@ import AVFoundation
                           "playheadSeconds": window.reviewCurrentTime])
         }
         try await Task.sleep(for: .milliseconds(800))
-        try await drag(controls.handles, in: window, from: 0, to: keptStart)
-        record("Dragged the start handle toward 1.5 s")
-        try await drag(controls.handles, in: window, from: 8, to: keptEnd)
-        record("Dragged the end handle toward 6 s")
-        for (field, text) in [(controls.startField, "1.50"), (controls.endField, "6.00")] {
-            field.stringValue = text
+        try await drag(controls.handles, in: window, from: 0, to: 1.4)
+        record("Dragged the start handle to about 1.4 s")
+        try await drag(controls.handles, in: window, from: 8, to: 6.2)
+        record("Dragged the end handle to about 6.2 s")
+        for (field, time) in [(controls.startField, keptStart), (controls.endField, keptEnd)] {
+            // Type what a user would type in the current locale, such as 1,50.
+            field.stringValue = field.formatter?.string(for: time) ?? String(time)
             field.sendAction(field.action, to: field.target)
             try await Task.sleep(for: .milliseconds(500))
         }
-        record("Typed 1.50 and 6.00 into the trim fields")
+        record("Typed exact start 1.5 s and end 6 s into the trim fields")
         window.makeFirstResponder(window.canvas)
-        for (shift, step) in [(false, "⌘Z restores the dragged end"), (true, "⌘⇧Z restores the typed end")] {
+        for (shift, step) in [(false, "⌘Z undoes the typed end"), (true, "⌘⇧Z redoes the typed end")] {
             _ = window.performKeyEquivalent(with: try key("z", shift: shift, in: window))
             try await Task.sleep(for: .milliseconds(700))
             record(step)
@@ -218,16 +219,16 @@ import AVFoundation
             try ReviewPixels.rgba(try await image(in: url, at: time))
         }
         let exportStart = try ReviewPixels.rgba(first)
-        let whole = CGRect(x: 0, y: 0, width: 960, height: 540)
+        let marker = CGRect(x: 40, y: 466, width: 880, height: 44)
         let early = try await frame(output, 0.25)
         let during = try await frame(output, 2)
         let blurOff = try await frame(output, 3)
         let blurOn = try await frame(output, 4.25)
         return [
-            "firstFrameDifferenceFromSource1_5s": ReviewPixels.difference(exportStart,
-                try await frame(source, keptStart), in: whole),
-            "firstFrameDifferenceFromSource0s": ReviewPixels.difference(exportStart,
-                try await frame(source, 0), in: whole),
+            "markerRegionDifferenceFromSource1_5s": ReviewPixels.difference(exportStart,
+                try await frame(source, keptStart), in: marker),
+            "markerRegionDifferenceFromSource0s": ReviewPixels.difference(exportStart,
+                try await frame(source, 0), in: marker),
             "arrowRedFractionAtExport0_25s": ReviewPixels.redFraction(early, in: arrow),
             "arrowRedFractionAtExport2s": ReviewPixels.redFraction(during, in: arrow),
             "captionRedFractionAtExport0_25s": ReviewPixels.redFraction(early, in: caption),
@@ -256,8 +257,8 @@ import AVFoundation
             abs(number(value, "durationSeconds") - edit.trim.duration) <= 1 / number(value, "framesPerSecond")
                 && abs((value["frameCount"] as? Int ?? 0) - (value["expectedFrameCount"] as? Int ?? -9)) <= 1
         }
-        let shifted = number(frames, "firstFrameDifferenceFromSource1_5s") * 4
-                < number(frames, "firstFrameDifferenceFromSource0s")
+        let shifted = number(frames, "markerRegionDifferenceFromSource1_5s") * 3
+                < number(frames, "markerRegionDifferenceFromSource0s")
             && number(frames, "arrowRedFractionAtExport0_25s") < 0.001
             && number(frames, "arrowRedFractionAtExport2s") > 0.003
             && number(frames, "captionRedFractionAtExport0_25s") < 0.001
