@@ -1,0 +1,39 @@
+# Publish job and Pages gate harness at source 5e37b73, 2026-10-20T11:15Z
+# python3 -m unittest -v Tests.test_release_metadata.DownloadCheckTests Tests.test_release_metadata.PublishJobTests
+# Publish-job steps run verbatim from release.yml against a local bare remote, a stateful fake gh and a local HTTP server.
+
+test_length_mismatch_blocks_the_feed ... ok
+test_pages_checks_downloads_before_uploading_the_feed ... ok
+test_public_downloads_with_matching_lengths_pass ... ok
+test_unavailable_download_blocks_the_feed ... ok
+test_existing_tag_must_point_at_the_release_source ... ok
+test_failed_pages_deployment_fails_the_publish_job ... ok
+test_feed_changed_on_main_is_not_overwritten ... ok
+test_feed_is_committed_onto_current_main_not_the_source ... ok
+test_feed_retries_when_main_moves_during_the_push ... ok
+test_leftover_draft_gets_this_runs_bytes_before_publication ... ok
+test_new_release_is_uploaded_verified_and_published ... ok
+test_published_release_with_other_bytes_is_not_reused ... ok
+test_rerun_reuses_a_published_release_with_the_same_bytes ... ok
+test_rerun_skips_a_feed_main_already_publishes ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests
+
+OK
+
+## Mutation check: each change to the workflow below makes the named test fail
+skip-if-main-has-feed removed           -> test_rerun_skips_a_feed_main_already_publishes
+existing-tag comparison removed         -> test_existing_tag_must_point_at_the_release_source
+asset digest comparison removed         -> test_published_release_with_other_bytes_is_not_reused
+draft re-upload removed                 -> test_leftover_draft_gets_this_runs_bytes_before_publication
+gh run watch without --exit-status      -> test_failed_pages_deployment_fails_the_publish_job
+push retry removed                      -> test_feed_retries_when_main_moves_during_the_push
+Pages download gate removed             -> test_pages_checks_downloads_before_uploading_the_feed
+
+## Live feed through the Pages gate
+$ python3 Scripts/release_metadata.py --check-downloads public/appcast.xml
+https://github.com/jmpijll/slightshot/releases/download/v1.6.0/Slightshot-1.6.0.dmg: 2364817 bytes
+https://github.com/jmpijll/slightshot/releases/download/v1.5.1/Slightshot-1.5.1.dmg: 2306638 bytes
+https://github.com/jmpijll/slightshot/releases/download/v1.5.0/Slightshot-1.5.0.dmg: 2306605 bytes
+exit=0

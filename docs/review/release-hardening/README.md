@@ -1,18 +1,30 @@
 # Release workflow hardening (#38)
 
+## After review round 1
+
+![Release dry run after review round 1](dry-run-round1.png)
+
+[Release run 39413633120](https://github.com/jmpijll/slightshot/actions/runs/39413633120)
+ran at source `5e37b73` with `version=1.7.0` and **publish** disabled. The macOS
+build job notarised the app and disk image and checked the Sparkle download.
+It signed build 212 into the feed fetched from `origin/main` and verified the
+signature with both keys. It kept the signed feed as the `Slightshot-appcast`
+artifact. The publish job was skipped. Run through the Pages gate, that
+artifact is refused because 1.7.0 is not public.
+
+- [dry-run-round1-log.txt](dry-run-round1-log.txt) is the job log excerpt, job and
+  step results, artifacts, the gate refusal and the dispatch API response.
+- [publish-harness.txt](publish-harness.txt) records the publish-job and Pages-gate
+  tests and the workflow mutations they catch.
+
+## First version
+
 ![Release dry run on fix/38-release-hardening](dry-run.png)
 
-The image shows [Release run 39409286689](https://github.com/jmpijll/slightshot/actions/runs/39409286689)
-at source `13534da`, started with `version=1.7.0` and **publish** disabled. The
-upper part is the public run summary. The lower part is copied from the job log
-fetched with `gh api`. Both Apple submissions were accepted. The Sparkle tarball
-matched its pinned SHA-256. `generate_appcast` added build 210 to the feed
-fetched from `origin/main`, and the new signature verified with both the
-`SPARKLE_PUBLIC_KEY` secret and the built app's `SUPublicEDKey`. The four
-publication steps were skipped.
+[Release run 39409286689](https://github.com/jmpijll/slightshot/actions/runs/39409286689)
+at source `13534da`, before the publish job was split out.
 
-- [dry-run-log.txt](dry-run-log.txt) is the job log excerpt and every step result.
-- [local-checks.txt](local-checks.txt) records the run blocks exercised locally:
-  the source gate, the feed commit against a bare remote with a real
-  non-fast-forward race, and the signature check against wrong keys, a modified
-  disk image and the public 1.6.0 download.
+- [dry-run-log.txt](dry-run-log.txt) is that run's job log excerpt.
+- [local-checks.txt](local-checks.txt) records the Sparkle digest cross-check, the
+  source gate, the first feed-commit harness and the signature check against
+  wrong keys, a modified disk image and the public 1.6.0 download.
