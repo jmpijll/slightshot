@@ -98,6 +98,29 @@ follow-up.
 | ← move 1 pt | Clipboard editor | Toolbar button | nothing | nothing |
 | ⇧→ move 10 pt | Clipboard editor | Toolbar button | nothing | nothing |
 
+## Edit keys in an ordinary text field (review round 2)
+
+Review round 2 found that ⇧⌘Z did not redo in standard text fields, such as the
+video editor's time fields and the Settings filename field. The Redo item used
+"z" with a Shift mask, and a real ⇧⌘Z event ("Z") never matches that. The same
+check now ends in an `NSTextField`. It puts `00:01.5` on the general pasteboard,
+then sends each key through `NSApp.sendEvent` with the field focused and the
+window key, and restores the previous clipboard afterwards. Selection is location,length. The left column is a
+temporary build of `23c12a8` with round 1's Redo item put back. The right column
+is `23c12a8` as committed, re-run on 20 October 2026 after merging main.
+
+| Key | Round 1 Redo item: text, selection | Fix `23c12a8`: text, selection |
+| --- | --- | --- |
+| ⌘V paste | `00:01.5`, 7,0 | `00:01.5`, 7,0 |
+| ⌘Z undo | (empty), 0,0 | (empty), 0,0 |
+| ⇧⌘Z redo | (empty), 0,0 | **`00:01.5`, 7,0** |
+| ⌘A select all | (empty), 0,0 | **`00:01.5`, 0,7** |
+| ⌘X cut | (empty), 0,0 | (empty), 0,0 |
+| ⌘V paste | `00:01.5`, 7,0 | `00:01.5`, 7,0 |
+
+In the same `23c12a8` run, the 72 overlay rows above were identical to the
+`d813e26` column, including ⇧⌘Z redo in every window and focus.
+
 Reproduce after `swift build`:
 
 ```sh
