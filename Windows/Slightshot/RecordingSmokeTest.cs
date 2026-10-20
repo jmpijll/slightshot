@@ -214,7 +214,26 @@ internal static class RecordingSmokeTest
             using (var capture = new GdiRecordingCapture(left, top, new RecordingGeometry(patternWidth, patternHeight, width, height), false)) capture.Capture(legacy);
             var exactDifference = Difference(exact, truth, width, width, height);
             var legacyDifference = Difference(legacy, truth, width, width, height);
-            Require(exactDifference.Mismatched == 0, "cropped GDI recording frame equals the desktop pixels exactly: " + Describe(exact, truth, width, height, exactDifference.Mismatched));
+            if (exactDifference.Mismatched != 0)
+            {
+                foreach (var (name, pixels) in new[] { ("exact", exact), ("truth", truth) })
+                {
+                    using var stream = File.Create(Path.Combine(directory, $"odd-area-failure-{name}.png"));
+                    OutputService.Encode(BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, pixels, width * 4), ImageFormat.Png, 1).Save(stream);
+                }
+                var windows = new List<string>();
+                RecordingNative.EnumWindows((window, _) =>
+                {
+                    if (RecordingNative.IsWindowVisible(window) && RecordingNative.GetWindowRect(window, out var bounds) && bounds.Left < left + width && bounds.Right > left && bounds.Top < top + height && bounds.Bottom > top)
+                    {
+                        RecordingNative.GetWindowThreadProcessId(window, out uint process);
+                        string name; try { name = Process.GetProcessById((int)process).ProcessName; } catch (ArgumentException) { name = "?"; }
+                        windows.Add($"{name}#{process} ex=0x{RecordingNative.GetWindowLong(window, -20):X} [{bounds.Left},{bounds.Top},{bounds.Right},{bounds.Bottom}]");
+                    }
+                    return true;
+                }, IntPtr.Zero);
+                Require(false, "cropped GDI recording frame equals the desktop pixels exactly: " + Describe(exact, truth, width, height, exactDifference.Mismatched) + "; windows over the area (front first): " + string.Join("; ", windows));
+            }
             Require(legacyDifference.Mismatched > width * height / 10, "the previous 801→800 rescale visibly changes this fixture");
 
             var session = RecordingSession.Create(display, selection, includeCursor: false, nativeResolution: true);
