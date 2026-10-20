@@ -113,6 +113,7 @@ public partial class App : System.Windows.Application
         bool firstRun = !Directory.Exists(DataDirectory);
         settings = Settings.Load(out string? settingsNotice);
         recording = new RecordingCoordinator(settings);
+        SessionEnding += (_, args) => args.Cancel = recording.KeepForSessionEnd();
         trayIcon = CreateTrayIcon();
         tray = new Forms.NotifyIcon { Icon = trayIcon, Text = "Slightshot", Visible = true };
         tray.DoubleClick += (_, _) => Dispatcher.InvokeAsync(BeginCapture);
@@ -129,6 +130,7 @@ public partial class App : System.Windows.Application
                 ? "Double-click the Slightshot icon in the notification area to capture an area."
                 : $"Press {settings.CaptureAreaHotKey} to capture an area, or use the Slightshot icon in the notification area.", Forms.ToolTipIcon.Info);
         started = true;
+        recording.Recover();
         if (command is { } initial) _ = Dispatcher.InvokeAsync(() => Run(initial));
     }
 
