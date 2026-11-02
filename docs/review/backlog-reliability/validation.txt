@@ -1,0 +1,29 @@
+Slightshot reliability checks, macOS arm64
+Source before: 1dc0266 + regression tests
+Source after: 9e0783faa1bdfb83866a4d7850195e6b0d50a4f1
+
+BEFORE: slow HTTPS headers/status exceeded the 0.3 s deadline
+AssertionError: 0 == 0 : https://127.0.0.1:60888/download/trickle-headers.dmg: 0 bytes
+AssertionError: 0 == 0 : https://127.0.0.1:60888/download/trickle-headers.dmg: 0 bytes
+AssertionError: 0 == 0 : https://127.0.0.1:60888/download/trickle-status.dmg: 0 bytes
+AssertionError: 0 == 0 : https://127.0.0.1:60888/download/trickle-status.dmg: 0 bytes
+FAILED (failures=4)
+
+BEFORE: unavailable drive / locked folder / failed deletion
+✘ Test run with 2 tests in 1 suite failed after 0.009 seconds with 3 issues.
+
+AFTER: deadline regression
+
+----------------------------------------------------------------------
+Ran 1 test in 2.266s
+
+OK
+
+AFTER: cleanup regressions and full macOS test suite
+✔ Test unavailableParentIsRetriedWhenItReturns() passed after 0.005 seconds.
+✔ Test failedDeletionAndLiveFoldersKeepTheirParent() passed after 0.006 seconds.
+✔ Test run with 123 tests in 28 suites passed after 13.153 seconds.
+
+AFTER: release scripts and portable packaging checks
+Ran 45 tests in 15.691s
+OK

@@ -1,0 +1,371 @@
+Building for debugging...
+[1 / 4]
+[2 / 5] Slightshot-product
+[3 / 6] Slightshot-product
+[5 / 9] Slightshot
+[6 / 10] Slightshot
+[11 / 16] Slightshot-product
+[17 / 22] Slightshot-product
+[18 / 22] Slightshot-product
+[19 / 23] Slightshot-product
+[22 / 26] Slightshot
+[28 / 32] Slightshot
+[31 / 35] SlightshotTests-product
+[37 / 41] SlightshotTests-product
+[43 / 45] SlightshotTests-product
+Build complete! (6,31 sec)
+Test Suite 'All tests' started at 2026-11-02 01:10:54.454.
+Test Suite 'All tests' passed at 2026-11-02 01:10:54.456.
+	 Executed 0 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+◇ Test run started.
+↳ Testing Library Version: 2402
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite RasterEffectTests started.
+◇ Suite ApplicationCommandInboxTests started.
+◇ Suite ProductIconTests started.
+◇ Suite AnnotationSizeScrollTests started.
+◇ Suite DelayedCaptureTests started.
+◇ Suite OverlayShortcutDispatchTests started.
+◇ Suite ShortcutValidationTests started.
+◇ Suite TextAnnotationLayoutTests started.
+◇ Suite RecordingQualityAccessibilityTests started.
+◇ Suite AnnotationRedoTests started.
+◇ Suite StepGestureTests started.
+◇ Suite ScreenshotRetryTests started.
+◇ Suite LaunchCommandTests started.
+◇ Suite StagingCleanupTests started.
+◇ Suite RecordingExportTests started.
+◇ Suite VideoAnnotationTests started.
+◇ Suite EditorPrecisionTests started.
+◇ Suite StepAnnotationTests started.
+◇ Suite AppDelegateCommandTests started.
+◇ Suite QuitGuardTests started.
+◇ Suite ApplicationCommandDispatcherTests started.
+◇ Suite ClipboardEditorTests started.
+◇ Suite VideoRasterScaleTests started.
+◇ Suite AnnotationSizeIndicatorTests started.
+◇ Suite EditMenuDispatchTests started.
+◇ Suite VideoTrimEditorTests started.
+◇ Suite RecordingSessionCompletionTests started.
+◇ Suite SaveNotificationTests started.
+◇ Test effectsRespectAnnotationOrderAndUndoRestoresTheSource() started.
+◇ Test pixelationMakesBlocksAndKeepsTheOutsideUntouched() started.
+◇ Test fractionalZeroWidthOrHeightDoesNotModifyAnyPixels() started.
+◇ Test forwardingAfterOwnerExitsDoesNotLeaveAFutureCapture() started.
+◇ Test liveAndCommittedCanvasMatchExportAndUndoAtBothScales() started.
+◇ Test duplicateCannotBecomeAnotherCommandReceiver() started.
+◇ Test pixelationKeepsDistinctChannelsAndPartialBlockAverages() started.
+◇ Test ownerStallBeyondExpiryDropsAndReportsTheCommand() started.
+◇ Test ownerStallWithinExpiryStillDeliversOnce() started.
+◇ Test clippedAndTinyRegionsStayOpaque() started.
+◇ Test onlyOneCopyOwnsTheAppUntilItExits() started.
+◇ Test blurChangesOnlyTheRequestedRegionAtBothScales() started.
+◇ Test duplicateForwardsBeforeOwnerStartsListening() started.
+◇ Test inboxRejectsExcessRequestsInsteadOfGrowingWithoutBound() started.
+◇ Test forwarderReportsStaleRequestsItDiscards() started.
+◇ Test videoWheelUsesDisplaySizeAtZoomAndSkipsFixedTools() started.
+◇ Test allSharedVectorsRenderWithoutClippingAtBothScales() started.
+◇ Test restartDiscardsOldRequestsAndRejectsOldForwarders() started.
+◇ Test buttonsKeepSizeLabelsAndEnabledActionBehavior() started.
+◇ Test overlayWindowKeepsShortcutsWhileToolbarOrPaletteHasFocus() started.
+◇ Test nativeOverlayWheelChangesNewMarksKeepsHistoryAndSyncsPalette() started.
+◇ Test committedScreenshotTextKeepsTheTypedWrapAndPosition() started.
+◇ Test cancellationReplacementDeadlineAndBusyOwnership() started.
+◇ Test wheelChangesWidthAndTextWithinExistingLimits() started.
+◇ Test shortcutsAlreadyUsedByAnotherActionAreRejected() started.
+◇ Test menuKeyEquivalentsUseAppKitCharacters() started.
+◇ Test bareCharacterKeyIsRefusedNotTreatedAsClear() started.
+◇ Test preciseScrollingAccumulatesAndResetsAcrossTools() started.
+◇ Test recorderRefusesBareKeysAndClearsOnlyOnEscape() started.
+◇ Test expiredRequestsNeverStartDelayedCaptures() started.
+◇ Test nativeSliderSupportsNumericValuesAndActions() started.
+◇ Test anotherAppsExclusiveHotKeyDoesNotBlockRegistration() started.
+◇ Test preservesColdStartArguments() started.
+◇ Test cancellationAndWriteFailureKeepTheEditableSelectionForRetry() started.
+◇ Test unavailableParentIsRetriedWhenItReturns() started.
+◇ Test registrationFailuresAndSuspensionAreVisible() started.
+◇ Test modalOutputIgnoresDuplicateCaptureOutputRecordingAndClose() started.
+◇ Test newSelectionClearsRedoAndEmptyHistoryIsHarmless() started.
+◇ Test typingModifiersAloneAreRejectedForCharacterKeys() started.
+◇ Test rangesAreFiniteClampedAndHalfOpen() started.
+◇ Test ownerReceivesColdAndWarmForwardedCommandsOnce() started.
+◇ Test nativeTextUndoRedoDoesNotRestoreCommittedAnnotations() started.
+◇ Test theLoupeCentresOnTheTruePixelAtDisplayEdges(point:pixel:) started.
+◇ Test newDrawingAndCommittedTextDiscardRedoButCancelledDraftAndStyleChangesKeepIt() started.
+◇ Test draggingOutsideTheSelectionStartsAFreshOne() started.
+◇ Test rejectsUnknownOrMalformedRoutes(_:) started.
+◇ Test aTapAndDraggedGestureEachStampOnceAndRapidClicksKeepEditing() started.
+◇ Test shiftConstrainsARectangleToASquareAndALineTo45Degrees() started.
+◇ Test qualityDimensionsPreserveAspectAndNeverUpscale() started.
+◇ Test shiftSquaresStayInsideTheSelection() started.
+◇ Test aHalfPointSelectionOnRetinaExportsTheOutlinedPixels() started.
+◇ Test shortcutsAndToolbarRestoreRasterStepsAndTextInOriginalOrder() started.
+◇ Test circlesGrowForDigitsAndIgnoreThickness() started.
+◇ Test pixelAlignmentRoundsEachEdgeToTheDeviceGrid() started.
+◇ Test anotherBundleForwardsOnlyValidURLsToTheOwner() started.
+◇ Test coldURLIsQueuedUntilTheOwnerIsReady() started.
+◇ Test acceptsOnlyDocumentedRoutes(_:_:) started.
+◇ Test aPenTapLeavesADot() started.
+◇ Test stepsClipAtSelectionEdgesAndLightColoursKeepDarkDigits() started.
+◇ Test stepLiveAndCommittedPixelsMatchExportWithRasterHistory() started.
+◇ Test videoEditorSquaresShiftRectanglesAndKeepsTaps(tool:shift:) started.
+◇ Test failedDeletionAndLiveFoldersKeepTheirParent() started.
+◇ Test rasterEffectsTransformEarlierStepsAndPreserveLaterSteps() started.
+◇ Test discardedAnnotationsQuitImmediately() started.
+◇ Test numberedStepsAreAvailableAfterTheExistingTools() started.
+◇ Test aQuitArrivingWhileThePromptIsOpenIsRefused() started.
+◇ Test repeatedQuitRequestsInARealApplicationWaitForTheDecision() started.
+◇ Test annotatedOverlayIsUnsavedWork() started.
+◇ Test aClickOutsideTheSelectionKeepsItsAnnotations() started.
+◇ Test undoRestoresTheNextNumberAndOtherMarksDoNotAdvanceIt() started.
+◇ Test copyQuitsOnlyAfterTheCaptureIsCopied(copied:) started.
+◇ Test clipboardSessionRetainsEditorOnFailureAndReleasesOwnershipOnClose() started.
+◇ Test discardRemovesTheRecordingBeforeQuitting(work:) started.
+◇ Test cancelKeepsTheAppRunning(work:) started.
+◇ Test fractionalCropMarksAndTransparentRasterPreviewUseTheSamePixelOrigin() started.
+◇ Test nothingUnsavedQuitsWithoutAsking() started.
+◇ Test textStillBeingTypedIsUnsavedWork() started.
+◇ Test saveCancelsTheQuitAndQuitsAgainOnlyAfterSaving(saved:) started.
+◇ Test busySessionRejectsCommandsWithoutReplayingThemLater() started.
+◇ Test idleCaptureRunsTheRequestedAction(_:) started.
+◇ Test prepared4KFramesKeepPreviewStrengthAndTimedRange(tool:) started.
+◇ Test reviewFixtureRestoresOwnedClipboardAndPreservesExternalChanges() started.
+◇ Test directImageRepresentationsPreservePixelsAndRejectFiles() started.
+◇ Test fitAndCroppedExportsRetainOriginalResolutionAndAlpha() started.
+◇ Test haloStaysCenteredOnPointerEvenAtViewportEdges() started.
+◇ Test fitVideoPrivacyGestureMatchesScreenshotStrength(tool:) started.
+◇ Test fit4KStepGestureKeepsScreenshotStampSize() started.
+◇ Test smallPortraitAndExtremeWideImagesKeepEveryPixel() started.
+◇ Test haloGrowsContinuouslyWithStrokeAndTextSize() started.
+◇ Test idleReopenShowsPreferencesWithoutCapturing() started.
+◇ Test haloFollowsPointerAndSizeChangesKeepItsCenter() started.
+◇ Test saveSaveAsAndCopyAfterSaveEachPostExactlyOneNotification() started.
+◇ Test attachmentIsAThumbnailCopyAndTheSavedFileStays() started.
+◇ Test everyEditKeyReachesItsAction() started.
+◇ Test aLateRecordingSuccessWinsOverTheStreamError() started.
+◇ Test copyAfterSaveIsOneNotificationThatSaysSo() started.
+◇ Test saveShortcutAndQuitSaveIncludeATypedTrimTime() started.
+◇ Test case passing 1 argument route → "https://capture-area" to rejectsUnknownOrMalformedRoutes(_:) started.
+◇ Test case passing 1 argument route → "slightshot:copy-full" to rejectsUnknownOrMalformedRoutes(_:) started.
+◇ Test case passing 1 argument route → "slightshot:///copy-full" to rejectsUnknownOrMalformedRoutes(_:) started.
+◇ Test case passing 1 argument route → "slightshot://unknown" to rejectsUnknownOrMalformedRoutes(_:) started.
+◇ Test case passing 1 argument route → "slightshot://copy-full/" to rejectsUnknownOrMalformedRoutes(_:) started.
+◇ Test case passing 1 argument route → "slightshot://user:password@copy-full" to rejectsUnknownOrMalformedRoutes(_:) started.
+◇ Test case passing 1 argument route → "slightshot://copy-full/path" to rejectsUnknownOrMalformedRoutes(_:) started.
+◇ Test case passing 1 argument route → "slightshot://user@copy-full" to rejectsUnknownOrMalformedRoutes(_:) started.
+◇ Test case passing 2 arguments point → (0.0, 0.0), pixel → 0 to theLoupeCentresOnTheTruePixelAtDisplayEdges(point:pixel:) started.
+◇ Test case passing 1 argument route → "slightshot://copy-full?" to rejectsUnknownOrMalformedRoutes(_:) started.
+◇ Test case passing 1 argument route → "slightshot://copy-full?save=true" to rejectsUnknownOrMalformedRoutes(_:) started.
+◇ Test case passing 1 argument route → "slightshot://copy-full#" to rejectsUnknownOrMalformedRoutes(_:) started.
+◇ Test case passing 1 argument route → "slightshot://copy-full#capture-area" to rejectsUnknownOrMalformedRoutes(_:) started.
+◇ Test case passing 1 argument route → "slightshot://%63opy-full" to rejectsUnknownOrMalformedRoutes(_:) started.
+◇ Test case passing 2 arguments point → (19.5, 19.5), pixel → 19 to theLoupeCentresOnTheTruePixelAtDisplayEdges(point:pixel:) started.
+◇ Test case passing 1 argument route → "slightshot://copy-full:12" to rejectsUnknownOrMalformedRoutes(_:) started.
+◇ Test case passing 1 argument route → "slightshot://copy-full%20" to rejectsUnknownOrMalformedRoutes(_:) started.
+◇ Test case passing 2 arguments route → "slightshot://copy-full", expected → .copyFullScreen to acceptsOnlyDocumentedRoutes(_:_:) started.
+◇ Test case passing 2 arguments route → "slightshot://capture-full", expected → .saveFullScreen to acceptsOnlyDocumentedRoutes(_:_:) started.
+◇ Test case passing 2 arguments tool → .pen, shift → false to videoEditorSquaresShiftRectanglesAndKeepsTaps(tool:shift:) started.
+◇ Test case passing 2 arguments tool → .rectangle, shift → true to videoEditorSquaresShiftRectanglesAndKeepsTaps(tool:shift:) started.
+◇ Test case passing 2 arguments route → "slightshot://capture-area", expected → .captureArea to acceptsOnlyDocumentedRoutes(_:_:) started.
+◇ Test case passing 1 argument route → "slightshot://COPY-FULL" to rejectsUnknownOrMalformedRoutes(_:) started.
+◇ Test case passing 1 argument copied → true to copyQuitsOnlyAfterTheCaptureIsCopied(copied:) started.
+◇ Test case passing 2 arguments tool → .marker, shift → false to videoEditorSquaresShiftRectanglesAndKeepsTaps(tool:shift:) started.
+◇ Test case passing 1 argument copied → false to copyQuitsOnlyAfterTheCaptureIsCopied(copied:) started.
+◇ Test case passing 1 argument command → .captureArea to idleCaptureRunsTheRequestedAction(_:) started.
+◇ Test case passing 1 argument work → .recording(canSave: true) to discardRemovesTheRecordingBeforeQuitting(work:) started.
+◇ Test case passing 1 argument work → .recording(canSave: true) to cancelKeepsTheAppRunning(work:) started.
+◇ Test case passing 1 argument work → .recording(canSave: false) to discardRemovesTheRecordingBeforeQuitting(work:) started.
+◇ Test case passing 1 argument command → .saveFullScreen to idleCaptureRunsTheRequestedAction(_:) started.
+◇ Test case passing 1 argument saved → true to saveCancelsTheQuitAndQuitsAgainOnlyAfterSaving(saved:) started.
+◇ Test case passing 1 argument saved → false to saveCancelsTheQuitAndQuitsAgainOnlyAfterSaving(saved:) started.
+◇ Test case passing 1 argument command → .copyFullScreen to idleCaptureRunsTheRequestedAction(_:) started.
+◇ Test case passing 1 argument tool → .blur to prepared4KFramesKeepPreviewStrengthAndTimedRange(tool:) started.
+◇ Test case passing 1 argument tool → .blur to fitVideoPrivacyGestureMatchesScreenshotStrength(tool:) started.
+◇ Test case passing 1 argument work → .recording(canSave: false) to cancelKeepsTheAppRunning(work:) started.
+◇ Test case passing 1 argument work → .annotations to cancelKeepsTheAppRunning(work:) started.
+◇ Test case passing 1 argument tool → .pixelate to fitVideoPrivacyGestureMatchesScreenshotStrength(tool:) started.
+✔ Test rejectsUnknownOrMalformedRoutes(_:) with 16 test cases passed after 0.001 seconds.
+✔ Test preservesColdStartArguments() passed after 0.001 seconds.
+✔ Test qualityDimensionsPreserveAspectAndNeverUpscale() passed after 0.001 seconds.
+✔ Test acceptsOnlyDocumentedRoutes(_:_:) with 3 test cases passed after 0.001 seconds.
+◇ Test case passing 1 argument tool → .pixelate to prepared4KFramesKeepPreviewStrengthAndTimedRange(tool:) started.
+◇ Test realExportsArePlayableAndApplyQuality() started.
+✔ Suite LaunchCommandTests passed after 0.002 seconds.
+✔ Test unavailableParentIsRetriedWhenItReturns() passed after 0.005 seconds.
+✔ Test failedDeletionAndLiveFoldersKeepTheirParent() passed after 0.006 seconds.
+✔ Suite StagingCleanupTests passed after 0.007 seconds.
+✔ Test modalOutputIgnoresDuplicateCaptureOutputRecordingAndClose() passed after 2.037 seconds.
+✔ Test clipboardSessionRetainsEditorOnFailureAndReleasesOwnershipOnClose() passed after 4.327 seconds.
+✔ Test liveAndCommittedCanvasMatchExportAndUndoAtBothScales() passed after 5.025 seconds.
+✔ Test blurChangesOnlyTheRequestedRegionAtBothScales() passed after 5.025 seconds.
+✔ Test pixelationKeepsDistinctChannelsAndPartialBlockAverages() passed after 5.025 seconds.
+✔ Test forwardingAfterOwnerExitsDoesNotLeaveAFutureCapture() passed after 5.025 seconds.
+✔ Test duplicateForwardsBeforeOwnerStartsListening() passed after 5.025 seconds.
+✔ Test effectsRespectAnnotationOrderAndUndoRestoresTheSource() passed after 5.025 seconds.
+✔ Test pixelationMakesBlocksAndKeepsTheOutsideUntouched() passed after 5.025 seconds.
+✔ Test inboxRejectsExcessRequestsInsteadOfGrowingWithoutBound() passed after 5.025 seconds.
+✔ Test duplicateCannotBecomeAnotherCommandReceiver() passed after 5.025 seconds.
+✔ Test fractionalZeroWidthOrHeightDoesNotModifyAnyPixels() passed after 5.025 seconds.
+✔ Test onlyOneCopyOwnsTheAppUntilItExits() passed after 5.025 seconds.
+✔ Test forwarderReportsStaleRequestsItDiscards() passed after 5.025 seconds.
+✔ Test allSharedVectorsRenderWithoutClippingAtBothScales() passed after 5.025 seconds.
+✔ Test buttonsKeepSizeLabelsAndEnabledActionBehavior() passed after 5.030 seconds.
+✔ Test overlayWindowKeepsShortcutsWhileToolbarOrPaletteHasFocus() passed after 5.030 seconds.
+✔ Suite ProductIconTests passed after 5.030 seconds.
+✔ Test restartDiscardsOldRequestsAndRejectsOldForwarders() passed after 5.030 seconds.
+◇ Test clipboardEditorKeepsShortcutsWhileToolbarOrPaletteHasFocus() started.
+✔ Test nativeOverlayWheelChangesNewMarksKeepsHistoryAndSyncsPalette() passed after 5.030 seconds.
+✔ Test wheelChangesWidthAndTextWithinExistingLimits() passed after 5.030 seconds.
+✔ Test committedScreenshotTextKeepsTheTypedWrapAndPosition() passed after 5.030 seconds.
+✔ Test cancellationReplacementDeadlineAndBusyOwnership() passed after 5.030 seconds.
+✔ Suite DelayedCaptureTests passed after 5.031 seconds.
+◇ Test committedVideoTextKeepsTheTypedWrapAndPosition() started.
+✔ Test preciseScrollingAccumulatesAndResetsAcrossTools() passed after 5.483 seconds.
+✔ Test shortcutsAlreadyUsedByAnotherActionAreRejected() passed after 5.483 seconds.
+✔ Test menuKeyEquivalentsUseAppKitCharacters() passed after 5.483 seconds.
+✔ Test clippedAndTinyRegionsStayOpaque() passed after 5.483 seconds.
+✔ Test videoWheelUsesDisplaySizeAtZoomAndSkipsFixedTools() passed after 5.483 seconds.
+✔ Test registrationFailuresAndSuspensionAreVisible() passed after 5.483 seconds.
+✔ Suite RasterEffectTests passed after 5.484 seconds.
+✔ Suite AnnotationSizeScrollTests passed after 5.484 seconds.
+✔ Test bareCharacterKeyIsRefusedNotTreatedAsClear() passed after 5.483 seconds.
+✔ Test cancellationAndWriteFailureKeepTheEditableSelectionForRetry() passed after 5.483 seconds.
+✔ Test newSelectionClearsRedoAndEmptyHistoryIsHarmless() passed after 5.483 seconds.
+✔ Suite ScreenshotRetryTests passed after 5.484 seconds.
+✔ Test expiredRequestsNeverStartDelayedCaptures() passed after 5.484 seconds.
+✔ Test rangesAreFiniteClampedAndHalfOpen() passed after 5.484 seconds.
+✔ Test nativeTextUndoRedoDoesNotRestoreCommittedAnnotations() passed after 5.484 seconds.
+✔ Test typingModifiersAloneAreRejectedForCharacterKeys() passed after 5.484 seconds.
+◇ Test trimsAreClampedHalfOpenAndShiftKeptAnnotationTimes() started.
+✔ Test aLateRecordingSuccessWinsOverTheStreamError() passed after 5.483 seconds.
+◇ Test aPlayableMovieIsKeptWhenTheOutputNeverReports() started.
+✔ Test newDrawingAndCommittedTextDiscardRedoButCancelledDraftAndStyleChangesKeepIt() passed after 5.485 seconds.
+✔ Test draggingOutsideTheSelectionStartsAFreshOne() passed after 5.485 seconds.
+✔ Test anotherAppsExclusiveHotKeyDoesNotBlockRegistration() passed after 5.485 seconds.
+✔ Test aTapAndDraggedGestureEachStampOnceAndRapidClicksKeepEditing() passed after 5.485 seconds.
+✔ Suite StepGestureTests passed after 5.485 seconds.
+✔ Test recorderRefusesBareKeysAndClearsOnlyOnEscape() passed after 6.221 seconds.
+✔ Test shiftConstrainsARectangleToASquareAndALineTo45Degrees() passed after 6.221 seconds.
+✔ Test shortcutsAndToolbarRestoreRasterStepsAndTextInOriginalOrder() passed after 6.221 seconds.
+✔ Test aHalfPointSelectionOnRetinaExportsTheOutlinedPixels() passed after 6.221 seconds.
+✔ Test circlesGrowForDigitsAndIgnoreThickness() passed after 6.221 seconds.
+✔ Test shiftSquaresStayInsideTheSelection() passed after 6.221 seconds.
+✔ Test nativeSliderSupportsNumericValuesAndActions() passed after 6.221 seconds.
+✔ Test aPenTapLeavesADot() passed after 6.221 seconds.
+✔ Test rasterEffectsTransformEarlierStepsAndPreserveLaterSteps() passed after 6.221 seconds.
+✔ Test anotherBundleForwardsOnlyValidURLsToTheOwner() passed after 6.221 seconds.
+✔ Test numberedStepsAreAvailableAfterTheExistingTools() passed after 6.221 seconds.
+✔ Test theLoupeCentresOnTheTruePixelAtDisplayEdges(point:pixel:) with 2 test cases passed after 6.221 seconds.
+✔ Test repeatedQuitRequestsInARealApplicationWaitForTheDecision() passed after 6.221 seconds.
+✔ Test stepsClipAtSelectionEdgesAndLightColoursKeepDarkDigits() passed after 6.221 seconds.
+✔ Test discardedAnnotationsQuitImmediately() passed after 6.221 seconds.
+✔ Test aQuitArrivingWhileThePromptIsOpenIsRefused() passed after 6.221 seconds.
+✔ Test pixelAlignmentRoundsEachEdgeToTheDeviceGrid() passed after 6.221 seconds.
+✔ Test aClickOutsideTheSelectionKeepsItsAnnotations() passed after 6.221 seconds.
+✔ Test annotatedOverlayIsUnsavedWork() passed after 6.221 seconds.
+✔ Test copyQuitsOnlyAfterTheCaptureIsCopied(copied:) with 2 test cases passed after 6.221 seconds.
+✔ Test busySessionRejectsCommandsWithoutReplayingThemLater() passed after 6.221 seconds.
+✔ Test textStillBeingTypedIsUnsavedWork() passed after 6.221 seconds.
+✔ Test idleCaptureRunsTheRequestedAction(_:) with 3 test cases passed after 6.221 seconds.
+✔ Test nothingUnsavedQuitsWithoutAsking() passed after 6.221 seconds.
+✔ Test stepLiveAndCommittedPixelsMatchExportWithRasterHistory() passed after 6.221 seconds.
+✔ Test coldURLIsQueuedUntilTheOwnerIsReady() passed after 6.221 seconds.
+✔ Test reviewFixtureRestoresOwnedClipboardAndPreservesExternalChanges() passed after 6.221 seconds.
+✔ Test cancelKeepsTheAppRunning(work:) with 3 test cases passed after 6.221 seconds.
+✔ Test saveCancelsTheQuitAndQuitsAgainOnlyAfterSaving(saved:) with 2 test cases passed after 6.221 seconds.
+✔ Test undoRestoresTheNextNumberAndOtherMarksDoNotAdvanceIt() passed after 6.221 seconds.
+✔ Test videoEditorSquaresShiftRectanglesAndKeepsTaps(tool:shift:) with 3 test cases passed after 6.221 seconds.
+✔ Test discardRemovesTheRecordingBeforeQuitting(work:) with 2 test cases passed after 6.221 seconds.
+✔ Test fractionalCropMarksAndTransparentRasterPreviewUseTheSamePixelOrigin() passed after 6.221 seconds.
+✔ Test haloGrowsContinuouslyWithStrokeAndTextSize() passed after 6.221 seconds.
+✔ Suite ShortcutValidationTests passed after 6.222 seconds.
+✔ Test haloFollowsPointerAndSizeChangesKeepItsCenter() passed after 6.221 seconds.
+✔ Suite RecordingQualityAccessibilityTests passed after 6.222 seconds.
+✔ Suite AnnotationRedoTests passed after 6.222 seconds.
+✔ Suite AppDelegateCommandTests passed after 6.222 seconds.
+✔ Test directImageRepresentationsPreservePixelsAndRejectFiles() passed after 6.221 seconds.
+✔ Test fit4KStepGestureKeepsScreenshotStampSize() passed after 6.221 seconds.
+✔ Suite EditorPrecisionTests passed after 6.222 seconds.
+✔ Suite StepAnnotationTests passed after 6.222 seconds.
+✔ Suite QuitGuardTests passed after 6.222 seconds.
+✔ Test fitVideoPrivacyGestureMatchesScreenshotStrength(tool:) with 2 test cases passed after 6.221 seconds.
+✔ Test saveSaveAsAndCopyAfterSaveEachPostExactlyOneNotification() passed after 6.221 seconds.
+✔ Test attachmentIsAThumbnailCopyAndTheSavedFileStays() passed after 6.221 seconds.
+✔ Test smallPortraitAndExtremeWideImagesKeepEveryPixel() passed after 6.222 seconds.
+✔ Test idleReopenShowsPreferencesWithoutCapturing() passed after 6.222 seconds.
+✔ Suite ApplicationCommandDispatcherTests passed after 6.223 seconds.
+✔ Test fitAndCroppedExportsRetainOriginalResolutionAndAlpha() passed after 6.230 seconds.
+✔ Test copyAfterSaveIsOneNotificationThatSaysSo() passed after 6.230 seconds.
+✔ Test prepared4KFramesKeepPreviewStrengthAndTimedRange(tool:) with 2 test cases passed after 6.230 seconds.
+✔ Suite SaveNotificationTests passed after 6.231 seconds.
+✔ Test haloStaysCenteredOnPointerEvenAtViewportEdges() passed after 6.230 seconds.
+✔ Suite VideoRasterScaleTests passed after 6.231 seconds.
+✔ Suite ClipboardEditorTests passed after 6.231 seconds.
+✔ Test everyEditKeyReachesItsAction() passed after 6.230 seconds.
+✔ Suite AnnotationSizeIndicatorTests passed after 6.231 seconds.
+✔ Suite EditMenuDispatchTests passed after 6.231 seconds.
+✔ Test ownerStallWithinExpiryStillDeliversOnce() passed after 6.232 seconds.
+✔ Test committedVideoTextKeepsTheTypedWrapAndPosition() passed after 1.258 seconds.
+✔ Test clipboardEditorKeepsShortcutsWhileToolbarOrPaletteHasFocus() passed after 1.259 seconds.
+✔ Test trimsAreClampedHalfOpenAndShiftKeptAnnotationTimes() passed after 0.805 seconds.
+◇ Test editMenuServesTextFieldsAndLeavesOverlayShortcutsToTheOverlay() started.
+✔ Suite OverlayShortcutDispatchTests passed after 6.290 seconds.
+◇ Test preparedExportMatchesScreenshotDrawingAndEffectOrder() started.
+✔ Test ownerReceivesColdAndWarmForwardedCommandsOnce() passed after 6.289 seconds.
+✔ Test ownerStallBeyondExpiryDropsAndReportsTheCommand() passed after 6.290 seconds.
+✔ Suite ApplicationCommandInboxTests passed after 6.290 seconds.
+✔ Test editMenuServesTextFieldsAndLeavesOverlayShortcutsToTheOverlay() passed after 0.492 seconds.
+✔ Test preparedExportMatchesScreenshotDrawingAndEffectOrder() passed after 0.492 seconds.
+✔ Suite TextAnnotationLayoutTests passed after 6.782 seconds.
+◇ Test realExportsShowTimedMarksAndFreshPrivacyPixelsAtEveryQuality() started.
+✔ Test aPlayableMovieIsKeptWhenTheOutputNeverReports() passed after 1.458 seconds.
+◇ Test streamErrorBeforeRecordingStartsFailsImmediately() started.
+✔ Test streamErrorBeforeRecordingStartsFailsImmediately() passed after 0.101 seconds.
+◇ Test onlyAPlayableMovieCountsAsARecording() started.
+✔ Test saveShortcutAndQuitSaveIncludeATypedTrimTime() passed after 7.055 seconds.
+◇ Test typedTimesMoveOnlyTheirEdgeRoundAndRevertInvalidText() started.
+✔ Test onlyAPlayableMovieCountsAsARecording() passed after 0.131 seconds.
+◇ Test launchRemovesOnlyAbandonedRecordingFolders() started.
+✔ Test realExportsArePlayableAndApplyQuality() passed after 7.175 seconds.
+◇ Test highExportPreservesSlowerSourceCadence(annotated:) started.
+◇ Test case passing 1 argument annotated → false to highExportPreservesSlowerSourceCadence(annotated:) started.
+✔ Test launchRemovesOnlyAbandonedRecordingFolders() passed after 0.006 seconds.
+◇ Test concurrentStagingUpdatesKeepEveryUnfinishedParent() started.
+✔ Test concurrentStagingUpdatesKeepEveryUnfinishedParent() passed after 0.160 seconds.
+◇ Test anExportRemembersItsStagingFolderUntilItFinishes() started.
+✔ Test typedTimesMoveOnlyTheirEdgeRoundAndRevertInvalidText() passed after 0.455 seconds.
+◇ Test handleClicksThatChangeNothingKeepRedo() started.
+✔ Test anExportRemembersItsStagingFolderUntilItFinishes() passed after 0.375 seconds.
+◇ Test aLiveSessionFolderSurvivesTheSweep() started.
+✔ Test aLiveSessionFolderSurvivesTheSweep() passed after 0.691 seconds.
+✔ Suite RecordingSessionCompletionTests passed after 8.411 seconds.
+◇ Test case passing 1 argument annotated → true to highExportPreservesSlowerSourceCadence(annotated:) started.
+✔ Test realExportsShowTimedMarksAndFreshPrivacyPixelsAtEveryQuality() passed after 1.712 seconds.
+◇ Test trimmedExportShiftsKeptMarksAndDropsMarksOutsideTheTrim() started.
+✔ Test handleClicksThatChangeNothingKeepRedo() passed after 1.280 seconds.
+◇ Test seekingUpdatesTheTrimTimelinePlayhead() started.
+✔ Test trimmedExportShiftsKeptMarksAndDropsMarksOutsideTheTrim() passed after 0.368 seconds.
+◇ Test exportRejectsSourceDestinationsWithoutChangingOriginal(annotated:) started.
+◇ Test case passing 1 argument annotated → false to exportRejectsSourceDestinationsWithoutChangingOriginal(annotated:) started.
+◇ Test case passing 1 argument annotated → true to exportRejectsSourceDestinationsWithoutChangingOriginal(annotated:) started.
+✔ Test seekingUpdatesTheTrimTimelinePlayhead() passed after 0.293 seconds.
+◇ Test undoReplacesAPendingSeekOutsideTheRestoredTrim() started.
+✔ Test exportRejectsSourceDestinationsWithoutChangingOriginal(annotated:) with 2 test cases passed after 0.271 seconds.
+◇ Test cancelledAnnotatedExportRetainsDestinationAndSource() started.
+✔ Test highExportPreservesSlowerSourceCadence(annotated:) with 2 test cases passed after 1.968 seconds.
+◇ Test trimmedExportsKeepOnlyTheTrimAtEveryQuality(annotated:) started.
+◇ Test case passing 1 argument annotated → false to trimmedExportsKeepOnlyTheTrimAtEveryQuality(annotated:) started.
+✔ Test cancelledAnnotatedExportRetainsDestinationAndSource() passed after 0.638 seconds.
+✔ Suite VideoAnnotationTests passed after 9.772 seconds.
+◇ Test case passing 1 argument annotated → true to trimmedExportsKeepOnlyTheTrimAtEveryQuality(annotated:) started.
+✔ Test undoReplacesAPendingSeekOutsideTheRestoredTrim() passed after 1.909 seconds.
+✔ Suite VideoTrimEditorTests passed after 10.994 seconds.
+✔ Test trimmedExportsKeepOnlyTheTrimAtEveryQuality(annotated:) with 2 test cases passed after 2.294 seconds.
+◇ Test wholeTrimExportsLikeAnUntrimmedRecording() started.
+✔ Test wholeTrimExportsLikeAnUntrimmedRecording() passed after 0.904 seconds.
+◇ Test cancellationAndBadSourcePreserveExistingDestination() started.
+✔ Test cancellationAndBadSourcePreserveExistingDestination() passed after 0.355 seconds.
+◇ Test successfulExportAtomicallyReplacesExistingFile() started.
+✔ Test successfulExportAtomicallyReplacesExistingFile() passed after 0.452 seconds.
+✔ Suite RecordingExportTests passed after 13.153 seconds.
+✔ Test run with 123 tests in 28 suites passed after 13.153 seconds.

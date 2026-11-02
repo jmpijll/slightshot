@@ -1,0 +1,59 @@
+Building for debugging...
+[Planning 1 / 97]
+[Planning deferred tasks]
+[14 / 64]
+[36 / 64]
+[38 / 66] Slightshot
+[48 / 166]
+[51 / 166]
+[60 / 166]
+[62 / 166]
+[68 / 166]
+[71 / 166]
+[79 / 166]
+[84 / 166]
+[85 / 166]
+[102 / 166]
+[104 / 166]
+[111 / 166]
+[113 / 166]
+[114 / 166]
+[116 / 166]
+[126 / 166] Slightshot
+[131 / 166] Slightshot
+[141 / 166] Slightshot-product
+[142 / 166] Slightshot
+[143 / 166] SlightshotTests-product
+[144 / 166] SlightshotTests-product
+[145 / 166]
+[147 / 166] Slightshot-product
+[147 / 166] Slightshot
+[147 / 166] Slightshot-product
+[149 / 166] Slightshot
+[156 / 167] SlightshotTests-product
+[157 / 182]
+[160 / 182]
+[171 / 182] SlightshotTests-product
+[172 / 182] SlightshotTests-product
+[176 / 182] SlightshotTests-product
+[178 / 182] SlightshotTests-product
+Build complete! (14,97 sec)
+◇ Test run started.
+↳ Testing Library Version: 2402
+↳ Target Platform: arm64e-apple-macos14.0
+◇ Suite StagingCleanupTests started.
+◇ Test failedDeletionAndLiveFoldersKeepTheirParent() started.
+◇ Test unavailableParentIsRetriedWhenItReturns() started.
+✘ Test failedDeletionAndLiveFoldersKeepTheirParent() recorded an issue at StagingCleanupTests.swift:44:9: Expectation failed: RecordingExport.stagingParents.contains { $0.path == parent.path }
+↳ RecordingExport.stagingParents.contains { $0.path == parent.path } → <not evaluated>
+✘ Test unavailableParentIsRetriedWhenItReturns() recorded an issue at StagingCleanupTests.swift:22:9: Expectation failed: RecordingExport.stagingParents.contains { $0.path == parent.path }
+↳ An unavailable drive must stay registered for the next launch
+↳ RecordingExport.stagingParents.contains { $0.path == parent.path } → <not evaluated>
+✘ Test unavailableParentIsRetriedWhenItReturns() failed after 0.005 seconds with 1 issue.
+✘ Test failedDeletionAndLiveFoldersKeepTheirParent() recorded an issue at StagingCleanupTests.swift:49:9: Expectation failed: RecordingExport.stagingParents.contains { $0.path == parent.path }
+↳ RecordingExport.stagingParents.contains { $0.path == parent.path } → <not evaluated>
+✘ Test failedDeletionAndLiveFoldersKeepTheirParent() failed after 0.009 seconds with 2 issues.
+✘ Suite StagingCleanupTests failed after 0.009 seconds with 3 issues.
+✘ Test run with 2 tests in 1 suite failed after 0.009 seconds with 3 issues.
+Note: Some test targets reported failures:
+  - SlightshotTests (Swift Testing)

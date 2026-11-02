@@ -1,0 +1,41 @@
+test_trickling_headers_and_status_stop_at_the_absolute_deadline (test_release_metadata.DownloadCheckTests) ... 
+======================================================================
+FAIL: test_trickling_headers_and_status_stop_at_the_absolute_deadline (test_release_metadata.DownloadCheckTests) (name='trickle-headers.dmg', limits={'DOWNLOAD_BUDGET': 0.3})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "Tests/test_release_metadata.py", line 364, in test_trickling_headers_and_status_stop_at_the_absolute_deadline
+    self.assertNotEqual(result.returncode, 0, result.stdout)
+AssertionError: 0 == 0 : https://127.0.0.1:60888/download/trickle-headers.dmg: 0 bytes
+
+
+======================================================================
+FAIL: test_trickling_headers_and_status_stop_at_the_absolute_deadline (test_release_metadata.DownloadCheckTests) (name='trickle-headers.dmg', limits={'GATE_BUDGET': 0.3})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "Tests/test_release_metadata.py", line 364, in test_trickling_headers_and_status_stop_at_the_absolute_deadline
+    self.assertNotEqual(result.returncode, 0, result.stdout)
+AssertionError: 0 == 0 : https://127.0.0.1:60888/download/trickle-headers.dmg: 0 bytes
+
+
+======================================================================
+FAIL: test_trickling_headers_and_status_stop_at_the_absolute_deadline (test_release_metadata.DownloadCheckTests) (name='trickle-status.dmg', limits={'DOWNLOAD_BUDGET': 0.3})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "Tests/test_release_metadata.py", line 364, in test_trickling_headers_and_status_stop_at_the_absolute_deadline
+    self.assertNotEqual(result.returncode, 0, result.stdout)
+AssertionError: 0 == 0 : https://127.0.0.1:60888/download/trickle-status.dmg: 0 bytes
+
+
+======================================================================
+FAIL: test_trickling_headers_and_status_stop_at_the_absolute_deadline (test_release_metadata.DownloadCheckTests) (name='trickle-status.dmg', limits={'GATE_BUDGET': 0.3})
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "Tests/test_release_metadata.py", line 364, in test_trickling_headers_and_status_stop_at_the_absolute_deadline
+    self.assertNotEqual(result.returncode, 0, result.stdout)
+AssertionError: 0 == 0 : https://127.0.0.1:60888/download/trickle-status.dmg: 0 bytes
+
+
+----------------------------------------------------------------------
+Ran 1 test in 9.707s
+
+FAILED (failures=4)

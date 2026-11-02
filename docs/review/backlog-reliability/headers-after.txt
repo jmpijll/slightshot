@@ -1,0 +1,6 @@
+test_trickling_headers_and_status_stop_at_the_absolute_deadline (test_release_metadata.DownloadCheckTests) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 2.266s
+
+OK
