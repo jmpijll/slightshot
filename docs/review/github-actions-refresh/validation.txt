@@ -1,0 +1,29 @@
+GitHub Actions dependency refresh, PR #67
+Workflow source: 84727808ed68a451b9fa8a55abbc39488835f6b2
+
+$ actionlint
+exit 0
+$ shellcheck Scripts/*.sh
+exit 0
+
+GitHub check results for the workflow source above
+
+Windows / build-and-render
+COMPLETED SKIPPED
+https://github.com/jmpijll/slightshot/actions/runs/40428423838/job/121939891194
+
+CI / Portable checks (Linux)
+COMPLETED SUCCESS
+https://github.com/jmpijll/slightshot/actions/runs/40428428768/job/121939907128
+
+Windows / build-and-render
+COMPLETED SUCCESS
+https://github.com/jmpijll/slightshot/actions/runs/40428428701/job/121939906200
+
+CI / Mac build, media tests, lint and DMG
+COMPLETED SUCCESS
+https://github.com/jmpijll/slightshot/actions/runs/40428428768/job/121939906938
+
+No submitted reviews or outstanding comments.
+Workflow changes retain SHA pins and current artifact input names.
+Release and Pages publication have not been dispatched by this review.
