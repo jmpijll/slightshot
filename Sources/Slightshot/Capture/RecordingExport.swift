@@ -95,6 +95,14 @@ nonisolated enum RecordingExport {
 
     static func forgetStagingParent(_ parent: URL) {
         stagingParentsLock.withLock {
+            // Unavailable drives and failed removals must be retried on launch.
+            guard let children = try? FileManager.default.contentsOfDirectory(
+                at: parent, includingPropertiesForKeys: nil),
+                  !children.contains(where: {
+                      let name = $0.lastPathComponent
+                      return name.hasPrefix(stagingPrefix)
+                          && UUID(uuidString: String(name.dropFirst(stagingPrefix.count))) != nil
+                  }) else { return }
             let paths = UserDefaults.standard.stringArray(forKey: stagingParentsKey) ?? []
             UserDefaults.standard.set(paths.filter { $0 != parent.path }, forKey: stagingParentsKey)
         }
@@ -102,10 +110,14 @@ nonisolated enum RecordingExport {
 
     static func rememberStagingParent(_ parent: URL) {
         stagingParentsLock.withLock {
-            let paths = UserDefaults.standard.stringArray(forKey: stagingParentsKey) ?? []
-            guard !paths.contains(parent.path) else { return }
-            UserDefaults.standard.set(paths + [parent.path], forKey: stagingParentsKey)
+            rememberStagingParentWhileLocked(parent)
         }
+    }
+
+    private static func rememberStagingParentWhileLocked(_ parent: URL) {
+        let paths = UserDefaults.standard.stringArray(forKey: stagingParentsKey) ?? []
+        guard !paths.contains(parent.path) else { return }
+        UserDefaults.standard.set(paths + [parent.path], forKey: stagingParentsKey)
     }
 
     /// Snapshot the editor's AppKit marks before entering the encoder worker.
@@ -158,11 +170,14 @@ nonisolated enum RecordingExport {
     private static func makeStagingDirectory(beside destination: URL) throws -> (URL, () -> Void) {
         let parent = destination.deletingLastPathComponent()
         let directory = parent.appendingPathComponent(stagingPrefix + UUID().uuidString, isDirectory: true)
-        rememberStagingParent(parent)
         do {
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false,
-                                                    attributes: [.posixPermissions: 0o700])
-            let lock = try FolderLock(directory: directory)
+            let lock = try stagingParentsLock.withLock {
+                // Keep registration and creation atomic with an empty-parent check.
+                rememberStagingParentWhileLocked(parent)
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: false,
+                                                        attributes: [.posixPermissions: 0o700])
+                return try FolderLock(directory: directory)
+            }
             return (directory, {
                 try? FileManager.default.removeItem(at: directory)
                 lock.release()

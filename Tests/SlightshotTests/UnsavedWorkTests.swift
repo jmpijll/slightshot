@@ -241,12 +241,16 @@ struct RecordingSessionCompletionTests {
         #expect(!FileManager.default.fileExists(atPath: staging.path))
     }
 
-    @Test func concurrentStagingUpdatesKeepEveryUnfinishedParent() {
+    @Test func concurrentStagingUpdatesKeepEveryUnfinishedParent() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         let first = (0..<128).map { root.appendingPathComponent("first-\($0)") }
         let second = (0..<128).map { root.appendingPathComponent("second-\($0)") }
+        for parent in first + second {
+            try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+        }
         defer {
             for parent in first + second { RecordingExport.forgetStagingParent(parent) }
+            try? FileManager.default.removeItem(at: root)
         }
         func remembered() -> Set<String> {
             Set(RecordingExport.stagingParents.filter { $0.deletingLastPathComponent().path == root.path }.map(\.path))

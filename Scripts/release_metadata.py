@@ -9,6 +9,7 @@ import http.client
 import math
 from pathlib import Path
 import re
+import signal
 import subprocess
 import sys
 import time
@@ -85,6 +86,28 @@ def retry_delay(retry_after, fallback):
 
 
 def download_size(url, deadline):
+    """Bound the whole request, including status lines, headers and redirects.
+
+    This CLI runs on the main thread of the Linux and macOS release runners.
+    Socket timeouts alone restart when a server trickles another header byte.
+    """
+    remaining = deadline - time.monotonic()
+    if remaining <= 0:
+        raise ValueError(f"{url} did not finish downloading within its time limit.")
+
+    def expired(signum, frame):
+        raise ValueError(f"{url} did not finish downloading within its time limit.")
+
+    previous = signal.signal(signal.SIGALRM, expired)
+    try:
+        signal.setitimer(signal.ITIMER_REAL, remaining)
+        return _download_size(url, deadline)
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
+
+
+def _download_size(url, deadline):
     """Return the byte count of a public HTTPS download, retrying transient failures until deadline."""
     expired = ValueError(f"{url} did not finish downloading within its time limit.")
     for attempt in range(1, DOWNLOAD_ATTEMPTS + 1):
