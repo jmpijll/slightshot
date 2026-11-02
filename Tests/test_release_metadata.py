@@ -203,6 +203,17 @@ class DownloadCheckTests(unittest.TestCase):
             def do_GET(self):
                 name = self.path.rsplit("/", 1)[-1]
                 count = cls.requests[name] = cls.requests.get(name, 0) + 1
+                if name in ("trickle-headers.dmg", "trickle-status.dmg"):
+                    response = (b"HTTP/1.0 200 OK\r\nX-Slow: abcdefghijklmnop\r\nContent-Length: 0\r\n\r\n"
+                                if name == "trickle-headers.dmg" else b"HTTP/1.0 200 OK\r\n\r\n")
+                    try:
+                        for byte in response:
+                            self.wfile.write(bytes([byte]))
+                            self.wfile.flush()
+                            time.sleep(0.05)
+                    except OSError:
+                        pass
+                    return
                 if name == "dropped-once.dmg" and count == 1:
                     self.close_connection = True
                     return
@@ -341,6 +352,19 @@ class DownloadCheckTests(unittest.TestCase):
         result = self.check(("ok.dmg", self.size + 1))
         self.assertNotEqual(result.returncode, 0)
         self.assertIn(f"has {self.size} bytes; the appcast expects {self.size + 1}", result.stderr)
+
+    def test_trickling_headers_and_status_stop_at_the_absolute_deadline(self):
+        for name in ("trickle-headers.dmg", "trickle-status.dmg"):
+            for limits in ({"DOWNLOAD_BUDGET": 0.3}, {"GATE_BUDGET": 0.3}):
+                with self.subTest(name=name, limits=limits):
+                    self.requests.clear()
+                    started = time.monotonic()
+                    result = self.check((name, 0), **limits)
+                    elapsed = time.monotonic() - started
+                    self.assertNotEqual(result.returncode, 0, result.stdout)
+                    self.assertIn("did not finish downloading within its time limit", result.stderr)
+                    self.assertLess(elapsed, 1.0, f"0.3 s budget took {elapsed:.3f} s")
+                    self.assertEqual(self.requests[name], 1)
 
     def test_pages_checks_downloads_before_uploading_the_feed(self):
         pages = (WORKFLOWS / "pages.yml").read_text()
